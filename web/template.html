@@ -1,0 +1,3412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Media Tracks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0c0c12; --surface:#111119; --surface2:#181824; --border:#262636;
+  --amber:#f5a623; --amber-soft:rgba(245,166,35,.12);
+  --text:#eeeef4; --text2:#8888a8; --text3:#555570;
+  --green:#2dd4a0; --green-soft:rgba(45,212,160,.12);
+  --red:#f05252; --red-soft:rgba(240,82,82,.12);
+  --blue:#4a9eff; --blue-soft:rgba(74,158,255,.12);
+  --purple:#b06aff; --purple-soft:rgba(176,106,255,.12);
+  --yellow:#eab308; --yellow-soft:rgba(234,179,8,.12);
+  --orange:#f97316; --orange-soft:rgba(249,115,22,.12);
+  --gray-soft:rgba(148,148,180,.06);
+  --ui: 'DM Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --radius: 10px;
+  --max-w: 1200px;
+}
+[data-theme="light"] {
+  --bg:#f4f4f8; --surface:#ffffff; --surface2:#eeeef2; --border:#d8d8e0;
+  --text:#1a1a2e; --text2:#5a5a78; --text3:#8888a0;
+  --gray-soft:rgba(0,0,0,.04);
+  --amber-soft:rgba(245,166,35,.15); --green-soft:rgba(45,212,160,.15);
+  --red-soft:rgba(240,82,82,.12); --blue-soft:rgba(74,158,255,.12);
+  --purple-soft:rgba(176,106,255,.12); --orange-soft:rgba(249,115,22,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);min-height:100vh;display:flex;line-height:1.55}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ─── Sidebar ─── */
+nav{width:180px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:width .2s ease}
+nav.collapsed{width:48px}
+nav.collapsed .logo-title,nav.collapsed .logo-sub,nav.collapsed .nav-item span,nav.collapsed .nav-footer span{display:none}
+nav.collapsed .logo{padding:12px 8px}
+nav.collapsed .nav-item{padding:10px 0;justify-content:center}
+nav.collapsed .nav-item svg{margin:0}
+nav.collapsed .nav-footer{padding:8px;justify-content:center}
+.collapse-btn{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text2);cursor:pointer;font-size:11px;padding:4px 6px;transition:all .2s;font-family:var(--mono)}
+.collapse-btn:hover{border-color:var(--amber);color:var(--amber)}
+nav.collapsed .collapse-btn{transform:rotate(180deg);padding:4px}
+.logo{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.logo-title{font-size:14px;font-weight:700;color:var(--amber);letter-spacing:.04em}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
+.nav-section{padding:10px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text2);cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;border-left:2px solid transparent;user-select:none}
+main{margin-left:180px;flex:1;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .2s ease}
+body.nav-collapsed main{margin-left:48px}
+.nav-item:hover{color:var(--text);background:var(--gray-soft)}
+.nav-item.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-soft)}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+.nav-footer{padding:10px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;justify-content:space-between;gap:4px;flex-shrink:0;overflow:hidden}
+
+/* ─── Main ─── */
+.page{display:none;flex-direction:column;flex:1}
+.page.active{display:flex}
+.page-head{padding:24px 32px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.page-title{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.page-desc{font-size:13px;color:var(--text2);margin-top:3px}
+.page-body{padding:24px 32px;flex:1;overflow-y:auto}
+.content{max-width:var(--max-w);width:100%}
+#page-settings .content,#page-run .content{max-width:var(--max-w)}
+#page-settings .section-intro,#page-run .section-intro,#page-settings .settings-lead{max-width:var(--max-w)}
+
+/* ─── Cards ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title svg{width:14px;height:14px}
+.settings-section{padding:0}
+.settings-section > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+.settings-section > summary::-webkit-details-marker{display:none}
+.settings-section[open] > summary{border-bottom:1px solid var(--border)}
+.settings-section .card-body{padding:18px 20px}
+.settings-chev{font-size:12px;color:var(--text3);transition:transform .2s}
+.settings-section[open] .settings-chev{transform:rotate(180deg)}
+
+/* ─── Fields ─── */
+.field-grid{display:grid;gap:14px}
+.field-grid-2{grid-template-columns:1fr 1fr}
+.field-grid-3{grid-template-columns:1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.02em}
+.field input,.field select,.field textarea{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .15s;width:100%}
+.field input:focus,.field select:focus{border-color:var(--amber)}
+.field select{cursor:pointer;appearance:auto}
+.field select option{background:var(--surface2);color:var(--text);padding:6px}
+.field-hint{font-size:11px;color:var(--text3);font-family:var(--mono)}
+
+/* ─── Buttons ─── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 18px;border-radius:6px;font-family:var(--ui);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn-amber{background:var(--amber);color:#000}
+.btn-amber:hover{background:#fbbf24}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--text3)}
+.btn-green{background:var(--green);color:#000}
+.btn-green:hover{filter:brightness(1.1)}
+.btn-red{background:var(--red);color:#fff}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-blue:hover{filter:brightness(1.1)}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-purple:hover{filter:brightness(1.1)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 9px;font-size:11px}
+.btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+
+/* ─── Test badges ─── */
+.test-result{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:5px;font-size:12px;font-weight:600;font-family:var(--mono);margin-left:8px}
+.test-ok{background:var(--green-soft);color:var(--green)}
+.test-fail{background:var(--red-soft);color:var(--red)}
+.test-pending{background:var(--blue-soft);color:var(--blue)}
+
+/* ─── Library manager ─── */
+.lib-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.lib-row{display:flex;align-items:center;gap:10px;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:8px 12px}
+.lib-row:focus-within{border-color:var(--amber)}
+.lib-row input[type=text]{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:12px;outline:none}
+.lib-csv{font-size:9px;color:var(--text3);font-family:var(--mono);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.toggle-card{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;min-width:0}
+.toggle-card.alert{border-color:rgba(239,68,68,.35)}
+.toggle-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
+.toggle-title.alert{color:var(--red)}
+.toggle-note{font-size:12px;color:var(--text2);line-height:1.45;margin-top:4px}
+.toggle-note.alert{color:var(--red);font-weight:600}
+.run-lib-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.run-lib-pill{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;min-width:0}
+.run-lib-pill span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width: 980px){
+  .field-grid-2,.lib-list,.toggle-grid,.run-lib-grid{grid-template-columns:1fr}
+}
+.offset-input{width:110px;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;text-align:center}
+.offset-input:focus{border-color:var(--purple)}
+.offset-steps{display:flex;flex-direction:column;gap:4px}
+.offset-step{width:28px;height:20px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.offset-step:hover{border-color:var(--purple);color:var(--purple)}
+.toggle{position:relative;width:34px;height:20px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{position:absolute;inset:0;background:var(--border);border-radius:18px;cursor:pointer;transition:.2s}
+.toggle-track:before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:var(--text3);border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-track{background:var(--green)}
+.toggle input:checked+.toggle-track:before{transform:translateX(14px);background:#000}
+
+/* ─── Status badges ─── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.s-PENDING{background:var(--gray-soft);color:var(--text3)} .d-PENDING{background:var(--text3)}
+.s-STAGED{background:var(--purple-soft);color:var(--purple)} .d-STAGED{background:var(--purple)}
+.s-APPROVED{background:var(--amber-soft);color:var(--amber)} .d-APPROVED{background:var(--amber)}
+.s-DOWNLOADED{background:var(--green-soft);color:var(--green)} .d-DOWNLOADED{background:var(--green)}
+.s-FAILED{background:var(--red-soft);color:var(--red)} .d-FAILED{background:var(--red)}
+.s-NO_PLAYLIST{background:var(--blue-soft);color:var(--blue)} .d-NO_PLAYLIST{background:var(--blue)}
+.s-REJECTED{background:var(--gray-soft);color:var(--text3)} .d-REJECTED{background:var(--text3)}
+.s-REMOVED{background:var(--gray-soft);color:var(--text3)} .d-REMOVED{background:var(--text3)}
+.s-IGNORED{background:var(--orange-soft);color:var(--orange)} .d-IGNORED{background:var(--orange)}
+
+.si::before{margin-right:3px}
+.s-DOWNLOADED .si::before{content:'✓'}
+.s-APPROVED .si::before{content:'→'}
+.s-STAGED .si::before{content:'◎'}
+.s-FAILED .si::before{content:'✗'}
+.s-NO_PLAYLIST .si::before{content:'∅'}
+.s-PENDING .si::before{content:'·'}
+.s-REJECTED .si::before{content:'—'}
+.s-REMOVED .si::before{content:'⊘'}
+.s-IGNORED .si::before{content:'⊸'}
+
+/* ─── Toast ─── */
+#toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;font-family:var(--mono);max-width:320px;border:1px solid}
+#toast.show{opacity:1;transform:translateY(0)}
+#toast.ok{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+#toast.err{background:var(--red-soft);color:var(--red);border-color:var(--red)}
+#toast.info{background:var(--blue-soft);color:var(--blue);border-color:var(--blue)}
+
+/* ─── Tabs ─── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;flex-wrap:wrap}
+.tab{padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--amber);border-bottom-color:var(--amber)}
+
+/* ─── Toolbar ─── */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.search{flex:1;min-width:180px;background:var(--surface);border:2px solid color-mix(in srgb, var(--amber) 22%, var(--border));border-radius:10px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .15s, box-shadow .15s, background .15s;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.search::placeholder{color:var(--text3)}
+.search:focus{border-color:var(--amber);box-shadow:0 0 0 3px color-mix(in srgb, var(--amber) 16%, transparent);background:var(--surface2)}
+.filter-sel{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--ui);font-size:13px;outline:none;cursor:pointer;appearance:auto}
+.filter-sel option{background:var(--surface2);color:var(--text);padding:4px}
+
+/* ─── Stat chips ─── */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.chip{display:flex;align-items:center;gap:5px;padding:5px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:12px;font-family:var(--mono);cursor:pointer;transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--text3)}
+.chip.active{border-color:var(--amber);color:var(--amber)}
+.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ─── Table ─── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{background:var(--surface);position:sticky;top:0;z-index:2}
+th{padding:8px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:color .15s}
+th:hover{color:var(--text)}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.018)}
+
+.inline-ed{background:transparent;border:1px solid transparent;border-radius:4px;color:var(--text);font-family:var(--mono);font-size:12px;padding:3px 6px;width:100%;outline:none;transition:border-color .15s}
+.inline-ed:focus{border-color:var(--amber);background:var(--amber-soft)}
+
+/* ─── Status select in table — READABLE ─── */
+.st-sel{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--ui);font-size:12px;font-weight:600;outline:none;cursor:pointer;padding:4px 8px;appearance:auto}
+.st-sel option{background:var(--surface2);color:var(--text);padding:6px;font-size:13px}
+
+.pag{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12px;font-family:var(--mono);color:var(--text3)}
+.pag-btn{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 12px;color:var(--text);cursor:pointer;font-family:var(--mono);font-size:12px;transition:all .15s}
+.pag-btn:hover{border-color:var(--text3)}
+.pag-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* ─── Audio player ─── */
+.player{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;min-width:180px}
+.play-btn{width:26px;height:26px;border-radius:50%;background:var(--amber);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.play-btn:hover{background:#fbbf24}
+.play-btn svg{width:10px;height:10px;fill:#000;margin-left:1px}
+.skip-btn{width:20px;height:20px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);font-size:8px;font-weight:700;font-family:var(--mono);transition:all .15s}
+.skip-btn:hover{border-color:var(--text3);color:var(--text)}
+.player-meta{flex:1;min-width:0}
+.player-title{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.player-prog{width:100%;height:4px;background:var(--border);border-radius:3px;cursor:pointer;margin-top:3px;position:relative}
+.player-fill{height:100%;background:var(--amber);border-radius:3px;transition:width .1s linear;pointer-events:none}
+.player-time{font-size:9px;color:var(--text3);font-family:var(--mono);white-space:nowrap;flex-shrink:0}
+.no-theme{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.preview-btns{display:flex;gap:4px;align-items:center}
+
+/* ─── Run/Schedule page ─── */
+
+.run-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-size:13px;font-family:var(--mono)}
+.run-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:all .3s}
+.run-dot.active{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse 1.2s infinite}
+.run-dot.done{background:var(--green)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Global run status bar */
+.global-run{position:sticky;top:0;z-index:80;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:12px;font-family:var(--mono)}
+.global-run.hidden{display:none}
+.global-run .run-dot{width:7px;height:7px}
+.global-run-text{color:var(--text)}
+.global-run-sub{color:var(--text3);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.terminal{background:#08080e;border:1px solid var(--border);border-radius:var(--radius);padding:16px;height:420px;overflow-y:auto;font-family:var(--mono);font-size:12px;line-height:1.75}
+.ll{white-space:pre-wrap;word-break:break-all}
+.ll-info{color:#6868a0}
+.ll-ok{color:var(--green)}
+.ll-warn{color:var(--amber)}
+.ll-err{color:var(--red)}
+.ll-resolve{color:var(--blue)}
+.ll-head{color:var(--amber);font-weight:500}
+.ll-lib{color:var(--purple);font-weight:700}
+
+/* ─── Progress bar ─── */
+.progress-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:none}
+.progress-wrap.active{display:block}
+.progress-label{font-size:12px;font-family:var(--mono);color:var(--text2);margin-bottom:8px}
+.progress-bar{height:6px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:var(--amber);border-radius:4px;transition:width .3s ease;width:0%}
+
+/* ─── History ─── */
+.run-cards{display:flex;flex-direction:column;gap:8px}
+.hcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.hcard-head{padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:background .15s}
+.hcard-head:hover{background:var(--gray-soft)}
+.hcard-time{font-size:14px;font-weight:600}
+.hcard-sum{font-size:12px;color:var(--text2);font-family:var(--mono);margin-top:2px}
+.hcard-body{display:none;border-top:1px solid var(--border);background:#08080e;padding:14px 16px;font-family:var(--mono);font-size:11px;line-height:1.75;color:#6868a0;white-space:pre-wrap;word-break:break-all;max-height:360px;overflow-y:auto}
+.hcard-body.open{display:block}
+.pass-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;flex-shrink:0}
+.pb-1{background:var(--blue-soft);color:var(--blue)}
+.pb-2{background:var(--purple-soft);color:var(--purple)}
+.pb-3{background:var(--green-soft);color:var(--green)}
+.pb-e{background:var(--red-soft);color:var(--red)}
+
+/* ─── Media page ─── */
+.media-list{display:flex;flex-direction:column;gap:10px}
+.media-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;gap:16px;align-items:center;transition:border-color .2s}
+.media-card:hover{border-color:var(--text3)}
+.media-poster{width:50px;height:75px;border-radius:6px;object-fit:cover;background:var(--surface2);flex-shrink:0}
+.media-poster-placeholder{width:50px;height:75px;border-radius:6px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:18px}
+.media-info{min-width:160px;flex-shrink:0}
+.media-card-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.media-card-year{font-size:12px;color:var(--text3);font-family:var(--mono)}
+.media-card-dur{font-size:11px;color:var(--text2);font-family:var(--mono)}
+.media-title-link{color:var(--text);text-decoration:none}
+.media-title-link:hover{color:var(--amber);text-decoration:underline}
+.media-player-area{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.media-trim{display:flex;gap:10px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.media-trim label{font-size:11px;color:var(--text2);font-weight:600}
+.media-trim input{width:55px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 8px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;text-align:center}
+.media-trim input:focus{border-color:var(--amber)}
+.media-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+
+/* ─── Cookies indicator ─── */
+.cookie-indicator{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:600;font-family:var(--mono)}
+.cookie-ok{background:var(--green-soft);color:var(--green)}
+.cookie-none{background:var(--gray-soft);color:var(--text3)}
+
+/* ─── Duration toggle ─── */
+.dur-toggle{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.dur-opt{padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text3);background:var(--surface2);transition:all .15s;user-select:none;border-right:1px solid var(--border);font-family:var(--mono)}
+.dur-opt:last-child{border-right:none}
+.dur-opt.active{background:var(--amber-soft);color:var(--amber)}
+.dur-opt:hover:not(.active){color:var(--text)}
+
+/* ─── Save bar ─── */
+.save-bar{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;gap:10px}
+
+.empty{text-align:center;padding:48px 20px;color:var(--text3);font-family:var(--mono);font-size:13px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ─── Preview player (for YouTube URL test) ─── */
+.preview-player{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:12px;display:none}
+.preview-player.active{display:block}
+
+/* ─── Modal ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:90%;max-width:640px;max-height:85vh;overflow-y:auto;padding:24px}
+.modal-title{font-size:18px;font-weight:700;margin-bottom:4px}
+.modal-desc{font-size:12px;color:var(--text2);margin-bottom:16px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer}
+.modal-player{margin:16px 0}
+.modal-slider{width:100%;height:6px;background:var(--border);border-radius:4px;cursor:pointer;appearance:none;outline:none;-webkit-appearance:none}
+.modal-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--amber);cursor:pointer}
+.modal-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--amber);cursor:pointer;border:none}
+.modal-time{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:4px}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+
+/* ─── Media table ─── */
+.media-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.media-tbl thead{background:var(--surface);position:sticky;top:0;z-index:2}
+.media-tbl th{padding:9px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
+.media-tbl td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.media-tbl tr:hover td{background:rgba(255,255,255,.018)}
+.media-poster-sm{width:32px;height:48px;border-radius:4px;object-fit:cover;background:var(--surface2)}
+.trim-preview-bar{display:flex;align-items:center;gap:6px;margin-top:4px}
+.trim-result{font-size:10px;color:var(--amber);font-family:var(--mono);white-space:nowrap}
+
+/* ─── Resizable columns ─── */
+th.resizable{position:relative;border-right:1px solid var(--border)}
+th.resizable .col-resize{position:absolute;right:-2px;top:0;bottom:0;width:5px;cursor:col-resize;background:transparent;z-index:3}
+th.resizable .col-resize:hover{background:var(--amber)}
+th.resizable .col-resize.dragging{background:var(--amber)}
+
+/* ─── Bulk action bar ─── */
+.bulk-bar{display:none;align-items:center;gap:8px;padding:10px 14px;background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius);margin-bottom:10px;flex-wrap:wrap}
+.bulk-bar.active{display:flex}
+.bulk-count{font-size:13px;font-weight:700;color:var(--amber);font-family:var(--mono);margin-right:4px}
+.bulk-hint{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.bulk-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bulk-spacer{flex:1}
+
+.run-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);font-size:11px;font-family:var(--mono);color:var(--text2);background:var(--surface2)}
+.run-pill.active{border-color:var(--amber);color:var(--amber)}
+.run-pill .run-dot{width:6px;height:6px}
+
+.guide-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px dashed var(--border);border-radius:var(--radius);background:var(--surface);margin:12px 0}
+.guide-step{font-size:11px;font-family:var(--mono);color:var(--text3)}
+.guide-step strong{color:var(--text)}
+.guide-next{font-size:12px;color:var(--text2)}
+
+.summary-card{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:11px;font-family:var(--mono);color:var(--text3)}
+.summary-card .summary-item{display:flex;align-items:center;gap:6px}
+.summary-card .summary-val{color:var(--text);font-weight:700}
+
+.action-icon{padding:4px 7px;font-size:11px;min-width:28px;justify-content:center}
+.action-icon span{display:none}
+
+/* ─── Row checkbox ─── */
+.row-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--amber)}
+
+/* ─── Source editor modal ─── */
+.se-player{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+
+.theme-modal-poster{width:80px;height:120px;border-radius:8px;object-fit:cover;background:var(--surface2);flex-shrink:0}
+.theme-modal-player{display:flex;align-items:center;gap:10px;margin:16px 0}
+.theme-modal-info{flex:1}
+
+/* ─── Unified modal design language ─── */
+.modal-header{display:flex;gap:16px;align-items:flex-start;padding:22px 22px 0}
+.modal-poster{width:75px;height:112px;border-radius:8px;object-fit:cover;background:var(--surface2);flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.modal-movie-info{flex:1;min-width:0}
+.modal-movie-title{font-size:18px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px}
+.modal-movie-meta{font-size:12px;color:var(--text3);font-family:var(--mono);display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}
+.modal-movie-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.modal-link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--text2);background:var(--surface2);transition:all .15s;white-space:nowrap}
+.modal-link-pill:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.modal-link-pill.yt-pill{border-color:rgba(220,50,50,.35);color:#cc3030;background:rgba(220,50,50,.05)}
+.modal-link-pill.yt-pill:hover{border-color:#cc3030;background:rgba(220,50,50,.1)}
+.modal-divider{height:1px;background:var(--border);margin:14px 0 0}
+.modal-section{padding:14px 22px 4px}
+.modal-section-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.modal-player-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.modal-scrubber-wrap{flex:1;min-width:0}
+.modal-scrubber-wrap input[type=range]{width:100%;margin-bottom:2px}
+.modal-time-row{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text3)}
+.modal-trim-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding-bottom:10px}
+.modal-trim-result{font-size:12px;font-family:var(--mono);color:var(--amber);padding-bottom:2px;white-space:nowrap}
+.modal-footer{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 22px;border-top:1px solid var(--border);margin-top:6px}
+.modal-steps{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.modal-steps-left{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
+.modal-step{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.modal-step.active{color:var(--purple)}
+.modal-step-dot{width:7px;height:7px;border-radius:50%;background:var(--border)}
+.modal-step.active .modal-step-dot{background:var(--purple)}
+.modal-step-sep{width:22px;height:2px;background:var(--border);opacity:.7}
+.modal-kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--surface2)}
+.modal-bio{font-size:12px;color:var(--text2);line-height:1.55;padding:10px 22px 0;border-top:1px solid var(--border);margin-top:10px}
+.modal-section-header{padding:0 22px 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.01em}
+.modal-section-divider{height:1px;background:var(--border);margin:0 22px 0}
+.modal-status-txt{font-size:11px;font-family:var(--mono);color:var(--text3);padding:0 22px 6px;min-height:18px}
+
+/* ─── Pipeline graphic (Database page) ─── */
+.pipeline-wrap{padding:16px var(--content-pad,20px) 0;border-bottom:1px solid var(--border)}
+/* actions row */
+.pipe-actions{display:flex;align-items:stretch;gap:6px;margin-bottom:10px}
+.pipe-action{flex:1;display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:8px;border:1.5px solid transparent;min-width:0}
+.pipe-action.scan{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.35)}
+.pipe-action.find{background:rgba(176,106,255,.08);border-color:rgba(176,106,255,.35)}
+.pipe-action.dl{background:rgba(45,212,160,.08);border-color:rgba(45,212,160,.35)}
+.pipe-action-step{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.pipe-action-step.scan{color:#3b82f6}.pipe-action-step.find{color:#b06aff}.pipe-action-step.dl{color:#2dd4a0}
+.pipe-action-name{font-size:12px;font-weight:700}
+.pipe-action-name.scan{color:#3b82f6}.pipe-action-name.find{color:#b06aff}.pipe-action-name.dl{color:#2dd4a0}
+.pipe-action-desc{font-size:10px;color:var(--text3);line-height:1.4}
+/* status flow row */
+.pipe-states{display:flex;align-items:center;padding-bottom:14px;overflow-x:auto}
+.pipe-state{display:flex;flex-direction:column;gap:3px;padding:7px 10px;border-radius:6px;border:1px solid transparent;flex-shrink:0}
+.pipe-state.pending{background:rgba(100,100,130,.07);border-color:rgba(100,100,130,.2)}
+.pipe-state.staged{background:rgba(176,106,255,.07);border-color:rgba(176,106,255,.22)}
+.pipe-state.approved{background:rgba(245,166,35,.07);border-color:rgba(245,166,35,.25)}
+.pipe-state.downloaded{background:rgba(45,212,160,.07);border-color:rgba(45,212,160,.22)}
+.pipe-state.failed{background:rgba(240,82,82,.06);border-color:rgba(240,82,82,.18)}
+.pipe-state-label{font-size:10px;font-weight:700;white-space:nowrap}
+.pipe-state-label.pending{color:#8888aa}.pipe-state-label.staged{color:#b06aff}
+.pipe-state-label.approved{color:#d4900a}.pipe-state-label.downloaded{color:#1ba880}.pipe-state-label.failed{color:#f05252}
+.pipe-state-desc{font-size:9px;color:var(--text3);line-height:1.35;max-width:90px}
+.pipe-arr{font-size:13px;color:var(--border);padding:0 5px;flex-shrink:0;align-self:center}
+
+.alpha-bar{display:flex;flex-wrap:wrap;gap:2px;padding:6px 0 8px}
+.alpha-btn{min-width:22px;height:22px;padding:0 3px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .12s}
+.alpha-btn:hover{border-color:var(--amber);color:var(--amber)}
+.alpha-btn.active{background:var(--amber);color:#fff;border-color:var(--amber)}
+.alpha-btn.dim{opacity:.28;pointer-events:none}
+
+/* ─── Accent chip ─── */
+.staged-alert{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(176,106,255,.12);border:1px solid rgba(176,106,255,.4);border-radius:20px;font-size:11px;cursor:pointer;color:#b06aff;font-weight:600;transition:all .15s;white-space:nowrap}
+.staged-alert:hover{background:rgba(176,106,255,.22)}
+
+.status-key{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 4px;align-items:center}
+.status-key-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-right:4px}
+.status-key-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+.status-key-desc{font-size:10px;color:var(--text3)}
+
+/* ─── Search modal 3-step ─── */
+.search-step-body{display:flex;flex-direction:column}
+.srail-step{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:6px;cursor:pointer;transition:all .15s;user-select:none;flex-shrink:0}
+.srail-step:hover .srail-label{color:var(--text)}
+.srail-num{width:20px;height:20px;border-radius:50%;background:var(--border);color:var(--text3);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.srail-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;transition:all .15s}
+.srail-step.active .srail-num{background:var(--purple);color:#fff}
+.srail-step.active .srail-label{color:var(--purple)}
+.srail-step.done .srail-num{background:var(--green);color:#000}
+.srail-step.done .srail-label{color:var(--green)}
+.srail-sep{flex:1;height:2px;background:var(--border);min-width:12px;max-width:40px}
+.search-method-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;text-align:center;background:var(--surface2);user-select:none}
+.search-method-card:hover{border-color:var(--purple);background:var(--purple-soft)}
+.search-method-card.active{border-color:var(--purple);background:var(--purple-soft)}
+.sm-card-icon{font-size:22px;line-height:1}
+.sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
+.sm-card-desc{font-size:10px;color:var(--text3);line-height:1.35}
+.search-result-card{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);transition:background .12s;cursor:pointer}
+.search-result-card:hover{background:var(--gray-soft)}
+.search-result-card.recommended{border-left:3px solid var(--amber);background:var(--amber-soft)}
+.search-result-card.recommended:hover{background:color-mix(in srgb, var(--amber) 14%, transparent)}
+.src-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.src-badge.golden{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(245,166,35,.4)}
+.src-badge.recommended{background:var(--green-soft);color:var(--green);border:1px solid rgba(45,212,160,.4)}
+
+
+.settings-lead{font-size:13px;color:var(--text2);max-width:820px;line-height:1.6}
+.section-intro{font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:16px;max-width:900px}
+.settings-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.settings-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.settings-subcard{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;min-width:0;height:100%}
+.subcard-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.subcard-intro{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px}
+.field-help{font-size:12px;color:var(--text2);line-height:1.5}
+.field-help.compact{font-size:11px;color:var(--text3)}
+.settings-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.note-box{background:var(--gray-soft);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.note-box-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px}
+.note-box-text{font-size:12px;color:var(--text2);line-height:1.5}
+.inline-details{margin-top:14px;border:1px solid var(--border);border-radius:12px;background:var(--gray-soft)}
+.inline-details > summary{list-style:none;cursor:pointer;padding:11px 14px;font-size:12px;font-weight:700;color:var(--text2)}
+.inline-details > summary::-webkit-details-marker{display:none}
+.inline-details-body{padding:0 14px 14px}
+.kicker-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.kicker-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.library-actions,.test-inline-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lib-row{align-items:flex-start;padding:12px 14px;border-radius:18px}
+.lib-meta{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.lib-top{display:flex;align-items:center;gap:8px;min-width:0}
+.lib-bottom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.lib-top input[type=text]{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--ui);font-size:13px;font-weight:600;outline:none;padding:0}
+.lib-state{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em}
+.lib-state.on{background:var(--green-soft);color:var(--green)}
+.lib-state.off{background:var(--gray-soft);color:var(--text3)}
+.settings-test-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.dual-inline{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px;align-items:start}
+.dual-inline .toggle-card{height:100%}
+.label-stack{display:flex;flex-direction:column;gap:4px}
+.performance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.muted-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:11px;color:var(--text2)}
+.schedule-master{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px}
+.schedule-master-copy{min-width:0;flex:1}
+.schedule-master-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.schedule-master-desc{font-size:12px;color:var(--text2);line-height:1.55;max-width:760px}
+.sched-config-wrap.is-disabled{opacity:.46;pointer-events:none;filter:saturate(.85)}
+.settings-section .field input:not([type=checkbox]),
+.settings-section .field select,
+.settings-section .field textarea{font-family:var(--ui)}
+.settings-section .field input[id^="cfg-search_query"],
+.settings-section .field input[id="cfg-golden_source_url"],
+.settings-section .field input[id="cfg-theme_filename"],
+.settings-section .field input[id="cfg-plex_url"],
+.settings-section .field input[id="cfg-plex_token"],
+.settings-section .field input[id="cfg-tmdb_api_key"],
+.settings-section .field input[id="cfg-custom-dur"],
+.settings-section .field input[id="cfg-test_limit"],
+.settings-section .field input[id="cfg-max_retries"],
+.settings-section .field input[id="cfg-download_delay_seconds"]{font-family:var(--mono)}
+@media (max-width: 980px){
+  .settings-grid-2,.settings-grid-3,.dual-inline,.performance-grid{grid-template-columns:1fr}
+}
+
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" style="display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div class="logo-title">Media Tracks</div>
+      <div class="logo-sub">theme downloader</div>
+    </div>
+    <button class="collapse-btn" onclick="toggleNav()" title="Collapse sidebar" id="nav-collapse-btn">«</button>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item active" onclick="showPage('settings')" id="nav-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      <span>Configuration</span>
+    </div>
+    <div class="nav-item" onclick="showPage('database')" id="nav-database">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      <span>Database+</span>
+    </div>
+    <div class="nav-item" onclick="showPage('run')" id="nav-run">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span>Schedule</span>
+    </div>
+    <div class="nav-item" onclick="showPage('history')" id="nav-history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 16 14"/></svg>
+      <span>History</span>
+    </div>
+  </div>
+  <div class="nav-footer" style="display:flex;align-items:center;justify-content:space-between">
+    <span>v3.0</span>
+    <button onclick="toggleTheme()" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text2);font-size:14px;padding:3px 6px;line-height:1" title="Toggle light/dark" id="theme-toggle-btn">☀</button>
+  </div>
+</nav>
+
+<main>
+  <div class="global-run hidden" id="global-run">
+    <div class="run-dot" id="global-run-dot"></div>
+    <div class="global-run-text" id="global-run-text">Idle</div>
+    <div class="global-run-sub" id="global-run-sub"></div>
+  </div>
+
+<!-- ══════════════════════════════════════ SETTINGS ═══════════════════════════ -->
+<div class="page active" id="page-settings">
+  <div class="page-head">
+    <div>
+      <div class="page-title">Configuration</div>
+      <div class="page-desc">Set up connections, choose library scope, control source discovery, and tune downloads.</div>
+    </div>
+  </div>
+  <div class="page-body"><div class="content">
+    <div class="settings-lead" style="margin-bottom:16px">Media Tracks works best when this page is set up in order: connect Plex, choose the movie or TV libraries you want to manage, choose how it should find sources, then tune output and performance.</div>
+
+    <details class="card settings-section" open>
+      <summary>
+        <div class="card-title" style="margin-bottom:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="18" cy="18" r="2"/></svg>
+          Connections
+        </div>
+        <div class="settings-chev">˅</div>
+      </summary>
+      <div class="card-body">
+        <div class="section-intro">Connect Plex and TMDB first. Plex powers library discovery and scans. TMDB helps normalize movie titles and years so source matching is cleaner.</div>
+        <div class="settings-grid-2">
+          <div class="settings-subcard">
+            <div class="subcard-title">Plex</div>
+            <div class="subcard-intro">Used for library discovery, scan/indexing, posters, and local media metadata.</div>
+            <div class="field-grid field-grid-2">
+              <div class="field">
+                <label>Plex URL</label>
+                <input id="cfg-plex_url" placeholder="http://192.168.1.x:32400">
+              </div>
+              <div class="field">
+                <label>Plex Token</label>
+                <input id="cfg-plex_token" type="text" placeholder="your-plex-token">
+              </div>
+            </div>
+            <div class="settings-actions">
+              <button class="btn btn-ghost btn-sm" onclick="testPlex()">⚡ Test Connection</button>
+              <span id="plex-test-result"></span>
+            </div>
+          </div>
+          <div class="settings-subcard">
+            <div class="subcard-title">TMDB</div>
+            <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and power TMDB posters and links.</div>
+            <div class="field" style="max-width:520px">
+              <label>TMDB API Key</label>
+              <input id="cfg-tmdb_api_key" placeholder="your-tmdb-key">
+              <div class="field-help compact">Free key at themoviedb.org/settings/api</div>
+            </div>
+            <div class="settings-actions">
+              <button class="btn btn-ghost btn-sm" onclick="testTmdb()">⚡ Test API Key</button>
+              <span id="tmdb-test-result"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="card settings-section" open>
+      <summary>
+        <div class="card-title" style="margin-bottom:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
+          Library Scope
+        </div>
+        <div class="settings-chev">˅</div>
+      </summary>
+      <div class="card-body">
+        <div class="section-intro">Choose which movie and TV libraries Media Tracks should manage. Imported libraries start disabled so you can opt in only to the libraries you want.</div>
+        <div class="lib-list" id="lib-list"></div>
+        <div class="library-actions" style="margin-top:12px">
+          <button class="btn btn-ghost btn-sm" onclick="addLibrary()">+ Add Library</button>
+          <button class="btn btn-blue btn-sm" onclick="importLibraries()">⬇ Import from Plex</button>
+          <span id="lib-import-result"></span>
+        </div>
+        <div class="field-help compact" style="margin-top:10px">Library names must match Plex exactly. Only movie and TV libraries are offered in the import picker.</div>
+      </div>
+    </details>
+
+    <details class="card settings-section" open>
+      <summary>
+        <div class="card-title" style="margin-bottom:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Source Discovery
+        </div>
+        <div class="settings-chev">˅</div>
+      </summary>
+      <div class="card-body">
+        <div class="section-intro">These settings control how Media Tracks finds a theme source for each pending title. Keep strict matching on for cleaner results. Turn on fuzzy matching only when you want looser, first-result behavior.</div>
+        <div class="settings-subcard">
+          <div class="subcard-title">Search setup</div>
+          <div class="subcard-intro">Choose how Media Tracks should look for theme sources and how closely it should validate matches.</div>
+          <div class="field-grid field-grid-2">
+            <div class="field">
+              <label>Primary Search Mode</label>
+              <select id="cfg-search_mode" onchange="onSearchModeChange()">
+                <option value="playlist">Playlist — find soundtrack playlists, then take track 1</option>
+                <option value="direct">Direct — search movie &quot;theme&quot; song</option>
+              </select>
+              <div class="field-help compact">Playlist mode looks for soundtrack playlists. Direct mode looks for a single theme/song result.</div>
+            </div>
+            <div class="field">
+              <label>Matching Mode</label>
+              <select id="cfg-search_matching_mode" onchange="syncMatchingModeSelect()">
+                <option value="strict">Strict matching</option>
+                <option value="fuzzy">Fuzzy matching</option>
+              </select>
+              <div class="field-help compact" id="search-matching-help">Strict matching checks the result title for the movie title terms, the year, and the expected mode wording.</div>
+            </div>
+          </div>
+        </div>
+        <div class="toggle-grid" style="margin-top:14px">
+          <div class="toggle-card">
+            <label class="toggle">
+              <input type="checkbox" id="cfg-search_fallback" checked onchange="syncMatchingModeSelect()">
+              <span class="toggle-track"></span>
+            </label>
+            <div>
+              <label class="toggle-title" id="lbl-search-fallback" style="cursor:pointer" onclick="document.getElementById('cfg-search_fallback').click()">Fallback Search</label>
+              <div class="toggle-note">If the primary search mode finds no valid strict match, try the other mode once.</div>
+            </div>
+          </div>
+          <div class="toggle-card">
+            <label class="toggle">
+              <input type="checkbox" id="cfg-auto_approve_manual">
+              <span class="toggle-track"></span>
+            </label>
+            <div>
+              <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
+              <div class="toggle-note">Manual search selections skip STAGING and go straight to APPROVED.</div>
+            </div>
+          </div>
+        </div>
+        <details class="inline-details">
+          <summary>Advanced query templates</summary>
+          <div class="inline-details-body">
+            <div class="field-grid field-grid-2">
+              <div class="field">
+                <label>Playlist Query Template</label>
+                <input id="cfg-search_query_playlist" placeholder="{title} {year} soundtrack playlist">
+                <div class="field-help compact">Template for playlist mode. Use <code>{title}</code> and <code>{year}</code>.</div>
+              </div>
+              <div class="field">
+                <label>Direct Query Template</label>
+                <input id="cfg-search_query_direct" placeholder="{title} {year} theme song">
+                <div class="field-help compact">Template for direct mode. Use <code>{title}</code> and <code>{year}</code>.</div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </details>
+
+    <details class="card settings-section" open>
+      <summary>
+        <div class="card-title" style="margin-bottom:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M8 7h8M8 17h8"/><circle cx="6" cy="7" r="1"/><circle cx="18" cy="17" r="1"/></svg>
+          Curated Source &amp; Access
+        </div>
+        <div class="settings-chev">˅</div>
+      </summary>
+      <div class="card-body">
+        <div class="section-intro">Golden Source is your curated list of known theme matches. It can speed up matching for titles it covers, but it may still have gaps depending on what exists in your library.</div>
+        <div class="field-grid field-grid-2">
+          <div class="settings-subcard">
+            <div class="subcard-title">Golden Source</div>
+            <div class="subcard-intro">Point Media Tracks at your curated CSV, then test it before using it for imports or source matching.</div>
+            <div class="field">
+              <label>Golden Source URL</label>
+              <input id="cfg-golden_source_url" placeholder="https://example.com/golden_source.csv">
+              <div class="field-help compact">Required: <code>tmdb_id</code>, <code>source_url</code>. Optional: <code>title</code>, <code>year</code>, <code>start_offset</code>, <code>verified</code>, <code>updated_at</code>, <code>notes</code>.</div>
+            </div>
+            <div class="settings-test-row">
+              <button class="btn btn-ghost btn-sm" id="golden-test-btn" onclick="testGoldenSource()">⚡ Test Golden Source</button>
+              <span id="golden-test-result"></span>
+            </div>
+          </div>
+          <div class="settings-subcard">
+            <div class="subcard-title">Golden Source mode</div>
+            <div class="subcard-intro">Use only the curated list when you want faster, more controlled matching.</div>
+            <div class="toggle-card alert" style="margin-top:8px">
+              <label class="toggle" style="margin-top:2px">
+                <input type="checkbox" id="cfg-search_only_golden">
+                <span class="toggle-track"></span>
+              </label>
+              <div>
+                <label class="toggle-title alert" style="cursor:pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
+                <div class="toggle-note alert">Skip YouTube search and only match against the curated source list. This can be faster, but titles not covered by your list will stay unmatched.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="settings-subcard" style="margin-top:14px">
+          <div class="subcard-title">Cookies</div>
+          <div class="subcard-intro">Optional access helper for yt-dlp when YouTube is harder to fetch.</div>
+          <div class="field">
+            <label>Cookies File</label>
+            <select id="cfg-cookies_file" onchange="updateCookieIndicator()">
+              <option value="">No cookies file</option>
+            </select>
+          </div>
+          <div class="settings-actions">
+            <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
+          </div>
+          <div class="field-help compact">Browser-exported YouTube cookies can help with age-restricted, sign-in-gated, region-limited, or bot-protected results and playlists.</div>
+        </div>
+      </div>
+    </details>
+
+    <details class="card settings-section" open>
+      <summary>
+        <div class="card-title" style="margin-bottom:0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Download Output &amp; Performance
+        </div>
+        <div class="settings-chev">˅</div>
+      </summary>
+      <div class="card-body">
+        <div class="section-intro">These settings control what gets written to disk and how aggressively Media Tracks processes downloads and source matching.</div>
+        <div class="settings-subcard" style="margin-bottom:16px">
+          <div class="subcard-title">Theme length</div>
+          <div class="subcard-intro">Downloads shorter than this are kept as-is. Longer downloads are trimmed to this maximum length.</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="dur-toggle" id="dur-toggle">
+              <div class="dur-opt" data-val="30" onclick="setDuration(30)">30s</div>
+              <div class="dur-opt" data-val="45" onclick="setDuration(45)">45s</div>
+              <div class="dur-opt" data-val="60" onclick="setDuration(60)">60s</div>
+              <div class="dur-opt" data-val="0" onclick="setDuration(0)">No limit</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="cfg-custom-dur" min="1" max="600" placeholder="Custom" style="width:98px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" onchange="setDuration(parseInt(this.value)||0)">
+              <span style="font-size:12px;color:var(--text2)">seconds</span>
+            </div>
+          </div>
+        </div>
+        <div class="settings-grid-3" style="margin-bottom:16px">
+          <div class="field">
+            <label>Audio Format</label>
+            <select id="cfg-audio_format">
+              <option value="mp3">mp3</option><option value="m4a">m4a</option>
+              <option value="flac">flac</option><option value="opus">opus</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Quality Profile</label>
+            <select id="cfg-quality_profile">
+              <option value="high">Best available — source dependent</option>
+              <option value="balanced">Balanced — about 192 kbps equivalent</option>
+              <option value="small">Compact — about 128 kbps equivalent</option>
+              <option value="smallest">Smallest — about 96 kbps equivalent</option>
+            </select>
+            <div class="field-help compact">Actual bitrate varies by source and output codec. Best available keeps the highest practical quality.</div>
+          </div>
+          <div class="field">
+            <label>Theme Filename</label>
+            <input id="cfg-theme_filename" placeholder="theme.mp3">
+          </div>
+        </div>
+        <div class="performance-grid">
+          <div class="field">
+            <label>Pending Titles Per Run</label>
+            <input type="number" id="cfg-test_limit" min="0">
+            <div class="field-help compact">How many pending titles Media Tracks tries to match in one Find Sources run. <strong>0 = unlimited.</strong> Lower values keep runs lighter on CPU and memory.</div>
+          </div>
+          <div class="field">
+            <label>Max Retries</label>
+            <input type="number" id="cfg-max_retries" min="1">
+            <div class="field-help compact">How many times yt-dlp retries a failed download before that item is marked FAILED.</div>
+          </div>
+          <div class="field">
+            <label>Delay Between Downloads (s)</label>
+            <input type="number" id="cfg-download_delay_seconds" step="0.5" min="0">
+            <div class="field-help compact">Pause between downloads to reduce API bursts, CPU spikes, and overlapping ffmpeg work.</div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+  </div></div>
+  <div class="save-bar">
+    <button class="btn btn-amber" onclick="saveSettings()">Save Configuration</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════ DATABASE ═══════════════════════════ -->
+<div class="page" id="page-database">
+  <div class="page-head">
+    <div><div class="page-title">Database+</div><div class="page-desc">Browse, review, preview, fine-tune, and manage themes in one place</div></div>
+  </div>
+  <div class="page-body">
+    <!-- Progress bar -->
+    <div class="progress-wrap" id="db-progress">
+      <div class="progress-label" id="db-progress-label">Working...</div>
+      <div class="progress-bar"><div class="progress-fill" id="db-progress-fill"></div></div>
+    </div>
+
+    <div class="tabs" id="lib-tabs" style="margin-bottom:10px;border-bottom:1px solid var(--border)"></div>
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+      <div class="chips" id="db-chips" style="margin-bottom:0;flex:1;flex-wrap:wrap"></div>
+      <div class="row" style="flex-shrink:0">
+        <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan Library</button>
+        <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
+        <button class="btn btn-ghost btn-sm" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
+        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()">↓ Download All Approved</button>
+        <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input class="search" type="text" placeholder="Search titles, years, URLs, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search database" style="flex:1;min-width:260px;font-weight:700;background:#fff;border:2px solid rgba(245,166,35,.45);box-shadow:0 1px 0 rgba(245,166,35,.08)">
+      <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
+        <option value="">All statuses</option>
+        <option value="PENDING">Pending</option><option value="STAGED">Staged</option>
+        <option value="APPROVED">Approved</option><option value="DOWNLOADED">Available</option>
+        <option value="FAILED">Failed</option>
+        <option value="REJECTED">Rejected</option><option value="IGNORED">Ignored</option><option value="REMOVED">Removed</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()">✓ Approve All Staged</button>
+    </div>
+    <div class="bulk-bar" id="db-bulk-bar">
+      <span class="bulk-count" id="db-bulk-count">0 selected</span>
+      <span class="bulk-hint">Shift+click to range</span>
+      <button class="btn btn-ghost btn-xs" onclick="selectAllVisible()">Select all on page</button>
+      <span class="bulk-spacer"></span>
+      <div class="bulk-actions">
+        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')">✓ Approve</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('PENDING')">↺ Pending</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('STAGED')">◎ Stage</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('IGNORED')">⊸ Ignore</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('REJECTED')">— Reject</button>
+        <button class="btn btn-ghost btn-sm" id="db-clear-sel" onclick="clearSourcesSelected()">🧹 Clear Sources</button>
+        <button class="btn btn-red btn-sm" onclick="clearSelection()">✕ Clear</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:28px"><input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered"></th>
+          <th onclick="sortTable('title')">Title ↕</th>
+          <th onclick="sortTable('year')">Year ↕</th>
+          <th onclick="sortTable('status')">Status ↕</th>
+          <th onclick="sortTable('status')">Current Theme ↕</th>
+          <th onclick="sortTable('url')">Source ↕</th>
+          <th>Source URL</th>
+          <th onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
+          <th onclick="sortTable('last_updated')">Updated ↕</th>
+          <th onclick="sortTable('notes')">Notes ↕</th>
+        </tr></thead>
+        <tbody id="db-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pag" id="db-pag"></div>
+    <div class="empty" id="db-empty" style="display:none">No titles match your filter.</div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
+<div class="page" id="page-run">
+  <div class="page-head"><div><div class="page-title">Schedule</div><div class="page-desc">Configure automated runs and manually trigger pipeline steps for the libraries selected below</div></div></div>
+  <div class="page-body"><div class="content">
+
+    <!-- Pipeline overview (same 3 steps as Database page) -->
+    <div class="pipe-actions" style="margin-bottom:6px">
+      <div class="pipe-action scan">
+        <div class="pipe-action-step scan">Step 1 · Action</div>
+        <div class="pipe-action-name scan">⟳ Scan Library</div>
+        <div class="pipe-action-desc">Connects to Plex, indexes all media, marks items without a theme.mp3 as PENDING</div>
+      </div>
+      <div class="pipe-action find">
+        <div class="pipe-action-step find">Step 2 · Action</div>
+        <div class="pipe-action-name find">⚡ Find Sources</div>
+        <div class="pipe-action-desc">Uses TMDB title/year metadata to build a source lookup for each PENDING item, then saves valid matches as STAGED</div>
+      </div>
+      <div class="pipe-action dl">
+        <div class="pipe-action-step dl">Step 3 · Action</div>
+        <div class="pipe-action-name dl">↓ Download</div>
+        <div class="pipe-action-desc">Downloads audio for every APPROVED item, trims to offset, saves theme.mp3 to Plex folder</div>
+      </div>
+    </div>
+
+    <div class="schedule-master">
+      <div class="schedule-master-copy">
+        <div class="schedule-master-title">Automated Schedule</div>
+        <div class="schedule-master-desc">Turn automated runs on or off. Manual Run Now actions still work even when automation is disabled.</div>
+      </div>
+      <label class="toggle" style="margin-top:2px">
+        <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+
+    <div id="sched-config-wrap" class="sched-config-wrap">
+      <!-- Cron schedule -->
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Auto Schedule
+        </div>
+        <div class="field" style="max-width:340px;margin-bottom:14px">
+          <label>Cron Schedule</label>
+          <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
+          <div class="field-hint">When the automated pipeline runs. Restart container to apply changes.</div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Libraries Included</label>
+          <div id="run-lib-toggles" class="run-lib-grid"></div>
+          <div class="field-hint" style="margin-top:8px">Only libraries enabled on the Configuration page are available here. These schedule selections are separate from library availability.</div>
+        </div>
+      </div>
+
+      <!-- Pipeline Steps -->
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Pipeline Steps
+        </div>
+        <div class="field-hint" style="margin-bottom:16px">Toggle which parts of the automated pipeline should run. Manual "Run Now" buttons work regardless of these settings.</div>
+
+        <!-- Step 1 -->
+        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
+          <label class="toggle" style="margin-top:2px">
+            <input type="checkbox" id="sched-step1" onchange="saveRunSchedule()">
+            <span class="toggle-track"></span>
+          </label>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)">Step 1</span>
+              <span style="font-size:15px;font-weight:700">Scan Libraries</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5">Connects to Plex, indexes all media, checks which folders already have a theme file. Media without a theme is set to PENDING. Media with a theme is set to AVAILABLE. <span style="color:var(--red);font-weight:600">Uses: Plex. No YouTube or TMDB calls. Fast.</span></div>
+          </div>
+          <button class="btn btn-blue btn-sm" id="btn-pass1" onclick="startPass(1)">⟳ Run Now</button>
+        </div>
+
+        <!-- Step 2 -->
+        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
+          <label class="toggle" style="margin-top:2px">
+            <input type="checkbox" id="sched-step2" onchange="saveRunSchedule()">
+            <span class="toggle-track"></span>
+          </label>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple)">Step 2</span>
+              <span style="font-size:15px;font-weight:700">Find Theme Sources</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5">Searches sources for a theme based on the configured search logic for each PENDING media item. Saves the URL and moves status to STAGED. <span style="color:var(--purple);font-weight:600">Uses: TMDB + YouTube or Golden Source if configured.</span></div>
+          </div>
+          <button class="btn btn-purple btn-sm" id="btn-pass2" onclick="startPass(2)">⚡ Run Now</button>
+        </div>
+
+        <!-- Step 3 -->
+        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0">
+          <label class="toggle" style="margin-top:2px">
+            <input type="checkbox" id="sched-step3" onchange="saveRunSchedule()">
+            <span class="toggle-track"></span>
+          </label>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green)">Step 3</span>
+              <span style="font-size:15px;font-weight:700">Download Themes</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Downloads audio for every APPROVED media item, saves the theme file into the media folder, and moves status to AVAILABLE. <span style="color:var(--green);font-weight:600">Uses: yt-dlp + ffmpeg.</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:fit-content">
+              <label class="toggle" style="transform:scale(.85)">
+                <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
+                <span class="toggle-track"></span>
+              </label>
+              <div>
+                <span style="font-size:12px;font-weight:600;color:var(--text)">Auto-Approve</span>
+                <div style="font-size:11px;color:var(--text3)">Automatically approve all STAGED media before downloading — fully hands-off pipeline</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-green btn-sm" id="btn-pass3" onclick="startPass(3)">↓ Run Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="run-progress">
+      <div class="progress-label" id="run-progress-label">Working...</div>
+      <div class="progress-bar"><div class="progress-fill" id="run-progress-fill"></div></div>
+    </div>
+
+    <div class="run-bar">
+      <div class="run-dot" id="run-dot"></div>
+      <span id="run-status" style="color:var(--text2)">Idle — select a step above to run manually</span>
+      <button class="btn btn-ghost btn-sm" onclick="clearTerminal()" style="margin-left:auto">Clear</button>
+      <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopRun()" style="display:none">■ Stop</button>
+    </div>
+    <div class="terminal" id="terminal">
+      <div class="ll ll-info">Ready. Toggle steps for automated runs, or click Run Now for manual execution.</div>
+    </div>
+
+  </div></div>
+</div>
+
+<!-- ══════════════════════════════════════ HISTORY ════════════════════════════ -->
+<div class="page" id="page-history">
+  <div class="page-head"><div><div class="page-title">History</div><div class="page-desc">Log of every run — click to expand full output</div></div></div>
+  <div class="page-body"><div class="content">
+    <div class="run-cards" id="run-cards"><div class="empty">No run history yet.</div></div>
+  </div></div>
+</div>
+
+</main>
+<div id="toast"></div>
+<audio id="global-audio" style="display:none"></audio>
+
+<!-- YouTube Preview Modal (Database page — ▶ Preview on staged rows) -->
+<div class="modal-overlay" id="yt-modal" onclick="if(event.target===this)closeYtModal()">
+  <div class="modal" style="max-width:560px;position:relative;padding:0">
+
+    <!-- Movie header -->
+    <div class="modal-header">
+      <img class="modal-poster" id="yt-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
+      <div class="modal-movie-info">
+        <div class="modal-movie-title" id="yt-modal-title">YouTube Preview</div>
+        <div class="modal-movie-meta">
+          <span id="yt-modal-year-meta"></span>
+          <span id="yt-modal-dur-badge" style="display:none;color:var(--green)">Duration: <span id="yt-modal-dur-val"></span></span>
+        </div>
+        <div class="modal-movie-links" id="yt-modal-links"></div>
+      </div>
+    </div>
+
+    <!-- Playback -->
+    <div class="modal-section" style="padding-top:0">
+      <div class="modal-section-label">Playback</div>
+      <div class="modal-player-row">
+        <button class="play-btn" id="yt-modal-play" onclick="ytModalToggle()">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button class="skip-btn" onclick="ytModalSkip(-5)">-5</button>
+        <button class="skip-btn" onclick="ytModalSkip(5)">+5</button>
+        <div class="modal-scrubber-wrap">
+          <input type="range" class="modal-slider" id="yt-modal-slider" min="0" max="100" value="0" oninput="ytModalSeek(this.value)">
+          <div class="modal-time-row"><span id="yt-modal-cur">0:00</span><span id="yt-modal-dur">—</span></div>
+        </div>
+      </div>
+      <audio id="yt-modal-audio" style="display:none"></audio>
+      <div class="modal-status-txt" id="yt-modal-status" style="padding-left:0;padding-top:5px">Resolving stream…</div>
+    </div>
+
+    <!-- Bio -->
+    <div class="modal-bio" id="yt-modal-bio" style="display:none"></div>
+
+    <!-- Section heading -->
+    <div style="padding:14px 22px 10px">
+      <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)">Preview &amp; Set Offset</div>
+      <div style="height:1px;background:var(--border)"></div>
+    </div>
+
+    <!-- Start Offset — inline -->
+    <div class="modal-section" style="padding-top:4px;padding-bottom:16px">
+      <div class="modal-section-label">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(seconds)</span></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="text" id="yt-modal-start" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="ytModalUpdateTrim()" onblur="normalizeOffsetInput(this)">
+        <div class="offset-steps">
+          <button class="offset-step" onclick="adjustOffset(document.getElementById('yt-modal-start'),5)">▲</button>
+          <button class="offset-step" onclick="adjustOffset(document.getElementById('yt-modal-start'),-5)">▼</button>
+        </div>
+        <div class="modal-trim-result" id="yt-modal-trim-info"></div>
+        <button class="btn btn-purple btn-sm" onclick="ytModalPreviewTrim()">▶ Preview from offset</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeYtModal()">Close</button>
+      <button class="btn btn-amber" id="yt-modal-save" onclick="ytModalSave()" style="display:none">Save Offset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ GOLDEN SOURCE IMPORT MODAL ══════════════ -->
+<div class="modal-overlay" id="gs-modal" onclick="if(event.target===this)closeGoldenSourceModal()">
+  <div class="modal" style="max-width:520px;position:relative;padding:0">
+    <div class="modal-header" style="padding-bottom:16px">
+      <div style="width:44px;height:44px;border-radius:10px;background:var(--amber-soft);border:1px solid var(--amber);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">★</div>
+      <div class="modal-movie-info">
+        <div class="modal-movie-title" style="font-size:16px">Import Golden Source</div>
+        <div class="modal-movie-meta" id="gs-modal-lib-label" style="color:var(--text2)">—</div>
+      </div>
+    </div>
+    <div style="height:1px;background:var(--border);margin:0 22px"></div>
+    <div class="modal-section" style="padding-top:16px;padding-bottom:0">
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">Match your library against the curated Golden Source CSV using TMDB IDs. Only rows with a <code>tmdb_id</code> and <code>source_url</code> will be imported.</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+        <div class="toggle-card" style="cursor:pointer" onclick="document.getElementById('gs-overwrite').click()">
+          <label class="toggle" style="pointer-events:none">
+            <input type="checkbox" id="gs-overwrite">
+            <span class="toggle-track"></span>
+          </label>
+          <div>
+            <div class="toggle-title">Overwrite existing source URLs</div>
+            <div class="toggle-note">Replace source URLs that already exist on a row. Off = keep existing URLs.</div>
+          </div>
+        </div>
+        <div class="toggle-card" style="cursor:pointer" onclick="document.getElementById('gs-approve').click()">
+          <label class="toggle" style="pointer-events:none">
+            <input type="checkbox" id="gs-approve">
+            <span class="toggle-track"></span>
+          </label>
+          <div>
+            <div class="toggle-title">Auto-approve imported matches</div>
+            <div class="toggle-note">Import as APPROVED (ready to download). Off = import as STAGED for manual review.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="gs-result" style="display:none;padding:10px 12px;border-radius:8px;font-size:12px;font-family:var(--mono);margin-bottom:12px;background:var(--green-soft);color:var(--green);border:1px solid var(--green)"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-ghost" onclick="closeGoldenSourceModal()">Cancel</button>
+      <button class="btn btn-amber" id="gs-confirm-btn" onclick="confirmGoldenSourceImport()">★ Import Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MANUAL SEARCH MODAL (3-step) ══════════════ -->
+<div class="modal-overlay" id="search-modal" onclick="if(event.target===this)closeSearchModal()">
+  <div class="modal" style="max-width:640px;position:relative;padding:0;display:flex;flex-direction:column;max-height:92vh">
+
+    <!-- Movie header -->
+    <div class="modal-header" style="flex-shrink:0">
+      <img class="modal-poster" id="search-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
+      <div class="modal-movie-info">
+        <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
+        <div class="modal-movie-meta"><span id="search-modal-year-meta" style="color:var(--text2)"></span></div>
+        <div class="modal-movie-links" id="search-modal-links"></div>
+      </div>
+    </div>
+
+    <!-- Bio -->
+    <div class="modal-bio" id="search-modal-bio" style="display:none"></div>
+
+    <!-- Step rail - TOP -->
+    <div style="display:flex;align-items:center;gap:0;padding:10px 22px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0" id="search-step-rail">
+      <div class="srail-step active" id="srail-1" onclick="_srailClick(1)">
+        <span class="srail-num">1</span><span class="srail-label">Choose Method</span>
+      </div>
+      <div class="srail-sep"></div>
+      <div class="srail-step" id="srail-2" onclick="_srailClick(2)">
+        <span class="srail-num">2</span><span class="srail-label">Review Results</span>
+      </div>
+      <div class="srail-sep"></div>
+      <div class="srail-step" id="srail-3" onclick="_srailClick(3)">
+        <span class="srail-num">3</span><span class="srail-label">Confirm Source</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Choose Method -->
+    <div id="search-step-1" class="search-step-body" style="overflow-y:auto;flex:1">
+      <div class="modal-section" style="padding-bottom:0">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+          <div class="search-method-card active" id="sm-card-playlist" onclick="selectSearchMethod('playlist')">
+            <div class="sm-card-icon">🎵</div>
+            <div class="sm-card-title">Playlist</div>
+            <div class="sm-card-desc">Soundtrack playlists, track 1</div>
+          </div>
+          <div class="search-method-card" id="sm-card-direct" onclick="selectSearchMethod('direct')">
+            <div class="sm-card-icon">🎯</div>
+            <div class="sm-card-title">Direct</div>
+            <div class="sm-card-desc">Single theme/song result</div>
+          </div>
+          <div class="search-method-card" id="sm-card-custom" onclick="selectSearchMethod('custom')">
+            <div class="sm-card-icon">✏️</div>
+            <div class="sm-card-title">Custom</div>
+            <div class="sm-card-desc">Hand-tune your query</div>
+          </div>
+        </div>
+
+        <!-- Query preview + actions -->
+        <div id="sm-query-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Search Query</div>
+          <div id="sm-query-display" style="font-size:13px;font-family:var(--mono);color:var(--text);word-break:break-all"></div>
+          <input id="sm-custom-input" placeholder="Type a custom search query…" style="display:none;width:100%;margin-top:8px;background:var(--surface);border:1px solid var(--amber);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')doSearch()">
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-amber" style="flex:1" onclick="doSearch()">🔍 Search</button>
+          <button class="btn btn-ghost" onclick="doFeelingLucky()" id="sm-lucky-btn">✨ Feeling Lucky</button>
+        </div>
+
+        <!-- Paste URL section -->
+        <div style="border-top:1px solid var(--border);padding-top:14px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">— Or Paste Source URL Directly —</div>
+          <div style="display:flex;gap:8px">
+            <input id="search-paste-url" placeholder="https://www.youtube.com/watch?v=…" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')goToStep3FromPaste()">
+            <button class="btn btn-green btn-sm" onclick="goToStep3FromPaste()">Use URL →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Review Results -->
+    <div id="search-step-2" class="search-step-body" style="display:none;overflow-y:auto;flex:1">
+      <div style="padding:12px 22px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)">Results</div>
+        <div id="sm-results-meta" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></div>
+      </div>
+      <div id="search-results" style="padding:0 22px 16px"></div>
+    </div>
+
+    <!-- Step 3: Confirm Source -->
+    <div id="search-step-3" class="search-step-body" style="display:none;overflow-y:auto;flex:1">
+      <!-- Playback -->
+      <div class="modal-section" style="padding-top:14px;padding-bottom:0">
+        <div class="modal-section-label">Preview</div>
+        <div class="modal-player-row">
+          <button class="play-btn" id="se-play-btn" onclick="seToggle()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <button class="skip-btn" onclick="seSkip(-5)">-5</button>
+          <button class="skip-btn" onclick="seSkip(5)">+5</button>
+          <div class="modal-scrubber-wrap">
+            <input type="range" class="modal-slider" id="se-slider" min="0" max="100" value="0" oninput="seSeek(this.value)">
+            <div class="modal-time-row"><span id="se-cur">0:00</span><span id="se-dur">—</span></div>
+          </div>
+        </div>
+        <audio id="se-audio" style="display:none"></audio>
+        <div class="modal-status-txt" id="se-info" style="padding-left:0;padding-top:3px">Select a result or paste a URL to preview</div>
+      </div>
+
+      <!-- Source URL -->
+      <div class="modal-section" style="padding-top:10px;padding-bottom:0">
+        <div class="modal-section-label">Source URL</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="se-url" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
+          <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">▶ Load</button>
+          <a href="#" style="font-size:11px;color:var(--blue);white-space:nowrap;text-decoration:none;flex-shrink:0" onclick="event.preventDefault();const u=document.getElementById('se-url').value;if(u)window.open(u,'_blank')">↗ Open</a>
+        </div>
+        <div id="se-links" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+
+      <!-- Start Offset -->
+      <div class="modal-section" style="padding-top:10px;padding-bottom:16px">
+        <div class="modal-section-label">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <input type="text" id="se-offset" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="seUpdateTrim()" onblur="normalizeOffsetInput(this)">
+          <div class="offset-steps">
+            <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),5)">▲</button>
+            <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),-5)">▼</button>
+          </div>
+          <div class="modal-trim-result" id="se-trim-result"></div>
+          <button class="btn btn-purple btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer" id="search-modal-footer" style="flex-shrink:0;justify-content:space-between">
+      <button class="btn btn-ghost" id="search-modal-back" onclick="searchModalBack()">← Back</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeSearchModal()">Cancel</button>
+        <button class="btn btn-amber" id="search-modal-primary" onclick="searchModalPrimary()">🔍 Search</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Theme Preview Modal (Database page — ▶ Play on downloaded rows) -->
+<div class="modal-overlay" id="theme-modal" onclick="if(event.target===this)closeThemeModal()">
+  <div class="modal" style="max-width:540px;position:relative;padding:0">
+
+    <!-- Movie header -->
+    <div class="modal-header">
+      <img class="modal-poster" id="theme-modal-poster" src="" onerror="this.style.display='none'">
+      <div class="modal-movie-info">
+        <div class="modal-movie-title" id="theme-modal-title"></div>
+        <div class="modal-movie-meta">
+          <span id="theme-modal-year"></span>
+          <span id="theme-modal-dur-meta" style="color:var(--green)"></span>
+        </div>
+        <div class="modal-movie-links" id="theme-modal-links"></div>
+      </div>
+    </div>
+
+    <!-- Bio -->
+    <div class="modal-bio" id="theme-modal-bio" style="display:none"></div>
+
+    <!-- Section heading -->
+    <div style="padding:14px 22px 10px">
+      <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)">Now Playing</div>
+      <div style="height:1px;background:var(--border)"></div>
+    </div>
+
+    <!-- Playback -->
+    <div class="modal-section" style="padding-top:0;padding-bottom:16px">
+      <div class="modal-player-row">
+        <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
+        <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
+        <div class="modal-scrubber-wrap">
+          <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
+          <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
+        </div>
+      </div>
+      <audio id="theme-modal-audio" style="display:none"></audio>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Trim Editor Modal (My Themes — trim existing local theme file) -->
+<div class="modal-overlay" id="trim-modal" onclick="if(event.target===this)closeTrimModal()">
+  <div class="modal" style="max-width:540px;position:relative;padding:0">
+
+    <!-- ── Movie header ── -->
+    <div class="modal-header">
+      <img class="modal-poster" id="trim-modal-poster" src="" onerror="this.style.display='none'">
+      <div class="modal-movie-info">
+        <div class="modal-movie-title" id="trim-modal-title">Edit Trim</div>
+        <div class="modal-movie-meta"><span id="trim-modal-meta"></span></div>
+        <div class="modal-movie-links" id="trim-modal-links"></div>
+      </div>
+    </div>
+
+    <!-- ── Short bio / duration info ── -->
+    <div class="modal-bio" id="trim-modal-info"></div>
+
+    <!-- ── Section heading ── -->
+    <div style="padding:14px 22px 10px">
+      <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)">Trim Local Theme File</div>
+      <div style="height:1px;background:var(--border)"></div>
+    </div>
+
+    <!-- ── Playback ── -->
+    <div class="modal-section" style="padding-top:0">
+      <div class="modal-section-label">Playback</div>
+      <div class="modal-player-row">
+        <button class="play-btn" id="trim-modal-play" onclick="trimModalTogglePlay()">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button class="skip-btn" onclick="trimModalSkip(-5)">-5</button>
+        <button class="skip-btn" onclick="trimModalSkip(5)">+5</button>
+        <div class="modal-scrubber-wrap">
+          <input type="range" class="modal-slider" id="trim-modal-slider" min="0" max="100" value="0" oninput="trimModalSeek(this.value)">
+          <div class="modal-time-row"><span id="trim-modal-cur">0:00</span><span id="trim-modal-dur">—</span></div>
+        </div>
+      </div>
+      <audio id="trim-modal-audio" style="display:none"></audio>
+    </div>
+
+    <!-- ── Start Offset — inline ── -->
+    <div class="modal-section" style="padding-top:4px;padding-bottom:16px">
+      <div class="modal-section-label">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(seconds or m:ss)</span></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="text" id="trim-modal-offset" value="0" placeholder="mm:ss" inputmode="numeric" style="width:72px" oninput="trimModalUpdateResult()">
+        <div class="modal-trim-result" id="trim-modal-result"></div>
+        <button class="btn btn-purple btn-sm" onclick="trimModalPreview(true)">▶ Preview from offset</button>
+      </div>
+    </div>
+
+    <!-- ── Footer ── -->
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeTrimModal()">Cancel</button>
+      <button class="btn btn-purple" onclick="applyTrimFromModal()">Apply Trim</button>
+    </div>
+  </div>
+</div>
+
+<!-- Source editor is now Step 3 of the search modal above -->
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="delete-modal" onclick="if(event.target===this)closeDeleteModal()">
+  <div class="modal" style="max-width:420px;position:relative">
+    <div class="modal-title">Delete Theme</div>
+    <div style="font-size:13px;color:var(--text2);margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--amber)">PENDING</b> status.</div>
+    <div style="font-size:12px;font-family:var(--mono);color:var(--text3);margin-bottom:16px" id="delete-modal-name"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-red" onclick="confirmDelete()">Delete Theme</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Utils ────────────────────────────────────────────────────────────────────
+const _rawFetch = window.fetch.bind(window);
+let _authPrompted = false;
+function getApiToken(){ return localStorage.getItem('mt-api-token') || ''; }
+function apiUrl(url){
+  const token = getApiToken();
+  if(!token || typeof url!=='string' || !url.startsWith('/api/')) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  return url + sep + 'token=' + encodeURIComponent(token);
+}
+window.fetch = function(input, init){
+  const token = getApiToken();
+  let opts = init || {};
+  if(token){
+    const headers = new Headers(opts.headers || {});
+    headers.set('X-UI-Token', token);
+    opts = {...opts, headers};
+  }
+  let req = input;
+  if(typeof input === 'string'){ req = apiUrl(input); }
+  return _rawFetch(req, opts).then(r=>{
+    if(r.status === 401 && !_authPrompted){
+      _authPrompted = true;
+      const t = prompt('Enter API token');
+      if(t){
+        localStorage.setItem('mt-api-token', t.trim());
+        location.reload();
+      }
+    }
+    return r;
+  });
+};
+
+function showPage(name) {
+  stopAllAudio();
+  const pageEl=document.getElementById('page-'+name);
+  const navEl=document.getElementById('nav-'+name);
+  if(!pageEl || !navEl){ console.warn('Missing page or nav for', name); return; }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  pageEl.classList.add('active');
+  navEl.classList.add('active');
+  if(history && history.replaceState){ history.replaceState(null,'','#'+name); }
+  if(name==='database'){ loadDatabase(); setTimeout(()=>{if(!_dbColsInit){initResizableCols('#page-database table');_dbColsInit=true;}},500); }
+  if(name==='history') loadHistory();
+  if(name==='settings') loadSettings();
+  if(name==='run') loadRunPage();
+  removeItemDetailsPanel();
+}
+
+function removeItemDetailsPanel(){
+  try{
+    const nodes=[...document.querySelectorAll('h1,h2,h3,h4,div,span')].filter(el=>el.textContent.trim()==='Item details');
+    nodes.forEach(el=>{
+      const panel=el.closest('[data-item-details], .item-details, .details-panel, .right-panel, .side-panel, .panel, .card') || el.parentElement;
+      if(panel){ panel.style.display='none'; }
+    });
+  }catch(e){}
+}
+
+let _wasRunning=false;
+async function updateGlobalRunStatus(){
+  try{
+    const r=await fetch('/api/run/status');
+    const d=await r.json();
+    const bar=document.getElementById('global-run');
+    const dot=document.getElementById('global-run-dot');
+    const text=document.getElementById('global-run-text');
+    const sub=document.getElementById('global-run-sub');
+    const dbPill=document.getElementById('db-run-pill');
+    if(d.active){
+      bar.classList.remove('hidden');
+      dot.className='run-dot active';
+      text.textContent='Running';
+      sub.textContent=d.last_line||'Working…';
+      if(dbPill){ dbPill.classList.add('active'); dbPill.innerHTML='<span class="run-dot active"></span><span>Running</span>'; }
+      _wasRunning=true;
+      return;
+    }
+    dot.className='run-dot done';
+    text.textContent='Idle';
+    sub.textContent='';
+    bar.classList.add('hidden');
+    if(dbPill){ dbPill.classList.remove('active'); dbPill.innerHTML='<span class="run-dot"></span><span>Idle</span>'; }
+    if(_wasRunning){
+      _wasRunning=false;
+      loadDatabase(); loadHistory();
+    }
+  }catch(e){}
+}
+
+
+function initSidebarNav(){
+  document.querySelectorAll('.nav-item[data-page]').forEach(item=>{
+    item.addEventListener('click', (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const page=item.dataset.page;
+      if(page) showPage(page);
+    });
+  });
+}
+
+try{
+  document.addEventListener('DOMContentLoaded', ()=>{
+    initSidebarNav();
+    removeItemDetailsPanel();
+    updateGlobalRunStatus();
+    setInterval(updateGlobalRunStatus, 4000);
+    setInterval(removeItemDetailsPanel, 2000);
+    const initial=((location.hash||'').replace(/^#/,'').trim());
+    if(['settings','database','run','history'].includes(initial)){
+      showPage(initial);
+    }
+  });
+}catch(e){}
+
+let _toastT;
+function toast(msg,type='info'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='show '+type;
+  clearTimeout(_toastT); _toastT=setTimeout(()=>t.className='',3000);
+}
+function testBadge(elId, ok, msg){
+  const el=document.getElementById(elId);
+  el.className='test-result '+(ok?'test-ok':'test-fail');
+  el.textContent=(ok?'✓ ':'✗ ')+msg;
+}
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+let _libs=[], _maxDur=45;
+
+async function loadSettings(){
+  const r=await fetch('/api/config'); const cfg=await r.json();
+  ['plex_url','plex_token','tmdb_api_key',
+   'search_mode','search_query_playlist','search_query_direct','golden_source_url',
+   'audio_format','quality_profile','theme_filename','max_retries','download_delay_seconds','test_limit']
+    .forEach(k=>{ const el=document.getElementById('cfg-'+k); if(el) el.value=cfg[k]??''; });
+
+  const fbEl = document.getElementById('cfg-search_fallback');
+  if(fbEl) fbEl.checked = cfg.search_fallback !== false;
+  const matchingModeEl = document.getElementById('cfg-search_matching_mode');
+  if(matchingModeEl) matchingModeEl.value = cfg.search_fuzzy ? 'fuzzy' : 'strict';
+  const goldenOnlyEl = document.getElementById('cfg-search_only_golden');
+  if(goldenOnlyEl) goldenOnlyEl.checked = !!cfg.search_only_golden;
+  syncMatchingModeSelect();
+  const manAuto=document.getElementById('cfg-auto_approve_manual');
+  if(manAuto) manAuto.checked = !!cfg.auto_approve_manual;
+
+  _libs=(cfg.libraries||[{name:cfg.plex_library_name||'Movies',enabled:true}]).map(l=>({...l}));
+  renderLibs();
+  removeItemDetailsPanel();
+
+  // Max duration toggle
+  _maxDur = cfg.max_theme_duration ?? 45;
+  setDuration(_maxDur, true);
+
+  // Cookies
+  await loadCookieOptions(cfg.cookies_file || '');
+}
+
+function onSearchModeChange(){
+  syncMatchingModeSelect();
+}
+
+function syncMatchingModeSelect(){
+  const fb=document.getElementById('cfg-search_fallback');
+  const mode=document.getElementById('cfg-search_matching_mode');
+  const help=document.getElementById('search-matching-help');
+  if(!fb || !mode) return;
+  const fuzzy = mode.value === 'fuzzy';
+  if(fuzzy) fb.checked=false;
+  fb.disabled = fuzzy;
+  const fbLabel=document.getElementById('lbl-search-fallback');
+  if(fbLabel) fbLabel.style.opacity = fuzzy ? '.45' : '1';
+  if(help){
+    help.textContent = fuzzy
+      ? 'Fuzzy matching uses the query and accepts the first result. It turns off fallback search.'
+      : 'Strict matching checks the result title for the movie title terms, the year, and the expected mode wording.';
+  }
+}
+
+function setDuration(val, noSave){
+  _maxDur = val;
+  document.querySelectorAll('.dur-opt').forEach(el=>{
+    el.classList.toggle('active', parseInt(el.dataset.val)===val);
+  });
+  const customInput=document.getElementById('cfg-custom-dur');
+  if(customInput && ![30,45,60,0].includes(val)) customInput.value=val;
+  else if(customInput) customInput.value='';
+}
+
+async function loadCookieOptions(current) {
+  try {
+    const r = await fetch('/api/cookies');
+    const data = await r.json();
+    const sel = document.getElementById('cfg-cookies_file');
+    sel.innerHTML = '<option value="">No cookies file</option>';
+    (data.files || []).forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f; opt.textContent = f.split('/').pop();
+      if (f === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    updateCookieIndicator();
+  } catch(e) { console.error(e); }
+}
+
+function updateCookieIndicator() {
+  const sel = document.getElementById('cfg-cookies_file');
+  const ind = document.getElementById('cookie-indicator');
+  if (sel.value) {
+    ind.className = 'cookie-indicator cookie-ok';
+    ind.textContent = '✓ ' + sel.value.split('/').pop();
+  } else {
+    ind.className = 'cookie-indicator cookie-none';
+    ind.textContent = 'No file selected';
+  }
+}
+
+function slugify(s){ return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'library'; }
+
+function renderLibs(){
+  document.getElementById('lib-list').innerHTML=_libs.map((lib,i)=>{
+    const typeLabel=lib.type==='movie'?'Movie':lib.type==='show'?'TV':'';
+    const typeColor=lib.type==='movie'?'#3b82f6':'#2dd4a0';
+    const typeBg=lib.type==='movie'?'rgba(59,130,246,.15)':'rgba(45,212,160,.15)';
+    const typeBadge=typeLabel?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:${typeBg};color:${typeColor};flex-shrink:0">${typeLabel}</span>`:'';
+    const stateBadge=`<span class="lib-state ${lib.enabled?'on':'off'}">${lib.enabled?'Enabled':'Disabled'}</span>`;
+    return `<div class="lib-row">
+      <label class="toggle">
+        <input type="checkbox" ${lib.enabled?'checked':''} onchange="_libs[${i}].enabled=this.checked;renderLibs()">
+        <span class="toggle-track"></span>
+      </label>
+      <div class="lib-meta">
+        <div class="lib-top">
+          ${typeBadge}
+          <input type="text" value="${lib.name||''}" placeholder="Library name (exact match in Plex)"
+            oninput="_libs[${i}].name=this.value">
+        </div>
+        <div class="lib-bottom">
+          ${stateBadge}
+          <span class="lib-csv">tracks_${slugify(lib.name||'')}.csv</span>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-xs" onclick="_libs.splice(${i},1);renderLibs()" style="flex-shrink:0">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addLibrary(){ _libs.push({name:'',enabled:false}); renderLibs(); }
+
+async function testPlex(){
+  const url=document.getElementById('cfg-plex_url').value;
+  const token=document.getElementById('cfg-plex_token').value;
+  document.getElementById('plex-test-result').innerHTML='<span class="test-result test-pending">Testing…</span>';
+  const r=await fetch('/api/test/plex',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,token})});
+  const d=await r.json();
+  testBadge('plex-test-result', d.ok, d.ok ? `Connected · ${d.libraries} libraries` : d.error);
+}
+
+async function importLibraries(){
+  const url=document.getElementById('cfg-plex_url').value;
+  const token=document.getElementById('cfg-plex_token').value;
+  document.getElementById('lib-import-result').innerHTML='<span class="test-result test-pending">Fetching…</span>';
+  const r=await fetch('/api/plex/libraries',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,token})});
+  const d=await r.json();
+  if(d.ok){
+    const existing=new Set(_libs.map(l=>l.name));
+    let added=0;
+    // d.libraries is now [{name, type}] filtered to movie/show
+    d.libraries.forEach(lib=>{ if(!existing.has(lib.name)){ _libs.push({name:lib.name,type:lib.type,enabled:false}); added++; } });
+    renderLibs();
+    document.getElementById('lib-import-result').innerHTML=`<span class="test-result test-ok">✓ ${added} added (${d.libraries.length} total · movie &amp; TV only)</span>`;
+  } else {
+    testBadge('lib-import-result', false, d.error);
+  }
+}
+
+async function testTmdb(){
+  const key=document.getElementById('cfg-tmdb_api_key').value;
+  document.getElementById('tmdb-test-result').innerHTML='<span class="test-result test-pending">Testing…</span>';
+  const r=await fetch('/api/test/tmdb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});
+  const d=await r.json();
+  testBadge('tmdb-test-result', d.ok, d.ok ? 'API key valid' : d.error);
+}
+
+async function testGoldenSource(){
+  const url=(document.getElementById('cfg-golden_source_url').value||'').trim();
+  const badge=document.getElementById('golden-test-result');
+  const btn=document.getElementById('golden-test-btn');
+  if(!url){ testBadge('golden-test-result', false, 'Enter a Golden Source URL first'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Testing…'; }
+  badge.innerHTML='<span class="test-result test-pending">Testing…</span>';
+  try{
+    const r=await fetch('/api/test/golden-source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const d=await r.json();
+    if(d.ok){
+      testBadge('golden-test-result', true, `Ready · ${d.rows} rows · ${d.fetch_ms} ms`);
+    }else{
+      testBadge('golden-test-result', false, d.error||'Test failed');
+    }
+  }catch(e){
+    testBadge('golden-test-result', false, 'Test failed');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='⚡ Test Golden Source'; }
+  }
+}
+
+async function saveSettings(){
+  const strFields=['plex_url','plex_token','tmdb_api_key',
+    'search_mode','search_query_playlist','search_query_direct','golden_source_url',
+    'cookies_file','audio_format','quality_profile','theme_filename'];
+  const numFields=['max_retries','download_delay_seconds','test_limit'];
+  const cfg={};
+  strFields.forEach(k=>{ const el=document.getElementById('cfg-'+k); if(el) cfg[k]=el.value; });
+  numFields.forEach(k=>{ const el=document.getElementById('cfg-'+k); if(el) cfg[k]=Number(el.value); });
+  cfg.libraries=_libs.filter(l=>l.name.trim());
+  cfg.max_theme_duration = _maxDur;
+  cfg.search_fallback = document.getElementById('cfg-search_fallback').checked;
+  cfg.search_fuzzy = (document.getElementById('cfg-search_matching_mode')?.value || 'strict') === 'fuzzy';
+  cfg.search_only_golden = document.getElementById('cfg-search_only_golden').checked;
+  if(cfg.search_fuzzy) cfg.search_fallback = false;
+  cfg.auto_approve_manual = document.getElementById('cfg-auto_approve_manual').checked;
+  const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
+  if(r.ok){ toast('Configuration saved','ok'); renderLibs(); } else toast('Save failed','err');
+}
+
+// ── Database ─────────────────────────────────────────────────────────────────
+// Shared modal helpers
+function _tmdbLink(title,year){ return 'https://www.themoviedb.org/search?query='+encodeURIComponent(((title||'')+' '+(year||'')).trim()); }
+const _tmdbLookupCache = {};
+async function openTmdb(title, year, evt){
+  if(evt) evt.preventDefault();
+  const key=((title||'')+'|'+(year||'')).toLowerCase();
+  if(_tmdbLookupCache[key]){ window.open(_tmdbLookupCache[key], '_blank'); return false; }
+  try{
+    const r=await fetch(apiUrl('/api/tmdb/lookup?title='+encodeURIComponent(title||'')+'&year='+encodeURIComponent(year||'')));
+    const data=await r.json();
+    if(data.ok && data.url){
+      _tmdbLookupCache[key]=data.url;
+      window.open(data.url,'_blank');
+      return false;
+    }
+  }catch(e){}
+  window.open(_tmdbLink(title,year),'_blank');
+  return false;
+}
+function _tmdbPill(title,year){ return `<a class="modal-link-pill" href="${_tmdbLink(title,year)}" target="_blank" rel="noopener">🎬 TMDB</a>`; }
+function _ytLink(url){ return url?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:''; }
+
+let _rows=[],_filtered=[],_sortCol='title',_sortDir=1,_page=0,_activeLib=null;
+let _rowMap={}; // rating_key → full row object, avoids onclick escaping bugs
+let _selectedKeys=new Set();
+let _lastDbCheckIndex=null;
+const PAGE=80;
+const SC={'PENDING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','DOWNLOADED':'#2dd4a0','FAILED':'#f05252','REJECTED':'#555570','IGNORED':'#f97316','REMOVED':'#3a3a5a'};
+const STATUSES=['PENDING','STAGED','APPROVED','DOWNLOADED','FAILED','REJECTED','IGNORED','REMOVED'];
+const STATUS_DISPLAY={'PENDING':'Pending','STAGED':'Staged','APPROVED':'Approved','DOWNLOADED':'Available','FAILED':'Failed','REJECTED':'Rejected','IGNORED':'Ignored','REMOVED':'Removed'};
+const STATUS_DESC={
+  PENDING:'Queued for search',
+  STAGED:'Source found, awaiting approval',
+  APPROVED:'Ready to download',
+  DOWNLOADED:'Theme saved to disk',
+  FAILED:'Download failed',
+  IGNORED:'Skipped intentionally',
+  REJECTED:'Wrong source',
+  REMOVED:'No longer in library'
+};
+function displayStatus(s){ return STATUS_DISPLAY[s] || s; }
+
+function renderStatusKey(){
+  const el=document.getElementById('status-key');
+  if(!el) return;
+  const groups=[
+    ['PENDING','STAGED','APPROVED','DOWNLOADED'],
+    ['FAILED','IGNORED','REJECTED']
+  ];
+  el.innerHTML=groups.map((grp,gi)=>{
+    const items=grp.map(s=>`<span class="status-key-item"><span class="badge s-${s}" style="font-size:10px;padding:2px 7px"><span class="si"></span>${displayStatus(s)}</span><span class="status-key-desc">${STATUS_DESC[s]||''}</span></span>`).join('');
+    const divider=gi===0?`<span style="width:1px;background:var(--border);align-self:stretch;flex-shrink:0;margin:2px 4px"></span>`:'';
+    return items+divider;
+  }).join('');
+}
+
+async function loadDatabase(syncPeer=true){
+  const cfg=(await (await fetch('/api/config')).json());
+  const allLibs=cfg.libraries||[{name:cfg.plex_library_name||'Movies',enabled:true}];
+  const libs=allLibs.filter(l=>(!l.type||l.type==='movie'||l.type==='show') && l.enabled);
+  const tabs=document.getElementById('lib-tabs');
+  if(!libs.length){
+    tabs.innerHTML='<div class="empty" style="padding:12px 8px">No enabled libraries — toggle one on in Configuration.</div>';
+    document.getElementById('db-tbody').innerHTML='';
+    document.getElementById('db-empty').style.display='block';
+    document.getElementById('db-empty').textContent='No enabled libraries.';
+    return;
+  }
+  if(!_activeLib || !libs.some(l=>l.name===_activeLib)) _activeLib=libs[0].name;
+  tabs.innerHTML=libs.map((lib,i)=>`
+    <div class="tab ${i===0&&!_activeLib||_activeLib===lib.name?'active':''}"
+      data-lib="${lib.name}"
+      onclick="switchLib('${lib.name.replace(/'/g,"\\'")}')">
+      ${lib.name}
+    </div>`).join('');
+  if(!_activeLib) _activeLib=libs[0]?.name;
+  await loadLibRows(_activeLib);
+}
+
+async function switchLib(name){
+  _activeLib=name;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.textContent.trim().replace(' (off)','')===name));
+  await loadLibRows(name);
+}
+
+async function loadLibRows(name){
+  const r=await fetch('/api/ledger?library='+encodeURIComponent(name));
+  _rows=await r.json();
+  // Build map for safe data lookup from action buttons (avoids onclick escaping)
+  _rowMap={};
+  _rows.forEach(row=>{ if(row.rating_key) _rowMap[row.rating_key]=row; });
+  renderChips(); filterTable();
+}
+
+function renderChips(){
+  const counts={};
+  _rows.forEach(r=>counts[r.status]=(counts[r.status]||0)+1);
+  document.getElementById('db-chips').innerHTML=
+    `<div class="chip" onclick="clearDbFilter()"><b style="color:var(--text)">${_rows.length}</b>&nbsp;total</div>`+
+    Object.entries(counts).map(([s,c])=>
+      `<div class="chip" onclick="filterByStatus('${s}')">
+        <div class="chip-dot" style="background:${SC[s]||'#555'}"></div>${c} ${displayStatus(s).toLowerCase()}
+      </div>`).join('');
+  updateDbSummary(counts);
+  updateDbGuide(counts);
+  updateDbActionHints(counts);
+}
+
+function updateDbSummary(counts){ return; }
+
+function updateDbGuide(counts){ return; }
+
+function updateDbActionHints(counts){
+  const pending=counts.PENDING||0;
+  const staged=counts.STAGED||0;
+  const approved=counts.APPROVED||0;
+  const btnResolve=document.getElementById('db-btn-resolve');
+  const btnDownload=document.getElementById('db-btn-download');
+  const btnApproveAll=document.getElementById('db-approve-all');
+  if(btnResolve){
+    btnResolve.disabled=pending===0;
+    btnResolve.title=pending?`Find sources for ${pending} pending items`:'No pending items to resolve';
+  }
+  if(btnDownload){
+    btnDownload.disabled=approved===0;
+    btnDownload.title=approved?`Download ${approved} approved items`:'No approved items to download';
+  }
+  if(btnApproveAll){
+    btnApproveAll.disabled=staged===0;
+    btnApproveAll.title=staged?`Approve ${staged} staged items`:'No staged items to approve';
+  }
+}
+
+function filterByStatus(s){ document.getElementById('db-filter').value=s; filterTable(); }
+function clearDbFilter(){ document.getElementById('db-filter').value=''; document.getElementById('db-search').value=''; filterTable(); }
+
+function filterTable(){
+  const q=(document.getElementById('db-search').value||'').toLowerCase();
+  const st=document.getElementById('db-filter').value;
+  _filtered=_rows.filter(r=>{
+    if(st&&r.status!==st) return false;
+    if(q&&!`${r.title} ${r.plex_title} ${r.status} ${r.url} ${r.notes}`.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  _filtered.sort((a,b)=>{
+    const av=(a[_sortCol]||'').toString().toLowerCase(), bv=(b[_sortCol]||'').toString().toLowerCase();
+    return av<bv?-_sortDir:av>bv?_sortDir:0;
+  });
+  _page=0; renderTable();
+}
+
+let _dbFilterTimer=null;
+function debouncedFilterTable(){
+  clearTimeout(_dbFilterTimer);
+  _dbFilterTimer=setTimeout(()=>filterTable(),150);
+}
+
+function sortTable(col){ if(_sortCol===col)_sortDir*=-1; else{_sortCol=col;_sortDir=1;} filterTable(); }
+
+// ── Audio player ─────────────────────────────────────────────────────────────
+let _curAudio=null, _curKey=null;
+const _audioEl=()=>document.getElementById('global-audio');
+
+function renderStatusCell(rk,status){
+  const opts=STATUSES.map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
+  return `<span class="badge s-${status}" title="${STATUS_DESC[status]||''}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value);this.closest('td').innerHTML=renderStatusCell('${rk}',this.value)">${opts}</select>${displayStatus(status)}</span>`;
+}
+
+function _htmlAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function renderThemeBtn(row){
+  if(row.status==='DOWNLOADED' || row.status==='AVAILABLE'){
+    const rk=_htmlAttr(row.rating_key);
+    const folder=_htmlAttr(row.folder||'');
+    const title=_htmlAttr(row.title||row.plex_title||'');
+    const year=_htmlAttr(row.year||'');
+    return `<div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-green btn-xs action-icon"
+        data-action="play-theme" data-rk="${rk}" data-folder="${folder}" data-title="${title}" data-year="${year}"
+        onclick="_playTheme(this)" title="Play theme">▶</button>
+      <button class="btn btn-red btn-xs action-icon"
+        data-action="delete-theme" data-rk="${rk}" data-folder="${folder}" data-title="${title}"
+        onclick="_deleteTheme(this)" title="Delete local theme">✕</button>
+    </div>`;
+  }
+  return '<span class="no-theme">—</span>';
+}
+
+// Safe action helpers — read data from DOM attributes, _rowMap is secondary fallback
+function _playTheme(btn){
+  const rk=btn.dataset.rk;
+  const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
+  const title=row?(row.title||row.plex_title||''):btn.dataset.title||'';
+  const year=row?row.year||'':btn.dataset.year||'';
+  const folder=row?row.folder||'':btn.dataset.folder||'';
+  openThemeModal(rk, title, year, folder);
+}
+function _deleteTheme(btn){
+  const rk=btn.dataset.rk;
+  const folder=btn.dataset.folder||'';
+  // Belt + suspenders: try _rowMap first, then _rows array, then fall back to data attrs
+  const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
+  const title=row?(row.title||row.plex_title||''):btn.dataset.title||rk;
+  const resolvedFolder=row?.folder||folder;
+  if(!rk && !resolvedFolder){
+    toast('Cannot identify item — try reloading the page','err');
+    return;
+  }
+  openDeleteModal(rk||'', title, _activeLib||'', resolvedFolder);
+}
+function _openTmdbRow(rk, evt){
+  const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
+  if(!row) return true;
+  return openTmdb(row.title||row.plex_title||'', row.year||'', evt);
+}
+
+function renderSourceBtn(row){
+  const rk=_htmlAttr(row.rating_key);
+  const url=_htmlAttr(row.url||'');
+  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
+  const preview=row.url?`<button class="btn btn-purple btn-xs action-icon"
+    data-action="preview-source" data-rk="${rk}" data-url="${url}"
+    onclick="_previewSource(this)" title="Preview source">▶</button>`:'';
+  const dlNow=(row.url && !hasTheme)?`<button class="btn btn-green btn-xs action-icon"
+    data-action="download-now" data-rk="${rk}"
+    onclick="_downloadNow(this)" title="Download now">↓</button>`:'';
+  const manual=`<button class="btn btn-ghost btn-xs action-icon"
+    data-action="manual-search" data-rk="${rk}"
+    onclick="_manualSearch(this)" title="Manual search">🔍</button>`;
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap">${preview}${dlNow}${manual}</div>`;
+}
+
+function _previewSource(btn){
+  const rk=btn.dataset.rk;
+  const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
+  const url=(row?.url)||btn.dataset.url||'';
+  if(!url) return;
+  const title=row?(row.title||row.plex_title||''):'';
+  const year=row?row.year||'':'';
+  openYtModal(rk, title, year, url, encodeURIComponent(_activeLib||''));
+}
+function _downloadNow(btn){
+  const rk=btn.dataset.rk;
+  const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
+  if(!row) return;
+  downloadNow(rk, row.title||row.plex_title||'', _activeLib||'');
+}
+function _manualSearch(btn){
+  const rk=btn.dataset.rk;
+  const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
+  if(!row) return;
+  openSearchModal(rk, row.title||row.plex_title||'', row.year||'', encodeURIComponent(_activeLib||''));
+}
+
+function renderUrlInput(row){
+  let html='';
+  if(row.url){
+    html+=`<a href="${row.url}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px;margin-right:4px" title="Open in YouTube">↗</a>`;
+  }
+  html+=`<input class="inline-ed" value="${(row.url||'').replace(/"/g,'&quot;')}" placeholder="paste URL…" style="min-width:100px;max-width:160px;font-size:10px" onblur="updateRowAndRefresh('${row.rating_key}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
+  return html;
+}
+
+function togglePlay(key,src,btn){
+  const audio=_audioEl();
+  if(_curKey===key){
+    if(audio.paused){ audio.play(); btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'; }
+    else { audio.pause(); btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; }
+    return;
+  }
+  stopAllAudio();
+  _curKey=key;
+  audio.src=apiUrl(src);
+  audio.play();
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+  audio.ontimeupdate=()=>{
+    const pct=audio.duration?(audio.currentTime/audio.duration*100):0;
+    const fill=document.getElementById('fill-'+key);
+    const timeEl=document.getElementById('time-'+key);
+    if(fill) fill.style.width=pct+'%';
+    if(timeEl) timeEl.textContent=fmt(audio.currentTime)+(audio.duration?' / '+fmt(audio.duration):'');
+  };
+  audio.onended=()=>{ stopCurrentAudio(); };
+}
+
+function stopCurrentAudio(){
+  if(!_curKey) return;
+  const audio=_audioEl(); audio.pause(); audio.ontimeupdate=null; audio.onended=null;
+  // Reset ALL play buttons to play icon (fixes visual glitch across pages)
+  document.querySelectorAll('.play-btn').forEach(btn=>{
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  });
+  const oldFill=document.getElementById('fill-'+_curKey);
+  if(oldFill) oldFill.style.width='0%';
+  const oldTime=document.getElementById('time-'+_curKey);
+  if(oldTime) oldTime.textContent='0:00';
+  _curKey=null;
+}
+
+function stopAllAudio(keepId){
+  stopCurrentAudio();
+  const ga=_audioEl();
+  if(ga){ ga.pause(); }
+  const keep = new Set(Array.isArray(keepId) ? keepId : (keepId ? [keepId] : []));
+  ['yt-modal-audio','theme-modal-audio','trim-modal-audio','se-audio'].forEach(id=>{
+    if(keep.has(id)) return;
+    const a=document.getElementById(id);
+    if(a){ a.pause(); a.onloadedmetadata=null; a.ontimeupdate=null; a.onended=null; a.src=''; }
+  });
+  resetActivePreviewBtn();
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) stopAllAudio();
+});
+window.addEventListener('blur',()=>{ stopAllAudio(); });
+
+function skipAudio(key, secs){
+  if(_curKey!==key) return;
+  const audio=_audioEl();
+  if(!audio.duration) return;
+  audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + secs));
+}
+
+function seekAudio(e,bar,key){
+  if(_curKey!==key) return;
+  const audio=_audioEl(); if(!audio.duration) return;
+  const rect=bar.getBoundingClientRect();
+  audio.currentTime=(e.clientX-rect.left)/rect.width*audio.duration;
+}
+
+function fmt(s){ const m=Math.floor(s/60),sec=Math.floor(s%60); return m+':'+(sec<10?'0':'')+sec; }
+function parseTrim(val){
+  // Accepts: "80" (seconds), "1:20" (1m 20s = 80s), "02:30" (2m 30s = 150s)
+  if(typeof val==='number') return val;
+  val=String(val).trim();
+  if(val.includes(':')){
+    const parts=val.split(':');
+    return (parseInt(parts[0])||0)*60+(parseInt(parts[1])||0);
+  }
+  return parseInt(val)||0;
+}
+
+function normalizeOffsetInput(el){
+  if(!el) return 0;
+  const s=parseTrim(el.value||'0');
+  el.value=fmt(Math.max(0,s));
+  return s;
+}
+
+function adjustOffset(el, delta){
+  if(!el) return;
+  const cur=parseTrim(el.value||0);
+  const next=Math.max(0, cur + (delta||0));
+  el.value=fmt(next);
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+}
+
+function bindOffsetWheel(){
+  if(window._offsetWheelBound) return;
+  window._offsetWheelBound=true;
+  document.addEventListener('wheel', (e)=>{
+    const el=e.target;
+    if(el && el.classList && el.classList.contains('offset-input')){
+      e.preventDefault();
+      adjustOffset(el, e.deltaY<0 ? 5 : -5);
+    }
+  }, {passive:false});
+}
+
+async function previewUrl(key, encodedUrl){
+  const url = decodeURIComponent(encodedUrl);
+  toast('Fetching preview…','info');
+  try {
+    const r = await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    if(!r.ok){ toast('Preview failed','err'); return; }
+    const data = await r.json();
+    if(!data.ok){ toast(data.error||'Preview failed','err'); return; }
+    // Play the preview audio
+    const audio = _audioEl();
+    stopAllAudio();
+    _curKey = key;
+    audio.src = apiUrl(data.audio_url);
+    audio.play();
+    toast('Playing preview','ok');
+    // Update time display if player exists
+    audio.ontimeupdate=()=>{
+      const timeEl=document.getElementById('time-'+key);
+      if(timeEl) timeEl.textContent=fmt(audio.currentTime)+(audio.duration?' / '+fmt(audio.duration):'');
+    };
+    audio.onended=()=>{ _curKey=null; };
+  } catch(e){ toast('Preview error','err'); }
+}
+
+// ── Table render ─────────────────────────────────────────────────────────────
+function renderTable(){
+  const start=_page*PAGE, slice=_filtered.slice(start,start+PAGE);
+  const tbody=document.getElementById('db-tbody');
+  const empty=document.getElementById('db-empty');
+  if(!_filtered.length){
+    tbody.innerHTML=''; 
+    const q=(document.getElementById('db-search').value||'').trim();
+    const st=document.getElementById('db-filter').value;
+    const hasFilter=!!(q||st);
+    empty.innerHTML=hasFilter
+      ? `No matches for the current filters. <button class="btn btn-ghost btn-xs" onclick="clearDbFilter()">Clear filters</button>`
+      : `No items yet. <button class="btn btn-ghost btn-xs" onclick="dbRunPass(1)">⟳ Scan Library</button>`;
+    empty.style.display='block'; 
+    document.getElementById('db-pag').innerHTML='';
+    return;
+  }
+  empty.style.display='none';
+  tbody.innerHTML=slice.map(row=>{
+    const rk=row.rating_key;
+    const opts=STATUSES.map(s=>`<option value="${s}"${row.status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
+    const checked=_selectedKeys.has(rk)?'checked':'';
+    const rawTitle=(row.title||row.plex_title||'');
+    const titleAttr=rawTitle.replace(/"/g,'&quot;');
+    const safeUrlAttr=(row.url||'').replace(/"/g,'&quot;');
+    const off=fmt(parseTrim(row.start_offset||0));
+    const tmdbHref=_tmdbLink(row.title||row.plex_title,row.year);
+    return `<tr>
+      <td><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
+      <td style="font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${titleAttr}">
+        <a class="media-title-link" href="${tmdbHref}" onclick="return _openTmdbRow('${rk}',event)" target="_blank" rel="noopener">${rawTitle}</a>
+      </td>
+      <td style="color:var(--text3)">${row.year||''}</td>
+      <td>
+        <span class="badge s-${row.status}" style="cursor:pointer;position:relative">
+          <span class="si"></span>
+          <select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value);this.closest('td').innerHTML=renderStatusCell('${rk}',this.value)">
+            ${opts}
+          </select>
+          ${displayStatus(row.status)}
+        </span>
+      </td>
+      <td>${renderThemeBtn(row)}</td>
+      <td>${renderSourceBtn(row)}</td>
+      <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px;margin-right:4px" title="${safeUrlAttr}">↗</a>`:''}
+        <input class="inline-ed" value="${safeUrlAttr}" placeholder="paste URL…" style="min-width:80px;max-width:140px;font-size:10px" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+      <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:74px;font-size:11px"
+        onblur="saveOffsetInput('${rk}',this)"
+        onkeydown="if(event.key==='Enter')this.blur()"></td>
+      <td style="color:var(--text3);white-space:nowrap;font-size:10px;font-family:var(--mono)">${(row.last_updated||'').slice(5,16)}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3);font-size:10px;font-family:var(--mono)" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const tot=Math.ceil(_filtered.length/PAGE);
+  document.getElementById('db-pag').innerHTML=tot<=1
+    ?`<span>${_filtered.length} movies</span>`
+    :`<button class="pag-btn" onclick="goPage(${_page-1})" ${_page===0?'disabled':''}>← Prev</button>
+      <span>Page ${_page+1} of ${tot} · ${_filtered.length} movies</span>
+      <button class="pag-btn" onclick="goPage(${_page+1})" ${_page>=tot-1?'disabled':''}>Next →</button>`;
+}
+
+function goPage(p){ _page=p; renderTable(); window.scrollTo(0,0); }
+
+async function updateRow(key,field,value,selEl){
+  const row=_rows.find(r=>r.rating_key===key);
+  if(row){
+    row[field]=value;
+    if(_rowMap[key]) _rowMap[key][field]=value; // keep map in sync
+  }
+  const r=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(_activeLib),{
+    method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:value})
+  });
+  if(r.ok){
+    toast('Saved','ok');
+    renderChips();
+    renderTable();
+    
+  } else toast('Save failed','err');
+}
+
+async function updateRowAndRefresh(key,field,value){
+  await updateRow(key,field,value);
+  // Re-render to show YouTube button if URL was added
+  loadDatabase();
+}
+
+async function saveOffsetInput(key, el){
+  const s=normalizeOffsetInput(el);
+  await updateRow(key,'start_offset',s);
+}
+
+async function bulkApprove(){
+  const staged=_rows.filter(r=>r.status==='STAGED');
+  if(!staged.length){ toast('No staged movies','info'); return; }
+  const r=await fetch('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({keys:staged.map(r=>r.rating_key),status:'APPROVED'})
+  });
+  if(r.ok){
+    const d=await r.json();
+    const updated=d.updated ?? staged.length;
+    const skipped=d.skipped ?? 0;
+    toast(`Approved ${updated} staged${skipped?` · ${skipped} skipped`:''}`,'ok');
+    loadDatabase();
+  } else toast('Failed','err');
+}
+
+async function dbDownloadApproved(){
+  const approved=_rows.filter(r=>r.status==='APPROVED');
+  if(!approved.length){ toast('No approved items','info'); return; }
+  dbRunPass(3);
+}
+
+
+async function importGoldenSource(){
+  if(!_activeLib){ toast('Select a library first','info'); return; }
+  openGoldenSourceModal(_activeLib);
+}
+
+async function downloadNow(rk, title, lib){
+  const row = _rows.find(r=>r.rating_key===rk);
+  if(!row){ toast('Row not found','err'); return; }
+  if(!row.url){ toast('No source URL on this row — add a source first','info'); return; }
+  if(!confirm(`Download theme now for:\n${title}\n\nSource: ${row.url}\n\nThis will save the theme file immediately.`)) return;
+  toast('Downloading…','info');
+  const r = await fetch('/api/theme/download-now',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({rating_key:rk, library:lib||_activeLib})
+  });
+  const data = await r.json();
+  if(data.ok){ toast(data.message||'Downloaded','ok'); loadDatabase(); }
+  else toast(data.error||'Download failed','err');
+}
+
+
+function toggleRowSelect(key,cb,evt){
+  const idx=_filtered.findIndex(r=>r.rating_key===key);
+  if(evt && evt.shiftKey && _lastDbCheckIndex!==null && idx!==-1){
+    const start=Math.min(_lastDbCheckIndex, idx);
+    const end=Math.max(_lastDbCheckIndex, idx);
+    for(let i=start;i<=end;i++){
+      const rk=_filtered[i].rating_key;
+      if(cb.checked) _selectedKeys.add(rk); else _selectedKeys.delete(rk);
+    }
+  }else{
+    if(cb.checked) _selectedKeys.add(key); else _selectedKeys.delete(key);
+  }
+  _lastDbCheckIndex=idx;
+  updateBulkBar();
+  renderTable();
+}
+
+function toggleAllSelect(masterCb){
+  _filtered.forEach(row=>{ if(masterCb.checked) _selectedKeys.add(row.rating_key); else _selectedKeys.delete(row.rating_key); });
+  _lastDbCheckIndex=null;
+  renderTable(); updateBulkBar();
+}
+
+function selectAllVisible(){
+  const start=_page*PAGE, slice=_filtered.slice(start,start+PAGE);
+  slice.forEach(row=>_selectedKeys.add(row.rating_key));
+  updateBulkBar(); renderTable();
+}
+
+function updateBulkBar(){
+  const bar=document.getElementById('db-bulk-bar');
+  const countEl=document.getElementById('db-bulk-count');
+  if(_selectedKeys.size>0){ bar.classList.add('active'); countEl.textContent=_selectedKeys.size+' selected'; }
+  else bar.classList.remove('active');
+  const approveBtn=document.getElementById('db-bulk-approve');
+  const clearSel=document.getElementById('db-clear-sel');
+  const selectedWithUrl=[..._selectedKeys].some(k=>{
+    const row=_rows.find(r=>r.rating_key===k);
+    return row && row.url;
+  });
+  const selectedStaged=[..._selectedKeys].some(k=>{
+    const row=_rows.find(r=>r.rating_key===k);
+    return row && row.status==='STAGED';
+  });
+  if(approveBtn){
+    approveBtn.disabled=!selectedStaged;
+    approveBtn.title=selectedStaged?'Approve selected staged items':'Only staged items can be approved';
+  }
+  if(clearSel) clearSel.disabled=!selectedWithUrl;
+  if(clearSel) clearSel.title=selectedWithUrl?'Clear source URLs for selected items':'Select items with source URLs to clear';
+  const master=document.getElementById('db-select-all');
+  if(master && _filtered.length){
+    const allSelected=_filtered.every(r=>_selectedKeys.has(r.rating_key));
+    const someSelected=_filtered.some(r=>_selectedKeys.has(r.rating_key));
+    master.checked=allSelected; master.indeterminate=someSelected&&!allSelected;
+  }
+}
+
+function clearSelection(){ _selectedKeys.clear(); _lastDbCheckIndex=null; renderTable(); updateBulkBar(); }
+
+async function bulkSetStatus2(status){
+  if(!_selectedKeys.size){ toast('Nothing selected','info'); return; }
+  const keys=[..._selectedKeys];
+  const r=await fetch('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({keys,status})
+  });
+  if(r.ok){
+    const d=await r.json();
+    const updated=d.updated ?? keys.length;
+    const skipped=d.skipped ?? 0;
+    toast(`${updated} items → ${status}${skipped?` · ${skipped} skipped`:''}`,'ok');
+    clearSelection(); loadDatabase();
+  }
+  else toast('Bulk update failed','err');
+}
+
+async function clearSourcesSelected(){
+  const keys=[..._selectedKeys];
+  const rows=_rows.filter(r=>keys.includes(r.rating_key));
+  if(!rows.length){ toast('Nothing selected','info'); return; }
+  if(!confirm(`Clear source URLs for ${rows.length} selected items?`)) return;
+  await Promise.all(rows.map(r=>fetch('/api/ledger/'+r.rating_key+'?library='+encodeURIComponent(_activeLib),{
+    method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({url:'',status:'PENDING',notes:'Source cleared via Database'})
+  })));
+  clearSelection(); loadDatabase(); 
+}
+
+// ── DB Run buttons with progress ─────────────────────────────────────────────
+let _dbEvtSrc=null, _dbPollTimer=null, _dbLastProgress=0;
+
+function _dbStopPoll(){ clearInterval(_dbPollTimer); _dbPollTimer=null; }
+
+function _dbStartPoll(btns, prog){
+  // Fallback: poll /api/run/status every 2s in case SSE stalls
+  _dbStopPoll();
+  _dbPollTimer=setInterval(async()=>{
+    try{
+      const d=await(await fetch('/api/run/status')).json();
+      if(!d.active){
+        // Run finished — clean up even if SSE missed __DONE__
+        _dbStopPoll();
+        if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
+        btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=false; });
+        if(prog) prog.classList.remove('active');
+        loadDatabase(); loadHistory();
+        return;
+      }
+      // Update label from last_line if SSE seems stalled (no SSE event in 4s)
+      if(d.last_line && Date.now()-_dbLastProgress > 4000){
+        const label=document.getElementById('db-progress-label');
+        if(label) label.textContent=d.last_line.slice(0,140);
+      }
+    }catch(e){}
+  }, 2000);
+}
+
+function dbRunPass(passNum){
+  const btns=['db-btn-scan','db-btn-resolve','db-btn-download'];
+  btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=true; });
+  const labels={1:'Scanning…',2:'Finding sources…',3:'Downloading…'};
+
+  const prog=document.getElementById('db-progress');
+  prog.classList.add('active');
+  document.getElementById('db-progress-label').textContent=labels[passNum];
+  document.getElementById('db-progress-fill').style.width='0%';
+  _dbLastProgress=Date.now();
+
+  fetch('/api/run/pass/'+passNum,{method:'POST'});
+
+  function _connectSse(){
+    if(_dbEvtSrc){ _dbEvtSrc.close(); }
+    _dbEvtSrc=new EventSource(apiUrl('/api/run/stream'));
+    _dbEvtSrc.onmessage=e=>{
+      _dbLastProgress=Date.now();
+      if(e.data==='__DONE__'){
+        _dbEvtSrc.close(); _dbEvtSrc=null;
+        _dbStopPoll();
+        btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=false; });
+        prog.classList.remove('active');
+        loadDatabase(); loadHistory();
+        return;
+      }
+      if(e.data.startsWith('@@PROGRESS@@')){
+        try{
+          const p=JSON.parse(e.data.slice(12));
+          const pct=p.total>0?Math.round(p.current/p.total*100):0;
+          document.getElementById('db-progress-fill').style.width=pct+'%';
+          if(p.action==='error'){
+            document.getElementById('db-progress-label').textContent=p.message||'Error';
+            toast(p.message||'Scan failed','err');
+          }else{
+            document.getElementById('db-progress-label').textContent=
+              `${p.current}/${p.total} ${p.action} "${p.title}"`;
+          }
+        }catch(ex){}
+        return;
+      }
+      const label=document.getElementById('db-progress-label');
+      if(label && e.data) label.textContent=e.data.slice(0,140);
+    };
+    _dbEvtSrc.onerror=()=>{
+      // SSE disconnected — reconnect after short delay, polling will cover the gap
+      if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
+      setTimeout(()=>{
+        // Only reconnect if a run is still active
+        fetch('/api/run/status').then(r=>r.json()).then(d=>{
+          if(d.active) _connectSse();
+          else{
+            _dbStopPoll();
+            btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=false; });
+            prog.classList.remove('active');
+            loadDatabase(); loadHistory();
+          }
+        }).catch(()=>{});
+      }, 1500);
+    };
+  }
+
+  _connectSse();
+  _dbStartPoll(btns, prog);
+}
+
+let _mediaEvtSrc=null;
+function mediaRunPass(passNum){
+  const btn=document.querySelector('#page-media .page-head .btn.btn-ghost');
+  if(btn) btn.disabled=true;
+  const labels={1:'Scanning…',2:'Finding sources…',3:'Downloading…'};
+  const prog=document.getElementById('media-progress');
+  prog.classList.add('active');
+  document.getElementById('media-progress-label').textContent=labels[passNum];
+  document.getElementById('media-progress-fill').style.width='0%';
+  fetch('/api/run/pass/'+passNum,{method:'POST'});
+  if(_mediaEvtSrc) _mediaEvtSrc.close();
+  _mediaEvtSrc=new EventSource(apiUrl('/api/run/stream'));
+  _mediaEvtSrc.onmessage=e=>{
+    if(e.data==='__DONE__'){
+      _mediaEvtSrc.close(); if(btn) btn.disabled=false;
+      prog.classList.remove('active');
+      loadDatabase(); loadHistory();
+      return;
+    }
+    if(e.data.startsWith('@@PROGRESS@@')){
+      try{
+        const p=JSON.parse(e.data.slice(12));
+        const pct=p.total>0?Math.round(p.current/p.total*100):0;
+        document.getElementById('media-progress-fill').style.width=pct+'%';
+        if(p.action==='error'){
+          document.getElementById('media-progress-label').textContent=p.message||'Error';
+          toast(p.message||'Scan failed','err');
+        }else{
+          document.getElementById('media-progress-label').textContent=
+            `${p.current}/${p.total} ${p.action} "${p.title}"`;
+        }
+      }catch(ex){}
+      return;
+    }
+    const label=document.getElementById('media-progress-label');
+    if(label && e.data) label.textContent=e.data.slice(0,140);
+  };
+  _mediaEvtSrc.onerror=()=>{
+    _mediaEvtSrc.close(); if(btn) btn.disabled=false;
+    prog.classList.remove('active');
+  };
+}
+
+// ── Bio cache ────────────────────────────────────────────────────────────────
+const _bioCache={};
+function _currentLib(){
+  return document.getElementById('lib-tabs')?.querySelector('.tab.active')?.dataset?.lib||_activeLib||'';
+}
+async function fetchBio(rk){
+  if(_bioCache[rk]!==undefined) return _bioCache[rk];
+  try{
+    const lib=_currentLib();
+    const qs='key='+encodeURIComponent(rk)+(lib?'&library='+encodeURIComponent(lib):'');
+    const r=await fetch('/api/movie/bio?'+qs);
+    const d=await r.json();
+    _bioCache[rk]=d.summary||'';
+    return _bioCache[rk];
+  }catch{ _bioCache[rk]=''; return ''; }
+}
+async function setBio(elId,rk){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  if(!rk){el.style.display='none';return;}
+  const bio=await fetchBio(rk);
+  if(bio){el.textContent=bio;el.style.display='';}
+  else{el.style.display='none';}
+}
+
+// ── Media page ───────────────────────────────────────────────────────────────
+let _mediaRows=[],_mediaFiltered=[],_mediaPage=0,_mediaSortCol='title',_mediaSortDir=1;
+let _deleteKey=null,_deleteLib='',_deleteFolder='';
+
+function openDeleteModal(rk,title,lib,folder=''){
+  _deleteKey=rk;
+  _deleteLib=lib||_activeLib||'';
+  _deleteFolder=folder||'';
+  document.getElementById('delete-modal-name').textContent=title;
+  document.getElementById('delete-modal').classList.add('open');
+}
+function closeDeleteModal(){
+  document.getElementById('delete-modal').classList.remove('open');
+  _deleteKey=null; _deleteLib=''; _deleteFolder='';
+  stopAllAudio();
+}
+async function confirmDelete(){
+  if(!_deleteKey) return;
+  const lib=_deleteLib||_activeLib||'';
+  closeDeleteModal();
+  toast('Deleting…','info');
+  const r=await fetch('/api/theme/delete',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({rating_key:_deleteKey,library:lib,folder:_deleteFolder})
+  });
+  const data=await r.json();
+  if(data.ok){toast(data.message||'Deleted','ok');stopCurrentAudio();loadDatabase();}
+  else toast(data.error||'Failed','err');
+}
+
+
+// ── Golden Source Modal ───────────────────────────────────────────────────────
+function openGoldenSourceModal(lib){
+  document.getElementById('gs-modal-lib-label').textContent = `Library: ${lib}`;
+  document.getElementById('gs-overwrite').checked = false;
+  document.getElementById('gs-approve').checked = false;
+  const res = document.getElementById('gs-result');
+  res.style.display = 'none'; res.textContent = '';
+  document.getElementById('gs-confirm-btn').disabled = false;
+  document.getElementById('gs-confirm-btn').textContent = '★ Import Now';
+  document.getElementById('gs-modal').classList.add('open');
+}
+function closeGoldenSourceModal(){
+  document.getElementById('gs-modal').classList.remove('open');
+}
+async function confirmGoldenSourceImport(){
+  if(!_activeLib) return;
+  const overwrite = document.getElementById('gs-overwrite').checked;
+  const autoApprove = document.getElementById('gs-approve').checked;
+  const btn = document.getElementById('gs-confirm-btn');
+  const dbBtn = document.getElementById('db-btn-golden');
+  btn.disabled = true; btn.textContent = 'Importing…';
+  if(dbBtn){ dbBtn.disabled = true; dbBtn.textContent = 'Importing…'; }
+  try{
+    const r = await fetch('/api/golden-source/import',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({library:_activeLib, overwrite_existing:overwrite, auto_approve:autoApprove})
+    });
+    const data = await r.json().catch(()=>({ok:false,error:'Invalid response'}));
+    const res = document.getElementById('gs-result');
+    if(!r.ok || !data.ok){
+      res.style.cssText = 'display:block;padding:10px 12px;border-radius:8px;font-size:12px;font-family:var(--mono);margin-bottom:12px;background:var(--red-soft);color:var(--red);border:1px solid var(--red)';
+      res.textContent = '✗ ' + (data.error || 'Import failed');
+      btn.disabled = false; btn.textContent = '★ Retry';
+      return;
+    }
+    res.style.cssText = 'display:block;padding:10px 12px;border-radius:8px;font-size:12px;font-family:var(--mono);margin-bottom:12px;background:var(--green-soft);color:var(--green);border:1px solid var(--green)';
+    res.textContent = `✓ Imported ${data.imported} · Kept ${data.skipped_existing} existing · ${data.no_match} unmatched · ${data.fetch_ms||0}ms fetch`;
+    btn.textContent = '✓ Done'; btn.disabled = true;
+    toast(`Golden Source: ${data.imported} imported · ${data.skipped_existing} kept · ${data.no_match} unmatched`,'ok');
+    loadDatabase();
+    setTimeout(()=>closeGoldenSourceModal(), 1800);
+  } finally {
+    if(dbBtn){ dbBtn.disabled = false; dbBtn.textContent = '★ Import Golden Source'; }
+  }
+}
+
+// ── 3-Step Search Modal ───────────────────────────────────────────────────────
+let _searchKey=null,_searchTitle='',_searchYear='',_searchLib='';
+let _searchMethod='playlist',_searchCustomQuery='';
+let _searchResults=[];
+let _searchCurrentStep=1;
+let _autoApproveManual=false;
+let _seKey=null,_seLib='';
+// Persistent state so Back works
+let _lastSearchResults=[];
+let _lastSearchMethod='playlist';
+
+function buildSearchQuery(method,title,year){
+  const base=((title||'')+' '+(year||'')).trim();
+  if(method==='playlist') return (base+' soundtrack playlist').trim();
+  if(method==='direct') return (base+' theme song').trim();
+  return _searchCustomQuery || base;
+}
+
+function _updateQueryDisplay(){
+  const q = buildSearchQuery(_searchMethod,_searchTitle,_searchYear);
+  const disp = document.getElementById('sm-query-display');
+  const inp = document.getElementById('sm-custom-input');
+  const lucky = document.getElementById('sm-lucky-btn');
+  if(_searchMethod==='custom'){
+    if(disp) disp.style.display='none';
+    if(inp){ inp.style.display=''; inp.value=_searchCustomQuery||q; }
+    if(lucky) lucky.style.display='none';
+  } else {
+    if(disp){ disp.style.display=''; disp.textContent=q; }
+    if(inp) inp.style.display='none';
+    if(lucky) lucky.style.display='';
+  }
+}
+
+function selectSearchMethod(method){
+  _searchMethod=method;
+  ['playlist','direct','custom'].forEach(m=>{
+    const card=document.getElementById('sm-card-'+m);
+    if(card) card.classList.toggle('active',m===method);
+  });
+  _updateQueryDisplay();
+  _setSearchFooter(1);
+}
+
+function _srailClick(step){
+  if(step===1) goToSearchStep(1);
+  else if(step===2 && _lastSearchResults.length) goToSearchStep(2);
+  else if(step===3 && document.getElementById('se-url')?.value?.trim()) goToSearchStep(3);
+}
+
+function _setStepRail(step){
+  [1,2,3].forEach(n=>{
+    const el=document.getElementById('srail-'+n);
+    if(!el) return;
+    el.classList.remove('active','done');
+    if(n<step) el.classList.add('done');
+    else if(n===step) el.classList.add('active');
+  });
+}
+
+function _setSearchFooter(step){
+  const back = document.getElementById('search-modal-back');
+  const primary = document.getElementById('search-modal-primary');
+  if(!back || !primary) return;
+  if(step===1){
+    back.style.display='none';
+    primary.textContent='🔍 Search';
+    primary.className='btn btn-amber';
+    primary.onclick=doSearch;
+  } else if(step===2){
+    back.style.display='';
+    primary.textContent='Select First Result';
+    primary.className='btn btn-ghost';
+    primary.onclick=()=>{ if(_lastSearchResults.length) goToStep3(_lastSearchResults[0].url); };
+  } else if(step===3){
+    back.style.display='';
+    primary.textContent=_autoApproveManual?'Approve + Save':'Save Source';
+    primary.className='btn btn-amber';
+    primary.onclick=saveSourceEditor;
+  }
+}
+
+function goToSearchStep(step){
+  _searchCurrentStep=step;
+  [1,2,3].forEach(n=>{
+    const el=document.getElementById('search-step-'+n);
+    if(el) el.style.display=(n===step)?'':'none';
+  });
+  _setStepRail(step);
+  _setSearchFooter(step);
+}
+
+async function openSearchModal(rk,title,year,lib){
+  stopAllAudio();
+  _searchKey=rk; _searchTitle=title; _searchYear=year;
+  _searchLib=lib?decodeURIComponent(lib):'';
+  _seKey=rk; _seLib=_searchLib||_activeLib||'';
+  const cfg=await(await fetch('/api/config')).json();
+  _autoApproveManual = !!cfg.auto_approve_manual;
+  const defaultMethod=(cfg.search_mode||'playlist')==='playlist'?'playlist':'direct';
+  _searchMethod=_lastSearchMethod||defaultMethod;
+  if(!_searchCustomQuery) _searchCustomQuery=buildSearchQuery('direct',title,year);
+  // Header
+  document.getElementById('search-modal-title').textContent=title||'Find Theme Source';
+  document.getElementById('search-modal-year-meta').textContent=year||'';
+  const posterEl=document.getElementById('search-modal-poster');
+  if(title){ posterEl.src=apiUrl('/api/poster/tmdb?title='+encodeURIComponent(title)+'&year='+encodeURIComponent(year||'')+'&size=w342'); posterEl.style.display=''; }
+  const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
+  document.getElementById('search-modal-links').innerHTML=`<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">🎬 TMDB</a>`;
+  setBio('search-modal-bio',rk);
+  // Restore or reset method cards
+  ['playlist','direct','custom'].forEach(m=>{
+    const card=document.getElementById('sm-card-'+m);
+    if(card) card.classList.toggle('active',m===_searchMethod);
+  });
+  _updateQueryDisplay();
+  document.getElementById('search-paste-url').value='';
+  // Decide starting step
+  if(_lastSearchResults.length && _searchKey===rk){
+    goToSearchStep(2);
+    _renderResults(_lastSearchResults);
+  } else {
+    _lastSearchResults=[];
+    goToSearchStep(1);
+  }
+  document.getElementById('search-modal').classList.add('open');
+}
+
+function closeSearchModal(){
+  document.getElementById('search-modal').classList.remove('open');
+  stopAllAudio(); _searchLib='';
+}
+
+function searchModalBack(){
+  if(_searchCurrentStep===3) goToSearchStep(2);
+  else if(_searchCurrentStep===2) goToSearchStep(1);
+  else closeSearchModal();
+}
+
+function searchModalPrimary(){
+  if(_searchCurrentStep===1) doSearch();
+  else if(_searchCurrentStep===3) saveSourceEditor();
+}
+
+async function doSearch(){
+  const q=buildSearchQuery(_searchMethod,_searchTitle,_searchYear);
+  if(!q){ toast('No query','info'); return; }
+  _lastSearchMethod=_searchMethod;
+  stopAllAudio(); resetActivePreviewBtn();
+  goToSearchStep(2);
+  document.getElementById('search-results').innerHTML='<div style="color:var(--text3);padding:16px 0;font-size:13px;text-align:center">Searching…</div>';
+  document.getElementById('sm-results-meta').textContent='';
+  const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+  const data=await r.json();
+  if(!data.ok){
+    document.getElementById('search-results').innerHTML=`<div style="color:var(--red);padding:16px 0;font-size:13px">${data.error}</div>`;
+    _setSearchFooter(2); return;
+  }
+  _lastSearchResults=data.results||[];
+  _renderResults(_lastSearchResults);
+  _setSearchFooter(2);
+}
+
+async function doFeelingLucky(){
+  const q=buildSearchQuery(_searchMethod,_searchTitle,_searchYear);
+  if(!q){ toast('No query','info'); return; }
+  toast('Searching…','info');
+  const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+  const data=await r.json();
+  if(!data.ok || !data.results?.length){ toast(data.error||'No results','err'); return; }
+  _lastSearchResults=data.results;
+  _lastSearchMethod=_searchMethod;
+  goToStep3(data.results[0].url);
+}
+
+function _renderResults(results){
+  const el=document.getElementById('search-results');
+  document.getElementById('sm-results-meta').textContent=results.length ? `${results.length} results` : '';
+  if(!results.length){
+    el.innerHTML='<div style="color:var(--text3);padding:16px 0;font-size:13px;text-align:center">No results found.</div>';
+    return;
+  }
+  el.innerHTML=results.map((r,i)=>`
+    <div class="search-result-card ${i===0?'recommended':''}">
+      <div style="flex:1;min-width:0">
+        ${i===0?`<div style="margin-bottom:4px"><span class="src-badge recommended">Best match</span></div>`:''}
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)">${r.title.replace(/</g,'&lt;')}</div>
+        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px">
+          ${r.duration||'—'} · <a href="${r.url}" target="_blank" rel="noopener" style="color:var(--blue)">open ↗</a>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:flex-end">
+        <button class="btn btn-ghost btn-xs" onclick="previewSearchResult('${r.url.replace(/'/g,"\\'")}',this)">▶ Preview</button>
+        <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}')">Select →</button>
+      </div>
+    </div>`).join('');
+}
+
+function goToStep3(url){
+  stopAllAudio();
+  document.getElementById('se-url').value=url||'';
+  document.getElementById('se-offset').value='0:00';
+  document.getElementById('se-trim-result').textContent='';
+  document.getElementById('se-cur').textContent='0:00';
+  document.getElementById('se-dur').textContent='—';
+  document.getElementById('se-slider').value=0;
+  document.getElementById('se-info').textContent='Loading preview…';
+  const loadBtn=document.getElementById('se-load-btn');
+  if(loadBtn){ loadBtn.textContent='Loading…'; loadBtn.disabled=true; }
+  document.getElementById('se-play-btn').innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  const seLinks=document.getElementById('se-links');
+  if(seLinks && url){
+    const isYt=url.includes('youtube.com')||url.includes('youtu.be');
+    seLinks.innerHTML=isYt?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`
+      :`<a class="modal-link-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">↗ Source</a>`;
+  }
+  goToSearchStep(3);
+  if(url) setTimeout(()=>seLoadPreview(),80);
+}
+
+function goToStep3FromPaste(){
+  const url=(document.getElementById('search-paste-url').value||'').trim();
+  if(!url){ toast('Paste a URL first','info'); return; }
+  goToStep3(url);
+}
+
+// ── Source editor (Step 3) functions ────────────────────────────────────────
+function openSourceEditor(url, previewOnly){
+  if(!url){ toast('No URL provided','info'); return; }
+  _seKey=_searchKey; _seLib=_searchLib||_activeLib||'';
+  goToStep3(url);
+}
+
+function closeSourceEditor(){
+  closeSearchModal();
+}
+
+function backToSearch(){
+  goToSearchStep(2);
+}
+
+function seUrlChanged(){
+  const url=(document.getElementById('se-url').value||'').trim();
+  const seLinks=document.getElementById('se-links');
+  if(seLinks&&url){
+    const isYt=url.includes('youtube.com')||url.includes('youtu.be');
+    seLinks.innerHTML=isYt?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`
+      :`<a class="modal-link-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">↗ Source</a>`;
+  }
+}
+
+async function seLoadPreview(){
+  const url=(document.getElementById('se-url').value||'').trim();
+  if(!url){ toast('Enter a URL first','info'); return; }
+  const btn=document.getElementById('se-load-btn');
+  if(btn){ btn.textContent='Loading…'; btn.disabled=true; }
+  document.getElementById('se-info').textContent='Resolving stream…';
+  try{
+    const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const data=await r.json();
+    if(btn){ btn.textContent='↺ Reload'; btn.disabled=false; }
+    if(!data.ok){ document.getElementById('se-info').textContent='Error: '+(data.error||'Failed'); return; }
+    const audio=document.getElementById('se-audio');
+    stopAllAudio();
+    audio.src=apiUrl(data.audio_url);
+    audio.onloadedmetadata=()=>{
+      document.getElementById('se-dur').textContent=fmt(audio.duration);
+      document.getElementById('se-info').textContent=`Duration: ${fmt(audio.duration)}`;
+      seUpdateTrim();
+      audio.play().then(()=>{
+        document.getElementById('se-play-btn').innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+      }).catch(()=>{});
+    };
+    audio.ontimeupdate=()=>{
+      const dur=audio.duration||0;
+      if(dur) document.getElementById('se-slider').value=(audio.currentTime/dur*100);
+      document.getElementById('se-cur').textContent=fmt(audio.currentTime);
+    };
+    audio.onerror=()=>{ document.getElementById('se-info').textContent='Playback error — try a different URL'; };
+    audio.load();
+  }catch(e){ if(btn){ btn.textContent='▶ Load'; btn.disabled=false; } toast('Error: '+e,'err'); }
+}
+
+function seToggle(){
+  const audio=document.getElementById('se-audio'),btn=document.getElementById('se-play-btn');
+  if(!audio.src||audio.src===window.location.href){ seLoadPreview(); return; }
+  if(audio.paused){ stopAllAudio('se-audio'); audio.play(); btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'; }
+  else { audio.pause(); btn.innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; }
+}
+
+function seSeek(val){ const a=document.getElementById('se-audio'); if(a.duration) a.currentTime=val/100*a.duration; }
+function seSkip(s){ const a=document.getElementById('se-audio'); if(a.duration) a.currentTime=Math.max(0,Math.min(a.duration,a.currentTime+s)); }
+
+function seUpdateTrim(){
+  const audio=document.getElementById('se-audio'),dur=audio.duration||0;
+  const s=parseTrim(document.getElementById('se-offset').value);
+  const res=dur>0?Math.max(0,dur-s):0;
+  document.getElementById('se-trim-result').textContent=dur>0?`→ ${fmt(res)} remaining (from ${fmt(dur)})`:'';
+}
+
+function sePreviewFromOffset(){
+  const audio=document.getElementById('se-audio');
+  const s=parseTrim(document.getElementById('se-offset').value);
+  if(!audio.src||audio.src===window.location.href){ seLoadPreview(); return; }
+  stopAllAudio('se-audio');
+  audio.currentTime=s; audio.play();
+  document.getElementById('se-play-btn').innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+}
+
+async function saveSourceEditor(){
+  const key=_seKey||_searchKey; if(!key) return;
+  const url=(document.getElementById('se-url').value||'').trim();
+  const offset=parseTrim(document.getElementById('se-offset').value||'0');
+  if(!url){ toast('Please enter a URL','info'); return; }
+  const lib=_seLib||_searchLib||_activeLib||'';
+  const status=_autoApproveManual?'APPROVED':'STAGED';
+  const notes=_autoApproveManual?'Manual source auto-approved':'URL set via manual search — staged for approval';
+  await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({url,start_offset:offset,status,notes})
+  });
+  closeSearchModal();
+  toast(_autoApproveManual?'Saved — auto-approved':'Saved — staged for approval','ok');
+  loadDatabase();
+}
+
+function previewSearchResult(url, btn){
+  btn.dataset.previewUrl = url;
+  if(window._activePreviewBtn && window._activePreviewBtn !== btn){
+    resetPreviewButton(window._activePreviewBtn);
+  }
+  btn.textContent = 'Loading…'; btn.disabled = true;
+  fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})})
+    .then(r=>r.json()).then(data=>{
+      btn.textContent = '▶ Preview'; btn.disabled = false;
+      if(!data.ok){ toast(data.error||'Failed','err'); return; }
+      stopAllAudio();
+      const audio = _audioEl();
+      audio.src = apiUrl(data.audio_url); audio.play();
+      window._activePreviewBtn = btn;
+      btn.textContent = '■ Stop';
+      audio.onended = ()=>{ resetActivePreviewBtn(); };
+      btn.onclick = ()=>{ audio.pause(); resetActivePreviewBtn(); };
+    }).catch(()=>{ resetPreviewButton(btn); toast('Preview failed','err'); });
+}
+
+function resetPreviewButton(btn){
+  if(!btn) return;
+  btn.textContent = '▶ Preview';
+  btn.disabled = false;
+  const url = btn.dataset.previewUrl;
+  if(url) btn.onclick = ()=>previewSearchResult(url, btn);
+}
+
+function resetActivePreviewBtn(){
+  if(window._activePreviewBtn){
+    resetPreviewButton(window._activePreviewBtn);
+    window._activePreviewBtn = null;
+  }
+}
+
+// ── Trim modal preview ────────────────────────────────────────────────────────
+function trimModalUpdateResult(){
+  const row=_mediaRows.find(r=>r.rating_key===_trimRk); if(!row) return;
+  const dur=row.duration||0,s=parseTrim(document.getElementById('trim-modal-offset').value);
+  const res=dur>0?Math.max(0,dur-s):0;
+  document.getElementById('trim-modal-result').textContent=dur>0?`→ ${fmt(res)} remaining (from ${fmt(dur)})`:'';
+}
+
+function trimModalPreview(fromOffset){
+  const row=_mediaRows.find(r=>r.rating_key===_trimRk); if(!row) return;
+  const audio=_audioEl();
+  stopAllAudio();
+  _curKey='trim-preview-'+_trimRk;
+  audio.src=apiUrl(`/api/theme?folder=${encodeURIComponent(row.folder)}`);
+  const offset=fromOffset?parseTrim(document.getElementById('trim-modal-offset').value):0;
+  audio.onloadedmetadata=()=>{ audio.currentTime=offset; audio.play(); };
+  audio.load();
+  toast(fromOffset?`Previewing from ${fmt(offset)}`:'Playing from start','info');
+}
+
+// ── YouTube Modal (Database page) ────────────────────────────────────────────
+let _ytModalKey=null,_ytModalLib='';
+
+async function mediaDownloadApproved(){
+  const lib=_activeLib||'';
+  const approved=_mediaRows.filter(r=>r.status==='APPROVED').length;
+  if(!approved){toast('No approved items in '+lib,'info');return;}
+  const btn=document.getElementById('media-dl-btn');
+  btn.innerHTML='<span class="spinner"></span>Downloading…'; btn.disabled=true;
+  toast(`Downloading ${approved} approved items from ${lib}…`,'info');
+  await fetch('/api/run/pass/3',{method:'POST'});
+  // Re-enable after a delay (the actual process runs async)
+  setTimeout(()=>{btn.textContent='↓ Download All Approved';btn.disabled=false;},3000);
+}
+function openYtModal(rk,title,year,url,lib){
+  stopAllAudio();
+  _ytModalKey=rk;_ytModalLib=decodeURIComponent(lib);
+  // Poster
+  const posterEl=document.getElementById('yt-modal-poster');
+  posterEl.src=apiUrl('/api/poster?key='+rk); posterEl.style.display='';
+  // Header info
+  document.getElementById('yt-modal-title').textContent=title;
+  document.getElementById('yt-modal-year-meta').textContent=year;
+  document.getElementById('yt-modal-dur-badge').style.display='none';
+  // Links: TMDB + YouTube
+  const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
+  const isYt=url.includes('youtube.com')||url.includes('youtu.be');
+  document.getElementById('yt-modal-links').innerHTML=
+    `<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">TMDB</a>`+
+    (isYt?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:`<a class="modal-link-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">↗ Source</a>`);
+  // Reset player
+  document.getElementById('yt-modal-start').value='0:00';
+  document.getElementById('yt-modal-trim-info').textContent='';
+  document.getElementById('yt-modal-status').textContent='Resolving stream…';
+  setBio('yt-modal-bio', rk);
+  document.getElementById('yt-modal-save').style.display='inline-flex';
+  document.getElementById('yt-modal-slider').value=0;
+  document.getElementById('yt-modal-cur').textContent='0:00';
+  document.getElementById('yt-modal-dur').textContent='—';
+  document.getElementById('yt-modal').classList.add('open');
+  const btn=document.getElementById('yt-modal-play');
+  btn.innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  // Fetch stream
+  fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})})
+    .then(r=>r.json()).then(data=>{
+      if(!data.ok){document.getElementById('yt-modal-status').textContent='Error: '+(data.error||'Failed');return;}
+      const audio=document.getElementById('yt-modal-audio');
+      audio.src=apiUrl(data.audio_url);
+      audio.onloadedmetadata=()=>{
+        const d=fmt(audio.duration);
+        document.getElementById('yt-modal-dur').textContent=d;
+        document.getElementById('yt-modal-dur-val').textContent=d;
+        document.getElementById('yt-modal-dur-badge').style.display='';
+        document.getElementById('yt-modal-status').textContent='Streaming · '+d;
+        ytModalUpdateTrim();
+        audio.play().then(()=>{
+          btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+        }).catch(()=>{document.getElementById('yt-modal-status').textContent='Click ▶ to play';});
+      };
+      audio.ontimeupdate=()=>{
+        if(audio.duration) document.getElementById('yt-modal-slider').value=(audio.currentTime/audio.duration*100);
+        document.getElementById('yt-modal-cur').textContent=fmt(audio.currentTime);
+      };
+      audio.onerror=()=>{document.getElementById('yt-modal-status').textContent='Playback error — try again';};
+      audio.load();
+    }).catch(e=>{document.getElementById('yt-modal-status').textContent='Error: '+e;});
+}
+function closeYtModal(){
+  document.getElementById('yt-modal').classList.remove('open');
+  const audio=document.getElementById('yt-modal-audio'); audio.pause(); audio.src='';
+  stopAllAudio();
+  _ytModalKey=null;
+}
+function ytModalToggle(){
+  const audio=document.getElementById('yt-modal-audio'),btn=document.getElementById('yt-modal-play');
+  if(audio.paused){stopAllAudio('yt-modal-audio');audio.play();btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';}
+  else{audio.pause();btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><polygon points="5 3 19 12 5 21 5 3"/></svg>';}
+}
+function ytModalSeek(val){const audio=document.getElementById('yt-modal-audio');if(audio.duration) audio.currentTime=val/100*audio.duration;}
+function ytModalSkip(s){const a=document.getElementById('yt-modal-audio');if(a.duration) a.currentTime=Math.max(0,Math.min(a.duration,a.currentTime+s));}
+function ytModalUpdateTrim(){
+  const audio=document.getElementById('yt-modal-audio'),dur=audio.duration||0;
+  const s=parseTrim(document.getElementById('yt-modal-start').value);
+  const res=dur>0?Math.max(0,dur-s):0;
+  document.getElementById('yt-modal-trim-info').textContent=dur>0?`→ ${fmt(res)} remaining (from ${fmt(dur)})`:'';
+}
+function ytModalPreviewTrim(){
+  const audio=document.getElementById('yt-modal-audio');
+  const s=parseTrim(document.getElementById('yt-modal-start').value);
+  stopAllAudio('yt-modal-audio');
+  audio.currentTime=s; audio.play();
+  document.getElementById('yt-modal-play').innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+  audio.ontimeupdate=()=>{
+    const dur=audio.duration||0;
+    const slider=document.getElementById('yt-modal-slider');
+    if(dur) slider.value=(audio.currentTime/dur*100);
+    document.getElementById('yt-modal-cur').textContent=fmt(audio.currentTime);
+  };
+}
+async function ytModalSave(){
+  if(!_ytModalKey) return;
+  const s=parseTrim(document.getElementById('yt-modal-start').value);
+  await fetch('/api/ledger/'+_ytModalKey+'?library='+encodeURIComponent(_ytModalLib),{
+    method:'PATCH',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({start_offset:s,notes:'Offset set via YouTube preview'})
+  });
+  closeYtModal(); toast('Offset saved','ok');
+  if(document.getElementById('page-database').classList.contains('active')) loadDatabase();
+}
+let _evtSrc=null;
+
+async function loadRunPage(){
+  const cfg=(await (await fetch('/api/config')).json());
+  document.getElementById('run-cron').value=cfg.cron_schedule||'0 3 * * *';
+  document.getElementById('sched-enabled').checked = cfg.schedule_enabled !== false;
+  const enabledLibs=(cfg.libraries||[]).filter(l=>l.enabled!==false && (!l.type||l.type==='movie'||l.type==='show'));
+  const selected=new Set((cfg.schedule_libraries&&cfg.schedule_libraries.length)?cfg.schedule_libraries:enabledLibs.map(l=>l.name));
+  _runLibs=enabledLibs.map(l=>({...l, scheduled:selected.has(l.name)}));
+  renderRunLibs();
+  document.getElementById('sched-step1').checked = cfg.schedule_step1 !== false;
+  document.getElementById('sched-step2').checked = cfg.schedule_step2 !== false;
+  document.getElementById('sched-step3').checked = cfg.schedule_step3 !== false;
+  document.getElementById('sched-autoapprove').checked = !!cfg.auto_approve;
+  applyScheduleEnabledState();
+}
+
+function applyScheduleEnabledState(){
+  const enabled=document.getElementById('sched-enabled').checked;
+  const wrap=document.getElementById('sched-config-wrap');
+  if(!wrap) return;
+  wrap.classList.toggle('is-disabled', !enabled);
+  wrap.querySelectorAll('input, select, textarea, button').forEach(el=>{
+    if(el.id && ['btn-pass1','btn-pass2','btn-pass3'].includes(el.id)) return;
+    el.disabled = !enabled;
+  });
+}
+
+let _runLibs=[];
+function renderRunLibs(){
+  document.getElementById('run-lib-toggles').innerHTML=_runLibs.map((lib,i)=>`
+    <div class="run-lib-pill">
+      <label class="toggle" style="transform:scale(.85)">
+        <input type="checkbox" ${lib.scheduled?'checked':''} onchange="_runLibs[${i}].scheduled=this.checked;saveRunSchedule()">
+        <span class="toggle-track"></span>
+      </label>
+      <span style="font-size:12px;font-family:var(--mono);color:${lib.scheduled?'var(--text)':'var(--text3)'}">${lib.name}</span>
+    </div>`).join('');
+}
+
+let _schedDebounce=null;
+async function saveRunSchedule(){
+  clearTimeout(_schedDebounce);
+  _schedDebounce=setTimeout(async()=>{
+    const cron=document.getElementById('run-cron').value;
+    const enabled=document.getElementById('sched-enabled').checked;
+    const cfg=await(await fetch('/api/config')).json();
+    cfg.schedule_enabled=enabled;
+    cfg.cron_schedule=cron;
+    cfg.schedule_libraries=_runLibs.filter(l=>l.scheduled).map(l=>l.name);
+    cfg.schedule_step1=document.getElementById('sched-step1').checked;
+    cfg.schedule_step2=document.getElementById('sched-step2').checked;
+    cfg.schedule_step3=document.getElementById('sched-step3').checked;
+    cfg.auto_approve=document.getElementById('sched-autoapprove').checked;
+    await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
+    toast(enabled ? 'Schedule saved' : 'Automation disabled','ok');
+    renderRunLibs();
+    applyScheduleEnabledState();
+  },500);
+}
+
+function startPass(pass){
+  const btns=[1,2,3].map(i=>document.getElementById('btn-pass'+i));
+  btns.forEach(b=>b.disabled=true);
+  document.getElementById('run-dot').className='run-dot active';
+  document.getElementById('btn-stop').style.display='inline-flex';
+  const labels={1:'Scanning libraries…',2:'Finding YouTube sources…',3:'Downloading approved themes…'};
+  document.getElementById('run-status').textContent=labels[pass];
+  document.getElementById('terminal').innerHTML='';
+
+  const prog=document.getElementById('run-progress');
+  prog.classList.add('active');
+  document.getElementById('run-progress-fill').style.width='0%';
+  document.getElementById('run-progress-label').textContent=labels[pass];
+
+  fetch('/api/run/pass/'+pass,{method:'POST'});
+  if(_evtSrc) _evtSrc.close();
+  _evtSrc=new EventSource(apiUrl('/api/run/stream'));
+  _evtSrc.onmessage=e=>{
+    if(e.data==='__DONE__'){
+      _evtSrc.close(); btns.forEach(b=>b.disabled=false);
+      document.getElementById('run-dot').className='run-dot done';
+      document.getElementById('run-status').textContent='Done · '+new Date().toLocaleTimeString();
+      document.getElementById('btn-stop').style.display='none';
+      prog.classList.remove('active');
+      loadHistory(); loadDatabase();
+      return;
+    }
+    // Structured progress
+    if(e.data.startsWith('@@PROGRESS@@')){
+      try{
+        const p=JSON.parse(e.data.slice(12));
+        const pct=p.total>0?Math.round(p.current/p.total*100):0;
+        document.getElementById('run-progress-fill').style.width=pct+'%';
+        document.getElementById('run-progress-label').textContent=
+          `${p.current}/${p.total} ${p.action} "${p.title}"`;
+      }catch(ex){}
+      return;
+    }
+    appendLine(e.data);
+  };
+  _evtSrc.onerror=()=>{
+    _evtSrc.close(); btns.forEach(b=>b.disabled=false);
+    document.getElementById('run-dot').className='run-dot';
+    document.getElementById('run-status').textContent='Connection lost';
+    prog.classList.remove('active');
+  };
+}
+
+function appendLine(line){
+  const t=document.getElementById('terminal');
+  const d=document.createElement('div');
+  d.className='ll '+(line.includes('[OK]')?'ll-ok':line.includes('[FAILED]')?'ll-err':line.includes('[RESOLVE]')?'ll-resolve':line.includes('WARNING')||line.includes('WARN')?'ll-warn':line.includes('ERROR')?'ll-err':line.startsWith('═')||line.startsWith('─')||line.startsWith('=')?'ll-head':line.includes('Library:')||line.includes('═══')?'ll-lib':'ll-info');
+  d.textContent=line; t.appendChild(d); t.scrollTop=t.scrollHeight;
+}
+
+function clearTerminal(){ document.getElementById('terminal').innerHTML='<div class="ll ll-info">Cleared.</div>'; }
+async function stopRun(){
+  toast('Stopping…','info');
+  await fetch('/api/run/stop',{method:'POST'});
+}
+
+// ── History ──────────────────────────────────────────────────────────────────
+async function loadHistory(){
+  const r=await fetch('/api/history'); const runs=await r.json();
+  const el=document.getElementById('run-cards');
+  if(!runs.length){ el.innerHTML='<div class="empty">No run history yet.</div>'; return; }
+  const PBCLS={1:'pb-1 PASS 1 — SCAN',2:'pb-2 PASS 2 — RESOLVE',3:'pb-3 PASS 3 — DOWNLOAD'};
+  el.innerHTML=runs.reverse().map((run,i)=>{
+    const bc=PBCLS[run.pass]||'pb-e ERROR';
+    const [cls,...parts]=bc.split(' ');
+    const dur=run.duration_seconds?`${Math.round(run.duration_seconds)}s`:'';
+    const s1=run.stats?.pass1, s2=run.stats?.pass2, s3=run.stats?.pass3;
+    const statsLine = s1 ? `Pass1: ${s1.total} total · ${s1.pending} pending · ${s1.staged} staged · ${s1.approved} approved`
+      : s2 ? `Pass2: ${s2.staged} staged · ${s2.no_playlist} no source`
+      : s3 ? `Pass3: ${s3.downloaded} downloaded · ${s3.failed} failed · ${s3.skipped} skipped` : '';
+    return `<div class="hcard">
+      <div class="hcard-head" onclick="document.getElementById('hd-${i}').classList.toggle('open')">
+        <div>
+          <div class="hcard-time">${run.time}</div>
+          <div class="hcard-sum">${(run.summary||'').replace(/</g,'&lt;')}${dur?` · ${dur}`:''}</div>
+          ${statsLine?`<div class="hcard-sum">${statsLine}</div>`:''}
+        </div>
+        <span class="pass-badge ${cls}">${parts.join(' ')}</span>
+      </div>
+      <div class="hcard-body" id="hd-${i}">${(run.log||'').replace(/</g,'&lt;')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Sidebar collapse ─────────────────────────────────────────────────────────
+function toggleNav(){
+  const nav=document.querySelector('nav');
+  nav.classList.toggle('collapsed');
+  document.body.classList.toggle('nav-collapsed');
+  document.getElementById('nav-collapse-btn').textContent=nav.classList.contains('collapsed')?'»':'«';
+  try{localStorage.setItem('mt-nav-collapsed',nav.classList.contains('collapsed')?'1':'0');}catch(e){}
+}
+(function(){try{if(localStorage.getItem('mt-nav-collapsed')==='1'){document.querySelector('nav').classList.add('collapsed');document.body.classList.add('nav-collapsed');setTimeout(()=>{const b=document.getElementById('nav-collapse-btn');if(b)b.textContent='»';},0);}}catch(e){}})();
+
+// ── Theme preview modal ──────────────────────────────────────────────────────
+function openThemeModal(rk,title,year,folder){
+  stopAllAudio();
+  document.getElementById('theme-modal-title').textContent=title;
+  document.getElementById('theme-modal-year').textContent=year;
+  document.getElementById('theme-modal-dur-meta').textContent='';
+  document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
+  document.getElementById('theme-modal-poster').style.display='';
+  // TMDB link
+  const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
+  document.getElementById('theme-modal-links').innerHTML=
+    `<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">TMDB</a>`;
+  setBio('theme-modal-bio', rk);
+  const audio=document.getElementById('theme-modal-audio');
+  audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+  audio.load();
+  document.getElementById('theme-modal-slider').value=0;
+  document.getElementById('theme-modal-cur').textContent='0:00';
+  document.getElementById('theme-modal-dur').textContent='...';
+  document.getElementById('theme-modal').classList.add('open');
+  // Autoplay
+  audio.onloadedmetadata=()=>{
+    const d=fmt(audio.duration);
+    document.getElementById('theme-modal-dur').textContent=d;
+    document.getElementById('theme-modal-dur-meta').textContent='Duration: '+d;
+    audio.play().catch(()=>{});
+    document.getElementById('theme-modal-play').innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+  };
+  audio.ontimeupdate=()=>{
+    const sl=document.getElementById('theme-modal-slider');
+    if(audio.duration) sl.value=(audio.currentTime/audio.duration*100);
+    document.getElementById('theme-modal-cur').textContent=fmt(audio.currentTime);
+  };
+  audio.onended=()=>{
+    document.getElementById('theme-modal-play').innerHTML='<svg viewBox="0 0 24 24" fill="#000"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  };
+  if(_curKey) stopCurrentAudio();
+}
+function closeThemeModal(){
+  const audio=document.getElementById('theme-modal-audio'); audio.pause(); audio.src='';
+  document.getElementById('theme-modal').classList.remove('open');
+  stopAllAudio();
+}
+function themeModalToggle(){
+  const audio=document.getElementById('theme-modal-audio'),btn=document.getElementById('theme-modal-play');
+  if(audio.paused){stopAllAudio('theme-modal-audio');audio.play();btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';}
+  else{audio.pause();btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><polygon points="5 3 19 12 5 21 5 3"/></svg>';}
+}
+function themeModalSkip(s){const a=document.getElementById('theme-modal-audio');if(a.duration) a.currentTime=Math.max(0,Math.min(a.duration,a.currentTime+s));}
+function themeModalSeek(val){const a=document.getElementById('theme-modal-audio');if(a.duration) a.currentTime=val/100*a.duration;}
+
+// ── Column resize ────────────────────────────────────────────────────────────
+function initResizableCols(tableSelector){
+  document.querySelectorAll(tableSelector+' th').forEach(th=>{
+    th.classList.add('resizable');
+    const handle=document.createElement('div');
+    handle.className='col-resize';
+    th.appendChild(handle);
+    handle.addEventListener('mousedown',function(e){
+      e.preventDefault();
+      handle.classList.add('dragging');
+      const startX=e.pageX, startW=th.offsetWidth;
+      function onMove(ev){th.style.width=(startW+ev.pageX-startX)+'px';th.style.minWidth=th.style.width;}
+      function onUp(){handle.classList.remove('dragging');document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+    });
+  });
+}
+// Init on first load of each page
+let _dbColsInit=false,_mediaColsInit=false;
+
+// ── Theme toggle ─────────────────────────────────────────────────────────────
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')!=='light';
+  html.setAttribute('data-theme',isDark?'light':'dark');
+  document.getElementById('theme-toggle-btn').textContent=isDark?'☾':'☀';
+  try{localStorage.setItem('mt-theme',isDark?'light':'dark');}catch(e){}
+}
+(function(){try{const t=localStorage.getItem('mt-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');setTimeout(()=>{const b=document.getElementById('theme-toggle-btn');if(b)b.textContent='☾';},0);}}catch(e){}})();
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+loadSettings();
+bindOffsetWheel();
+</script>
+</body>
+</html>
