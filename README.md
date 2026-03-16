@@ -39,7 +39,7 @@ theme_filename: theme.mp3
 max_theme_duration: 60
 mode: manual
 
-golden_source_url: https://github.com/mrainone7p/Media-themes/blob/main/golden_source.csv
+golden_source_url: 
 cron_schedule: 0 3 * * *
 schedule_enabled: false
 ```
