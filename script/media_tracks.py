@@ -48,6 +48,7 @@ sidecar file for every movie in your media library.
 """
 
 import csv
+import hashlib
 import json
 import logging
 import os
@@ -109,6 +110,8 @@ def emit_progress(pass_num: int, current: int, total: int, title: str, action: s
 
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/config/config.yaml")
 LOCK_PATH   = os.environ.get("LOCK_PATH",   "/app/logs/media_tracks.lock")
+GOLDEN_CACHE_DIR = Path(os.environ.get("GOLDEN_CACHE_DIR", str(Path(LOCK_PATH).resolve().parent / "golden_source_cache")))
+GOLDEN_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_config() -> dict:
@@ -536,14 +539,7 @@ def _normalize_golden_source_url(url: str) -> str:
     return url
 
 
-def _fetch_golden_source_catalog(url: str) -> tuple:
-    """Fetch Golden Source CSV. Returns (normalized_url, {tmdb_id: row_dict})."""
-    normalized = _normalize_golden_source_url(url)
-    if not normalized:
-        raise ValueError("Golden Source URL is not configured")
-    response = requests.get(normalized, timeout=20)
-    response.raise_for_status()
-    text = response.content.decode("utf-8-sig", errors="replace")
+def _parse_golden_source_text(text: str) -> dict:
     reader = csv.DictReader(text.splitlines())
     if not reader.fieldnames:
         raise ValueError("Golden Source CSV has no header row")
@@ -556,20 +552,41 @@ def _fetch_golden_source_catalog(url: str) -> tuple:
     rows = {}
     for row in reader:
         clean = {str(k or "").strip(): str(v or "").strip() for k, v in row.items()}
-        tmdb_id    = clean.get("tmdb_id", "")
+        tmdb_id = clean.get("tmdb_id", "")
         source_url = clean.get("source_url", "")
         if not tmdb_id or not source_url:
             continue
         rows[str(tmdb_id)] = {
-            "source_url":   source_url,
+            "source_url": source_url,
             "start_offset": clean.get("start_offset", "0") or "0",
-            "verified":     clean.get("verified", ""),
-            "updated_at":   clean.get("updated_at", ""),
-            "notes":        clean.get("notes", ""),
-            "title":        clean.get("title", ""),
-            "year":         clean.get("year", ""),
+            "verified": clean.get("verified", ""),
+            "updated_at": clean.get("updated_at", ""),
+            "notes": clean.get("notes", ""),
+            "title": clean.get("title", ""),
+            "year": clean.get("year", ""),
         }
-    return normalized, rows
+    return rows
+
+
+def _fetch_golden_source_catalog(url: str, force_refresh: bool = True, cache_ttl_sec: int = 1800) -> tuple:
+    """Fetch Golden Source CSV. Returns (normalized_url, {tmdb_id: row_dict})."""
+    normalized = _normalize_golden_source_url(url)
+    if not normalized:
+        raise ValueError("Golden Source URL is not configured")
+
+    cache_key = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
+    cache_path = GOLDEN_CACHE_DIR / f"{cache_key}.csv"
+
+    if not force_refresh and cache_path.exists():
+        age = time.time() - cache_path.stat().st_mtime
+        if age <= max(0, int(cache_ttl_sec or 0)):
+            return normalized, _parse_golden_source_text(cache_path.read_text(encoding="utf-8"))
+
+    response = requests.get(normalized, timeout=20)
+    response.raise_for_status()
+    text = response.content.decode("utf-8-sig", errors="replace")
+    cache_path.write_text(text, encoding="utf-8")
+    return normalized, _parse_golden_source_text(text)
 
 
 # ─── Audio helpers ────────────────────────────────────────────────────────────
@@ -786,6 +803,8 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
     fuzzy         = bool(cfg.get("search_fuzzy", False))
     golden_only   = bool(cfg.get("search_only_golden", False))
     source_url    = cfg.get("golden_source_url", "")
+    refresh_golden_each_run = bool(cfg.get("refresh_golden_source_each_run", True))
+    golden_cache_ttl_sec = int(cfg.get("golden_source_cache_ttl_sec", 1800) or 1800)
 
     if fuzzy:
         fallback = False
@@ -800,8 +819,13 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
     golden_catalog: dict = {}
     if golden_only:
         try:
-            _, golden_catalog = _fetch_golden_source_catalog(source_url)
-            log.info(f"Golden Source only mode enabled — loaded {len(golden_catalog)} rows")
+            _, golden_catalog = _fetch_golden_source_catalog(
+                source_url,
+                force_refresh=refresh_golden_each_run,
+                cache_ttl_sec=golden_cache_ttl_sec,
+            )
+            mode = 'fresh' if refresh_golden_each_run else f'cache≤{golden_cache_ttl_sec}s'
+            log.info(f"Golden Source only mode enabled — loaded {len(golden_catalog)} rows ({mode})")
         except Exception as e:
             log.error(f"Golden Source fetch failed: {e}")
             for movie in pending_movies:
