@@ -1,94 +1,124 @@
-# Media Tracks State Review (updated implementation status)
+# Media Tracks State Review (current-state reassessment)
 
-This document tracks the current codebase against the intended product direction and what has now been implemented.
+This is the **single source-of-truth state review** for the current codebase. It is intentionally focused on simplification and human maintainability over architecture churn.
 
-## Implemented in this pass
+## Executive verdict on the latest changes
 
-- Navigation and page internals were normalized to **Configuration / Library / Schedule / Tasks** (including hash-route compatibility from legacy `#settings`/`#run`).
-- Configuration internals now use `loadConfiguration()` / `saveConfiguration()` with compatibility aliases kept in place to reduce regression risk.
-- Native browser `confirm()` dialogs for Library actions were replaced with a shared in-app confirm modal shell.
-- Library visible status controls were aligned to the intended model by removing `Removed` from user-facing status filter/options.
-- Backend row identity handling was hardened with a shared identity resolver preferring `rating_key`, then `folder`, then `tmdb_id`.
-- Delete and manual-download API responses now include `matched_by` diagnostics to make identity matching transparent in the UI.
-- Manual download UI now sends additional identity fields (`folder`, `tmdb_id`) to improve reliability in mixed-ledger scenarios.
+Your instinct is right: the project is still functional, but in a few places we traded clarity for additional lines and repetition.
 
-## Current alignment snapshot
+**Net result today:**
+- ✅ UX coverage increased (more controls and clearer paths exist).
+- ⚠️ Code maintainability regressed in key hotspots (duplicate modal logic, repeated task-card markup, repeated API-action boilerplate, and hardcoded display strings).
+- ✅ This can be corrected **without** adding many files.
 
-### Aligned
+## Current-state snapshot
 
-1. **Primary pages and terminology**
-   - Visible page naming is Configuration / Library / Schedule / Tasks.
-2. **Library operational role**
-   - Main management page with filtering, bulk actions, source actions, and imports.
-3. **SQLite shared storage direction**
-   - Shared runtime storage in `shared/storage.py` with SQLite (`/app/logs/media_tracks.db`).
-4. **Golden Source schema**
-   - Uses `tmdb_id` + `source_url` (no youtube_url import fallback path in current logic).
-5. **Status wording**
-   - UI displays `Available` for internal `DOWNLOADED` state.
+### Project shape (still intentionally simple)
 
-### Remaining follow-ups (recommended)
+- Backend/API: `web/app.py`
+- Frontend: `web/template.html`
+- Pipeline worker: `script/media_tracks.py`
+- Storage helpers: `shared/storage.py`
 
-1. **Manual search UX polish**
-   - The 3-step modal exists; continue refining consistency and reducing edge-case UI roughness.
-2. **Regression safety**
-   - Add automated smoke checks for nav routing and critical row actions.
-3. **Optional naming cleanup**
-   - CSS class names still include legacy `settings`/`run` identifiers (internal only, no user-facing impact).
+### What is working well
 
-## Lean reassessment (keep it human-maintainable)
+1. Deployment and local operation are still straightforward.
+2. Core feature flow remains complete end-to-end.
+3. There is no framework/tooling bloat.
+4. Reusable UI patterns exist and can be expanded (example: shared run/progress treatment).
 
-This reassessment is intentionally optimized for simplicity and low file sprawl. The codebase works today, but most maintainability pressure comes from two large files (`web/template.html` and `web/app.py`). The goal is to reduce complexity without turning this into a framework-heavy rewrite.
+## Where line growth is coming from
 
-### What feels bloated today
+### 1) Repeated modal behavior (biggest duplication)
 
-- The frontend combines layout, styling, state, and all workflows in one large file, which slows safe edits.
-- The backend route file carries mixed concerns (config, run control, media actions, tasks/maintenance), making regressions easier to introduce.
-- The Tasks page combines frequent actions (run/export) and high-impact maintenance actions (prune/clear/vacuum), which increases UX risk for first-time users.
+Multiple modals reimplement near-identical audio/player and open/close lifecycle logic:
+- play/pause icon switching
+- metadata/timeupdate handlers
+- seek/skip boundaries
+- cleanup on close
 
-### High-impact, low-bloat improvements
+This is the largest avoidable repetition in `web/template.html`.
 
-1. **Introduce “Basic mode” defaults (no new page required)**
-   - Keep current pages, but hide advanced controls behind existing `<details>` sections by default.
-   - Surface only the normal user path: Configure → Find Sources → Approve → Download.
+### 2) Hardcoded task/schedule blocks with similar structure
 
-2. **Split logic, not architecture**
-   - Keep Flask + server-side template structure as-is.
-   - Do a minimal extraction only where needed:
-     - `web/app.py` → one small helper module for status/transition rules.
-     - `web/template.html` → one small JS helper block for shared API/error/toast handling.
-   - Avoid large multi-folder frontend refactors for now.
+Task cards and step sections repeat the same skeleton (title/desc/button/control row) with only small differences.
 
-3. **Unify status logic once**
-   - Keep a single transition policy and response shape from backend.
-   - Frontend should render/validate based on backend-reported capabilities instead of duplicating rules.
+### 3) Repeated task API action boilerplate
 
-4. **Separate “Operations” from “Maintenance” in-place**
-   - Keep Tasks page, but visually split into:
-     - Routine operations (run tasks, export)
-     - Advanced maintenance (cleanup/prune/vacuum/clear URLs)
-   - Add stronger warnings and irreversible-action wording for maintenance controls.
+Several task handlers each duplicate:
+- POST fetch setup
+- JSON parse
+- toast success/error
+- refresh calls
 
-5. **Reduce action clutter in Library rows**
-   - Keep core action visible and move rare actions into a compact overflow/dropdown pattern.
-   - Preserve power-user actions, but make default row interaction calmer.
+### 4) Heavy inline `innerHTML` assembly in many places
 
-### Sensible feature scope (what to avoid right now)
+Dynamic markup is useful, but repeated ad-hoc string templates increase escaping risk and make edits harder to reason about.
 
-- Avoid introducing new frameworks/build systems.
-- Avoid aggressive file fragmentation that would burden solo maintenance.
-- Avoid adding many “smart automation” features before status/error clarity is solid.
+### 5) Mixed concerns in one long script
 
-### Suggested next steps (minimal-disruption order)
+Single-file is fine for this project, but the JS region still mixes utilities, modal logic, DB rendering, run-state orchestration, and task utilities in a way that slows safe edits.
 
-1. Polish copy and page grouping first (no behavior change).
-2. Normalize status/error payloads in API and consume consistently in UI.
-3. Reduce row/task action density with clearer defaults.
-4. Add a small smoke-check script for critical flows (navigation, status update, run start/stop).
+## Reassessed simplification strategy (no file explosion)
 
-## Acceptance checks to keep using
+### Priority 1 — Consolidate modal primitives in-place
 
-- Navigation across Configuration / Library / Schedule / Tasks works without JS errors.
-- Delete local theme works when matched by `rating_key`, and falls back to `folder` when needed.
-- Manual row download succeeds when source exists and no local theme exists, then refreshes row state to Available in UI.
-- Golden Source import succeeds using `tmdb_id/source_url`, and keep/overwrite behavior is respected.
+Inside `web/template.html` only (no new frontend file), add minimal shared helpers for:
+- modal open/close
+- shared audio player binding lifecycle
+
+Then have YT/Theme/Trim modal functions call those helpers instead of reimplementing behavior.
+
+**Expected gain:** substantial line reduction + lower bug drift risk.
+
+### Priority 2 — Convert repeated task cards to config-driven rendering
+
+Keep existing CSS and DOM containers. Define one in-file array describing cards and render them into current sections.
+
+**Guardrail:** keep existing IDs used by handlers so no behavioral surprises.
+
+### Priority 3 — Introduce one shared task-action request helper
+
+Create one helper for POST task actions that centralizes:
+- request setup
+- response/error handling
+- toast conventions
+- optional refresh hooks
+
+Use it from cleanup/prune/refresh/sqlite/clear/export actions.
+
+### Priority 4 — Strengthen in-file section boundaries
+
+Keep single-file frontend, but add strict section banners and group code in this order:
+1. Core utils & API helpers
+2. Shared UI primitives (modals/audio/progress)
+3. Database table/status rendering
+4. Search + preview flows
+5. Schedule/tasks actions
+6. Page init
+
+This keeps your no-fragmentation preference while improving scanability.
+
+## What to avoid (for now)
+
+- No framework migration.
+- No broad split into many JS/CSS files.
+- No rewrite of all rendering patterns in one PR.
+- No expansion of feature surface until duplication hotspots are reduced.
+
+## “Simple and maintainable” target state
+
+The codebase is in a good place when:
+- Adding a new utility task means editing one config object + one handler only.
+- Adding a new modal does **not** require copy/pasting full player lifecycle code.
+- Task action endpoints share one request pattern.
+- A contributor can locate relevant logic in under 10–15 minutes.
+
+## Recommended next sequence
+
+1. Modal primitives consolidation (highest ROI).
+2. Task action helper consolidation.
+3. Task/schedule config-driven card rendering.
+4. Final in-file section cleanup pass.
+
+If we execute in this order, we reduce code volume and duplication while keeping the project single-file and operator-friendly.
