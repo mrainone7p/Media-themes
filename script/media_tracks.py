@@ -189,9 +189,12 @@ def _is_retryable_resolve_reason(reason: str) -> bool:
 
 def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
                   year: str, folder: str, status: str, url: str = "",
-                  start_offset=0, end_offset=0, notes: str = "", tmdb_id: str = ""):
+                  start_offset=0, end_offset=0, notes: str = "", tmdb_id: str = "",
+                  source_origin: str | None = None):
     """Insert or update a row. Never overwrites a user-supplied URL."""
     existing = ledger.get(rating_key, {})
+    if source_origin is None:
+        source_origin = existing.get("source_origin", "unknown")
     ledger[rating_key] = {
         "title":          title or existing.get("title", plex_title),
         "year":           year,
@@ -203,6 +206,7 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         "folder":         folder,
         "rating_key":     rating_key,
         "tmdb_id":        str(tmdb_id) if tmdb_id else existing.get("tmdb_id", ""),
+        "source_origin":  str(source_origin or "unknown"),
         "last_updated":   datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "notes":          notes,
         # Preserve cached theme metadata
@@ -880,6 +884,11 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                 start_offset=match.get("start_offset", 0),
                 end_offset=match.get("end_offset", 0),
                 notes="Matched from Golden Source", tmdb_id=tmdb_id,
+                source_origin=(
+                    "golden_source_verified"
+                    if str(match.get("verified", "") or "").strip().lower() in {"1", "true", "yes", "y", "verified", "star", "★", "*"}
+                    else "golden_source"
+                ),
             )
             stats["staged"]         += 1
             stats["golden_matched"] += 1
