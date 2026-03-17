@@ -483,6 +483,20 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-section-header{padding:0 22px 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.01em}
 .modal-section-divider{height:1px;background:var(--border);margin:0 22px 0}
 .modal-status-txt{font-size:11px;font-family:var(--mono);color:var(--text3);padding:0 22px 6px;min-height:18px}
+.source-editor-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.source-editor-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.source-editor-value{font-size:12px;color:var(--text2);font-family:var(--mono);word-break:break-word}
+.source-editor-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.source-editor-slider-wrap{position:relative}
+.trim-window{position:absolute;left:0;right:0;top:50%;height:6px;transform:translateY(-50%);pointer-events:none}
+.trim-shade{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.24)}
+.trim-shade.right{right:0}
+.trim-marker{position:absolute;top:-4px;width:2px;height:14px;background:var(--amber);border-radius:2px;transform:translateX(-1px)}
+.trim-marker.end{background:var(--green)}
+.trim-window-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px}
+.theme-modal-meta-card{margin:0 22px 10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
+.theme-modal-verified{font-size:11px;color:var(--amber);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+.theme-modal-file{font-size:11px;font-family:var(--mono);color:var(--text3);word-break:break-word}
 
 /* ─── Pipeline graphic (Database page) ─── */
 .pipeline-wrap{padding:16px var(--content-pad,20px) 0;border-bottom:1px solid var(--border)}
@@ -1530,8 +1544,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <button class="skip-btn" onclick="seSkip(-5)">-5</button>
           <button class="skip-btn" onclick="seSkip(5)">+5</button>
           <div class="modal-scrubber-wrap">
-            <input type="range" class="modal-slider" id="se-slider" min="0" max="100" value="0" oninput="seSeek(this.value)">
+            <div class="source-editor-slider-wrap">
+              <input type="range" class="modal-slider" id="se-slider" min="0" max="100" value="0" oninput="seSeek(this.value)">
+              <div class="trim-window" id="se-trim-window" style="display:none">
+                <div class="trim-shade" id="se-trim-left"></div>
+                <div class="trim-marker" id="se-trim-start"></div>
+                <div class="trim-marker end" id="se-trim-end"></div>
+                <div class="trim-shade right" id="se-trim-right"></div>
+              </div>
+            </div>
             <div class="modal-time-row"><span id="se-cur">0:00</span><span id="se-dur">—</span></div>
+            <div class="trim-window-meta"><span id="se-trim-start-label">Start 0:00</span><span id="se-trim-end-label">End —</span></div>
           </div>
         </div>
         <audio id="se-audio" style="display:none"></audio>
@@ -1539,31 +1562,37 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
 
       <div class="modal-section" style="padding-top:8px;padding-bottom:0">
-        <div class="modal-section-label">Selected Source</div>
-        <div id="se-source-title" style="font-size:12px;color:var(--text2);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div class="source-editor-card">
+          <div class="source-editor-title">Selected Source</div>
+          <div id="se-source-title" class="source-editor-value">—</div>
+        </div>
       </div>
 
       <!-- Source URL -->
-      <div class="modal-section" style="padding-top:10px;padding-bottom:0">
-        <div class="modal-section-label">Source URL</div>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="modal-section" style="padding-top:0;padding-bottom:0">
+        <div class="source-editor-card">
+          <div class="source-editor-title">Source URL</div>
+          <div class="source-editor-row">
           <input id="se-url" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
           <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Refresh</button>
           <a href="#" style="font-size:11px;color:var(--blue);white-space:nowrap;text-decoration:none;flex-shrink:0" onclick="event.preventDefault();const u=document.getElementById('se-url').value;if(u)window.open(u,'_blank')">↗ Open</a>
+          </div>
         </div>
       </div>
 
       <!-- Start Offset -->
-      <div class="modal-section" style="padding-top:10px;padding-bottom:16px">
-        <div class="modal-section-label">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="modal-section" style="padding-top:0;padding-bottom:16px">
+        <div class="source-editor-card" style="margin-bottom:0">
+        <div class="source-editor-title">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
+        <div class="source-editor-row">
           <input type="text" id="se-offset" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="seUpdateTrim()" onblur="normalizeOffsetInput(this)">
           <div class="offset-steps">
             <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),1)">▲</button>
             <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),-1)">▼</button>
           </div>
-                    <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
+          <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
           <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
+        </div>
         </div>
       </div>
     </div>
@@ -1599,6 +1628,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
     <!-- Bio -->
     <div class="modal-bio" id="theme-modal-bio" style="display:none"></div>
+    <div class="theme-modal-meta-card">
+      <div id="theme-modal-verified" class="theme-modal-verified" style="display:none">★ Verified Theme · Golden Source</div>
+      <div class="theme-modal-file" id="theme-modal-file">File: —</div>
+    </div>
 
     <!-- Section heading -->
     <div style="padding:14px 22px 10px">
@@ -1623,7 +1656,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     </div>
 
     <!-- Footer -->
-    <div class="modal-footer">
+    <div class="modal-footer" style="justify-content:space-between">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="themeModalOpenManualSearch()">Manual Search</button>
+      </div>
       <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
     </div>
   </div>
@@ -2600,7 +2636,7 @@ function _playTheme(btn){
   const title=row?(row.title||row.plex_title||''):btn.dataset.title||'';
   const year=row?row.year||'':btn.dataset.year||'';
   const folder=row?row.folder||'':btn.dataset.folder||'';
-  openThemeModal(rk, title, year, folder);
+  openThemeModal(rk, title, year, folder, row||{});
 }
 function _deleteTheme(btn){
   const rk=(btn.dataset.rk||'').trim();
@@ -3781,6 +3817,10 @@ function goToStep3(url, opts={}){
   document.getElementById('se-cur').textContent='0:00';
   document.getElementById('se-dur').textContent='—';
   document.getElementById('se-slider').value=0;
+  document.getElementById('se-trim-start-label').textContent='Start 0:00';
+  document.getElementById('se-trim-end-label').textContent='End —';
+  const trimWindow=document.getElementById('se-trim-window');
+  if(trimWindow) trimWindow.style.display='none';
   document.getElementById('se-info').textContent='Loading preview…';
   _step3PreparedUrl=url||'';
   _selectedSourceTitle=(opts.sourceTitle||_selectedSourceTitle||_sourceTitleFromUrl(url||''));
@@ -3866,7 +3906,33 @@ function seSeek(val){ _sourceEditorAudio.seek(val); }
 function seSkip(s){ _sourceEditorAudio.skip(s); }
 
 function seUpdateTrim(){
-  // intentionally no trim text in Step 3 per UX preference
+  const audio=_sourceEditorAudio.audio;
+  const trimWindow=document.getElementById('se-trim-window');
+  const startShade=document.getElementById('se-trim-left');
+  const endShade=document.getElementById('se-trim-right');
+  const startMarker=document.getElementById('se-trim-start');
+  const endMarker=document.getElementById('se-trim-end');
+  const startLabel=document.getElementById('se-trim-start-label');
+  const endLabel=document.getElementById('se-trim-end-label');
+  if(!trimWindow || !audio || !audio.duration){
+    if(trimWindow) trimWindow.style.display='none';
+    if(startLabel) startLabel.textContent='Start 0:00';
+    if(endLabel) endLabel.textContent='End —';
+    return;
+  }
+  const duration=audio.duration||0;
+  const start=Math.max(0, Math.min(parseTrim(document.getElementById('se-offset').value||'0'), duration));
+  const maxDur=Math.max(0, Number(_maxDur)||0);
+  const end=maxDur>0?Math.min(duration, start+maxDur):duration;
+  const startPct=(start/duration)*100;
+  const endPct=(end/duration)*100;
+  trimWindow.style.display='block';
+  startShade.style.width=`${startPct}%`;
+  endShade.style.left=`${endPct}%`;
+  startMarker.style.left=`${startPct}%`;
+  endMarker.style.left=`${endPct}%`;
+  if(startLabel) startLabel.textContent=`Start ${fmt(start)}`;
+  if(endLabel) endLabel.textContent=`End ${fmt(end)}`;
 }
 
 function sePreviewFromOffset(){
@@ -3884,8 +3950,10 @@ async function saveSourceEditor(skipClose=false){
   const offset=parseTrim(document.getElementById('se-offset').value||'0');
   if(!url){ toast('Please enter a URL','info'); return; }
   const lib=_seLib||_searchLib||_activeLib||'';
-  const status=_autoApproveManual?'APPROVED':'STAGED';
-  const notes=_autoApproveManual?'Manual source auto-approved':'URL set via manual search — staged for approval';
+  const row=_rows.find(r=>String(r.rating_key)===String(key));
+  const isAvailable=row && ['DOWNLOADED','AVAILABLE'].includes(String(row.status||'').toUpperCase());
+  const status=(isAvailable || !_autoApproveManual)?'STAGED':'APPROVED';
+  const notes=status==='APPROVED'?'Manual source auto-approved':'URL set via manual search — staged for approval';
 
   const saveUrlResp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
     method:'PATCH', headers:{'Content-Type':'application/json'},
@@ -3907,11 +3975,13 @@ async function saveSourceEditor(skipClose=false){
     throw new Error(statusPayload.error||'save_status_failed');
   }
 
-  const row=_rows.find(r=>String(r.rating_key)===String(key));
-  if(row){ row.url=url; row.start_offset=String(offset); row.status=status; }
+  const localRow=_rows.find(r=>String(r.rating_key)===String(key));
+  if(localRow){ localRow.url=url; localRow.start_offset=String(offset); localRow.status=status; }
   if(!skipClose){
     closeSearchModal();
-    toast(_autoApproveManual?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved'):uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
+    toast(status==='APPROVED'
+      ?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved')
+      :uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
   }
   loadDatabase();
   return true;
@@ -4561,11 +4631,17 @@ function toggleNav(){
 (function(){try{if(localStorage.getItem('mt-nav-collapsed')==='1'){document.querySelector('nav').classList.add('collapsed');document.body.classList.add('nav-collapsed');setTimeout(()=>{const b=document.getElementById('nav-collapse-btn');if(b)b.textContent='»';},0);}}catch(e){}})();
 
 // ── Theme preview modal ──────────────────────────────────────────────────────
-function openThemeModal(rk,title,year,folder){
+let _themeModalContext={};
+function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
+  _themeModalContext={rk,title,year,folder,row};
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
   document.getElementById('theme-modal-dur-meta').textContent='';
+  document.getElementById('theme-modal-file').textContent=`File: ${folder||'Unknown folder'}`;
+  const verifiedEl=document.getElementById('theme-modal-verified');
+  const verified=String(row?.source_origin||'').startsWith('golden_source');
+  if(verifiedEl) verifiedEl.style.display=verified?'block':'none';
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
   // TMDB link
@@ -4585,6 +4661,12 @@ function openThemeModal(rk,title,year,folder){
   });
   _themeModalAudio.audio.load();
   if(_curKey) stopCurrentAudio();
+}
+function themeModalOpenManualSearch(){
+  const rk=_themeModalContext.rk;
+  if(!rk) return;
+  closeThemeModal();
+  openSearchModal(rk,_themeModalContext.title||'',_themeModalContext.year||'',encodeURIComponent(_activeLib||''));
 }
 function closeThemeModal(){
   closeModal('theme-modal');

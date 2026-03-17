@@ -350,7 +350,7 @@ def _parse_golden_source_csv(text):
         clean = {str(k or "").strip(): str(v or "").strip() for k, v in row.items()}
         tmdb_id = clean.get("tmdb_id", "")
         source_url = clean.get("source_url", "")
-        if not tmdb_id or not source_url:
+        if not tmdb_id:
             continue
         clean["tmdb_id"] = tmdb_id
         clean["source_url"] = source_url
@@ -535,7 +535,7 @@ def test_golden_source():
     try:
         normalized_url, rows, fetch_ms, fetch_mode = _fetch_golden_source_catalog(url)
         if not rows:
-            return jsonify({"ok":False,"error":"CSV loaded but no usable rows found (need tmdb_id + source_url)"})
+            return jsonify({"ok":False,"error":"CSV loaded but no usable rows found (need tmdb_id column)"})
         return jsonify({
             "ok": True,
             "source_url": normalized_url,
@@ -639,12 +639,10 @@ def import_golden_source():
     path = ledger_path_for(lib)
     rows = load_ledger(path)
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    imported = skipped_existing = missing_tmdb = no_match = skipped_downloaded = 0
+    imported = skipped_existing = missing_tmdb = no_match = 0
     tmdb_cache = {}
     for row in rows:
         cur = str(row.get("status","") or "").upper()
-        if cur == "DOWNLOADED":
-            skipped_downloaded += 1; continue
         match = None
         tmdb_id = str(row.get("tmdb_id","") or "").strip()
         if tmdb_id: match = catalog.get(tmdb_id)
@@ -676,16 +674,22 @@ def import_golden_source():
             if tmdb_id: row["tmdb_id"] = tmdb_id
             continue
         row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id","") or "").strip()
-        row["url"] = match.get("source_url","")
+        incoming_url = str(match.get("source_url", "") or "").strip()
+        row["url"] = incoming_url
         verified_raw = str(match.get("verified","") or "").strip().lower()
         is_verified = verified_raw in {"1", "true", "yes", "y", "verified", "star", "★", "*"}
-        row["source_origin"] = "golden_source_verified" if is_verified else "golden_source"
+        row["source_origin"] = ("golden_source_verified" if is_verified else "golden_source") if incoming_url else "unknown"
         row["start_offset"] = match.get("start_offset","0") or "0"
         row["end_offset"] = match.get("end_offset","0") or "0"
-        if cur not in ("AVAILABLE", "DOWNLOADED"):
+        if not incoming_url and cur in ("STAGED", "APPROVED"):
+            row["status"] = "PENDING"
+        elif cur not in ("AVAILABLE", "DOWNLOADED"):
             row["status"] = "APPROVED" if auto_approve else "STAGED"
         row["last_updated"] = now
-        row["notes"] = f"Imported from Golden Source ({Path(normalized_url).name})"
+        if incoming_url:
+            row["notes"] = f"Imported from Golden Source ({Path(normalized_url).name})"
+        else:
+            row["notes"] = f"Golden Source cleared source URL ({Path(normalized_url).name})"
         imported += 1
     save_ledger(path, rows)
     total_ms = round((_time.perf_counter()-t0_total)*1000, 1)
@@ -698,7 +702,6 @@ def import_golden_source():
         "skipped_existing": skipped_existing,
         "missing_tmdb": missing_tmdb,
         "no_match": no_match,
-        "skipped_downloaded": skipped_downloaded,
         "fetch_ms": fetch_ms,
         "fetch_mode": fetch_mode,
         "cache_ttl_sec": cache_ttl_sec,
@@ -884,8 +887,13 @@ def download_now():
     if not is_allowed_folder(folder, roots):
         return jsonify({"ok":False,"error":f"Folder not allowed: {folder!r} — check media_roots in config.yaml"}), 403
     theme_path = Path(folder) / filename
+    replaced_existing = False
     if theme_path.exists():
-        return jsonify({"ok":False,"error":"Theme file already exists — delete it first"}), 409
+        try:
+            theme_path.unlink(missing_ok=True)
+            replaced_existing = True
+        except Exception as e:
+            return jsonify({"ok":False,"error":f"Failed to replace existing theme file: {str(e)[:160]}"}), 500
     quality_map = {"high":"bestaudio","balanced":"bestaudio[abr<=192]/bestaudio",
                    "small":"bestaudio[abr<=128]/bestaudio","smallest":"bestaudio[abr<=96]/bestaudio"}
     fmt_str = quality_map.get(quality_profile,"bestaudio")
@@ -921,11 +929,12 @@ def download_now():
         downloaded.rename(theme_path)
         row["status"] = "DOWNLOADED"
         row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        row["notes"] = "Downloaded via manual download"
+        row["notes"] = "Downloaded via manual download (replaced existing local theme)" if replaced_existing else "Downloaded via manual download"
         # FIX: sync theme cache so theme_exists / duration / size / mtime are accurate
         row, _ = sync_theme_cache(row, filename, probe_duration=True)
         save_ledger(path_ledger, rows)
-        return jsonify({"ok":True,"message":f"Downloaded and saved as {filename}","matched_by":matched_by or "rating_key"})
+        msg = f"Downloaded and replaced existing {filename}" if replaced_existing else f"Downloaded and saved as {filename}"
+        return jsonify({"ok":True,"message":msg,"matched_by":matched_by or "rating_key","replaced_existing":replaced_existing})
     except subprocess.TimeoutExpired:
         for f in Path(folder).glob(f"mt_tmp_{slug}.*"): f.unlink(missing_ok=True)
         return jsonify({"ok":False,"error":"Download timed out (180s)"})
