@@ -126,13 +126,16 @@ The curated source CSV must have these columns:
 | Column | Required | Description |
 |--------|----------|-------------|
 | `tmdb_id` | ✓ | TMDB movie ID |
-| `source_url` | ✓ | Direct audio source URL |
+| `source_url` | ✓ | Direct audio source URL (maps to DB `golden_source_url`) |
 | `title` | | Movie title (used for fallback matching) |
 | `year` | | Release year |
-| `start_offset` | | Trim start in seconds |
-| `verified` | | Whether source has been verified |
+| `start_offset` | | Trim start in seconds (maps to DB `golden_source_offset`) |
 | `updated_at` | | Last update date |
 | `notes` | | Any notes |
+
+Notes:
+- Golden Source CSV fields are imported into Golden Source DB fields (`golden_source_url`, `golden_source_offset`).
+- User-selected `url` and `start_offset` values are not imported from the Golden Source CSV.
 
 ## Building locally
 

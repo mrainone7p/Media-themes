@@ -924,7 +924,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="field">
               <label>Golden Source URL</label>
               <input id="cfg-golden_source_url" placeholder="https://example.com/golden_source.csv">
-              <div class="field-help compact">Required: <code>tmdb_id</code>, <code>source_url</code>. Optional: <code>title</code>, <code>year</code>, <code>start_offset</code>, <code>verified</code>, <code>updated_at</code>, <code>notes</code>.</div>
+              <div class="field-help compact">Required: <code>tmdb_id</code>, <code>source_url</code>. Optional: <code>title</code>, <code>year</code>, <code>start_offset</code>, <code>updated_at</code>, <code>notes</code>.</div>
             </div>
             <div class="settings-test-row">
               <button class="btn btn-ghost btn-sm" id="golden-test-btn" onclick="testGoldenSource()">⚡ Test Golden Source</button>
@@ -4430,7 +4430,7 @@ const TASK_CARD_CONFIG={
       buttonTitle:'Download a curated Golden Source-format CSV',
       handler:'taskExportGoldenSource()',
       cardClass:'golden-emphasis task-wide',
-      extraHtml:'<div class="field-help compact" title="tmdb_id,title,year,source_url,start_offset,verified,updated_at,notes">Fields: tmdb_id · title · year · source_url · start_offset · verified · updated_at · notes</div>'
+      extraHtml:'<div class="field-help compact" title="tmdb_id,title,year,source_url,start_offset,updated_at,notes">Fields: tmdb_id · title · year · source_url · start_offset · updated_at · notes</div>'
     }
   ],
   cleanup:[
