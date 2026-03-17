@@ -817,50 +817,11 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
     # ── Per-movie resolution ──────────────────────────────────────────────────
     for i, movie in enumerate(pending_movies, 1):
         key        = movie["rating_key"]
-        row        = ledger.get(key, {})
         plex_title = movie["plex_title"]
         plex_year  = movie["plex_year"]
         folder     = movie["folder"]
 
         emit_progress(2, i, len(pending_movies), plex_title, "resolving")
-
-        # Golden Source only path (no per-movie TMDB lookup)
-        if golden_only:
-            title    = row.get("title") or plex_title
-            year     = row.get("year") or plex_year
-            tmdb_id  = str(movie.get("tmdb_id") or row.get("tmdb_id") or "")
-
-            if not tmdb_id:
-                log.info("  Golden Source: missing TMDB ID — marking FAILED")
-                ledger_upsert(
-                    ledger, key, plex_title, title, year, folder, ST_FAILED,
-                    notes="Golden Source only mode — missing tmdb_id", tmdb_id="",
-                )
-                stats["failed"] += 1
-                stats["no_playlist"] += 1
-                continue
-
-            match = golden_catalog.get(tmdb_id)
-            if not match:
-                log.info("  Golden Source: no TMDB match — marking FAILED")
-                ledger_upsert(
-                    ledger, key, plex_title, title, year, folder, ST_FAILED,
-                    notes="Golden Source only mode — no TMDB match found", tmdb_id=tmdb_id,
-                )
-                stats["failed"]      += 1
-                stats["no_playlist"] += 1
-                continue
-
-            ledger_upsert(
-                ledger, key, plex_title, title, year, folder, ST_STAGED,
-                url=match.get("source_url", ""),
-                start_offset=match.get("start_offset", 0),
-                end_offset=match.get("end_offset", 0),
-                notes="Matched from Golden Source", tmdb_id=tmdb_id,
-            )
-            stats["staged"]         += 1
-            stats["golden_matched"] += 1
-            continue
 
         # TMDB lookup
         if tmdb_api_key:
@@ -876,6 +837,29 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
 
         if title != plex_title:
             log.info(f"  TMDB: '{plex_title}' → '{title}'")
+
+        # Golden Source only path
+        if golden_only:
+            match = golden_catalog.get(tmdb_id)
+            if not match:
+                log.info("  Golden Source: no TMDB match — marking FAILED")
+                ledger_upsert(
+                    ledger, key, plex_title, title, year, folder, ST_FAILED,
+                    notes="Golden Source only mode — no TMDB match found", tmdb_id=tmdb_id,
+                )
+                stats["failed"]      += 1
+                stats["no_playlist"] += 1
+                continue
+            ledger_upsert(
+                ledger, key, plex_title, title, year, folder, ST_STAGED,
+                url=match.get("source_url", ""),
+                start_offset=match.get("start_offset", 0),
+                end_offset=match.get("end_offset", 0),
+                notes="Matched from Golden Source", tmdb_id=tmdb_id,
+            )
+            stats["staged"]         += 1
+            stats["golden_matched"] += 1
+            continue
 
         # Strict template validation
         if not fuzzy:
