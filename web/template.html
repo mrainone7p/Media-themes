@@ -525,6 +525,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .sm-card-icon{font-size:22px;line-height:1}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.35}
+.sm-card-first{min-height:18px;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sm-card-first button{margin-top:2px}
 .search-result-card{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);transition:background .12s;cursor:pointer}
 .search-result-card:hover{background:var(--gray-soft)}
 .search-result-card.recommended{border-left:3px solid var(--amber);background:var(--amber-soft)}
@@ -566,7 +568,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .dual-inline{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px;align-items:start}
 .dual-inline .toggle-card{height:100%}
 .label-stack{display:flex;flex-direction:column;gap:4px}
-.performance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.performance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.schedule-step2-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:720px}
+.manual-methods{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:16px}
 .muted-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:11px;color:var(--text2)}
 .schedule-master{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px}
 .schedule-master-copy{min-width:0;flex:1}
@@ -821,6 +825,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <div class="toggle-note golden">Skip YouTube search and only match against the curated source list. This can be faster, but titles not covered by your list will stay unmatched.</div>
               </div>
             </div>
+            <div class="toggle-card" style="margin-top:10px">
+              <label class="toggle" style="margin-top:2px">
+                <input type="checkbox" id="cfg-refresh_golden_source_each_run">
+                <span class="toggle-track"></span>
+              </label>
+              <div>
+                <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
+                <div class="toggle-note">Global for manual and scheduled Step 2 runs. Pull a fresh Golden Source list before matching.</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -869,7 +883,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
           </div>
         </div>
-        <div class="settings-grid-3" style="margin-bottom:16px">
+        <div class="settings-subcard" style="margin-bottom:16px">
+          <div class="subcard-title">Pending titles per run</div>
+          <div class="subcard-intro">Control how many PENDING items are processed during each Find Sources run. <strong>0 = unlimited.</strong></div>
+          <div class="field">
+            <label>Pending Titles Per Run</label>
+            <input type="number" id="cfg-test_limit" min="0">
+          </div>
+        </div>
+        <div class="performance-grid" style="margin-bottom:16px">
           <div class="field">
             <label>Audio Format</label>
             <select id="cfg-audio_format">
@@ -886,13 +908,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <option value="smallest">Smallest — about 96 kbps equivalent</option>
             </select>
             <div class="field-help compact">Actual bitrate varies by source and output codec. Best available keeps the highest practical quality.</div>
-          </div>
-        </div>
-        <div class="performance-grid">
-          <div class="field">
-            <label>Pending Titles Per Run</label>
-            <input type="number" id="cfg-test_limit" min="0">
-            <div class="field-help compact danger-note">Manual searches only: how many pending titles Media Tracks tries to match in one manual Find Sources run. <strong>0 = unlimited.</strong></div>
           </div>
           <div class="field">
             <label>Max Retries</label>
@@ -1080,8 +1095,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:15px;font-weight:700">Find Theme Sources</span>
             </div>
             <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Searches sources for a theme based on the configured search logic for each PENDING media item. Saves the URL and moves status to STAGED. <span style="color:var(--purple);font-weight:600">Uses: TMDB + YouTube or Golden Source if configured.</span></div>
-            <div style="display:flex;flex-direction:column;gap:8px;max-width:520px">
-              <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;width:fit-content">
+            <div class="schedule-step2-options">
+              <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;height:100%">
                 <label class="toggle" style="transform:scale(.85)">
                   <input type="checkbox" id="sched-only-golden" onchange="saveRunSchedule()">
                   <span class="toggle-track"></span>
@@ -1091,7 +1106,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                   <div style="font-size:11px;color:var(--amber)">Use curated Golden Source matches only during Step 2 for tighter and faster source discovery.</div>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:fit-content">
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
                 <div>
                   <span style="font-size:12px;font-weight:600;color:var(--text)">Pending Titles Per Run</span>
                   <div style="font-size:11px;color:var(--text3)">Limits how many PENDING titles are processed per scheduled Step 2 run. 0 = unlimited.</div>
@@ -1115,7 +1130,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:15px;font-weight:700">Download Themes</span>
             </div>
             <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Downloads audio for every APPROVED media item, saves the theme file into the media folder, and moves status to AVAILABLE. <span style="color:var(--green);font-weight:600">Uses: yt-dlp + ffmpeg.</span></div>
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:fit-content">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
               <label class="toggle" style="transform:scale(.85)">
                 <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
                 <span class="toggle-track"></span>
@@ -1140,11 +1155,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="run-bar">
       <div class="run-dot" id="run-dot"></div>
       <span id="run-status" style="color:var(--text2)">Idle — select a step above to run manually</span>
-      <button class="btn btn-ghost btn-sm" onclick="clearTerminal()" style="margin-left:auto">Clear</button>
-      <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopRun()" style="display:none">■ Stop</button>
-    </div>
-    <div class="terminal" id="terminal">
-      <div class="ll ll-info">Ready. Toggle steps for automated runs, or click Run Now for manual execution.</div>
+      <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopRun()" style="margin-left:auto;display:none">■ Stop</button>
     </div>
 
   </div></div>
@@ -1249,8 +1260,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <input type="text" id="yt-modal-start" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="ytModalUpdateTrim()" onblur="normalizeOffsetInput(this)">
         <div class="offset-steps">
-          <button class="offset-step" onclick="adjustOffset(document.getElementById('yt-modal-start'),5)">▲</button>
-          <button class="offset-step" onclick="adjustOffset(document.getElementById('yt-modal-start'),-5)">▼</button>
+          <button class="offset-step" onclick="adjustOffset(document.getElementById('yt-modal-start'),1)">▲</button>
+          <button class="offset-step" onclick="adjustOffset(document.getElementById('yt-modal-start'),-1)">▼</button>
         </div>
         <div class="modal-trim-result" id="yt-modal-trim-info"></div>
         <button class="btn btn-purple btn-sm" onclick="ytModalPreviewTrim()">▶ Preview from offset</button>
@@ -1315,19 +1326,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="modal-overlay" id="search-modal" onclick="if(event.target===this)closeSearchModal()">
   <div class="modal" style="max-width:640px;position:relative;padding:0;display:flex;flex-direction:column;max-height:92vh">
 
-    <!-- Movie header -->
-    <div class="modal-header" style="flex-shrink:0">
-      <img class="modal-poster" id="search-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
-      <div class="modal-movie-info">
-        <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
-        <div class="modal-movie-meta"><span id="search-modal-year-meta" style="color:var(--text2)"></span></div>
-        <div class="modal-movie-links" id="search-modal-links"></div>
-      </div>
-    </div>
-
-    <!-- Bio -->
-    <div class="modal-bio" id="search-modal-bio" style="display:none"></div>
-
     <!-- Step rail - TOP -->
     <div style="display:flex;align-items:center;gap:0;padding:10px 22px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0" id="search-step-rail">
       <div class="srail-step active" id="srail-1" onclick="_srailClick(1)">
@@ -1343,19 +1341,34 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
     </div>
 
+    <!-- Movie header -->
+    <div class="modal-header" style="flex-shrink:0">
+      <img class="modal-poster" id="search-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
+      <div class="modal-movie-info">
+        <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
+        <div class="modal-movie-meta"><span id="search-modal-year-meta" style="color:var(--text2)"></span></div>
+        <div class="modal-movie-links" id="search-modal-links"></div>
+      </div>
+    </div>
+
+    <!-- Bio -->
+    <div class="modal-bio" id="search-modal-bio" style="display:none"></div>
+
     <!-- Step 1: Choose Method -->
     <div id="search-step-1" class="search-step-body" style="overflow-y:auto;flex:1">
       <div class="modal-section" style="padding-bottom:0">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+        <div class="manual-methods">
           <div class="search-method-card active" id="sm-card-playlist" onclick="selectSearchMethod('playlist')">
             <div class="sm-card-icon">🎵</div>
             <div class="sm-card-title">Playlist</div>
             <div class="sm-card-desc">Soundtrack playlists, track 1</div>
+            <div class="sm-card-first" id="sm-first-playlist"></div>
           </div>
           <div class="search-method-card" id="sm-card-direct" onclick="selectSearchMethod('direct')">
             <div class="sm-card-icon">🎯</div>
             <div class="sm-card-title">Direct</div>
             <div class="sm-card-desc">Single theme/song result</div>
+            <div class="sm-card-first" id="sm-first-direct"></div>
           </div>
           <div class="search-method-card" id="sm-card-custom" onclick="selectSearchMethod('custom')">
             <div class="sm-card-icon">✏️</div>
@@ -1373,7 +1386,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
         <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
           <button class="btn btn-amber" style="flex:1" onclick="doSearch()">🔍 Search</button>
-          <button class="btn btn-ghost" onclick="doFeelingLucky()" id="sm-lucky-btn">✨ Feeling Lucky</button>
         </div>
 
         <!-- Paste URL section -->
@@ -1392,6 +1404,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div style="padding:12px 22px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
         <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)">Results</div>
         <div id="sm-results-meta" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></div>
+      </div>
+      <div style="padding:0 22px 8px">
+        <div class="modal-player-row" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)">
+          <button class="play-btn" id="sm-preview-play" onclick="searchPreviewToggle()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <div class="modal-scrubber-wrap">
+            <input type="range" class="modal-slider" id="sm-preview-slider" min="0" max="100" value="0" oninput="searchPreviewSeek(this.value)">
+            <div class="modal-time-row"><span id="sm-preview-cur">0:00</span><span id="sm-preview-dur">—</span></div>
+          </div>
+        </div>
       </div>
       <div id="search-results" style="padding:0 22px 16px"></div>
     </div>
@@ -1421,10 +1444,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="modal-section-label">Source URL</div>
         <div style="display:flex;gap:8px;align-items:center">
           <input id="se-url" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
-          <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">▶ Load</button>
+          <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Re-YouTube</button>
           <a href="#" style="font-size:11px;color:var(--blue);white-space:nowrap;text-decoration:none;flex-shrink:0" onclick="event.preventDefault();const u=document.getElementById('se-url').value;if(u)window.open(u,'_blank')">↗ Open</a>
         </div>
-        <div id="se-links" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
 
       <!-- Start Offset -->
@@ -1433,11 +1455,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <input type="text" id="se-offset" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="seUpdateTrim()" onblur="normalizeOffsetInput(this)">
           <div class="offset-steps">
-            <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),5)">▲</button>
-            <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),-5)">▼</button>
+            <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),1)">▲</button>
+            <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),-1)">▼</button>
           </div>
           <div class="modal-trim-result" id="se-trim-result"></div>
-          <button class="btn btn-purple btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
+          <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
+          <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
         </div>
       </div>
     </div>
@@ -1448,6 +1471,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div style="display:flex;gap:8px">
         <button class="btn btn-ghost" onclick="closeSearchModal()">Cancel</button>
         <button class="btn btn-amber" id="search-modal-primary" onclick="searchModalPrimary()">🔍 Search</button>
+        <button class="btn btn-green" id="search-modal-download-now" style="display:none" onclick="searchModalDownloadNow()">Download Now</button>
       </div>
     </div>
   </div>
@@ -1880,6 +1904,8 @@ async function loadConfiguration(){
   if(matchingModeEl) matchingModeEl.value = cfg.search_fuzzy ? 'fuzzy' : 'strict';
   const goldenOnlyEl = document.getElementById('cfg-search_only_golden');
   if(goldenOnlyEl) goldenOnlyEl.checked = !!cfg.search_only_golden;
+  const goldenRefreshEl = document.getElementById('cfg-refresh_golden_source_each_run');
+  if(goldenRefreshEl) goldenRefreshEl.checked = cfg.refresh_golden_source_each_run !== false;
   syncMatchingModeSelect();
   const manAuto=document.getElementById('cfg-auto_approve_manual');
   if(manAuto) manAuto.checked = !!cfg.auto_approve_manual;
@@ -2058,6 +2084,7 @@ async function saveConfiguration(){
   cfg.search_fallback = document.getElementById('cfg-search_fallback').checked;
   cfg.search_fuzzy = (document.getElementById('cfg-search_matching_mode')?.value || 'strict') === 'fuzzy';
   cfg.search_only_golden = document.getElementById('cfg-search_only_golden').checked;
+  cfg.refresh_golden_source_each_run = document.getElementById('cfg-refresh_golden_source_each_run').checked;
   if(cfg.search_fuzzy) cfg.search_fallback = false;
   cfg.auto_approve_manual = document.getElementById('cfg-auto_approve_manual').checked;
   const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
@@ -3024,15 +3051,12 @@ function _updateQueryDisplay(){
   const q = buildSearchQuery(_searchMethod,_searchTitle,_searchYear);
   const disp = document.getElementById('sm-query-display');
   const inp = document.getElementById('sm-custom-input');
-  const lucky = document.getElementById('sm-lucky-btn');
   if(_searchMethod==='custom'){
     if(disp) disp.style.display='none';
     if(inp){ inp.style.display=''; inp.value=_searchCustomQuery||q; }
-    if(lucky) lucky.style.display='none';
   } else {
     if(disp){ disp.style.display=''; disp.textContent=q; }
     if(inp) inp.style.display='none';
-    if(lucky) lucky.style.display='';
   }
 }
 
@@ -3065,22 +3089,26 @@ function _setStepRail(step){
 function _setSearchFooter(step){
   const back = document.getElementById('search-modal-back');
   const primary = document.getElementById('search-modal-primary');
-  if(!back || !primary) return;
+  const dlnow = document.getElementById('search-modal-download-now');
+  if(!back || !primary || !dlnow) return;
   if(step===1){
     back.style.display='none';
+    primary.style.display='';
     primary.textContent='🔍 Search';
     primary.className='btn btn-amber';
     primary.onclick=doSearch;
+    dlnow.style.display='none';
   } else if(step===2){
     back.style.display='';
-    primary.textContent='Select First Result';
-    primary.className='btn btn-ghost';
-    primary.onclick=()=>{ if(_lastSearchResults.length) goToStep3(_lastSearchResults[0].url); };
+    primary.style.display='none';
+    dlnow.style.display='none';
   } else if(step===3){
     back.style.display='';
-    primary.textContent=_autoApproveManual?'Approve + Save':'Save Source';
+    primary.style.display='';
+    primary.textContent=_autoApproveManual?'Approve + Save':'Stage Source';
     primary.className='btn btn-amber';
     primary.onclick=saveSourceEditor;
+    dlnow.style.display='';
   }
 }
 
@@ -3118,6 +3146,7 @@ async function openSearchModal(rk,title,year,lib){
     if(card) card.classList.toggle('active',m===_searchMethod);
   });
   _updateQueryDisplay();
+  _initMethodQuickPicks();
   document.getElementById('search-paste-url').value='';
   // Decide starting step
   if(_lastSearchResults.length && _searchKey===rk){
@@ -3165,18 +3194,6 @@ async function doSearch(){
   _setSearchFooter(2);
 }
 
-async function doFeelingLucky(){
-  const q=buildSearchQuery(_searchMethod,_searchTitle,_searchYear);
-  if(!q){ toast('No query','info'); return; }
-  toast('Searching…','info');
-  const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
-  const data=await r.json();
-  if(!data.ok || !data.results?.length){ toast(data.error||'No results','err'); return; }
-  _lastSearchResults=data.results;
-  _lastSearchMethod=_searchMethod;
-  goToStep3(data.results[0].url);
-}
-
 function _renderResults(results){
   const el=document.getElementById('search-results');
   document.getElementById('sm-results-meta').textContent=results.length ? `${results.length} results` : '';
@@ -3200,6 +3217,73 @@ function _renderResults(results){
     </div>`).join('');
 }
 
+
+function _setMethodQuickPick(method, result){
+  const el=document.getElementById('sm-first-'+method);
+  if(!el) return;
+  if(!result){ el.textContent=''; return; }
+  const safeTitle=(result.title||'First result').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const safeUrl=(result.url||'').replace(/'/g,"\\'");
+  el.innerHTML=`<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();goToStep3('${safeUrl}')">1st: ${safeTitle}</button>`;
+}
+
+async function _prefetchMethodFirstResult(method){
+  if(method==='custom') return;
+  const q=buildSearchQuery(method,_searchTitle,_searchYear);
+  if(!q) return;
+  try{
+    const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+    const data=await r.json();
+    _setMethodQuickPick(method, (data.ok && data.results && data.results.length)?data.results[0]:null);
+  }catch(_e){ _setMethodQuickPick(method,null); }
+}
+
+function _initMethodQuickPicks(){
+  _setMethodQuickPick('playlist',null);
+  _setMethodQuickPick('direct',null);
+  _prefetchMethodFirstResult('playlist');
+  _prefetchMethodFirstResult('direct');
+}
+
+function searchPreviewSeek(val){
+  const a=_audioEl();
+  if(a.duration) a.currentTime=val/100*a.duration;
+}
+function searchPreviewToggle(){
+  const a=_audioEl(),btn=document.getElementById('sm-preview-play');
+  if(!a.src){ return; }
+  if(a.paused){ a.play().catch(()=>{}); btn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'; }
+  else { a.pause(); btn.innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; }
+}
+
+function seSnapOffsetToCurrent(){
+  const a=document.getElementById('se-audio');
+  const offsetEl=document.getElementById('se-offset');
+  if(!a || !offsetEl) return;
+  offsetEl.value=fmt(a.currentTime||0);
+  seUpdateTrim();
+}
+
+async function searchModalDownloadNow(){
+  const key=_seKey||_searchKey;
+  const lib=_seLib||_searchLib||_activeLib||'';
+  if(!key){ toast('No row selected','err'); return; }
+  await saveSourceEditor(true);
+  closeSearchModal();
+  toast('Staged source — downloading now…','info');
+  const row=_rows.find(r=>r.rating_key===key);
+  const folder=row?row.folder||'':'';
+  const tmdb=row?row.tmdb_id||'':'';
+  const r=await fetch('/api/theme/download-now',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({rating_key:key,library:lib,folder,tmdb_id:tmdb})
+  });
+  const data=await r.json().catch(()=>({ok:false,error:'Download failed'}));
+  if(data.ok){ toast(data.message||'Download started','ok'); }
+  else { toast(data.error||'Download failed','err'); }
+  loadDatabase();
+}
+
 function goToStep3(url){
   stopAllAudio();
   document.getElementById('se-url').value=url||'';
@@ -3212,12 +3296,6 @@ function goToStep3(url){
   const loadBtn=document.getElementById('se-load-btn');
   if(loadBtn){ loadBtn.textContent='Loading…'; loadBtn.disabled=true; }
   document.getElementById('se-play-btn').innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-  const seLinks=document.getElementById('se-links');
-  if(seLinks && url){
-    const isYt=url.includes('youtube.com')||url.includes('youtu.be');
-    seLinks.innerHTML=isYt?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`
-      :`<a class="modal-link-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">↗ Source</a>`;
-  }
   goToSearchStep(3);
   if(url) setTimeout(()=>seLoadPreview(),80);
 }
@@ -3243,15 +3321,7 @@ function backToSearch(){
   goToSearchStep(2);
 }
 
-function seUrlChanged(){
-  const url=(document.getElementById('se-url').value||'').trim();
-  const seLinks=document.getElementById('se-links');
-  if(seLinks&&url){
-    const isYt=url.includes('youtube.com')||url.includes('youtu.be');
-    seLinks.innerHTML=isYt?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`
-      :`<a class="modal-link-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">↗ Source</a>`;
-  }
-}
+function seUrlChanged(){}
 
 async function seLoadPreview(){
   const url=(document.getElementById('se-url').value||'').trim();
@@ -3262,7 +3332,7 @@ async function seLoadPreview(){
   try{
     const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
     const data=await r.json();
-    if(btn){ btn.textContent='↺ Reload'; btn.disabled=false; }
+    if(btn){ btn.textContent='↺ Re-YouTube'; btn.disabled=false; }
     if(!data.ok){ document.getElementById('se-info').textContent='Error: '+(data.error||'Failed'); return; }
     const audio=document.getElementById('se-audio');
     stopAllAudio();
@@ -3282,7 +3352,7 @@ async function seLoadPreview(){
     };
     audio.onerror=()=>{ document.getElementById('se-info').textContent='Playback error — try a different URL'; };
     audio.load();
-  }catch(e){ if(btn){ btn.textContent='▶ Load'; btn.disabled=false; } toast('Error: '+e,'err'); }
+  }catch(e){ if(btn){ btn.textContent='↺ Re-YouTube'; btn.disabled=false; } toast('Error: '+e,'err'); }
 }
 
 function seToggle(){
@@ -3311,7 +3381,7 @@ function sePreviewFromOffset(){
   document.getElementById('se-play-btn').innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
 }
 
-async function saveSourceEditor(){
+async function saveSourceEditor(skipClose=false){
   const key=_seKey||_searchKey; if(!key) return;
   const url=(document.getElementById('se-url').value||'').trim();
   const offset=parseTrim(document.getElementById('se-offset').value||'0');
@@ -3323,8 +3393,10 @@ async function saveSourceEditor(){
     method:'PATCH', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({url,start_offset:offset,status,notes})
   });
-  closeSearchModal();
-  toast(_autoApproveManual?'Saved — auto-approved':'Saved — staged for approval','ok');
+  if(!skipClose){
+    closeSearchModal();
+    toast(_autoApproveManual?'Saved — auto-approved':'Saved — staged for approval','ok');
+  }
   loadDatabase();
 }
 
@@ -3343,8 +3415,20 @@ function previewSearchResult(url, btn){
       audio.src = apiUrl(data.audio_url); audio.play();
       window._activePreviewBtn = btn;
       btn.textContent = '■ Stop';
-      audio.onended = ()=>{ resetActivePreviewBtn(); };
-      btn.onclick = ()=>{ audio.pause(); resetActivePreviewBtn(); };
+      const pbtn=document.getElementById('sm-preview-play');
+      if(pbtn) pbtn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+      audio.ontimeupdate=()=>{
+        const dur=audio.duration||0;
+        const cur=audio.currentTime||0;
+        const s=document.getElementById('sm-preview-slider');
+        const c=document.getElementById('sm-preview-cur');
+        const d=document.getElementById('sm-preview-dur');
+        if(d) d.textContent=dur?fmt(dur):'—';
+        if(c) c.textContent=fmt(cur);
+        if(s && dur) s.value=(cur/dur*100);
+      };
+      audio.onended = ()=>{ resetActivePreviewBtn(); if(pbtn) pbtn.innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; };
+      btn.onclick = ()=>{ audio.pause(); resetActivePreviewBtn(); if(pbtn) pbtn.innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; };
     }).catch(()=>{ resetPreviewButton(btn); toast('Preview failed','err'); });
 }
 
@@ -3564,7 +3648,8 @@ function startPass(pass){
   document.getElementById('btn-stop').style.display='inline-flex';
   const labels={1:'Scanning libraries…',2:'Finding YouTube sources…',3:'Downloading approved themes…'};
   document.getElementById('run-status').textContent=labels[pass];
-  document.getElementById('terminal').innerHTML='';
+  const terminal=document.getElementById('terminal');
+  if(terminal) terminal.innerHTML='';
 
   const prog=document.getElementById('run-progress');
   prog.classList.add('active');
@@ -3607,12 +3692,13 @@ function startPass(pass){
 
 function appendLine(line){
   const t=document.getElementById('terminal');
+  if(!t) return;
   const d=document.createElement('div');
   d.className='ll '+(line.includes('[OK]')?'ll-ok':line.includes('[FAILED]')?'ll-err':line.includes('[RESOLVE]')?'ll-resolve':line.includes('WARNING')||line.includes('WARN')?'ll-warn':line.includes('ERROR')?'ll-err':line.startsWith('═')||line.startsWith('─')||line.startsWith('=')?'ll-head':line.includes('Library:')||line.includes('═══')?'ll-lib':'ll-info');
   d.textContent=line; t.appendChild(d); t.scrollTop=t.scrollHeight;
 }
 
-function clearTerminal(){ document.getElementById('terminal').innerHTML='<div class="ll ll-info">Cleared.</div>'; }
+function clearTerminal(){ const t=document.getElementById('terminal'); if(t) t.innerHTML='<div class="ll ll-info">Cleared.</div>'; }
 async function stopRun(){
   toast('Stopping…','info');
   await fetch('/api/run/stop',{method:'POST'});

@@ -592,7 +592,7 @@ def import_golden_source():
     source_url = data.get("url") or cfg.get("golden_source_url","")
     overwrite = _boolish(data.get("overwrite_existing", False))
     auto_approve = _boolish(data.get("auto_approve", False))
-    force_refresh = _boolish(data.get("force_refresh", False))
+    force_refresh = _boolish(data.get("force_refresh", cfg.get("refresh_golden_source_each_run", True)))
     cache_ttl_sec = int(cfg.get("golden_source_cache_ttl_sec", 1800) or 1800)
     resolve_missing_tmdb = _boolish(data.get("resolve_missing_tmdb", cfg.get("golden_source_resolve_tmdb", False)))
     t0_total = _time.perf_counter()
