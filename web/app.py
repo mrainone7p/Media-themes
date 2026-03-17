@@ -136,6 +136,26 @@ def is_allowed_folder(folder, roots):
             continue
     return False
 
+
+def _find_row_by_identity(rows, rating_key="", folder="", tmdb_id=""):
+    """Find a ledger row using stable identity, preferring rating_key then folder."""
+    rk = str(rating_key or "").strip()
+    fd = str(folder or "").strip()
+    tid = str(tmdb_id or "").strip()
+    if rk:
+        row = next((r for r in rows if str(r.get("rating_key", "") or "").strip() == rk), None)
+        if row:
+            return row, "rating_key"
+    if fd:
+        row = next((r for r in rows if str(r.get("folder", "") or "").strip() == fd), None)
+        if row:
+            return row, "folder"
+    if tid:
+        row = next((r for r in rows if str(r.get("tmdb_id", "") or "").strip() == tid), None)
+        if row:
+            return row, "tmdb_id"
+    return None, ""
+
 def _prune_stream_cache(now=None):
     now = now or _time.time()
     expired = [k for k,(ts,_) in _stream_cache.items() if now-ts > _STREAM_TTL]
@@ -604,13 +624,8 @@ def delete_theme():
     # ── Find the row ──────────────────────────────────────────────────────────
     path_ledger = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
     rows = load_ledger(path_ledger)
-    row = None
-
-    if key:
-        row = next((r for r in rows if str(r.get("rating_key","") or "").strip() == key), None)
-
-    if not row and folder_hint:
-        row = next((r for r in rows if str(r.get("folder","") or "").strip() == folder_hint), None)
+    tmdb_id = str(data.get("tmdb_id", "") or "").strip()
+    row, matched_by = _find_row_by_identity(rows, key, folder_hint, tmdb_id)
 
     # Cross-library fallback
     if not row:
@@ -619,10 +634,7 @@ def delete_theme():
             if not lib_name or lib_name == lib: continue
             alt_path = ledger_path_for(lib_name)
             alt_rows = load_ledger(alt_path)
-            if key:
-                row = next((r for r in alt_rows if str(r.get("rating_key","") or "").strip() == key), None)
-            if not row and folder_hint:
-                row = next((r for r in alt_rows if str(r.get("folder","") or "").strip() == folder_hint), None)
+            row, matched_by = _find_row_by_identity(alt_rows, key, folder_hint, tmdb_id)
             if row:
                 path_ledger = alt_path
                 rows = alt_rows
@@ -663,7 +675,7 @@ def delete_theme():
             _clear_theme_metadata(row)
             row["notes"] = "Theme file already missing — status reset"
             save_ledger(path_ledger, rows)
-        return jsonify({"ok":True,"message":"File already gone — status reset to Pending"})
+        return jsonify({"ok":True,"message":"File already gone — status reset to Pending","matched_by":matched_by or "folder_hint"})
 
     try:
         theme_path.unlink()
@@ -671,8 +683,8 @@ def delete_theme():
             _clear_theme_metadata(row)
             row["notes"] = "Theme deleted via Database+"
             save_ledger(path_ledger, rows)
-            return jsonify({"ok":True,"message":f"Deleted {filename} — status reset to Pending"})
-        return jsonify({"ok":True,"message":f"Deleted {filename} (ledger row not found — status not updated)"})
+            return jsonify({"ok":True,"message":f"Deleted {filename} — status reset to Pending","matched_by":matched_by or "folder_hint"})
+        return jsonify({"ok":True,"message":f"Deleted {filename} (ledger row not found — status not updated)","matched_by":matched_by or "folder_hint"})
     except PermissionError:
         return jsonify({"ok":False,"error":f"Permission denied deleting {theme_path}. Check file ownership."})
     except Exception as e:
@@ -684,7 +696,10 @@ def download_now():
     data = request.json or {}
     lib = (data.get("library","") or "").strip()
     key = str(data.get("rating_key","") or "").strip()
-    if not key: return jsonify({"ok":False,"error":"Missing rating_key"}), 400
+    folder_hint = str(data.get("folder","") or "").strip()
+    tmdb_id = str(data.get("tmdb_id","") or "").strip()
+    if not key and not folder_hint:
+        return jsonify({"ok":False,"error":"Missing identity: provide rating_key or folder"}), 400
     cfg = load_config()
     filename = cfg.get("theme_filename","theme.mp3")
     roots = get_media_roots(cfg)
@@ -694,8 +709,9 @@ def download_now():
     max_dur = int(cfg.get("max_theme_duration",0) or 0)
     path_ledger = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
     rows = load_ledger(path_ledger)
-    row = next((r for r in rows if str(r.get("rating_key","")) == key), None)
-    if not row: return jsonify({"ok":False,"error":f"Not found in ledger for library '{lib}'"}), 404
+    row, matched_by = _find_row_by_identity(rows, key, folder_hint, tmdb_id)
+    if not row:
+        return jsonify({"ok":False,"error":f"Not found in ledger for library '{lib}'"}), 404
     url = (row.get("url","") or "").strip()
     if not url: return jsonify({"ok":False,"error":"No source URL on this row — add a source first"}), 400
     folder = row.get("folder","")
@@ -743,7 +759,7 @@ def download_now():
         # FIX: sync theme cache so theme_exists / duration / size / mtime are accurate
         row, _ = sync_theme_cache(row, filename, probe_duration=True)
         save_ledger(path_ledger, rows)
-        return jsonify({"ok":True,"message":f"Downloaded and saved as {filename}"})
+        return jsonify({"ok":True,"message":f"Downloaded and saved as {filename}","matched_by":matched_by or "rating_key"})
     except subprocess.TimeoutExpired:
         for f in Path(folder).glob(f"mt_tmp_{slug}.*"): f.unlink(missing_ok=True)
         return jsonify({"ok":False,"error":"Download timed out (180s)"})
