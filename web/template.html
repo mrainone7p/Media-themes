@@ -1475,7 +1475,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   <div class="modal" style="max-width:420px;position:relative">
     <div class="modal-title">Delete Theme</div>
     <div style="font-size:13px;color:var(--text2);margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--amber)">PENDING</b> status.</div>
-    <div style="font-size:12px;font-family:var(--mono);color:var(--text3);margin-bottom:16px" id="delete-modal-name"></div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px" id="delete-modal-name"></div>
+    <div style="font-size:11px;font-family:var(--mono);color:var(--text3);margin-bottom:16px;word-break:break-all" id="delete-modal-path"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
       <button class="btn btn-red" onclick="confirmDelete()">Delete Theme</button>
@@ -1981,10 +1982,13 @@ function renderStatusCell(rk,status){
   return `<span class="badge s-${status}" title="${STATUS_DESC[status]||''}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value);this.closest('td').innerHTML=renderStatusCell('${rk}',this.value)">${opts}</select>${displayStatus(status)}</span>`;
 }
 
-function _htmlAttr(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function _htmlAttr(s){
+  if(s==null||s===undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
 
 function renderThemeBtn(row){
-  if(row.status==='DOWNLOADED' || row.status==='AVAILABLE'){
+  if((row.status==='DOWNLOADED' || row.status==='AVAILABLE') && row.rating_key){
     const rk=_htmlAttr(row.rating_key);
     const folder=_htmlAttr(row.folder||'');
     const title=_htmlAttr(row.title||row.plex_title||'');
@@ -1997,6 +2001,9 @@ function renderThemeBtn(row){
         data-action="delete-theme" data-rk="${rk}" data-folder="${folder}" data-title="${title}"
         onclick="_deleteTheme(this)" title="Delete local theme">✕</button>
     </div>`;
+  }
+  if((row.status==='DOWNLOADED' || row.status==='AVAILABLE') && !row.rating_key){
+    return '<span class="no-theme" title="Run ⟳ Scan Library to restore Plex ID">⚠ rescan</span>';
   }
   return '<span class="no-theme">—</span>';
 }
@@ -2011,17 +2018,20 @@ function _playTheme(btn){
   openThemeModal(rk, title, year, folder);
 }
 function _deleteTheme(btn){
-  const rk=btn.dataset.rk;
-  const folder=btn.dataset.folder||'';
-  // Belt + suspenders: try _rowMap first, then _rows array, then fall back to data attrs
+  const rk=(btn.dataset.rk||'').trim();
+  const folder=(btn.dataset.folder||'').trim();
   const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
-  const title=row?(row.title||row.plex_title||''):btn.dataset.title||rk;
-  const resolvedFolder=row?.folder||folder;
-  if(!rk && !resolvedFolder){
-    toast('Cannot identify item — try reloading the page','err');
+  const title=row?(row.title||row.plex_title||''):btn.dataset.title||rk||'Unknown';
+  const resolvedFolder=(row?.folder||'').trim()||folder;
+  if(!rk){
+    toast('This item is missing its Plex ID — run ⟳ Scan Library first','err');
     return;
   }
-  openDeleteModal(rk||'', title, _activeLib||'', resolvedFolder);
+  if(!resolvedFolder){
+    toast('No folder path for this item — run ⟳ Scan Library to fix, then try again','err');
+    return;
+  }
+  openDeleteModal(rk, title, _activeLib||'', resolvedFolder);
 }
 function _openTmdbRow(rk, evt){
   const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
@@ -2604,6 +2614,8 @@ function openDeleteModal(rk,title,lib,folder=''){
   _deleteLib=lib||_activeLib||'';
   _deleteFolder=folder||'';
   document.getElementById('delete-modal-name').textContent=title;
+  const pathEl=document.getElementById('delete-modal-path');
+  if(pathEl) pathEl.textContent=folder||'(folder unknown)';
   document.getElementById('delete-modal').classList.add('open');
 }
 function closeDeleteModal(){
@@ -2612,13 +2624,16 @@ function closeDeleteModal(){
   stopAllAudio();
 }
 async function confirmDelete(){
-  if(!_deleteKey) return;
-  const lib=_deleteLib||_activeLib||'';
+  if(!_deleteKey && !_deleteFolder){ closeDeleteModal(); return; }
+  // Capture values BEFORE closeDeleteModal() zeroes them out
+  const key    = _deleteKey    || '';
+  const folder = _deleteFolder || '';
+  const lib    = _deleteLib    || _activeLib || '';
   closeDeleteModal();
   toast('Deleting…','info');
   const r=await fetch('/api/theme/delete',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({rating_key:_deleteKey,library:lib,folder:_deleteFolder})
+    body:JSON.stringify({rating_key:key, library:lib, folder:folder})
   });
   const data=await r.json();
   if(data.ok){toast(data.message||'Deleted','ok');stopCurrentAudio();loadDatabase();}
