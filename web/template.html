@@ -486,6 +486,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .source-editor-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px}
 .source-editor-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
 .source-editor-value{font-size:12px;color:var(--text2);font-family:var(--mono);word-break:break-word}
+.source-editor-link{display:inline-flex;align-items:center;gap:4px;color:var(--blue);text-decoration:none;font-size:12px;font-family:var(--mono);word-break:break-all}
+.source-editor-link:hover{text-decoration:underline}
 .source-editor-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .source-editor-slider-wrap{position:relative}
 .trim-window{position:absolute;left:0;right:0;top:50%;height:6px;transform:translateY(-50%);pointer-events:none}
@@ -638,6 +640,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .sm-card-first button{margin-top:0}
 .sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
 .sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;white-space:nowrap;margin-bottom:4px;position:relative}
+.sm-quickpick-link{display:inline-flex;align-items:center;gap:4px;color:var(--blue);text-decoration:none}
+.sm-quickpick-link:hover{text-decoration:underline}
 .sm-quickpick-track{display:inline-block;white-space:nowrap;min-width:max-content;will-change:transform}
 .sm-quickpick-copy{display:inline-block;padding-right:0}
 .sm-quickpick-title.scroll .sm-quickpick-track{animation:qp-marquee var(--qp-duration, 14s) linear infinite}
@@ -1548,7 +1552,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Step 2: Review Results -->
     <div id="search-step-2" class="search-step-body" style="display:none;overflow-y:auto;flex:1">
       <div style="padding:12px 22px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)">Results</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)">Results · Select the best source match</div>
         <div id="sm-results-meta" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></div>
       </div>
       <div style="padding:0 22px 8px">
@@ -1569,7 +1573,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div id="search-step-3" class="search-step-body" style="display:none;overflow-y:auto;flex:1">
       <!-- Playback -->
       <div class="modal-section" style="padding-top:14px;padding-bottom:0">
-        <div class="modal-section-label">Preview</div>
+        <div class="modal-section-label">Preview · Edit / trim source as needed</div>
         <div class="modal-player-row">
           <button class="play-btn" id="se-play-btn" onclick="seToggle()">
             <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -1596,19 +1600,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
       <div class="modal-section" style="padding-top:8px;padding-bottom:0">
         <div class="source-editor-card">
-          <div class="source-editor-title">Selected Source</div>
+          <div class="source-editor-title">Selected Source &amp; URL</div>
           <div id="se-source-title" class="source-editor-value">—</div>
-        </div>
-      </div>
-
-      <!-- Source URL -->
-      <div class="modal-section" style="padding-top:0;padding-bottom:0">
-        <div class="source-editor-card">
-          <div class="source-editor-title">Source URL</div>
-          <div class="source-editor-row">
+          <div class="source-editor-row" style="margin-top:8px">
           <input id="se-url" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
           <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Refresh</button>
-          <a href="#" style="font-size:11px;color:var(--blue);white-space:nowrap;text-decoration:none;flex-shrink:0" onclick="event.preventDefault();const u=document.getElementById('se-url').value;if(u)window.open(u,'_blank')">↗ Open</a>
           </div>
         </div>
       </div>
@@ -3640,7 +3636,11 @@ async function openSearchModal(rk,title,year,lib){
   _step3PreparedUrl=existingUrl||'';
   _selectedSourceTitle='';
   const sourceEl=document.getElementById('se-source-title');
-  if(sourceEl) sourceEl.textContent=existingUrl?_sourceTitleFromUrl(existingUrl):'—';
+  if(sourceEl){
+    sourceEl.innerHTML=existingUrl
+      ? `<a class="source-editor-link" href="${existingUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${_sourceTitleFromUrl(existingUrl).replace(/</g,'&lt;')} <span>↗</span></a>`
+      : '—';
+  }
   document.getElementById('se-info').textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
   const goldenCard=document.getElementById('sm-card-golden');
   const goldenDesc=document.getElementById('sm-golden-desc');
@@ -3732,16 +3732,15 @@ function _renderResults(results){
     <div class="search-result-card ${i===0?'recommended':''}">
       <div style="flex:1;min-width:0">
         ${i===0?`<div style="margin-bottom:4px"><span class="src-badge recommended">Best match</span></div>`:''}
-        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)">${r.title.replace(/</g,'&lt;')}</div>
-        <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px">
-          ${r.duration||'—'} · <a href="${r.url}" target="_blank" rel="noopener" style="color:var(--blue)">open ↗</a>
-        </div>
+        <a href="${r.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--blue);text-decoration:none">${r.title.replace(/</g,'&lt;')} <span style="font-size:11px">↗</span></a>
       </div>
-      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:flex-end">
+      <div style="display:flex;gap:8px;flex-shrink:0;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${r.duration||'—'}</span>
         <button class="btn btn-ghost btn-xs" onclick="previewSearchResult('${r.url.replace(/'/g,"\\'")}',this)">▶ Preview</button>
         <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}',{skipPreview:false,sourceTitle:'${r.title.replace(/'/g,"\\'").replace(/</g,'&lt;')}'})">Select →</button>
       </div>
     </div>`).join('');
+  if(results[0]?.url) setTimeout(()=>previewSearchResult(results[0].url),80);
 }
 
 
@@ -3759,7 +3758,7 @@ function _setMethodQuickPick(method, result){
   const duration=Math.max(12, Math.min(24, Math.ceil(rawTitle.length/3)));
   const distance=Math.max(0, (rawTitle.length*6)-190);
   const styleAttr=isLong?` style="--qp-duration:${duration}s;--qp-scroll-distance:${distance}px"`:'';
-  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"${styleAttr}>${titleBody}</span><div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}')">Pick</button></div>`;
+  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"${styleAttr}><a class="sm-quickpick-link" href="${result.url}" target="_blank" rel="noopener">${titleBody}<span>↗</span></a></span><div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}')">Pick</button></div>`;
 }
 
 
@@ -3882,7 +3881,11 @@ function goToStep3(url, opts={}){
   _step3PreparedUrl=url||'';
   _selectedSourceTitle=(opts.sourceTitle||_selectedSourceTitle||_sourceTitleFromUrl(url||''));
   const sourceEl=document.getElementById('se-source-title');
-  if(sourceEl) sourceEl.textContent=_selectedSourceTitle||'—';
+  if(sourceEl){
+    sourceEl.innerHTML=url
+      ? `<a class="source-editor-link" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${(_selectedSourceTitle||'—').replace(/</g,'&lt;')} <span>↗</span></a>`
+      : (_selectedSourceTitle||'—');
+  }
   const loadBtn=document.getElementById('se-load-btn');
   if(loadBtn){ loadBtn.textContent='Loading…'; loadBtn.disabled=true; }
   _sourceEditorAudio.setPlaying(false);
@@ -3915,7 +3918,12 @@ function backToSearch(){
 function seUrlChanged(){
   const u=(document.getElementById('se-url').value||'').trim();
   const sourceEl=document.getElementById('se-source-title');
-  if(sourceEl) sourceEl.textContent=u?_sourceTitleFromUrl(u):(_selectedSourceTitle||'—');
+  const label=u?_sourceTitleFromUrl(u):(_selectedSourceTitle||'—');
+  if(sourceEl){
+    sourceEl.innerHTML=u
+      ? `<a class="source-editor-link" href="${u.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${label.replace(/</g,'&lt;')} <span>↗</span></a>`
+      : label;
+  }
 }
 
 async function seLoadPreview(){
@@ -4046,21 +4054,24 @@ async function saveSourceEditor(skipClose=false){
 
 
 function previewSearchResult(url, btn){
-  btn.dataset.previewUrl = url;
-  btn.textContent = 'Loading…'; btn.disabled = true;
+  if(!url) return;
+  if(btn){
+    btn.dataset.previewUrl = url;
+    btn.textContent = 'Loading…'; btn.disabled = true;
+  }
   fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})})
     .then(r=>r.json()).then(async data=>{
-      btn.textContent = '▶ Preview'; btn.disabled = false;
+      if(btn){ btn.textContent = '▶ Preview'; btn.disabled = false; }
       if(!data.ok){ toast(data.error||'Failed','err'); return; }
       _previewCache[url]={audio_url:data.audio_url};
       _lastPreviewedUrl=url;
       resetActivePreviewBtn();
       await _searchPreviewAudio.playFrom(apiUrl(data.audio_url)).catch(()=>{});
-      window._activePreviewBtn = btn;
-      btn.textContent = '■ Stop';
+      window._activePreviewBtn = btn||null;
+      if(btn) btn.textContent = '■ Stop';
       _activeQuickPickBtn = null;
       _activeQuickPickUrl = '';
-    }).catch(()=>{ resetPreviewButton(btn); toast('Preview failed','err'); });
+    }).catch(()=>{ if(btn) resetPreviewButton(btn); toast('Preview failed','err'); });
 }
 
 function resetPreviewButton(btn){
