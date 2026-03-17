@@ -483,6 +483,36 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-section-header{padding:0 22px 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.01em}
 .modal-section-divider{height:1px;background:var(--border);margin:0 22px 0}
 .modal-status-txt{font-size:11px;font-family:var(--mono);color:var(--text3);padding:0 22px 6px;min-height:18px}
+.source-editor-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.source-editor-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.source-editor-value{font-size:12px;color:var(--text2);font-family:var(--mono);word-break:break-word}
+.source-editor-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.source-editor-slider-wrap{position:relative}
+.trim-window{position:absolute;left:0;right:0;top:50%;height:6px;transform:translateY(-50%);pointer-events:none}
+.trim-shade{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.24)}
+.trim-shade.right{right:0}
+.trim-marker{position:absolute;top:-4px;width:2px;height:14px;background:var(--amber);border-radius:2px;transform:translateX(-1px)}
+.trim-marker.end{background:var(--green)}
+.trim-window-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px}
+.theme-modal-meta-card{margin:0 22px 10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
+.theme-modal-verified{font-size:11px;color:var(--amber);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
+.theme-modal-file{font-size:11px;font-family:var(--mono);color:var(--text3);word-break:break-word}
+.review-card{margin:0 22px 10px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
+.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.review-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;background:var(--surface);border:1px solid var(--border)}
+.review-kv{font-size:11px;color:var(--text2);display:flex;justify-content:space-between;gap:8px}
+.review-warning{font-size:11px;color:var(--red);margin-top:8px}
+.review-actions{display:flex;gap:8px;align-items:center}
+.review-overflow{position:relative}
+.review-overflow > summary{list-style:none;cursor:pointer}
+.review-overflow[open]{z-index:2}
+.review-overflow-menu{position:absolute;right:0;bottom:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:170px}
+.review-overflow-menu button{width:100%;text-align:left}
+.review-header-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-top:8px;padding-bottom:8px}
+.simple-line{font-size:12px;color:var(--text2);margin-bottom:6px;word-break:break-word}
+.search-method-head{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.search-method-input{margin-top:6px;width:100%;font-size:12px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);outline:none}
+.search-method-card.disabled{opacity:.55;border-style:dashed;cursor:not-allowed}
 
 /* ─── Pipeline graphic (Database page) ─── */
 .pipeline-wrap{padding:16px var(--content-pad,20px) 0;border-bottom:1px solid var(--border)}
@@ -1447,6 +1477,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Step 1: Choose Method -->
     <div id="search-step-1" class="search-step-body" style="overflow-y:auto;flex:1">
       <div class="modal-section" style="padding-bottom:0">
+        <div class="search-method-head">Choose Search Method</div>
         <div class="manual-methods">
           <div class="search-method-card active" id="sm-card-playlist" onclick="selectSearchMethod('playlist')">
             <div class="sm-card-main">
@@ -1476,23 +1507,30 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <div class="sm-card-desc">Hand-tune your query</div>
               </div>
             </div>
+            <div class="sm-card-actions" style="width:100%;max-width:none;margin-left:0">
+              <input id="sm-custom-input" class="search-method-input" placeholder="Type a custom query..." oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')searchModalPrimary()">
+            </div>
           </div>
-        </div>
-
-        <!-- Query preview + actions -->
-        <div id="sm-query-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px">
-          <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Search Query</div>
-          <div id="sm-query-display" style="font-size:13px;font-family:var(--mono);color:var(--text);word-break:break-all"></div>
-          <input id="sm-custom-input" placeholder="Type a custom search query…" style="display:none;width:100%;margin-top:8px;background:var(--surface);border:1px solid var(--amber);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')doSearch()">
-        </div>
-
-
-        <!-- Paste URL section -->
-        <div style="border-top:1px solid var(--border);padding-top:14px">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">— Or Paste Source URL Directly —</div>
-          <div style="display:flex;gap:8px">
-            <input id="search-paste-url" placeholder="https://www.youtube.com/watch?v=…" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')goToStep3FromPaste()">
-            <button class="btn btn-green btn-sm" onclick="goToStep3FromPaste()">Use URL →</button>
+          <div class="search-method-card" id="sm-card-paste" onclick="selectSearchMethod('paste')">
+            <div class="sm-card-main">
+              <div class="sm-card-icon">📎</div>
+              <div class="sm-card-copy">
+                <div class="sm-card-title">Paste URL</div>
+                <div class="sm-card-desc">Use a known source directly</div>
+              </div>
+            </div>
+            <div class="sm-card-actions" style="width:100%;max-width:none;margin-left:0">
+              <input id="search-paste-url" class="search-method-input" placeholder="https://www.youtube.com/watch?v=..." onkeydown="if(event.key==='Enter')searchModalPrimary()">
+            </div>
+          </div>
+          <div class="search-method-card" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
+            <div class="sm-card-main">
+              <div class="sm-card-icon">★</div>
+              <div class="sm-card-copy">
+                <div class="sm-card-title">Golden Source</div>
+                <div class="sm-card-desc" id="sm-golden-desc">Use curated Golden Source URL for this item</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1530,8 +1568,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <button class="skip-btn" onclick="seSkip(-5)">-5</button>
           <button class="skip-btn" onclick="seSkip(5)">+5</button>
           <div class="modal-scrubber-wrap">
-            <input type="range" class="modal-slider" id="se-slider" min="0" max="100" value="0" oninput="seSeek(this.value)">
+            <div class="source-editor-slider-wrap">
+              <input type="range" class="modal-slider" id="se-slider" min="0" max="100" value="0" oninput="seSeek(this.value)">
+              <div class="trim-window" id="se-trim-window" style="display:none">
+                <div class="trim-shade" id="se-trim-left"></div>
+                <div class="trim-marker" id="se-trim-start"></div>
+                <div class="trim-marker end" id="se-trim-end"></div>
+                <div class="trim-shade right" id="se-trim-right"></div>
+              </div>
+            </div>
             <div class="modal-time-row"><span id="se-cur">0:00</span><span id="se-dur">—</span></div>
+            <div class="trim-window-meta"><span id="se-trim-start-label">Start 0:00</span><span id="se-trim-end-label">End —</span></div>
           </div>
         </div>
         <audio id="se-audio" style="display:none"></audio>
@@ -1539,31 +1586,37 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
 
       <div class="modal-section" style="padding-top:8px;padding-bottom:0">
-        <div class="modal-section-label">Selected Source</div>
-        <div id="se-source-title" style="font-size:12px;color:var(--text2);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div class="source-editor-card">
+          <div class="source-editor-title">Selected Source</div>
+          <div id="se-source-title" class="source-editor-value">—</div>
+        </div>
       </div>
 
       <!-- Source URL -->
-      <div class="modal-section" style="padding-top:10px;padding-bottom:0">
-        <div class="modal-section-label">Source URL</div>
-        <div style="display:flex;gap:8px;align-items:center">
+      <div class="modal-section" style="padding-top:0;padding-bottom:0">
+        <div class="source-editor-card">
+          <div class="source-editor-title">Source URL</div>
+          <div class="source-editor-row">
           <input id="se-url" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
           <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Refresh</button>
           <a href="#" style="font-size:11px;color:var(--blue);white-space:nowrap;text-decoration:none;flex-shrink:0" onclick="event.preventDefault();const u=document.getElementById('se-url').value;if(u)window.open(u,'_blank')">↗ Open</a>
+          </div>
         </div>
       </div>
 
       <!-- Start Offset -->
-      <div class="modal-section" style="padding-top:10px;padding-bottom:16px">
-        <div class="modal-section-label">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="modal-section" style="padding-top:0;padding-bottom:16px">
+        <div class="source-editor-card" style="margin-bottom:0">
+        <div class="source-editor-title">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
+        <div class="source-editor-row">
           <input type="text" id="se-offset" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="seUpdateTrim()" onblur="normalizeOffsetInput(this)">
           <div class="offset-steps">
             <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),1)">▲</button>
             <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),-1)">▼</button>
           </div>
-                    <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
+          <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
           <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
+        </div>
         </div>
       </div>
     </div>
@@ -1580,7 +1633,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   </div>
 </div>
 
-<!-- Theme Preview Modal (Database page — ▶ Play on downloaded rows) -->
+<!-- Review Modal (decision center for any item state) -->
 <div class="modal-overlay" id="theme-modal">
   <div class="modal" style="max-width:540px;position:relative;padding:0">
 
@@ -1596,34 +1649,50 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="modal-movie-links" id="theme-modal-links"></div>
       </div>
     </div>
+    <div class="modal-bio" id="theme-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0 22px 10px"></div>
 
-    <!-- Bio -->
-    <div class="modal-bio" id="theme-modal-bio" style="display:none"></div>
+    <div class="review-header-desc" id="theme-modal-summary">—</div>
 
-    <!-- Section heading -->
-    <div style="padding:14px 22px 10px">
-      <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)">Now Playing</div>
-      <div style="height:1px;background:var(--border)"></div>
-    </div>
-
-    <!-- Playback -->
-    <div class="modal-section" style="padding-top:0;padding-bottom:16px">
-      <div class="modal-player-row">
-        <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
-          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </button>
-        <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
-        <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
-        <div class="modal-scrubber-wrap">
-          <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
-          <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
+      <div class="review-card" id="theme-local-card">
+      <div class="modal-section-label">Local Theme</div>
+      <div id="theme-modal-verified" class="theme-modal-verified" style="display:none">★ Verified Theme · Golden Source</div>
+      <div class="simple-line" id="theme-modal-file">File path: —</div>
+      <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
+      <div id="theme-local-missing" style="font-size:12px;color:var(--text3);display:none">No local theme file yet.</div>
+      <div id="theme-local-player" style="display:none">
+        <div class="modal-player-row">
+          <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
+          <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
+          <div class="modal-scrubber-wrap">
+            <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
+            <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
+          </div>
+        </div>
+        <audio id="theme-modal-audio" style="display:none"></audio>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn btn-ghost btn-sm" onclick="themeModalEditTrim()">Edit Trim</button>
+          <button class="btn btn-ghost btn-sm" onclick="themeModalOpenManualSearch()">Replace Theme</button>
+          <button class="btn btn-red btn-sm" onclick="themeModalDelete()">Delete Theme</button>
         </div>
       </div>
-      <audio id="theme-modal-audio" style="display:none"></audio>
+    </div>
+
+    <div class="review-card">
+      <div class="modal-section-label">Source</div>
+      <div class="simple-line" id="theme-modal-source-url">Source URL: —</div>
+      <div class="simple-line" id="theme-modal-origin">Source: —</div>
+      <div class="simple-line" id="theme-modal-golden">Golden Source: —</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px" id="theme-source-actions">
+        <button class="btn btn-ghost btn-sm" id="theme-open-source-btn" onclick="themeModalOpenSource()">↗ Open Source</button>
+        <button class="btn btn-ghost btn-sm" id="theme-manual-search-btn" onclick="themeModalOpenManualSearch()">Manual Search</button>
+      </div>
     </div>
 
     <!-- Footer -->
-    <div class="modal-footer">
+    <div class="modal-footer" style="justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
     </div>
   </div>
@@ -2526,12 +2595,7 @@ function _htmlAttr(s){
 }
 
 function _recommendedAction(row){
-  const hasSource=_hasSourceUrl(row);
-  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
-  if((row.status==='DOWNLOADED'||row.status==='AVAILABLE') && row.rating_key) return {label:'Review', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
-  if(row.status==='STAGED') return {label:'Approve', cls:'btn btn-green btn-xs row-primary-action', fn:'_approveRow'};
-  if(row.status==='APPROVED' && hasSource && !hasTheme && row.rating_key) return {label:'Download', cls:'btn btn-green btn-xs row-primary-action', fn:'_downloadNow'};
-  if(hasSource && row.status==='PENDING') return {label:'Stage', cls:'btn btn-purple btn-xs row-primary-action', fn:'_stageRow'};
+  if(row.rating_key) return {label:'Review', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
   return {label:'Review', cls:'btn btn-ghost btn-xs row-primary-action', fn:'_manualSearch'};
 }
 
@@ -2542,7 +2606,7 @@ function _rowSecondaryActions(row){
   if(hasSource) actions.push({label:'Preview source', fn:'_previewSource'});
   if(row.status!=='STAGED' && hasSource) actions.push({label:'Set staged', fn:'_stageRow'});
   if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve', fn:'_approveRow'});
-  if(hasTheme && row.rating_key) actions.push({label:'Play theme', fn:'_playTheme'});
+  if(row.rating_key) actions.push({label:'Open review', fn:'_playTheme'});
   if(hasTheme && row.rating_key) actions.push({label:'Delete theme', fn:'_deleteTheme'});
   actions.push({label:'Manual search', fn:'_manualSearch'});
   return actions;
@@ -2600,7 +2664,7 @@ function _playTheme(btn){
   const title=row?(row.title||row.plex_title||''):btn.dataset.title||'';
   const year=row?row.year||'':btn.dataset.year||'';
   const folder=row?row.folder||'':btn.dataset.folder||'';
-  openThemeModal(rk, title, year, folder);
+  openThemeModal(rk, title, year, folder, row||{});
 }
 function _deleteTheme(btn){
   const rk=(btn.dataset.rk||'').trim();
@@ -3459,25 +3523,21 @@ function buildSearchQuery(method,title,year){
   const base=((title||'')+' '+(year||'')).trim();
   if(method==='playlist') return (base+' soundtrack playlist').trim();
   if(method==='direct') return (base+' theme song').trim();
+  if(method==='golden_source') return '';
+  if(method==='paste') return '';
   return _searchCustomQuery || base;
 }
 
 function _updateQueryDisplay(){
-  const q = buildSearchQuery(_searchMethod,_searchTitle,_searchYear);
-  const disp = document.getElementById('sm-query-display');
   const inp = document.getElementById('sm-custom-input');
-  if(_searchMethod==='custom'){
-    if(disp) disp.style.display='none';
-    if(inp){ inp.style.display=''; inp.value=_searchCustomQuery||q; }
-  } else {
-    if(disp){ disp.style.display=''; disp.textContent=q; }
-    if(inp) inp.style.display='none';
-  }
+  if(inp) inp.value=_searchCustomQuery||buildSearchQuery('custom',_searchTitle,_searchYear);
 }
 
 function selectSearchMethod(method){
+  const goldenCard=document.getElementById('sm-card-golden');
+  if(method==='golden_source' && goldenCard?.classList.contains('disabled')) return;
   _searchMethod=method;
-  ['playlist','direct','custom'].forEach(m=>{
+  ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
     const card=document.getElementById('sm-card-'+m);
     if(card) card.classList.toggle('active',m===method);
   });
@@ -3556,7 +3616,7 @@ async function openSearchModal(rk,title,year,lib){
   document.getElementById('search-modal-links').innerHTML=`<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">🎬 TMDB</a>`;
   setBio('search-modal-bio',rk);
   // Restore or reset method cards
-  ['playlist','direct','custom'].forEach(m=>{
+  ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
     const card=document.getElementById('sm-card-'+m);
     if(card) card.classList.toggle('active',m===_searchMethod);
   });
@@ -3573,6 +3633,18 @@ async function openSearchModal(rk,title,year,lib){
   const sourceEl=document.getElementById('se-source-title');
   if(sourceEl) sourceEl.textContent=existingUrl?_sourceTitleFromUrl(existingUrl):'—';
   document.getElementById('se-info').textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
+  const goldenCard=document.getElementById('sm-card-golden');
+  const goldenDesc=document.getElementById('sm-golden-desc');
+  const hasGolden=String(existingRow?.source_origin||'').startsWith('golden_source') && !!String(existingRow?.url||'').trim();
+  if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
+  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated Golden Source URL':'Not currently available';
+  if(_searchMethod==='golden_source' && !hasGolden){
+    _searchMethod='playlist';
+    ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
+      const card=document.getElementById('sm-card-'+m);
+      if(card) card.classList.toggle('active',m===_searchMethod);
+    });
+  }
   // Decide starting step
   if(_lastSearchResults.length && _searchKey===rk){
     goToSearchStep(2);
@@ -3629,6 +3701,14 @@ async function _searchByMethod(method, showStep=true){
 
 async function doSearch(){
   _searchMethod=_searchMethod||'playlist';
+  if(_searchMethod==='paste') return goToStep3FromPaste();
+  if(_searchMethod==='golden_source'){
+    const row=_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
+    const isGolden=String(row?.source_origin||'').startsWith('golden_source');
+    const url=String(row?.url||'').trim();
+    if(!isGolden || !url) return toast('Golden Source URL not currently available for this item','info');
+    return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL'});
+  }
   await _searchByMethod(_searchMethod, true);
 }
 
@@ -3781,6 +3861,10 @@ function goToStep3(url, opts={}){
   document.getElementById('se-cur').textContent='0:00';
   document.getElementById('se-dur').textContent='—';
   document.getElementById('se-slider').value=0;
+  document.getElementById('se-trim-start-label').textContent='Start 0:00';
+  document.getElementById('se-trim-end-label').textContent='End —';
+  const trimWindow=document.getElementById('se-trim-window');
+  if(trimWindow) trimWindow.style.display='none';
   document.getElementById('se-info').textContent='Loading preview…';
   _step3PreparedUrl=url||'';
   _selectedSourceTitle=(opts.sourceTitle||_selectedSourceTitle||_sourceTitleFromUrl(url||''));
@@ -3866,7 +3950,33 @@ function seSeek(val){ _sourceEditorAudio.seek(val); }
 function seSkip(s){ _sourceEditorAudio.skip(s); }
 
 function seUpdateTrim(){
-  // intentionally no trim text in Step 3 per UX preference
+  const audio=_sourceEditorAudio.audio;
+  const trimWindow=document.getElementById('se-trim-window');
+  const startShade=document.getElementById('se-trim-left');
+  const endShade=document.getElementById('se-trim-right');
+  const startMarker=document.getElementById('se-trim-start');
+  const endMarker=document.getElementById('se-trim-end');
+  const startLabel=document.getElementById('se-trim-start-label');
+  const endLabel=document.getElementById('se-trim-end-label');
+  if(!trimWindow || !audio || !audio.duration){
+    if(trimWindow) trimWindow.style.display='none';
+    if(startLabel) startLabel.textContent='Start 0:00';
+    if(endLabel) endLabel.textContent='End —';
+    return;
+  }
+  const duration=audio.duration||0;
+  const start=Math.max(0, Math.min(parseTrim(document.getElementById('se-offset').value||'0'), duration));
+  const maxDur=Math.max(0, Number(_maxDur)||0);
+  const end=maxDur>0?Math.min(duration, start+maxDur):duration;
+  const startPct=(start/duration)*100;
+  const endPct=(end/duration)*100;
+  trimWindow.style.display='block';
+  startShade.style.width=`${startPct}%`;
+  endShade.style.left=`${endPct}%`;
+  startMarker.style.left=`${startPct}%`;
+  endMarker.style.left=`${endPct}%`;
+  if(startLabel) startLabel.textContent=`Start ${fmt(start)}`;
+  if(endLabel) endLabel.textContent=`End ${fmt(end)}`;
 }
 
 function sePreviewFromOffset(){
@@ -3884,8 +3994,10 @@ async function saveSourceEditor(skipClose=false){
   const offset=parseTrim(document.getElementById('se-offset').value||'0');
   if(!url){ toast('Please enter a URL','info'); return; }
   const lib=_seLib||_searchLib||_activeLib||'';
-  const status=_autoApproveManual?'APPROVED':'STAGED';
-  const notes=_autoApproveManual?'Manual source auto-approved':'URL set via manual search — staged for approval';
+  const row=_rows.find(r=>String(r.rating_key)===String(key));
+  const isAvailable=row && ['DOWNLOADED','AVAILABLE'].includes(String(row.status||'').toUpperCase());
+  const status=(isAvailable || !_autoApproveManual)?'STAGED':'APPROVED';
+  const notes=status==='APPROVED'?'Manual source auto-approved':'URL set via manual search — staged for approval';
 
   const saveUrlResp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
     method:'PATCH', headers:{'Content-Type':'application/json'},
@@ -3907,11 +4019,13 @@ async function saveSourceEditor(skipClose=false){
     throw new Error(statusPayload.error||'save_status_failed');
   }
 
-  const row=_rows.find(r=>String(r.rating_key)===String(key));
-  if(row){ row.url=url; row.start_offset=String(offset); row.status=status; }
+  const localRow=_rows.find(r=>String(r.rating_key)===String(key));
+  if(localRow){ localRow.url=url; localRow.start_offset=String(offset); localRow.status=status; }
   if(!skipClose){
     closeSearchModal();
-    toast(_autoApproveManual?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved'):uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
+    toast(status==='APPROVED'
+      ?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved')
+      :uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
   }
   loadDatabase();
   return true;
@@ -3958,6 +4072,7 @@ function resetActivePreviewBtn(){
 }
 
 // ── Trim modal preview ────────────────────────────────────────────────────────
+let _trimRk='';
 function trimModalUpdateResult(){
   const row=_mediaRows.find(r=>r.rating_key===_trimRk); if(!row) return;
   const dur=row.duration||0,s=parseTrim(document.getElementById('trim-modal-offset').value);
@@ -3982,6 +4097,16 @@ function trimModalSkip(s){ _trimModalAudio.skip(s); }
 function closeTrimModal(){
   closeModal('trim-modal');
   runModalMediaCleanup(()=>_trimModalAudio.cleanup());
+}
+async function applyTrimFromModal(){
+  if(!_trimRk) return;
+  const start=parseTrim(document.getElementById('trim-modal-offset').value||'0');
+  const r=await fetch('/api/theme/trim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:_activeLib||'',rating_key:_trimRk,start_offset:start,end_offset:0})});
+  const d=await r.json().catch(()=>({ok:false,error:'Trim failed'}));
+  if(!r.ok || d.ok===false) return toast(d.error||'Trim failed','err');
+  toast(d.message||'Trim applied','ok');
+  closeTrimModal();
+  await loadDatabase();
 }
 
 // ── YouTube Modal (Database page) ────────────────────────────────────────────
@@ -4561,30 +4686,119 @@ function toggleNav(){
 (function(){try{if(localStorage.getItem('mt-nav-collapsed')==='1'){document.querySelector('nav').classList.add('collapsed');document.body.classList.add('nav-collapsed');setTimeout(()=>{const b=document.getElementById('nav-collapse-btn');if(b)b.textContent='»';},0);}}catch(e){}})();
 
 // ── Theme preview modal ──────────────────────────────────────────────────────
-function openThemeModal(rk,title,year,folder){
+let _themeModalContext={};
+function _themeHasLocal(row){
+  if(!row) return false;
+  return ['DOWNLOADED','AVAILABLE'].includes(String(row.status||'').toUpperCase()) || String(row.theme_exists||'')==='1';
+}
+function _themeOriginLabel(origin){
+  const v=String(origin||'').toLowerCase();
+  if(v==='golden_source_verified') return 'Verified Golden Source';
+  if(v==='golden_source') return 'Golden Source';
+  if(v==='manual') return 'Manual';
+  return 'Unknown';
+}
+function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
+  _themeModalContext={rk,title,year,folder,row};
+  const hasTheme=_themeHasLocal(row);
+  const hasSource=!!String(row?.url||'').trim();
+  const originLabel=_themeOriginLabel(row?.source_origin||'unknown');
+  const originRaw=String(row?.source_origin||'').toLowerCase();
+  const verified=originRaw==='golden_source_verified';
+  const isGolden=originRaw.startsWith('golden_source');
+  const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
+  const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
+
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
-  document.getElementById('theme-modal-dur-meta').textContent='';
+  document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'Theme missing';
+  document.getElementById('theme-modal-summary').textContent=hasTheme?'Theme saved locally and playable.':'No local theme file yet.';
+  document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
+  document.getElementById('theme-modal-local-dur').textContent=`Duration: ${row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
+  const sourceUrlEl=document.getElementById('theme-modal-source-url');
+  sourceUrlEl.innerHTML=hasSource
+    ?`Source URL: <a href="${(row.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="color:var(--blue)">${(row.url||'').replace(/</g,'&lt;')}</a>`
+    :'Source URL: —';
+  document.getElementById('theme-modal-origin').textContent=`Source: ${originLabel}`;
+  document.getElementById('theme-modal-golden').textContent=`Golden Source: ${isGolden?(verified?'Yes · Verified':'Yes'):'No'}`;
+
+  const sourceActions=document.getElementById('theme-source-actions');
+  if(sourceActions) sourceActions.style.display='flex';
+  const openSourceBtn=document.getElementById('theme-open-source-btn');
+  const manualSearchBtn=document.getElementById('theme-manual-search-btn');
+  if(openSourceBtn) openSourceBtn.style.display=hasSource?'':'none';
+  if(manualSearchBtn) manualSearchBtn.textContent=hasSource?'Replace Theme':'Manual Search';
+
+  document.getElementById('theme-local-player').style.display=hasTheme?'block':'none';
+  document.getElementById('theme-local-missing').style.display=hasTheme?'none':'block';
+
+  const verifiedEl=document.getElementById('theme-modal-verified');
+  if(verifiedEl) verifiedEl.style.display=verified?'block':'none';
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
   // TMDB link
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
+  const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
   document.getElementById('theme-modal-links').innerHTML=
-    `<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">TMDB</a>`;
+    `<a class="modal-link-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
   setBio('theme-modal-bio', rk);
   _themeModalAudio.cleanup({clearSrc:false});
-  _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+  if(hasTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+  else _themeModalAudio.audio.src='';
   openModal('theme-modal');
-  _themeModalAudio.setHandlers({
-    onloadedmetadata:(audio)=>{
-      const d=fmt(audio.duration);
-      document.getElementById('theme-modal-dur-meta').textContent='Duration: '+d;
-      _themeModalAudio.play().catch(()=>{});
-    }
-  });
-  _themeModalAudio.audio.load();
+  _themeModalAudio.setHandlers();
+  if(hasTheme) _themeModalAudio.audio.load();
   if(_curKey) stopCurrentAudio();
+}
+function themeModalOpenSource(){
+  const url=String(_themeModalContext?.row?.url||'').trim();
+  if(!url) return toast('No source URL on this row','info');
+  window.open(url,'_blank');
+}
+function themeModalSetStatus(status){
+  const key=_themeModalContext?.rk;
+  if(!key) return;
+  updateRow(key,'status',status);
+  closeThemeModal();
+}
+function themeModalDelete(){
+  const c=_themeModalContext||{};
+  if(!c.rk) return;
+  closeThemeModal();
+  openDeleteModal(c.rk,c.title||'',_activeLib||'',c.folder||'');
+}
+function themeModalEditTrim(){
+  const c=_themeModalContext||{};
+  if(!c.rk) return;
+  closeThemeModal();
+  _trimRk=c.rk;
+  document.getElementById('trim-modal-title').textContent=c.title||'Edit Trim';
+  document.getElementById('trim-modal-meta').textContent=[c.year||'',`Duration: ${fmt(parseFloat(c.row?.theme_duration||0)||0)}`].filter(Boolean).join(' · ');
+  document.getElementById('trim-modal-poster').src=apiUrl('/api/poster?key='+encodeURIComponent(c.rk));
+  document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">TMDB</a>`;
+  document.getElementById('trim-modal-info').textContent='Trim local theme start offset and preview the remaining clip.';
+  document.getElementById('trim-modal-offset').value=String(c.row?.start_offset||'0');
+  trimModalUpdateResult();
+  _trimModalAudio.cleanup({clearSrc:false});
+  _trimModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(c.folder||''));
+  openModal('trim-modal');
+  _trimModalAudio.setHandlers();
+  _trimModalAudio.audio.load();
+}
+async function themeModalSyncFromDisk(){
+  if(!_activeLib) return toast('No active library selected','err');
+  const r=await fetch('/api/library/sync-themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:_activeLib})});
+  const d=await r.json().catch(()=>({ok:false,error:'Sync failed'}));
+  if(!r.ok || d.ok===false) return toast(d.error||'Sync failed','err');
+  toast(`Synced local theme metadata (${d.updated||0} updated)`,'ok');
+  await loadDatabase();
+}
+function themeModalOpenManualSearch(){
+  const rk=_themeModalContext.rk;
+  if(!rk) return;
+  closeThemeModal();
+  openSearchModal(rk,_themeModalContext.title||'',_themeModalContext.year||'',encodeURIComponent(_activeLib||''));
 }
 function closeThemeModal(){
   closeModal('theme-modal');
