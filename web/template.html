@@ -3975,11 +3975,13 @@ async function saveSourceEditor(skipClose=false){
     throw new Error(statusPayload.error||'save_status_failed');
   }
 
-  const row=_rows.find(r=>String(r.rating_key)===String(key));
-  if(row){ row.url=url; row.start_offset=String(offset); row.status=status; }
+  const localRow=_rows.find(r=>String(r.rating_key)===String(key));
+  if(localRow){ localRow.url=url; localRow.start_offset=String(offset); localRow.status=status; }
   if(!skipClose){
     closeSearchModal();
-    toast(_autoApproveManual?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved'):uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
+    toast(status==='APPROVED'
+      ?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved')
+      :uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
   }
   loadDatabase();
   return true;
