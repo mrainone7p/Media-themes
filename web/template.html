@@ -574,7 +574,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     </div>
     <div class="nav-item" onclick="showPage('database')" id="nav-database">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-      <span>Database+</span>
+      <span>Theme manager</span>
     </div>
     <div class="nav-item" onclick="showPage('schedule')" id="nav-schedule">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -884,7 +884,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <!-- ══════════════════════════════════════ DATABASE ═══════════════════════════ -->
 <div class="page" id="page-database">
   <div class="page-head">
-    <div><div class="page-title">Database+</div><div class="page-desc">Browse, review, preview, fine-tune, and manage themes in one place</div></div>
+    <div><div class="page-title">Theme manager</div><div class="page-desc">Browse, review, preview, fine-tune, and manage themes in one place</div></div>
   </div>
   <div class="page-body">
     <!-- Progress bar -->
@@ -2653,7 +2653,7 @@ async function clearSourcesSelected(){
   if(!ok) return;
   await Promise.all(rows.map(r=>fetch('/api/ledger/'+r.rating_key+'?library='+encodeURIComponent(_activeLib),{
     method:'PATCH',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({url:'',status:'PENDING',notes:'Source cleared via Database'})
+    body:JSON.stringify({url:'',status:'PENDING',notes:'Source cleared via Theme manager'})
   })));
   clearSelection(); loadDatabase(); 
 }

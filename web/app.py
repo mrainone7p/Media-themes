@@ -725,7 +725,7 @@ def delete_theme():
         theme_path.unlink()
         if row:
             _clear_theme_metadata(row)
-            row["notes"] = "Theme deleted via Database+"
+            row["notes"] = "Theme deleted via Theme manager"
             save_ledger(path_ledger, rows)
             return jsonify({"ok":True,"message":f"Deleted {filename} — status reset to Pending","matched_by":matched_by or "folder_hint"})
         return jsonify({"ok":True,"message":f"Deleted {filename} (ledger row not found — status not updated)","matched_by":matched_by or "folder_hint"})

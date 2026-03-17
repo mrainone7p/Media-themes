@@ -4,10 +4,10 @@ This document tracks the current codebase against the intended product direction
 
 ## Implemented in this pass
 
-- Navigation and page internals were normalized to **Configuration / Database+ / Schedule / History** (including hash-route compatibility from legacy `#settings`/`#run`).
+- Navigation and page internals were normalized to **Configuration / Theme manager / Schedule / History** (including hash-route compatibility from legacy `#settings`/`#run`).
 - Configuration internals now use `loadConfiguration()` / `saveConfiguration()` with compatibility aliases kept in place to reduce regression risk.
-- Native browser `confirm()` dialogs for Database+ actions were replaced with a shared in-app confirm modal shell.
-- Database+ visible status controls were aligned to the intended model by removing `Removed` from user-facing status filter/options.
+- Native browser `confirm()` dialogs for Theme manager actions were replaced with a shared in-app confirm modal shell.
+- Theme manager visible status controls were aligned to the intended model by removing `Removed` from user-facing status filter/options.
 - Backend row identity handling was hardened with a shared identity resolver preferring `rating_key`, then `folder`, then `tmdb_id`.
 - Delete and manual-download API responses now include `matched_by` diagnostics to make identity matching transparent in the UI.
 - Manual download UI now sends additional identity fields (`folder`, `tmdb_id`) to improve reliability in mixed-ledger scenarios.
@@ -17,8 +17,8 @@ This document tracks the current codebase against the intended product direction
 ### Aligned
 
 1. **Primary pages and terminology**
-   - Visible page naming is Configuration / Database+ / Schedule / History.
-2. **Database+ operational role**
+   - Visible page naming is Configuration / Theme manager / Schedule / History.
+2. **Theme manager operational role**
    - Main management page with filtering, bulk actions, source actions, and imports.
 3. **SQLite shared storage direction**
    - Shared runtime storage in `shared/storage.py` with SQLite (`/app/logs/media_tracks.db`).
@@ -38,7 +38,7 @@ This document tracks the current codebase against the intended product direction
 
 ## Acceptance checks to keep using
 
-- Navigation across Configuration / Database+ / Schedule / History works without JS errors.
+- Navigation across Configuration / Theme manager / Schedule / History works without JS errors.
 - Delete local theme works when matched by `rating_key`, and falls back to `folder` when needed.
 - Manual row download succeeds when source exists and no local theme exists, then refreshes row state to Available in UI.
 - Golden Source import succeeds using `tmdb_id/source_url`, and keep/overwrite behavior is respected.
