@@ -4422,45 +4422,91 @@ async function taskRunPass(passNum){
   await startPipelineRun(passNum,'tasks');
   setTimeout(loadTasksPage,1200);
 }
+async function runTaskAction({
+  url,
+  body,
+  successMessage,
+  failureFallback='Task failed',
+  onSuccess,
+  reloadDatabase=false,
+  reloadTasksPage=true
+}){
+  let response;
+  try{
+    response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+  }catch(e){
+    toast(failureFallback,'err');
+    return {ok:false,data:{},response:null};
+  }
+
+  let data={};
+  try{
+    data=await response.json();
+  }catch(e){
+    data={};
+  }
+
+  const ok=response.ok && data.ok!==false;
+  if(!ok){
+    toast(data.error||failureFallback,'err');
+    return {ok:false,data,response};
+  }
+
+  const msg=(typeof successMessage==='function')?successMessage(data):successMessage;
+  if(msg) toast(msg,'ok');
+  if(typeof onSuccess==='function') await onSuccess(data);
+  if(reloadDatabase) await loadDatabase();
+  if(reloadTasksPage) await loadTasksPage();
+  return {ok:true,data,response};
+}
 async function taskExportGoldenSource(){
   const lib=taskLibValue('task-lib-export');
   if(!lib) return toast('Select a library first','err');
-  const r=await fetch('/api/tasks/export-golden-source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:lib==='__all__'?'':lib})});
-  const d=await r.json();
-  if(!d.ok) return toast(d.error||'Export failed','err');
-  toast(`Exported ${d.rows_exported} rows`,'ok');
-  window.open(apiUrl(d.download_url),'_blank');
-  loadTasksPage();
+  await runTaskAction({
+    url:'/api/tasks/export-golden-source',
+    body:{library:lib==='__all__'?'':lib},
+    successMessage:(d)=>`Exported ${d.rows_exported} rows`,
+    failureFallback:'Export failed',
+    onSuccess:(d)=>{ if(d.download_url) window.open(apiUrl(d.download_url),'_blank'); }
+  });
 }
 async function taskCleanupLogs(){
   const keep=parseInt(document.getElementById('task-keep-days')?.value||'14',10);
-  const r=await fetch('/api/tasks/cleanup-logs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keep_days:keep})});
-  const d=await r.json();
-  toast(d.ok?`Removed ${d.deleted} logs`:(d.error||'Cleanup failed'), d.ok?'ok':'err');
-  loadTasksPage();
+  await runTaskAction({
+    url:'/api/tasks/cleanup-logs',
+    body:{keep_days:keep},
+    successMessage:(d)=>`Removed ${d.deleted} logs`,
+    failureFallback:'Cleanup failed'
+  });
 }
 async function taskPruneHistory(){
   const keep=parseInt(document.getElementById('task-keep-runs')?.value||'100',10);
-  const r=await fetch('/api/tasks/prune-history',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keep_runs:keep})});
-  const d=await r.json();
-  toast(d.ok?`Removed ${d.removed_runs} run entries`:(d.error||'Prune failed'), d.ok?'ok':'err');
-  loadTasksPage();
+  await runTaskAction({
+    url:'/api/tasks/prune-history',
+    body:{keep_runs:keep},
+    successMessage:(d)=>`Removed ${d.removed_runs} run entries`,
+    failureFallback:'Prune failed'
+  });
 }
 async function taskRefreshThemes(){
   const lib=taskLibValue('task-lib-refresh');
   if(!lib) return toast('Select a library first','err');
-  const r=await fetch('/api/tasks/refresh-themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:lib})});
-  const d=await r.json();
-  toast(d.ok?`Updated ${d.updated} rows`:(d.error||'Refresh failed'), d.ok?'ok':'err');
-  loadDatabase(); loadTasksPage();
+  await runTaskAction({
+    url:'/api/tasks/refresh-themes',
+    body:{library:lib},
+    successMessage:(d)=>`Updated ${d.updated} rows`,
+    failureFallback:'Refresh failed',
+    reloadDatabase:true
+  });
 }
 async function taskSqliteMaintenance(){
-  const r=await fetch('/api/tasks/sqlite-maintenance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({backup:true,vacuum:true})});
-  const d=await r.json();
-  if(!d.ok) return toast(d.error||'Maintenance failed','err');
-  toast('SQLite backup/vacuum complete','ok');
-  if(d.download_url) window.open(apiUrl(d.download_url),'_blank');
-  loadTasksPage();
+  await runTaskAction({
+    url:'/api/tasks/sqlite-maintenance',
+    body:{backup:true,vacuum:true},
+    successMessage:'SQLite backup/vacuum complete',
+    failureFallback:'Maintenance failed',
+    onSuccess:(d)=>{ if(d.download_url) window.open(apiUrl(d.download_url),'_blank'); }
+  });
 }
 async function taskClearAllSources(){
   const lib=taskLibValue('task-lib-clear-sources');
@@ -4472,10 +4518,13 @@ async function taskClearAllSources(){
     tone:'danger'
   });
   if(!ok) return;
-  const r=await fetch('/api/tasks/clear-source-urls',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:lib==='__all__'?'':lib})});
-  const d=await r.json();
-  toast(d.ok?`Cleared ${d.cleared} URLs${d.libraries_cleared?` across ${d.libraries_cleared} libraries`:''}`:(d.error||'Failed'), d.ok?'ok':'err');
-  loadDatabase(); loadTasksPage();
+  await runTaskAction({
+    url:'/api/tasks/clear-source-urls',
+    body:{library:lib==='__all__'?'':lib},
+    successMessage:(d)=>`Cleared ${d.cleared} URLs${d.libraries_cleared?` across ${d.libraries_cleared} libraries`:''}`,
+    failureFallback:'Failed',
+    reloadDatabase:true
+  });
 }
 
 // ── Sidebar collapse ─────────────────────────────────────────────────────────
