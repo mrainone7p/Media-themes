@@ -2,7 +2,7 @@
 
 A self-hosted Plex theme manager. Scans your Plex libraries, finds theme sources, lets you review and approve them, then downloads and saves `theme.mp3` files directly into your media folders.
 
-> UI note: newer builds replace the legacy **History** page with a unified **Tasks** page (run tasks, exports, maintenance, and task history).
+> UI note: current navigation uses **Configuration**, **Library**, **Schedule**, and **Tasks**.
 
 ## Quick start
 
@@ -83,6 +83,14 @@ Open `http://your-host:8182` in a browser.
 
 ---
 
+
+## UI terminology
+
+User-facing labels are centralized in `web/ui_terminology.yaml`.
+
+- Navigation: `Configuration`, `Library`, `Schedule`, `Tasks`
+- Status labels: `Pending`, `Staged`, `Approved`, `Available`, `Failed`, `Rejected`, `Ignored`
+- Shared action/toast wording is also defined there so button labels and success messages stay consistent with page copy.
 
 ## Mobile & responsive UI behavior
 

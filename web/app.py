@@ -14,6 +14,7 @@ from flask import (Flask, Response, jsonify, render_template_string,
 app = Flask(__name__)
 
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/config/config.yaml")
+UI_TERMINOLOGY_PATH = os.environ.get("UI_TERMINOLOGY_PATH", "/app/web/ui_terminology.yaml")
 LOGS_DIR    = Path("/app/logs")
 RUNS_DIR    = LOGS_DIR / "runs"
 TASKS_FILE  = LOGS_DIR / "task_history.jsonl"
@@ -411,6 +412,19 @@ def _load_template():
     if local.exists(): return local.read_text(encoding="utf-8")
     return "<h1>Template not found</h1>"
 
+def load_ui_terminology():
+    try:
+        with open(UI_TERMINOLOGY_PATH, encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    except Exception:
+        local = Path(__file__).parent / "ui_terminology.yaml"
+        if local.exists():
+            try:
+                return yaml.safe_load(local.read_text(encoding="utf-8")) or {}
+            except Exception:
+                return {}
+    return {}
+
 # ─── Routes ───────────────────────────────────────────────────────────────────
 
 @app.route("/")
@@ -423,6 +437,10 @@ def get_config():
 @app.route("/api/config", methods=["POST"])
 def post_config():
     cfg = load_config(); cfg.update(request.json); save_config(cfg); return jsonify({"ok": True})
+
+@app.route("/api/ui-terminology", methods=["GET"])
+def get_ui_terminology():
+    return jsonify(load_ui_terminology())
 
 @app.route("/api/test/plex", methods=["POST"])
 def test_plex():

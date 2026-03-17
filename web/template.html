@@ -669,19 +669,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   <div class="nav-section">
     <div class="nav-item active" data-page="configuration" id="nav-configuration">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-      <span>Configuration</span>
+      <span data-ui="nav.configuration">Configuration</span>
     </div>
     <div class="nav-item" data-page="database" id="nav-database">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-      <span>Theme manager</span>
+      <span data-ui="nav.database">Library</span>
     </div>
     <div class="nav-item" data-page="schedule" id="nav-schedule">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span>Scheduler</span>
+      <span data-ui="nav.schedule">Schedule</span>
     </div>
     <div class="nav-item" data-page="tasks" id="nav-tasks">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 16 14"/></svg>
-      <span>Tasks</span>
+      <span data-ui="nav.tasks">Tasks</span>
     </div>
   </div>
   <div class="nav-footer" style="display:flex;align-items:center;justify-content:space-between">
@@ -701,8 +701,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="page active" id="page-configuration">
   <div class="page-head">
     <div>
-      <div class="page-title">Configuration</div>
-      <div class="page-desc">Set up connections, choose library scope, control source discovery, and tune downloads.</div>
+      <div class="page-title" data-ui="pages.configuration.title">Configuration</div>
+      <div class="page-desc" data-ui="pages.configuration.description">Set up connections, choose library scope, control source discovery, and tune downloads.</div>
     </div>
   </div>
   <div class="page-body"><div class="content">
@@ -824,7 +824,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </label>
             <div>
               <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
-              <div class="toggle-note">Manual search selections skip STAGING and go straight to APPROVED.</div>
+              <div class="toggle-note">Manual search selections skip Staged and go straight to Approved.</div>
             </div>
           </div>
         </div>
@@ -945,7 +945,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
         <div class="settings-subcard" style="margin-bottom:16px">
           <div class="subcard-title">Pending titles per run</div>
-          <div class="subcard-intro">Control how many PENDING items are processed during each Find Sources run. <strong>0 = unlimited.</strong></div>
+          <div class="subcard-intro">Control how many Pending items are processed during each Find Sources run. <strong>0 = unlimited.</strong></div>
           <div class="field">
             <label>Pending Titles Per Run</label>
             <input type="number" id="cfg-test_limit" min="0">
@@ -972,7 +972,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="field">
             <label>Max Retries</label>
             <input type="number" id="cfg-max_retries" min="1">
-            <div class="field-help compact">How many times yt-dlp retries a failed download before that item is marked FAILED.</div>
+            <div class="field-help compact">How many times yt-dlp retries a failed download before that item is marked Failed.</div>
           </div>
           <div class="field">
             <label>Delay Between Downloads (s)</label>
@@ -993,7 +993,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <!-- ══════════════════════════════════════ DATABASE ═══════════════════════════ -->
 <div class="page" id="page-database">
   <div class="page-head">
-    <div><div class="page-title">Theme manager</div><div class="page-desc">Browse, review, preview, fine-tune, and manage themes in one place</div></div>
+    <div><div class="page-title" data-ui="pages.database.title">Library</div><div class="page-desc" data-ui="pages.database.description">Browse, review, preview, fine-tune, and manage themes in one place.</div></div>
   </div>
   <div class="page-body">
     <!-- Progress bar -->
@@ -1006,17 +1006,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="pipe-action scan">
         <div class="pipe-action-step scan">Step 1 · Action</div>
         <div class="pipe-action-name scan">⟳ Scan Library</div>
-        <div class="pipe-action-desc">Connects to Plex, indexes all media, marks items without a theme.mp3 as PENDING</div>
+        <div class="pipe-action-desc">Connects to Plex, indexes all media, marks items without a theme.mp3 as Pending</div>
       </div>
       <div class="pipe-action find">
         <div class="pipe-action-step find">Step 2 · Action</div>
         <div class="pipe-action-name find">⚡ Find Sources</div>
-        <div class="pipe-action-desc">Uses TMDB title/year metadata to build a source lookup for each PENDING item, then saves valid matches as STAGED</div>
+        <div class="pipe-action-desc">Uses TMDB title/year metadata to build a source lookup for each Pending item, then saves valid matches as Staged</div>
       </div>
       <div class="pipe-action dl">
         <div class="pipe-action-step dl">Step 3 · Action</div>
         <div class="pipe-action-name dl">↓ Download</div>
-        <div class="pipe-action-desc">Downloads audio for every APPROVED item, trims to offset, saves theme.mp3 to Plex folder</div>
+        <div class="pipe-action-desc">Downloads audio for every Approved item, trims to offset, and saves theme.mp3 to the Plex folder</div>
       </div>
     </div>
 
@@ -1027,7 +1027,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan Library</button>
         <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
         <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
-        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()">↓ Download All Approved</button>
+        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download All Approved</button>
         <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
       </div>
     </div>
@@ -1042,7 +1042,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <option value="REJECTED">Rejected</option><option value="IGNORED">Ignored</option>
       </select>
       <div class="db-toolbar-actions">
-        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()">✓ Approve All Staged</button>
+        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve All Staged</button>
       </div>
     </div>
     <div class="bulk-bar" id="db-bulk-bar">
@@ -1051,11 +1051,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <button class="btn btn-ghost btn-xs" onclick="selectAllVisible()">Select all on page</button>
       <span class="bulk-spacer"></span>
       <div class="bulk-actions">
-        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')">✓ Approve</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('PENDING')">↺ Pending</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('STAGED')">◎ Stage</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('IGNORED')">⊸ Ignore</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('REJECTED')">— Reject</button>
+        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Approve</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('PENDING')" data-ui="actions.bulk.set_pending">↺ Set Pending</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('STAGED')" data-ui="actions.bulk.set_staged">◎ Set Staged</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('IGNORED')" data-ui="actions.bulk.ignore">⊸ Ignore</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('REJECTED')" data-ui="actions.bulk.reject">— Reject</button>
         <button class="btn btn-ghost btn-sm" id="db-clear-sel" onclick="clearSourcesSelected()">🧹 Clear Sources</button>
         <button class="btn btn-red btn-sm" onclick="clearSelection()">✕ Clear</button>
       </div>
@@ -1086,7 +1086,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
 <div class="page" id="page-schedule">
-  <div class="page-head"><div><div class="page-title">Scheduler</div><div class="page-desc">Configure automated runs and manually trigger pipeline steps for the libraries selected below</div></div></div>
+  <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Schedule</div><div class="page-desc" data-ui="pages.schedule.description">Configure automated runs and manually trigger pipeline steps for the selected libraries.</div></div></div>
   <div class="page-body"><div class="content">
 
     <div class="run-bar" style="margin-bottom:14px">
@@ -1224,7 +1224,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <!-- ══════════════════════════════════════ TASKS ════════════════════════════ -->
 <div class="page" id="page-tasks">
-  <div class="page-head"><div><div class="page-title">Tasks</div><div class="page-desc">Run utilities, export curated data, perform maintenance, and review task/run history.</div></div></div>
+  <div class="page-head"><div><div class="page-title" data-ui="pages.tasks.title">Tasks</div><div class="page-desc" data-ui="pages.tasks.description">Run utilities, export curated data, perform maintenance, and review task/run history.</div></div></div>
   <div class="page-body"><div class="content">
     <div class="card">
       <div class="card-title">Run Pipeline Tasks</div>
@@ -1237,7 +1237,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="task-grid">
         <div class="task-card"><div class="task-title">Run Scan Now</div><div class="task-desc">Step 1 scans Plex for selected libraries, checks each media folder for an existing theme file, then sets statuses (PENDING when missing, AVAILABLE when found).</div><div class="task-row"><button class="btn btn-blue btn-sm" onclick="taskRunPass(1)">Run Step 1</button></div></div>
         <div class="task-card"><div class="task-title">Run Find Sources Now</div><div class="task-desc">Step 2 builds source searches for PENDING titles using TMDB metadata, applies Golden Source rules when enabled, and stages valid matches for review.</div><div class="task-row"><button class="btn btn-purple btn-sm" onclick="taskRunPass(2)">Run Step 2</button></div></div>
-        <div class="task-card"><div class="task-title">Run Download Approved Now</div><div class="task-desc">Step 3 downloads audio for APPROVED titles, trims from start offset, writes theme files to media folders, and marks completed rows AVAILABLE.</div><div class="task-row"><button class="btn btn-green btn-sm" onclick="taskRunPass(3)">Run Step 3</button></div></div>
+        <div class="task-card"><div class="task-title">Run Download Approved Now</div><div class="task-desc">Step 3 downloads audio for Approved titles, trims from start offset, writes theme files to media folders, and marks completed rows as Available.</div><div class="task-row"><button class="btn btn-green btn-sm" onclick="taskRunPass(3)">Run Step 3</button></div></div>
       </div>
     </div>
     <div class="card">
@@ -1931,7 +1931,8 @@ function initSidebarNav(){
 }
 
 try{
-  document.addEventListener('DOMContentLoaded', ()=>{
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    await loadUiTerminology();
     initSidebarNav();
     removeItemDetailsPanel();
     updateGlobalRunStatus();
@@ -1963,8 +1964,46 @@ function testBadge(elId, ok, msg){
 
 // ── Configuration ─────────────────────────────────────────────────────────────────
 let _libs=[], _maxDur=45;
+let _uiTerminology={};
+const _defaultStatusDisplay={'PENDING':'Pending','STAGED':'Staged','APPROVED':'Approved','DOWNLOADED':'Available','FAILED':'Failed','REJECTED':'Rejected','IGNORED':'Ignored'};
+const _defaultStatusDesc={
+  PENDING:'Queued for source discovery',
+  STAGED:'Source found, waiting for approval',
+  APPROVED:'Ready to download',
+  DOWNLOADED:'Theme saved to disk',
+  FAILED:'Download failed',
+  IGNORED:'Skipped intentionally',
+  REJECTED:'Source rejected'
+};
 
+function uiTerm(path, fallback=''){
+  const parts=String(path||'').split('.');
+  let cur=_uiTerminology;
+  for(const part of parts){
+    if(!cur || typeof cur!=='object' || !(part in cur)) return fallback;
+    cur=cur[part];
+  }
+  return (typeof cur==='string' || typeof cur==='number') ? String(cur) : fallback;
+}
 
+function applyUiTerminology(){
+  document.querySelectorAll('[data-ui]').forEach(el=>{
+    const key=el.dataset.ui;
+    const val=uiTerm(key,'');
+    if(val) el.textContent=val;
+  });
+}
+
+async function loadUiTerminology(){
+  try{
+    const r=await fetch('/api/ui-terminology');
+    const data=await r.json();
+    _uiTerminology=(data && typeof data==='object')?data:{};
+  }catch(e){
+    _uiTerminology={};
+  }
+  applyUiTerminology();
+}
 
 async function loadConfiguration(){
   const r=await fetch('/api/config'); const cfg=await r.json();
@@ -2196,17 +2235,12 @@ let _lastDbCheckIndex=null;
 const PAGE=80;
 const SC={'PENDING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','DOWNLOADED':'#2dd4a0','FAILED':'#f05252','REJECTED':'#555570','IGNORED':'#f97316'};
 const STATUSES=['PENDING','STAGED','APPROVED','DOWNLOADED','FAILED','REJECTED','IGNORED'];
-const STATUS_DISPLAY={'PENDING':'Pending','STAGED':'Staged','APPROVED':'Approved','DOWNLOADED':'Available','FAILED':'Failed','REJECTED':'Rejected','IGNORED':'Ignored'};
-const STATUS_DESC={
-  PENDING:'Queued for search',
-  STAGED:'Source found, awaiting approval',
-  APPROVED:'Ready to download',
-  DOWNLOADED:'Theme saved to disk',
-  FAILED:'Download failed',
-  IGNORED:'Skipped intentionally',
-  REJECTED:'Wrong source'
-};
-function displayStatus(s){ return STATUS_DISPLAY[s] || s; }
+function statusDesc(status){
+  return uiTerm(`statuses.${status}.description`, _defaultStatusDesc[status] || '');
+}
+function displayStatus(status){
+  return uiTerm(`statuses.${status}.label`, _defaultStatusDisplay[status] || status);
+}
 
 function _hasLocalTheme(row){
   return String(row?.theme_exists||'')==='1';
@@ -2244,7 +2278,7 @@ function renderStatusKey(){
     ['FAILED','IGNORED','REJECTED']
   ];
   el.innerHTML=groups.map((grp,gi)=>{
-    const items=grp.map(s=>`<span class="status-key-item"><span class="badge s-${s}" style="font-size:10px;padding:2px 7px"><span class="si"></span>${displayStatus(s)}</span><span class="status-key-desc">${STATUS_DESC[s]||''}</span></span>`).join('');
+    const items=grp.map(s=>`<span class="status-key-item"><span class="badge s-${s}" style="font-size:10px;padding:2px 7px"><span class="si"></span>${displayStatus(s)}</span><span class="status-key-desc">${statusDesc(s)}</span></span>`).join('');
     const divider=gi===0?`<span style="width:1px;background:var(--border);align-self:stretch;flex-shrink:0;margin:2px 4px"></span>`:'';
     return items+divider;
   }).join('');
@@ -2378,7 +2412,7 @@ function renderStatusCell(row){
   const rk=row.rating_key;
   const status=row.status;
   const opts=allowedStatuses(row).map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
-  return `<span class="badge s-${status}" title="${STATUS_DESC[status]||''}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select>${displayStatus(status)}</span>`;
+  return `<span class="badge s-${status}" title="${statusDesc(status)}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select>${displayStatus(status)}</span>`;
 }
 
 function _htmlAttr(s){
@@ -2853,11 +2887,11 @@ async function bulkSetStatus2(status){
   if(r.ok){
     const updated=d.updated ?? keys.length;
     const skipped=d.skipped ?? 0;
-    toast(`${updated} items → ${status}${skipped?` · ${skipped} skipped`:''}`,'ok');
+    toast(`${updated} items → ${displayStatus(status)}${skipped?` · ${skipped} skipped`:''}`,'ok');
     clearSelection(); loadDatabase();
   }
   else{
-    const msg=[d.error,d.reason_code?`(${d.reason_code})`:'' ,d.current_status&&d.attempted_status?`[${d.current_status} → ${d.attempted_status}]`:'' ].filter(Boolean).join(' ').trim();
+    const msg=[d.error,d.reason_code?`(${d.reason_code})`:'' ,d.current_status&&d.attempted_status?`[${displayStatus(d.current_status)} → ${displayStatus(d.attempted_status)}]`:'' ].filter(Boolean).join(' ').trim();
     toast(msg||'Bulk update failed','err');
     await loadDatabase(false);
   }
@@ -2873,7 +2907,7 @@ async function clearSourcesSelected(){
   if(!ok) return;
   await Promise.all(rows.map(r=>fetch('/api/ledger/'+r.rating_key+'?library='+encodeURIComponent(_activeLib),{
     method:'PATCH',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({url:'',status:'PENDING',notes:'Source cleared via Theme manager'})
+    body:JSON.stringify({url:'',status:'PENDING',notes:'Source cleared via Library'})
   })));
   clearSelection(); loadDatabase(); 
 }
@@ -3670,7 +3704,7 @@ async function saveSourceEditor(skipClose=false){
   if(row){ row.url=url; row.start_offset=String(offset); row.status=status; }
   if(!skipClose){
     closeSearchModal();
-    toast(_autoApproveManual?'Saved — auto-approved':'Saved — staged for approval','ok');
+    toast(_autoApproveManual?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved'):uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
   }
   loadDatabase();
   return true;
