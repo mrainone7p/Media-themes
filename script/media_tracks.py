@@ -146,6 +146,11 @@ ST_REJECTED   = "REJECTED"
 ST_REMOVED    = "REMOVED"
 ST_IGNORED    = "IGNORED"
 
+RETRYABLE_RESOLVE_REASONS = {
+    "No search results",
+    "No strict title match",
+}
+
 
 # ─── Ledger helpers ───────────────────────────────────────────────────────────
 
@@ -159,6 +164,24 @@ def save_ledger(path: str, ledger: dict):
 
 def ledger_path_for(library_name: str) -> str:
     return shared_ledger_path_for(library_name)
+
+
+_RETRY_NOTE_RE = re.compile(r"Resolve retry\s+(\d+)\s*/\s*(\d+)", re.IGNORECASE)
+
+
+def _resolve_retry_attempt_from_notes(notes: str) -> int:
+    """Extract current resolve retry attempt from notes text."""
+    match = _RETRY_NOTE_RE.search(notes or "")
+    if not match:
+        return 0
+    try:
+        return int(match.group(1))
+    except ValueError:
+        return 0
+
+
+def _is_retryable_resolve_reason(reason: str) -> bool:
+    return (reason or "").strip() in RETRYABLE_RESOLVE_REASONS
 
 
 def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
@@ -720,6 +743,7 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
 def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
     """Find source URLs for pending movies. Sets status → STAGED or FAILED."""
     tmdb_api_key  = cfg.get("tmdb_api_key", "")
+    resolve_retry_limit = max(0, int(cfg.get("resolve_retry_limit", 3) or 0))
     cookies_file  = cfg.get("cookies_file", "") or None
     search_mode   = cfg.get("search_mode", "playlist")
     query_playlist = cfg.get("search_query_playlist", "{title} {year} soundtrack playlist")
@@ -865,12 +889,32 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                 log.info(f"  {mode.title()} not accepted — trying fallback")
 
         if not url:
-            log.info(f"  No valid source found — marking FAILED ({last_reason})")
-            ledger_upsert(
-                ledger, key, plex_title, title, year, folder, ST_FAILED,
-                notes=f"No valid source found — {last_reason}", tmdb_id=tmdb_id,
-            )
-            stats["failed"]      += 1
+            retryable = _is_retryable_resolve_reason(last_reason)
+            prior_attempt = _resolve_retry_attempt_from_notes(ledger.get(key, {}).get("notes", ""))
+            current_attempt = prior_attempt + 1 if retryable else prior_attempt
+
+            if retryable and (resolve_retry_limit <= 0 or current_attempt <= resolve_retry_limit):
+                limit_label = "∞" if resolve_retry_limit <= 0 else str(resolve_retry_limit)
+                retry_note = (
+                    f"Resolve retry {current_attempt}/{limit_label} queued — "
+                    f"{last_reason}. Will retry automatically on next resolve pass"
+                )
+                log.info(f"  Retryable resolve miss — keeping PENDING ({retry_note})")
+                ledger_upsert(
+                    ledger, key, plex_title, title, year, folder, ST_PENDING,
+                    notes=retry_note, tmdb_id=tmdb_id,
+                )
+            else:
+                failure_note = f"No valid source found — {last_reason}"
+                if retryable and resolve_retry_limit > 0:
+                    failure_note += f" (retry limit {resolve_retry_limit} reached)"
+                log.info(f"  No valid source found — marking FAILED ({last_reason})")
+                ledger_upsert(
+                    ledger, key, plex_title, title, year, folder, ST_FAILED,
+                    notes=failure_note, tmdb_id=tmdb_id,
+                )
+                stats["failed"] += 1
+
             stats["no_playlist"] += 1
             continue
 
@@ -976,19 +1020,25 @@ def get_libraries(cfg: dict) -> list:
     return [{"name": name, "enabled": True}]
 
 
-def pending_from_ledger(ledger: dict) -> list:
+def pending_from_ledger(ledger: dict, retry_limit: Optional[int] = None) -> list:
     """Reconstruct pending_movies list from ledger rows (for FORCE_PASS=2)."""
-    return [
-        {
+    pending = []
+    for r in ledger.values():
+        if r["status"] != ST_PENDING:
+            continue
+
+        attempt = _resolve_retry_attempt_from_notes(r.get("notes", ""))
+        if retry_limit is not None and retry_limit > 0 and attempt > retry_limit:
+            continue
+
+        pending.append({
             "rating_key": r["rating_key"],
             "plex_title": r.get("plex_title") or r.get("title", "Unknown"),
             "plex_year":  r.get("year", ""),
             "folder":     r.get("folder", ""),
             "tmdb_id":    r.get("tmdb_id") or None,
-        }
-        for r in ledger.values()
-        if r["status"] == ST_PENDING
-    ]
+        })
+    return pending
 
 
 # ─── Scan single library ──────────────────────────────────────────────────────
@@ -1016,7 +1066,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
     # ── Pass 2 only ───────────────────────────────────────────────────────────
     if force_pass == 2:
         ledger  = load_ledger(log_file_path)
-        pending = pending_from_ledger(ledger)
+        pending = pending_from_ledger(ledger, retry_limit=int(cfg.get("resolve_retry_limit", 3) or 0))
         if not pending:
             log.info(f"'{library_name}' — no PENDING movies to resolve")
             return
@@ -1086,7 +1136,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
     else:
         log.info("Step 1 (Scan) disabled in schedule — skipping")
         ledger  = load_ledger(log_file_path)
-        pending = pending_from_ledger(ledger)
+        pending = pending_from_ledger(ledger, retry_limit=int(cfg.get("resolve_retry_limit", 3) or 0))
 
     # ── Pass 2 (auto mode) ────────────────────────────────────────────────────
     if step2_enabled and pending:
