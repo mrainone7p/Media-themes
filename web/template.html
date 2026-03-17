@@ -1313,7 +1313,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <audio id="global-audio" style="display:none"></audio>
 
 <!-- YouTube Preview Modal (Database page — ▶ Preview on staged rows) -->
-<div class="modal-overlay" id="yt-modal" onclick="if(event.target===this)closeYtModal()">
+<div class="modal-overlay" id="yt-modal">
   <div class="modal" style="max-width:560px;position:relative;padding:0">
 
     <!-- Movie header -->
@@ -1379,7 +1379,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 </div>
 
 <!-- ══════════════ GOLDEN SOURCE IMPORT MODAL ══════════════ -->
-<div class="modal-overlay" id="gs-modal" onclick="if(event.target===this)closeGoldenSourceModal()">
+<div class="modal-overlay" id="gs-modal">
   <div class="modal" style="max-width:520px;position:relative;padding:0">
     <div class="modal-header" style="padding-bottom:16px">
       <div style="width:44px;height:44px;border-radius:10px;background:var(--amber-soft);border:1px solid var(--amber);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">★</div>
@@ -1425,7 +1425,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 </div>
 
 <!-- ══════════════ MANUAL SEARCH MODAL (3-step) ══════════════ -->
-<div class="modal-overlay" id="search-modal" onclick="if(event.target===this)closeSearchModal()">
+<div class="modal-overlay" id="search-modal">
   <div class="modal" style="max-width:640px;position:relative;padding:0;display:flex;flex-direction:column;max-height:92vh">
 
     <!-- Step rail - TOP -->
@@ -1594,7 +1594,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 </div>
 
 <!-- Theme Preview Modal (Database page — ▶ Play on downloaded rows) -->
-<div class="modal-overlay" id="theme-modal" onclick="if(event.target===this)closeThemeModal()">
+<div class="modal-overlay" id="theme-modal">
   <div class="modal" style="max-width:540px;position:relative;padding:0">
 
     <!-- Movie header -->
@@ -1643,7 +1643,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 </div>
 
 <!-- Trim Editor Modal (trim existing local theme file) -->
-<div class="modal-overlay" id="trim-modal" onclick="if(event.target===this)closeTrimModal()">
+<div class="modal-overlay" id="trim-modal">
   <div class="modal" style="max-width:540px;position:relative;padding:0">
 
     <!-- ── Movie header ── -->
@@ -1704,7 +1704,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 
 <!-- Generic Confirm Modal -->
-<div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirmModal()">
+<div class="modal-overlay" id="confirm-modal">
   <div class="modal" style="max-width:440px;position:relative">
     <div class="modal-title" id="confirm-modal-title">Confirm Action</div>
     <div style="font-size:13px;color:var(--text2);margin:12px 0;line-height:1.6" id="confirm-modal-message"></div>
@@ -1716,7 +1716,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 </div>
 
 <!-- Delete Confirm Modal -->
-<div class="modal-overlay" id="delete-modal" onclick="if(event.target===this)closeDeleteModal()">
+<div class="modal-overlay" id="delete-modal">
   <div class="modal" style="max-width:420px;position:relative">
     <div class="modal-title">Delete Theme</div>
     <div style="font-size:13px;color:var(--text2);margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--amber)">PENDING</b> status.</div>
@@ -1734,6 +1734,64 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 // === MODAL HANDLING ===
 let _confirmResolver=null;
+const _modalLifecycles={};
+
+function registerModalLifecycle(id, callbacks={}){
+  _modalLifecycles[id]={...(_modalLifecycles[id]||{}), ...callbacks};
+  const overlay=document.getElementById(id);
+  if(!overlay || overlay.dataset.modalLifecycleBound==='1') return;
+  overlay.addEventListener('click',(event)=>{
+    if(event.target!==overlay) return;
+    const lifecycle=_modalLifecycles[id]||{};
+    if(typeof lifecycle.requestClose==='function') lifecycle.requestClose();
+    else closeModal(id);
+  });
+  overlay.dataset.modalLifecycleBound='1';
+}
+
+function withModal(id, onOpen, onClose){
+  registerModalLifecycle(id, {onOpen, onClose});
+}
+
+function openModal(id){
+  const modal=document.getElementById(id);
+  if(!modal) return;
+  modal.classList.add('open');
+  const lifecycle=_modalLifecycles[id]||{};
+  if(typeof lifecycle.onOpen==='function') lifecycle.onOpen(modal);
+}
+
+function closeModal(id){
+  const modal=document.getElementById(id);
+  if(!modal) return;
+  modal.classList.remove('open');
+  const lifecycle=_modalLifecycles[id]||{};
+  if(typeof lifecycle.onClose==='function') lifecycle.onClose(modal);
+}
+
+function topOpenModalId(){
+  const overlays=[...document.querySelectorAll('.modal-overlay.open')];
+  if(!overlays.length) return '';
+  return overlays[overlays.length-1].id||'';
+}
+
+document.addEventListener('keydown',(event)=>{
+  if(event.key!=='Escape') return;
+  const id=topOpenModalId();
+  if(!id) return;
+  const lifecycle=_modalLifecycles[id]||{};
+  event.preventDefault();
+  if(typeof lifecycle.requestClose==='function') lifecycle.requestClose();
+  else closeModal(id);
+});
+
+function runModalMediaCleanup(...cleanupFns){
+  cleanupFns.forEach(fn=>{
+    if(typeof fn!=='function') return;
+    try{ fn(); }catch(_err){}
+  });
+  stopAllAudio();
+}
 
 function toSafeConfirmUrl(rawUrl){
   try{
@@ -1851,22 +1909,20 @@ function renderConfirmMessage(msgEl,message){
 }
 
 function openConfirmModal(title, message, okLabel='Confirm'){
-  const modal=document.getElementById('confirm-modal');
   const titleEl=document.getElementById('confirm-modal-title');
   const msgEl=document.getElementById('confirm-modal-message');
   const okBtn=document.getElementById('confirm-modal-ok');
   if(titleEl) titleEl.textContent=title||'Confirm Action';
   renderConfirmMessage(msgEl,message);
   if(okBtn) okBtn.textContent=okLabel||'Confirm';
-  modal.classList.add('open');
+  openModal('confirm-modal');
   return new Promise(resolve=>{
     _confirmResolver=resolve;
-    okBtn.onclick=()=>{ if(modal) modal.classList.remove('open'); _confirmResolver=null; resolve(true); };
+    okBtn.onclick=()=>{ closeModal('confirm-modal'); _confirmResolver=null; resolve(true); };
   });
 }
 function closeConfirmModal(){
-  const modal=document.getElementById('confirm-modal');
-  if(modal) modal.classList.remove('open');
+  closeModal('confirm-modal');
   if(_confirmResolver){ const r=_confirmResolver; _confirmResolver=null; r(false); }
 }
 
@@ -3255,12 +3311,12 @@ function openDeleteModal(rk,title,lib,folder=''){
   document.getElementById('delete-modal-name').textContent=title;
   const pathEl=document.getElementById('delete-modal-path');
   if(pathEl) pathEl.textContent=folder||'(folder unknown)';
-  document.getElementById('delete-modal').classList.add('open');
+  openModal('delete-modal');
 }
 function closeDeleteModal(){
-  document.getElementById('delete-modal').classList.remove('open');
+  closeModal('delete-modal');
   _deleteKey=null; _deleteLib=''; _deleteFolder='';
-  stopAllAudio();
+  runModalMediaCleanup();
 }
 async function confirmDelete(){
   if(!_deleteKey && !_deleteFolder){ closeDeleteModal(); return; }
@@ -3295,10 +3351,10 @@ function openGoldenSourceModal(lib){
   res.style.display = 'none'; res.textContent = '';
   document.getElementById('gs-confirm-btn').disabled = false;
   document.getElementById('gs-confirm-btn').textContent = '★ Import Now';
-  document.getElementById('gs-modal').classList.add('open');
+  openModal('gs-modal');
 }
 function closeGoldenSourceModal(){
-  document.getElementById('gs-modal').classList.remove('open');
+  closeModal('gs-modal');
 }
 async function confirmGoldenSourceImport(){
   if(!_activeLib) return;
@@ -3484,12 +3540,12 @@ async function openSearchModal(rk,title,year,lib){
     _lastSearchResults=[];
     goToSearchStep(1);
   }
-  document.getElementById('search-modal').classList.add('open');
+  openModal('search-modal');
 }
 
 function closeSearchModal(){
-  document.getElementById('search-modal').classList.remove('open');
-  stopAllAudio(); _searchLib='';
+  closeModal('search-modal');
+  runModalMediaCleanup(); _searchLib='';
 }
 
 function searchModalBack(){
@@ -3915,9 +3971,8 @@ function trimModalTogglePlay(){ _trimModalAudio.toggle(); }
 function trimModalSeek(val){ _trimModalAudio.seek(val); }
 function trimModalSkip(s){ _trimModalAudio.skip(s); }
 function closeTrimModal(){
-  _trimModalAudio.cleanup();
-  document.getElementById('trim-modal').classList.remove('open');
-  stopAllAudio();
+  closeModal('trim-modal');
+  runModalMediaCleanup(()=>_trimModalAudio.cleanup());
 }
 
 // ── YouTube Modal (Database page) ────────────────────────────────────────────
@@ -4029,7 +4084,7 @@ function openYtModal(rk,title,year,url,lib){
   document.getElementById('yt-modal-save').style.display='inline-flex';
   _ytModalAudio.cleanup({clearSrc:false});
   document.getElementById('yt-modal-dur-val').textContent='—';
-  document.getElementById('yt-modal').classList.add('open');
+  openModal('yt-modal');
   // Fetch stream
   fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})})
     .then(r=>r.json()).then(data=>{
@@ -4050,9 +4105,8 @@ function openYtModal(rk,title,year,url,lib){
     }).catch(e=>{_ytModalAudio.setStatus('Error: '+e);});
 }
 function closeYtModal(){
-  document.getElementById('yt-modal').classList.remove('open');
-  _ytModalAudio.cleanup();
-  stopAllAudio();
+  closeModal('yt-modal');
+  runModalMediaCleanup(()=>_ytModalAudio.cleanup());
   _ytModalKey=null;
 }
 function ytModalToggle(){ _ytModalAudio.toggle(); }
@@ -4339,7 +4393,7 @@ function openThemeModal(rk,title,year,folder){
   setBio('theme-modal-bio', rk);
   _themeModalAudio.cleanup({clearSrc:false});
   _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
-  document.getElementById('theme-modal').classList.add('open');
+  openModal('theme-modal');
   _themeModalAudio.setHandlers({
     onloadedmetadata:(audio)=>{
       const d=fmt(audio.duration);
@@ -4351,9 +4405,8 @@ function openThemeModal(rk,title,year,folder){
   if(_curKey) stopCurrentAudio();
 }
 function closeThemeModal(){
-  _themeModalAudio.cleanup();
-  document.getElementById('theme-modal').classList.remove('open');
-  stopAllAudio();
+  closeModal('theme-modal');
+  runModalMediaCleanup(()=>_themeModalAudio.cleanup());
 }
 function themeModalToggle(){ _themeModalAudio.toggle(); }
 function themeModalSkip(s){ _themeModalAudio.skip(s); }
@@ -4389,6 +4442,15 @@ function toggleTheme(){
   try{localStorage.setItem('mt-theme',isDark?'light':'dark');}catch(e){}
 }
 (function(){try{const t=localStorage.getItem('mt-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');setTimeout(()=>{const b=document.getElementById('theme-toggle-btn');if(b)b.textContent='☾';},0);}}catch(e){}})();
+
+
+registerModalLifecycle('confirm-modal',{requestClose:closeConfirmModal});
+registerModalLifecycle('delete-modal',{requestClose:closeDeleteModal});
+registerModalLifecycle('gs-modal',{requestClose:closeGoldenSourceModal});
+registerModalLifecycle('search-modal',{requestClose:closeSearchModal});
+registerModalLifecycle('trim-modal',{requestClose:closeTrimModal});
+registerModalLifecycle('yt-modal',{requestClose:closeYtModal});
+registerModalLifecycle('theme-modal',{requestClose:closeThemeModal});
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 loadConfiguration();
