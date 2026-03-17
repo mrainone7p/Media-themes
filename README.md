@@ -2,6 +2,8 @@
 
 A self-hosted Plex theme manager. Scans your Plex libraries, finds theme sources, lets you review and approve them, then downloads and saves `theme.mp3` files directly into your media folders.
 
+> UI note: newer builds replace the legacy **History** page with a unified **Tasks** page (run tasks, exports, maintenance, and task history).
+
 ## Quick start
 
 ### 1. Pull the image
