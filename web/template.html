@@ -1262,29 +1262,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(false)">Clear</button>
       </div>
       <div class="task-lib-pills" id="task-lib-pills"></div>
-      <div class="task-grid">
-        <div class="task-card"><div class="task-title">Run Scan Now</div><div class="task-desc">Step 1 scans Plex for selected libraries, checks each media folder for an existing theme file, then sets statuses (PENDING when missing, AVAILABLE when found).</div><div class="task-row"><button class="btn btn-blue btn-sm" onclick="taskRunPass(1)">Run Step 1</button></div></div>
-        <div class="task-card"><div class="task-title">Run Find Sources Now</div><div class="task-desc">Step 2 builds source searches for PENDING titles using TMDB metadata, applies Golden Source rules when enabled, and stages valid matches for review.</div><div class="task-row"><button class="btn btn-purple btn-sm" onclick="taskRunPass(2)">Run Step 2</button></div></div>
-        <div class="task-card"><div class="task-title">Run Download Approved Now</div><div class="task-desc">Step 3 downloads audio for Approved titles, trims from start offset, writes theme files to media folders, and marks completed rows as Available.</div><div class="task-row"><button class="btn btn-green btn-sm" onclick="taskRunPass(3)">Run Step 3</button></div></div>
-      </div>
+      <div class="task-grid" id="task-grid-run-pipeline"></div>
     </div>
     <div class="card">
       <div class="card-title">Export / Data Tasks</div>
-      <div class="task-grid" style="grid-template-columns:1fr">
-        <div class="task-card golden-emphasis task-wide"><div class="task-title">★ Export Golden Source CSV</div><div class="task-desc">Exports rows with source URLs only. Includes verified=yes for golden-source provenance. Tooltips explain each field.</div><div class="task-row"><select class="filter-sel" id="task-lib-export" title="Library scope for this export"></select><button class="btn btn-amber btn-sm" onclick="taskExportGoldenSource()" title="Download a curated Golden Source-format CSV">Export</button></div><div class="field-help compact" title="tmdb_id,title,year,source_url,start_offset,verified,updated_at,notes">Fields: tmdb_id · title · year · source_url · start_offset · verified · updated_at · notes</div></div>
-      </div>
+      <div class="task-grid" id="task-grid-export" style="grid-template-columns:1fr"></div>
     </div>
     <div class="card">
       <div class="card-title">Cleanup &amp; Maintenance</div>
-      <div class="task-grid">
-        <div class="task-card"><div class="task-title">Clean Up Logs</div><div class="task-desc">Delete old .log files. Keeps most recent days.</div><div class="task-row"><input class="filter-sel" id="task-keep-days" value="14" style="max-width:90px"><button class="btn btn-ghost btn-sm" onclick="taskCleanupLogs()">Run</button></div></div>
-        <div class="task-card"><div class="task-title">Prune Task History</div><div class="task-desc">Keep only the newest run/task history entries.</div><div class="task-row"><input class="filter-sel" id="task-keep-runs" value="100" style="max-width:90px"><button class="btn btn-ghost btn-sm" onclick="taskPruneHistory()">Run</button></div></div>
-        <div class="task-card"><div class="task-title">Refresh Local Theme Detection</div><div class="task-desc">Resync disk theme files with database state.</div><div class="task-row"><select class="filter-sel" id="task-lib-refresh"></select><button class="btn btn-ghost btn-sm" onclick="taskRefreshThemes()">Run</button></div></div>
-      </div>
-      <div class="task-grid" style="grid-template-columns:1fr;margin-top:8px">
-        <div class="task-card task-wide"><div class="task-title">SQLite Backup + Optimize/Vacuum</div><div class="task-desc">Creates a timestamped SQLite DB backup, then runs VACUUM to compact and optimize the database file for faster reads and lower disk usage.</div><div class="task-row"><button class="btn btn-ghost btn-sm" onclick="taskSqliteMaintenance()">Run</button></div></div>
-        <div class="task-card task-wide"><div class="task-title" style="color:var(--red)">Clear All Source URLs</div><div class="task-desc">Clears stored source URLs for the selected library. <strong class="danger-note">Irreversible.</strong></div><div class="task-row"><select class="filter-sel" id="task-lib-clear-sources"></select><button class="btn btn-red btn-sm" onclick="taskClearAllSources()">Clear URLs</button></div></div>
-      </div>
+      <div class="task-grid" id="task-grid-cleanup"></div>
+      <div class="task-grid" id="task-grid-maintenance" style="grid-template-columns:1fr;margin-top:8px"></div>
     </div>
     <div class="progress-wrap" id="tasks-progress" data-state="queued">
       <div class="progress-head">
@@ -4229,6 +4216,129 @@ function openRunResults(pass){
   },350);
 }
 
+const TASK_CARD_CONFIG={
+  runPipeline:[
+    {
+      title:'Run Scan Now',
+      description:'Step 1 scans Plex for selected libraries, checks each media folder for an existing theme file, then sets statuses (PENDING when missing, AVAILABLE when found).',
+      controlType:'button',
+      buttonLabel:'Run Step 1',
+      buttonClass:'btn btn-blue btn-sm',
+      handler:'taskRunPass(1)'
+    },
+    {
+      title:'Run Find Sources Now',
+      description:'Step 2 builds source searches for PENDING titles using TMDB metadata, applies Golden Source rules when enabled, and stages valid matches for review.',
+      controlType:'button',
+      buttonLabel:'Run Step 2',
+      buttonClass:'btn btn-purple btn-sm',
+      handler:'taskRunPass(2)'
+    },
+    {
+      title:'Run Download Approved Now',
+      description:'Step 3 downloads audio for Approved titles, trims from start offset, writes theme files to media folders, and marks completed rows as Available.',
+      controlType:'button',
+      buttonLabel:'Run Step 3',
+      buttonClass:'btn btn-green btn-sm',
+      handler:'taskRunPass(3)'
+    }
+  ],
+  exportData:[
+    {
+      title:'★ Export Golden Source CSV',
+      description:'Exports rows with source URLs only. Includes verified=yes for golden-source provenance. Tooltips explain each field.',
+      controlType:'selectAndButton',
+      selectId:'task-lib-export',
+      selectClass:'filter-sel',
+      selectTitle:'Library scope for this export',
+      buttonLabel:'Export',
+      buttonClass:'btn btn-amber btn-sm',
+      buttonTitle:'Download a curated Golden Source-format CSV',
+      handler:'taskExportGoldenSource()',
+      cardClass:'golden-emphasis task-wide',
+      extraHtml:'<div class="field-help compact" title="tmdb_id,title,year,source_url,start_offset,verified,updated_at,notes">Fields: tmdb_id · title · year · source_url · start_offset · verified · updated_at · notes</div>'
+    }
+  ],
+  cleanup:[
+    {
+      title:'Clean Up Logs',
+      description:'Delete old .log files. Keeps most recent days.',
+      controlType:'inputAndButton',
+      inputId:'task-keep-days',
+      inputClass:'filter-sel',
+      inputValue:'14',
+      inputStyle:'max-width:90px',
+      buttonLabel:'Run',
+      buttonClass:'btn btn-ghost btn-sm',
+      handler:'taskCleanupLogs()'
+    },
+    {
+      title:'Prune Task History',
+      description:'Keep only the newest run/task history entries.',
+      controlType:'inputAndButton',
+      inputId:'task-keep-runs',
+      inputClass:'filter-sel',
+      inputValue:'100',
+      inputStyle:'max-width:90px',
+      buttonLabel:'Run',
+      buttonClass:'btn btn-ghost btn-sm',
+      handler:'taskPruneHistory()'
+    },
+    {
+      title:'Refresh Local Theme Detection',
+      description:'Resync disk theme files with database state.',
+      controlType:'selectAndButton',
+      selectId:'task-lib-refresh',
+      selectClass:'filter-sel',
+      buttonLabel:'Run',
+      buttonClass:'btn btn-ghost btn-sm',
+      handler:'taskRefreshThemes()'
+    }
+  ],
+  maintenance:[
+    {
+      title:'SQLite Backup + Optimize/Vacuum',
+      description:'Creates a timestamped SQLite DB backup, then runs VACUUM to compact and optimize the database file for faster reads and lower disk usage.',
+      controlType:'button',
+      buttonLabel:'Run',
+      buttonClass:'btn btn-ghost btn-sm',
+      handler:'taskSqliteMaintenance()',
+      cardClass:'task-wide'
+    },
+    {
+      title:'Clear All Source URLs',
+      description:'Clears stored source URLs for the selected library. <strong class="danger-note">Irreversible.</strong>',
+      controlType:'selectAndButton',
+      selectId:'task-lib-clear-sources',
+      selectClass:'filter-sel',
+      buttonLabel:'Clear URLs',
+      buttonClass:'btn btn-red btn-sm',
+      handler:'taskClearAllSources()',
+      titleStyle:'color:var(--red)',
+      cardClass:'task-wide'
+    }
+  ]
+};
+
+function renderTaskCards(){
+  const renderRowControls=(card)=>{
+    if(card.controlType==='button') return `<button class="${card.buttonClass}" onclick="${card.handler}">${card.buttonLabel}</button>`;
+    if(card.controlType==='selectAndButton') return `<select class="${card.selectClass||'filter-sel'}" id="${card.selectId}"${card.selectTitle?` title="${card.selectTitle}"`:''}></select><button class="${card.buttonClass}" onclick="${card.handler}"${card.buttonTitle?` title="${card.buttonTitle}"`:''}>${card.buttonLabel}</button>`;
+    if(card.controlType==='inputAndButton') return `<input class="${card.inputClass||'filter-sel'}" id="${card.inputId}" value="${card.inputValue||''}"${card.inputStyle?` style="${card.inputStyle}"`:''}><button class="${card.buttonClass}" onclick="${card.handler}">${card.buttonLabel}</button>`;
+    return '';
+  };
+  const renderCards=(cards)=>cards.map(card=>`<div class="task-card${card.cardClass?` ${card.cardClass}`:''}"><div class="task-title"${card.titleStyle?` style="${card.titleStyle}"`:''}>${card.title}</div><div class="task-desc">${card.description}</div><div class="task-row">${renderRowControls(card)}</div>${card.extraHtml||''}</div>`).join('');
+
+  const runGrid=document.getElementById('task-grid-run-pipeline');
+  const exportGrid=document.getElementById('task-grid-export');
+  const cleanupGrid=document.getElementById('task-grid-cleanup');
+  const maintenanceGrid=document.getElementById('task-grid-maintenance');
+  if(runGrid) runGrid.innerHTML=renderCards(TASK_CARD_CONFIG.runPipeline);
+  if(exportGrid) exportGrid.innerHTML=renderCards(TASK_CARD_CONFIG.exportData);
+  if(cleanupGrid) cleanupGrid.innerHTML=renderCards(TASK_CARD_CONFIG.cleanup);
+  if(maintenanceGrid) maintenanceGrid.innerHTML=renderCards(TASK_CARD_CONFIG.maintenance);
+}
+
 async function loadTasksPage(){
   await loadTaskHistoryList();
   const r=await fetch('/api/history'); const runs=await r.json();
@@ -4453,6 +4563,7 @@ registerModalLifecycle('yt-modal',{requestClose:closeYtModal});
 registerModalLifecycle('theme-modal',{requestClose:closeThemeModal});
 
 // ── Init ─────────────────────────────────────────────────────────────────────
+renderTaskCards();
 loadConfiguration();
 bindOffsetWheel();
 </script>
