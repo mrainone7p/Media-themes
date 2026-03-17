@@ -39,6 +39,7 @@ from storage import (
 
 EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
 VALID_STATUSES = {"PENDING", "STAGED", "APPROVED", "DOWNLOADED", "AVAILABLE", "FAILED", "REJECTED", "IGNORED"}
+STATUS_ORDER = ["PENDING", "STAGED", "APPROVED", "DOWNLOADED", "AVAILABLE", "FAILED", "REJECTED", "IGNORED"]
 
 
 def _status_validation_error(row, attempted_status):
@@ -79,6 +80,44 @@ def _status_validation_error(row, attempted_status):
             "attempted_status": attempted,
         }
     return None
+
+
+def _row_capabilities(row):
+    status = str(row.get("status", "") or "").upper()
+    has_url = bool(str(row.get("url", "") or "").strip())
+    has_theme = str(row.get("theme_exists", "") or "") == "1" or status in ("DOWNLOADED", "AVAILABLE")
+    allowed_statuses = [s for s in STATUS_ORDER if not _status_validation_error(row, s)]
+    actions = {
+        "preview_source": has_url,
+        "stage": "STAGED" in allowed_statuses and status != "STAGED",
+        "approve": "APPROVED" in allowed_statuses and status != "APPROVED",
+        "download_now": status == "APPROVED" and has_url and not has_theme,
+        "play_theme": has_theme and bool(str(row.get("rating_key", "") or "").strip()),
+        "delete_theme": has_theme and bool(str(row.get("rating_key", "") or "").strip()),
+        "manual_search": True,
+        "review": has_theme,
+    }
+    if actions["review"]:
+        primary_action = "review"
+    elif actions["approve"]:
+        primary_action = "approve"
+    elif actions["download_now"]:
+        primary_action = "download_now"
+    elif actions["stage"]:
+        primary_action = "stage"
+    else:
+        primary_action = "manual_search"
+    return {
+        "allowed_statuses": allowed_statuses,
+        "actions": actions,
+        "primary_action": primary_action,
+    }
+
+
+def _row_with_capabilities(row):
+    out = dict(row)
+    out["capabilities"] = _row_capabilities(out)
+    return out
 
 _run_lock    = threading.Lock()
 _run_active  = False
@@ -558,7 +597,7 @@ def list_cookies():
 def get_ledger():
     lib = request.args.get("library","")
     path = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-    return jsonify(load_ledger(path))
+    return jsonify([_row_with_capabilities(row) for row in load_ledger(path)])
 
 @app.route("/api/ledger/<key>", methods=["PATCH"])
 def patch_ledger(key):
@@ -579,7 +618,7 @@ def patch_ledger(key):
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if "notes" not in req: row["notes"] = "Edited via web UI"
             save_ledger(path, rows)
-            return jsonify({"ok":True})
+            return jsonify({"ok":True, "row": _row_with_capabilities(row)})
     return jsonify({"error":"not found"}), 404
 
 @app.route("/api/ledger/bulk", methods=["POST"])
@@ -599,7 +638,8 @@ def bulk_ledger():
             row["status"] = status; row["last_updated"] = now
             row["notes"] = f"Bulk {cur}->{status} via web UI"; count += 1
     save_ledger(path, rows)
-    return jsonify({"ok":True,"updated":count,"skipped":skipped})
+    updated_rows = [_row_with_capabilities(row) for row in rows if row.get("rating_key") in keys]
+    return jsonify({"ok":True,"updated":count,"skipped":skipped,"rows":updated_rows})
 
 @app.route("/api/golden-source/import", methods=["POST"])
 def import_golden_source():

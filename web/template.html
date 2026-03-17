@@ -2327,7 +2327,18 @@ function _statusValidation(row, attemptedStatus){
 }
 
 function allowedStatuses(row){
+  if(Array.isArray(row?.capabilities?.allowed_statuses) && row.capabilities.allowed_statuses.length){
+    return row.capabilities.allowed_statuses;
+  }
   return STATUSES.filter(status=>_statusValidation(row,status).ok);
+}
+
+function _can(row, action){
+  return !!row?.capabilities?.actions?.[action];
+}
+
+function _primaryActionName(row){
+  return row?.capabilities?.primary_action || '';
 }
 
 function renderStatusCell(row){
@@ -2481,24 +2492,21 @@ function _htmlAttr(s){
 }
 
 function _recommendedAction(row){
-  const hasSource=_hasSourceUrl(row);
-  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
-  if((row.status==='DOWNLOADED'||row.status==='AVAILABLE') && row.rating_key) return {label:'Review', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
-  if(row.status==='STAGED') return {label:'Approve', cls:'btn btn-green btn-xs row-primary-action', fn:'_approveRow'};
-  if(row.status==='APPROVED' && hasSource && !hasTheme && row.rating_key) return {label:'Download', cls:'btn btn-green btn-xs row-primary-action', fn:'_downloadNow'};
-  if(hasSource && row.status==='PENDING') return {label:'Stage', cls:'btn btn-purple btn-xs row-primary-action', fn:'_stageRow'};
+  const primary=_primaryActionName(row);
+  if(primary==='review') return {label:'Review', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
+  if(primary==='approve') return {label:'Approve', cls:'btn btn-green btn-xs row-primary-action', fn:'_approveRow'};
+  if(primary==='download_now') return {label:'Download', cls:'btn btn-green btn-xs row-primary-action', fn:'_downloadNow'};
+  if(primary==='stage') return {label:'Stage', cls:'btn btn-purple btn-xs row-primary-action', fn:'_stageRow'};
   return {label:'Review', cls:'btn btn-ghost btn-xs row-primary-action', fn:'_manualSearch'};
 }
 
 function _rowSecondaryActions(row){
-  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
-  const hasSource=_hasSourceUrl(row);
   const actions=[];
-  if(hasSource) actions.push({label:'Preview source', fn:'_previewSource'});
-  if(row.status!=='STAGED' && hasSource) actions.push({label:'Set staged', fn:'_stageRow'});
-  if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve', fn:'_approveRow'});
-  if(hasTheme && row.rating_key) actions.push({label:'Play theme', fn:'_playTheme'});
-  if(hasTheme && row.rating_key) actions.push({label:'Delete theme', fn:'_deleteTheme'});
+  if(_can(row,'preview_source')) actions.push({label:'Preview source', fn:'_previewSource'});
+  if(_can(row,'stage')) actions.push({label:'Set staged', fn:'_stageRow'});
+  if(_can(row,'approve')) actions.push({label:'Approve', fn:'_approveRow'});
+  if(_can(row,'play_theme')) actions.push({label:'Play theme', fn:'_playTheme'});
+  if(_can(row,'delete_theme')) actions.push({label:'Delete theme', fn:'_deleteTheme'});
   actions.push({label:'Manual search', fn:'_manualSearch'});
   return actions;
 }
@@ -2825,6 +2833,10 @@ async function updateRow(key,field,value,selEl){
   });
   const data=await r.json().catch(()=>({}));
   if(r.ok){
+    if(data?.row && row){
+      Object.assign(row,data.row);
+      if(_rowMap[key]) Object.assign(_rowMap[key],data.row);
+    }
     toast('Saved','ok');
     renderChips();
     renderTable();
@@ -2978,6 +2990,15 @@ async function bulkSetStatus2(status){
   });
   const d=await r.json().catch(()=>({}));
   if(r.ok){
+    if(Array.isArray(d.rows) && d.rows.length){
+      d.rows.forEach(next=>{
+        const rk=next?.rating_key;
+        if(!rk) return;
+        const row=_rows.find(it=>it.rating_key===rk);
+        if(row) Object.assign(row,next);
+        if(_rowMap[rk]) Object.assign(_rowMap[rk],next);
+      });
+    }
     const updated=d.updated ?? keys.length;
     const skipped=d.skipped ?? 0;
     toast(`${updated} items → ${displayStatus(status)}${skipped?` · ${skipped} skipped`:''}`,'ok');
