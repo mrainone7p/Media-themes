@@ -29,6 +29,8 @@ LEDGER_HEADERS = [
     "status",
     "url",
     "start_offset",
+    "golden_source_url",
+    "golden_source_offset",
     "end_offset",
     "plex_title",
     "folder",
@@ -100,6 +102,7 @@ def _normalize_row(row: dict) -> dict:
 
     out["end_offset"]   = str(out.get("end_offset", "0") or "0")
     out["start_offset"] = str(out.get("start_offset", "0") or "0")
+    out["golden_source_offset"] = str(out.get("golden_source_offset", "0") or "0")
     out["tmdb_id"]      = str(out.get("tmdb_id", "") or "").strip()
     out["source_origin"] = str(out.get("source_origin", "") or "unknown").strip() or "unknown"
     out["folder"]       = str(out.get("folder", "") or "").strip()
@@ -174,6 +177,8 @@ def _init_db(conn: sqlite3.Connection):
             status TEXT,
             url TEXT,
             start_offset TEXT,
+            golden_source_url TEXT,
+            golden_source_offset TEXT DEFAULT '0',
             end_offset TEXT,
             plex_title TEXT,
             folder TEXT,
@@ -200,6 +205,8 @@ def _init_db(conn: sqlite3.Connection):
         "theme_mtime": "REAL DEFAULT 0",
         "tmdb_id": "TEXT",
         "source_origin": "TEXT DEFAULT 'unknown'",
+        "golden_source_url": "TEXT",
+        "golden_source_offset": "TEXT DEFAULT '0'",
     }
     for name, ddl in wanted.items():
         if name not in cols:
@@ -243,14 +250,15 @@ def _import_csv_if_needed(conn: sqlite3.Connection, path: str, slug: str):
         conn.execute(
             """
             INSERT OR REPLACE INTO items(
-                library_slug,rating_key,title,year,status,url,start_offset,end_offset,
+                library_slug,rating_key,title,year,status,url,start_offset,golden_source_url,golden_source_offset,end_offset,
                 plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                 theme_size,theme_mtime,created_at,updated_at
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
-                row["start_offset"], row["end_offset"], row["plex_title"], row["folder"],
+                row["start_offset"], row["golden_source_url"], row["golden_source_offset"],
+                row["end_offset"], row["plex_title"], row["folder"],
                 row["tmdb_id"], row["last_updated"], row["notes"], row.get("source_origin", "unknown"),
                 int(row["theme_exists"]), float(row["theme_duration"]),
                 int(row["theme_size"]), float(row["theme_mtime"]), now, now,
@@ -268,7 +276,7 @@ def _sqlite_load_rows(path: str) -> list[dict]:
             _import_csv_if_needed(conn, path, slug)
             cur = conn.execute(
                 """
-                SELECT title,year,status,url,start_offset,end_offset,plex_title,folder,
+                SELECT title,year,status,url,start_offset,golden_source_url,golden_source_offset,end_offset,plex_title,folder,
                        rating_key,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                        theme_size,theme_mtime
                 FROM items
@@ -302,16 +310,18 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                 conn.execute(
                     """
                     INSERT INTO items(
-                        library_slug,rating_key,title,year,status,url,start_offset,end_offset,
-                        plex_title,folder,tmdb_id,last_updated,notes,theme_exists,theme_duration,
-                        source_origin,theme_size,theme_mtime,created_at,updated_at
-                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        library_slug,rating_key,title,year,status,url,start_offset,golden_source_url,golden_source_offset,end_offset,
+                        plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
+                        theme_size,theme_mtime,created_at,updated_at
+                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(library_slug,rating_key) DO UPDATE SET
                         title=excluded.title,
                         year=excluded.year,
                         status=excluded.status,
                         url=excluded.url,
                         start_offset=excluded.start_offset,
+                        golden_source_url=excluded.golden_source_url,
+                        golden_source_offset=excluded.golden_source_offset,
                         end_offset=excluded.end_offset,
                         plex_title=excluded.plex_title,
                         folder=excluded.folder,
@@ -327,9 +337,9 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                     """,
                     (
                         slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
-                        row["start_offset"], row["end_offset"], row["plex_title"], row["folder"],
-                        row["tmdb_id"], row["last_updated"], row["notes"],
-                        row.get("source_origin", "unknown"), int(row["theme_exists"]), float(row["theme_duration"]),
+                        row["start_offset"], row["golden_source_url"], row["golden_source_offset"], row["end_offset"], row["plex_title"], row["folder"],
+                        row["tmdb_id"], row["last_updated"], row["notes"], row.get("source_origin", "unknown"),
+                        int(row["theme_exists"]), float(row["theme_duration"]),
                         int(row["theme_size"]), float(row["theme_mtime"]), now, now,
                     ),
                 )
