@@ -149,6 +149,37 @@ ST_IGNORED    = "IGNORED"
 
 # ─── Ledger helpers ───────────────────────────────────────────────────────────
 
+def _append_note(notes: str, addition: str) -> str:
+    notes = str(notes or "").strip()
+    return f"{notes} | {addition}" if notes else addition
+
+
+def _coerce_status_for_row(row: dict, theme_filename: str) -> tuple[dict, bool]:
+    """Apply worker-side status policy guardrails using URL + local theme presence."""
+    row, _ = sync_theme_cache(row, theme_filename, probe_duration=False)
+
+    status = row.get("status", ST_PENDING)
+    has_url = bool(str(row.get("url", "")).strip())
+    has_theme = bool(int(row.get("theme_exists", 0) or 0))
+    coerced_reason = None
+
+    if status in (ST_STAGED, ST_APPROVED):
+        if not has_url:
+            row["status"] = ST_PENDING
+            coerced_reason = f"Status policy: {status} requires URL; reset to PENDING"
+        elif has_theme:
+            row["status"] = ST_DOWNLOADED
+            coerced_reason = f"Status policy: {status} requires no local theme; promoted to DOWNLOADED"
+    elif status == ST_DOWNLOADED and not has_theme:
+        row["status"] = ST_PENDING
+        coerced_reason = "Status policy: DOWNLOADED requires local theme; reset to PENDING"
+
+    if coerced_reason:
+        row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row["notes"] = _append_note(row.get("notes", ""), coerced_reason)
+        return row, True
+    return row, False
+
 def load_ledger(path: str) -> dict:
     return load_ledger_map(path)
 
@@ -706,6 +737,11 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
             row["notes"]        = "Theme file missing — re-queued"
             log.info(f"[RESET]    {plex_title} ({plex_year})")
 
+        row, coerced = _coerce_status_for_row(row, theme_filename)
+        if coerced:
+            log.info(f"[POLICY]   {plex_title} ({plex_year}) — {row['notes']}")
+        ledger[key] = row
+
         current = ledger[key]["status"]
         if current == ST_DOWNLOADED:   stats["has_theme"] += 1
         elif current == ST_PENDING:    stats["pending"]   += 1; pending.append(movie)
@@ -753,6 +789,8 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                     notes=f"Golden Source fetch failed: {str(e)[:120]}",
                     tmdb_id=movie.get("tmdb_id") or "",
                 )
+                row, _ = _coerce_status_for_row(ledger[movie["rating_key"]], cfg.get("theme_filename", "theme.mp3"))
+                ledger[movie["rating_key"]] = row
                 stats["failed"] += 1
             return stats
 
@@ -789,6 +827,10 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                     ledger, key, plex_title, title, year, folder, ST_FAILED,
                     notes="Golden Source only mode — no TMDB match found", tmdb_id=tmdb_id,
                 )
+                row, coerced = _coerce_status_for_row(ledger[key], cfg.get("theme_filename", "theme.mp3"))
+                if coerced:
+                    log.info(f"[POLICY]   {plex_title} ({year}) — {row['notes']}")
+                ledger[key] = row
                 stats["failed"]      += 1
                 stats["no_playlist"] += 1
                 continue
@@ -799,6 +841,10 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                 end_offset=match.get("end_offset", 0),
                 notes="Matched from Golden Source", tmdb_id=tmdb_id,
             )
+            row, coerced = _coerce_status_for_row(ledger[key], cfg.get("theme_filename", "theme.mp3"))
+            if coerced:
+                log.info(f"[POLICY]   {plex_title} ({year}) — {row['notes']}")
+            ledger[key] = row
             stats["staged"]         += 1
             stats["golden_matched"] += 1
             continue
@@ -810,6 +856,8 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                     ledger, key, plex_title, title, year, folder, ST_FAILED,
                     notes="Invalid playlist query template for strict mode", tmdb_id=tmdb_id,
                 )
+                row, _ = _coerce_status_for_row(ledger[key], cfg.get("theme_filename", "theme.mp3"))
+                ledger[key] = row
                 stats["failed"] += 1
                 continue
             if search_mode == "direct" and not _template_is_strict_safe(query_direct, "direct"):
@@ -817,6 +865,8 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                     ledger, key, plex_title, title, year, folder, ST_FAILED,
                     notes="Invalid direct query template for strict mode", tmdb_id=tmdb_id,
                 )
+                row, _ = _coerce_status_for_row(ledger[key], cfg.get("theme_filename", "theme.mp3"))
+                ledger[key] = row
                 stats["failed"] += 1
                 continue
 
@@ -854,6 +904,8 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                 ledger, key, plex_title, title, year, folder, ST_FAILED,
                 notes=f"No valid source found — {last_reason}", tmdb_id=tmdb_id,
             )
+            row, _ = _coerce_status_for_row(ledger[key], cfg.get("theme_filename", "theme.mp3"))
+            ledger[key] = row
             stats["failed"]      += 1
             stats["no_playlist"] += 1
             continue
@@ -863,6 +915,10 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
             ledger, key, plex_title, title, year, folder, ST_STAGED,
             url=url, notes=f"Found via {method_used} — awaiting approval", tmdb_id=tmdb_id,
         )
+        row, coerced = _coerce_status_for_row(ledger[key], cfg.get("theme_filename", "theme.mp3"))
+        if coerced:
+            log.info(f"[POLICY]   {plex_title} ({year}) — {row['notes']}")
+        ledger[key] = row
         stats["staged"] += 1
 
     return stats
@@ -903,6 +959,14 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
 
         emit_progress(3, i, len(approved), title, "downloading")
 
+        row, coerced = _coerce_status_for_row(row, theme_filename)
+        if coerced:
+            ledger[rk] = row
+            log.info(f"[POLICY]   {title} ({year}) — {row['notes']}")
+        if row["status"] != ST_APPROVED:
+            stats["skipped"] += 1
+            continue
+
         if not url:
             log.warning(f"[APPROVED] {title} ({year}) — no URL, resetting to PENDING")
             row["status"]       = ST_PENDING
@@ -930,14 +994,21 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
             row["status"]       = ST_DOWNLOADED
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             row["notes"]        = message
-            row, _              = sync_theme_cache(row, theme_filename, probe_duration=True)
-            ledger[rk]          = row  # write back with updated theme cache
+            row, _               = sync_theme_cache(row, theme_filename, probe_duration=True)
+            row, coerced         = _coerce_status_for_row(row, theme_filename)
+            if coerced:
+                log.info(f"[POLICY]   {title} ({year}) — {row['notes']}")
+            ledger[rk]           = row  # write back with updated theme cache
             stats["downloaded"] += 1
         else:
             log.warning(f"[FAILED]   {title} ({year}) — {message}")
             row["status"]       = ST_FAILED
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             row["notes"]        = message
+            row, coerced         = _coerce_status_for_row(row, theme_filename)
+            if coerced:
+                log.info(f"[POLICY]   {title} ({year}) — {row['notes']}")
+            ledger[rk]           = row
             stats["failed"]    += 1
 
     return stats
