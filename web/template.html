@@ -788,20 +788,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </div>
           </div>
         </div>
-        <div class="settings-subcard" style="margin-top:14px">
-          <div class="subcard-title">Cookies</div>
-          <div class="subcard-intro">Optional access helper for yt-dlp when YouTube is harder to fetch.</div>
-          <div class="field">
-            <label>Cookies File</label>
-            <select id="cfg-cookies_file" onchange="updateCookieIndicator()">
-              <option value="">No cookies file</option>
-            </select>
-          </div>
-          <div class="settings-actions">
-            <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
-          </div>
-          <div class="field-help compact">Browser-exported YouTube cookies can help with age-restricted, sign-in-gated, region-limited, or bot-protected results and playlists.</div>
-        </div>
       </div>
     </details>
 
@@ -814,23 +800,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">These settings control what gets written to disk and how aggressively Media Tracks processes downloads and source matching.</div>
-        <div class="settings-subcard" style="margin-bottom:16px">
-          <div class="subcard-title">Theme length</div>
-          <div class="subcard-intro">Downloads shorter than this are kept as-is. Longer downloads are trimmed to this maximum length.</div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <div class="dur-toggle" id="dur-toggle">
-              <div class="dur-opt" data-val="30" onclick="setDuration(30)">30s</div>
-              <div class="dur-opt" data-val="45" onclick="setDuration(45)">45s</div>
-              <div class="dur-opt" data-val="60" onclick="setDuration(60)">60s</div>
-              <div class="dur-opt" data-val="0" onclick="setDuration(0)">No limit</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="cfg-custom-dur" min="1" max="600" placeholder="Custom" style="width:98px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" onchange="setDuration(parseInt(this.value)||0)">
-              <span style="font-size:12px;color:var(--text2)">seconds</span>
-            </div>
-          </div>
-        </div>
+        <div class="section-intro">These settings control what gets written to disk, how aggressively Media Tracks processes downloads and source matching, and how cookies can improve reliability on harder YouTube fetches.</div>
         <div class="settings-grid-3" style="margin-bottom:16px">
           <div class="field">
             <label>Audio Format</label>
@@ -849,10 +819,40 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </select>
             <div class="field-help compact">Actual bitrate varies by source and output codec. Best available keeps the highest practical quality.</div>
           </div>
-          <div class="field">
+        </div>
+        <div class="settings-subcard" style="margin-bottom:16px">
+          <div class="subcard-title">Theme filename &amp; length</div>
+          <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is; longer downloads are trimmed.</div>
+          <div class="field" style="margin-bottom:10px">
             <label>Theme Filename</label>
             <input id="cfg-theme_filename" placeholder="theme.mp3">
           </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="dur-toggle" id="dur-toggle">
+              <div class="dur-opt" data-val="30" onclick="setDuration(30)">30s</div>
+              <div class="dur-opt" data-val="45" onclick="setDuration(45)">45s</div>
+              <div class="dur-opt" data-val="60" onclick="setDuration(60)">60s</div>
+              <div class="dur-opt" data-val="0" onclick="setDuration(0)">No limit</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="cfg-custom-dur" min="1" max="600" placeholder="Custom" style="width:98px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" onchange="setDuration(parseInt(this.value)||0)">
+              <span style="font-size:12px;color:var(--text2)">seconds</span>
+            </div>
+          </div>
+        </div>
+        <div class="settings-subcard" style="margin-bottom:16px">
+          <div class="subcard-title">Cookies</div>
+          <div class="subcard-intro">Optional yt-dlp helper for reliability and performance when YouTube is harder to fetch.</div>
+          <div class="field">
+            <label>Cookies File</label>
+            <select id="cfg-cookies_file" onchange="updateCookieIndicator()">
+              <option value="">No cookies file</option>
+            </select>
+          </div>
+          <div class="settings-actions">
+            <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
+          </div>
+          <div class="field-help compact">Browser-exported YouTube cookies can help with age-restricted, sign-in-gated, region-limited, or bot-protected results and playlists.</div>
         </div>
         <div class="performance-grid">
           <div class="field">
