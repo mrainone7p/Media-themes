@@ -1501,13 +1501,129 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 // ── Utils ────────────────────────────────────────────────────────────────────
 
 let _confirmResolver=null;
+
+function toSafeConfirmUrl(rawUrl){
+  try{
+    const parsed=new URL(String(rawUrl||''), window.location.origin);
+    if(['http:','https:','mailto:'].includes(parsed.protocol)) return parsed.href;
+  }catch(_err){
+    return '';
+  }
+  return '';
+}
+
+function sanitizeConfirmHtml(input){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(String(input||''),'text/html');
+  const allowedTags=new Set(['BR','A','STRONG','EM','CODE']);
+
+  function sanitizeNode(node){
+    if(node.nodeType===Node.TEXT_NODE) return document.createTextNode(node.textContent||'');
+    if(node.nodeType!==Node.ELEMENT_NODE) return document.createDocumentFragment();
+
+    const tag=node.tagName.toUpperCase();
+    const frag=document.createDocumentFragment();
+    Array.from(node.childNodes).forEach(child=>frag.appendChild(sanitizeNode(child)));
+
+    if(!allowedTags.has(tag)) return frag;
+    if(tag==='BR') return document.createElement('br');
+
+    const safeEl=document.createElement(tag.toLowerCase());
+    if(tag==='A'){
+      const safeHref=toSafeConfirmUrl(node.getAttribute('href')||'');
+      if(safeHref){
+        safeEl.setAttribute('href',safeHref);
+        safeEl.setAttribute('target','_blank');
+        safeEl.setAttribute('rel','noopener noreferrer');
+      }
+    }
+
+    safeEl.appendChild(frag);
+    return safeEl;
+  }
+
+  const out=document.createDocumentFragment();
+  Array.from(doc.body.childNodes).forEach(node=>out.appendChild(sanitizeNode(node)));
+  return out;
+}
+
+function renderConfirmText(parent,text){
+  const content=String(text||'');
+  if(!content) return;
+  const parts=content.split('\n');
+  parts.forEach((part,idx)=>{
+    if(idx>0) parent.appendChild(document.createElement('br'));
+    parent.appendChild(document.createTextNode(part));
+  });
+}
+
+function renderConfirmMessage(msgEl,message){
+  if(!msgEl) return;
+  msgEl.replaceChildren();
+
+  const payload=(message&&typeof message==='object'&&!Array.isArray(message))?message:{text:message||''};
+  if(payload.text){
+    const textBlock=document.createElement('div');
+    renderConfirmText(textBlock,payload.text);
+    msgEl.appendChild(textBlock);
+  }
+
+  if(Array.isArray(payload.fields)){
+    payload.fields.forEach(field=>{
+      if(!field||(!field.value&&field.value!==0)) return;
+      const row=document.createElement('div');
+      row.style.marginTop='10px';
+
+      if(field.label){
+        const label=document.createElement('div');
+        label.style.fontSize='11px';
+        label.style.color='var(--text3)';
+        label.textContent=String(field.label);
+        row.appendChild(label);
+      }
+
+      if(field.type==='url'){
+        const safeHref=toSafeConfirmUrl(field.value);
+        const link=document.createElement('a');
+        link.style.wordBreak='break-all';
+        if(safeHref){
+          link.href=safeHref;
+          link.target='_blank';
+          link.rel='noopener noreferrer';
+          link.textContent=String(field.value);
+        }else{
+          link.textContent=String(field.value);
+        }
+        row.appendChild(link);
+      }else{
+        const value=document.createElement('div');
+        value.textContent=String(field.value);
+        if(field.mono){
+          value.style.fontFamily='var(--mono)';
+          value.style.fontSize='11px';
+          value.style.wordBreak='break-all';
+        }
+        row.appendChild(value);
+      }
+      msgEl.appendChild(row);
+    });
+  }
+
+  if(payload.html){
+    const htmlBlock=document.createElement('div');
+    htmlBlock.style.marginTop='10px';
+    htmlBlock.appendChild(sanitizeConfirmHtml(payload.html));
+    msgEl.appendChild(htmlBlock);
+  }
+}
+
 function openConfirmModal(title, message, okLabel='Confirm'){
   const modal=document.getElementById('confirm-modal');
   const titleEl=document.getElementById('confirm-modal-title');
   const msgEl=document.getElementById('confirm-modal-message');
   const okBtn=document.getElementById('confirm-modal-ok');
   if(titleEl) titleEl.textContent=title||'Confirm Action';
-  if(msgEl) msgEl.innerHTML=message||'';
+  renderConfirmMessage(msgEl,message);
   if(okBtn) okBtn.textContent=okLabel||'Confirm';
   modal.classList.add('open');
   return new Promise(resolve=>{
@@ -2382,7 +2498,10 @@ async function downloadNow(rk, title, lib){
   const row = _rows.find(r=>r.rating_key===rk);
   if(!row){ toast('Row not found','err'); return; }
   if(!row.url){ toast('No source URL on this row — add a source first','info'); return; }
-  const ok=await openConfirmModal('Manual Download', `Download theme now for <b>${title}</b>?<br><br><span style="font-family:var(--mono);font-size:11px;word-break:break-all">${row.url}</span>`, 'Download Now');
+  const ok=await openConfirmModal('Manual Download', {
+    text:`Download theme now for ${title}?`,
+    fields:[{label:'Source URL', value:row.url, type:'url', mono:true}]
+  }, 'Download Now');
   if(!ok) return;
   toast('Downloading…','info');
   const r = await fetch('/api/theme/download-now',{
@@ -2480,7 +2599,9 @@ async function clearSourcesSelected(){
   const keys=[..._selectedKeys];
   const rows=_rows.filter(r=>keys.includes(r.rating_key));
   if(!rows.length){ toast('Nothing selected','info'); return; }
-  const ok=await openConfirmModal('Clear Source URLs', `Clear source URLs for <b>${rows.length}</b> selected items?`, 'Clear URLs');
+  const ok=await openConfirmModal('Clear Source URLs', {
+    text:`Clear source URLs for ${rows.length} selected items?`
+  }, 'Clear URLs');
   if(!ok) return;
   await Promise.all(rows.map(r=>fetch('/api/ledger/'+r.rating_key+'?library='+encodeURIComponent(_activeLib),{
     method:'PATCH',headers:{'Content-Type':'application/json'},
