@@ -255,6 +255,7 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .run-dot.done{background:var(--green)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes spin{to{transform:rotate(360deg)}}
+@keyframes qp-marquee{0%,10%{transform:translateX(0)}45%,55%{transform:translateX(calc(-100% + 220px))}100%{transform:translateX(0)}}
 
 /* Global run status bar */
 .global-run{position:sticky;top:0;z-index:80;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:12px;font-family:var(--mono)}
@@ -331,7 +332,6 @@ tr:hover td{background:rgba(255,255,255,.025)}
 
 .empty{text-align:center;padding:48px 20px;color:var(--text3);font-family:var(--mono);font-size:13px}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
-@keyframes spin{to{transform:rotate(360deg)}}
 .divider{height:1px;background:var(--border);margin:16px 0}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
@@ -580,11 +580,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .sm-card-icon{font-size:16px;line-height:1;margin-top:1px}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.3}
-.sm-card-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sm-card-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0;width:280px;max-width:48%}
+.sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left}
 .sm-card-first button{margin-top:0}
 .sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
-.sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+.sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;white-space:nowrap;margin-bottom:4px;position:relative}
+.sm-quickpick-title > span{display:inline-block;white-space:nowrap;padding-right:20px}
+.sm-quickpick-title.scroll > span{animation:qp-marquee 7s linear infinite}
 .sm-quickpick-loading{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);font-family:var(--mono)}
 .sm-quickpick-loading::before{content:"";width:10px;height:10px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--purple);animation:spin .8s linear infinite}
 .muted-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:11px;color:var(--text2)}
@@ -609,6 +611,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 @media (max-width: 980px){
   .settings-grid-2,.settings-grid-3,.dual-inline,.performance-grid{grid-template-columns:1fr}
   .schedule-step2-options{grid-template-columns:1fr}
+  .sm-card-actions{width:100%;max-width:none}
 }
 
 </style>
@@ -1486,8 +1489,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),1)">▲</button>
             <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),-1)">▼</button>
           </div>
-          <div class="modal-trim-result" id="se-trim-result"></div>
-          <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
+                    <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
           <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
         </div>
       </div>
@@ -2697,6 +2699,8 @@ async function downloadNow(rk, title, lib){
   }, 'Download Now');
   if(!ok) return;
   toast('Downloading…','info');
+  dbProgressStart('Downloading selected title…');
+  dbProgressSet(35,'Preparing download…');
   const r = await fetch('/api/theme/download-now',{
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({rating_key:rk, library:lib||_activeLib, folder:row.folder||'', tmdb_id:row.tmdb_id||''})
@@ -2704,10 +2708,15 @@ async function downloadNow(rk, title, lib){
   const data = await r.json();
   if(data.ok){
     const how=data.matched_by?` (${data.matched_by})`:'';
+    dbProgressSet(90,'Finalizing download…');
     toast((data.message||'Downloaded')+how,'ok');
+    dbProgressDone('Download complete');
     loadDatabase();
   }
-  else toast(data.error||'Download failed','err');
+  else {
+    dbProgressFail(data.error||'Download failed');
+    toast(data.error||'Download failed','err');
+  }
 }
 
 
@@ -2807,6 +2816,44 @@ async function clearSourcesSelected(){
   clearSelection(); loadDatabase(); 
 }
 
+
+function dbProgressStart(label='Working…'){
+  const prog=document.getElementById('db-progress');
+  const pill=document.getElementById('db-run-pill');
+  const fill=document.getElementById('db-progress-fill');
+  const txt=document.getElementById('db-progress-label');
+  if(prog) prog.classList.add('active');
+  if(fill) fill.style.width='12%';
+  if(txt) txt.textContent=label;
+  if(pill) pill.classList.add('active');
+}
+
+function dbProgressSet(pct,label){
+  const fill=document.getElementById('db-progress-fill');
+  const txt=document.getElementById('db-progress-label');
+  if(fill) fill.style.width=Math.max(0,Math.min(100,pct))+'%';
+  if(txt && label) txt.textContent=label;
+}
+
+function dbProgressDone(label='Done'){
+  const fill=document.getElementById('db-progress-fill');
+  const txt=document.getElementById('db-progress-label');
+  const prog=document.getElementById('db-progress');
+  const pill=document.getElementById('db-run-pill');
+  if(fill) fill.style.width='100%';
+  if(txt) txt.textContent=label;
+  if(pill) pill.classList.remove('active');
+  setTimeout(()=>{ if(prog) prog.classList.remove('active'); }, 1200);
+}
+
+function dbProgressFail(label='Failed'){
+  const txt=document.getElementById('db-progress-label');
+  const prog=document.getElementById('db-progress');
+  const pill=document.getElementById('db-run-pill');
+  if(txt) txt.textContent=label;
+  if(pill) pill.classList.remove('active');
+  setTimeout(()=>{ if(prog) prog.classList.remove('active'); }, 1800);
+}
 // ── DB Run buttons with progress ─────────────────────────────────────────────
 let _dbEvtSrc=null, _dbPollTimer=null, _dbLastProgress=0;
 
@@ -3070,6 +3117,8 @@ let _lastSearchMethod='playlist';
 let _previewCache={};
 let _lastPreviewedUrl='';
 let _step3PreparedUrl='';
+let _activeQuickPickBtn=null;
+let _activeQuickPickUrl='';
 
 function buildSearchQuery(method,title,year){
   const base=((title||'')+' '+(year||'')).trim();
@@ -3275,15 +3324,27 @@ function _setMethodQuickPick(method, result){
   if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
   if(!result){ el.innerHTML='<span class="sm-quickpick-title">No quick pick available</span>'; return; }
   const safeUrl=(result.url||'').replace(/'/g,"\\'");
-  const safeTitle=(result.title||'1st result').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="sm-quickpick-title" title="${safeTitle}">${safeTitle}</span><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}')">Select</button>`;
+  const rawTitle=(result.title||'1st result');
+  const safeTitle=rawTitle.replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const titleClass=rawTitle.length>34?'sm-quickpick-title scroll':'sm-quickpick-title';
+  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"><span>${safeTitle}</span></span><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}')">Select</button>`;
 }
 
 async function previewQuickPick(method,url,btn){
-  if(!url) return;
+  if(!url || !btn) return;
+  const audio=_audioEl();
+  if(_activeQuickPickBtn===btn && _activeQuickPickUrl===url && !audio.paused){
+    audio.pause();
+    btn.textContent='▶ Preview';
+    _activeQuickPickBtn=null; _activeQuickPickUrl='';
+    const pbtn=document.getElementById('sm-preview-play');
+    if(pbtn) pbtn.innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    return;
+  }
   _searchMethod=method||_searchMethod;
   _lastSearchMethod=_searchMethod;
-  if(btn){ btn.disabled=true; btn.textContent='Loading…'; }
+  if(_activeQuickPickBtn && _activeQuickPickBtn!==btn){ _activeQuickPickBtn.textContent='▶ Preview'; }
+  btn.disabled=true; btn.textContent='Loading…';
   try{
     const cached=_previewCache[url];
     let data=null;
@@ -3294,16 +3355,18 @@ async function previewQuickPick(method,url,btn){
       data=await r.json();
       if(data?.ok) _previewCache[url]={audio_url:data.audio_url};
     }
-    if(!data?.ok){ toast(data?.error||'Preview failed','err'); return; }
+    if(!data?.ok){ toast(data?.error||'Preview failed','err'); btn.textContent='▶ Preview'; return; }
     stopAllAudio();
-    const audio=_audioEl();
     audio.src=apiUrl(data.audio_url);
     _lastPreviewedUrl=url;
     await audio.play().catch(()=>{});
+    _activeQuickPickBtn=btn; _activeQuickPickUrl=url;
+    btn.textContent='■ Stop';
     const pbtn=document.getElementById('sm-preview-play');
     if(pbtn) pbtn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    audio.onended=()=>{ if(_activeQuickPickBtn){ _activeQuickPickBtn.textContent='▶ Preview'; } _activeQuickPickBtn=null; _activeQuickPickUrl=''; if(pbtn) pbtn.innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>'; };
   }finally{
-    if(btn){ btn.disabled=false; btn.textContent='▶ Preview'; }
+    btn.disabled=false;
   }
 }
 
@@ -3362,6 +3425,8 @@ async function searchModalDownloadNow(){
   }
   closeSearchModal();
   toast('Staged source — downloading now…','info');
+  dbProgressStart('Downloading selected title…');
+  dbProgressSet(35,'Preparing download…');
   const row=_rows.find(r=>r.rating_key===key);
   const folder=row?row.folder||'':'';
   const tmdb=row?row.tmdb_id||'':'';
@@ -3370,8 +3435,15 @@ async function searchModalDownloadNow(){
     body:JSON.stringify({rating_key:key,library:lib,folder,tmdb_id:tmdb})
   });
   const data=await r.json().catch(()=>({ok:false,error:'Download failed'}));
-  if(data.ok){ toast(data.message||'Download started','ok'); }
-  else { toast(data.error||'Download failed','err'); }
+  if(data.ok){
+    dbProgressSet(90,'Finalizing download…');
+    dbProgressDone('Download complete');
+    toast(data.message||'Download started','ok');
+  }
+  else {
+    dbProgressFail(data.error||'Download failed');
+    toast(data.error||'Download failed','err');
+  }
   loadDatabase();
 }
 
@@ -3379,7 +3451,6 @@ function goToStep3(url, opts={}){
   stopAllAudio();
   document.getElementById('se-url').value=url||'';
   document.getElementById('se-offset').value='0:00';
-  document.getElementById('se-trim-result').textContent='';
   document.getElementById('se-cur').textContent='0:00';
   document.getElementById('se-dur').textContent='—';
   document.getElementById('se-slider').value=0;
@@ -3468,10 +3539,7 @@ function seSeek(val){ const a=document.getElementById('se-audio'); if(a.duration
 function seSkip(s){ const a=document.getElementById('se-audio'); if(a.duration) a.currentTime=Math.max(0,Math.min(a.duration,a.currentTime+s)); }
 
 function seUpdateTrim(){
-  const audio=document.getElementById('se-audio'),dur=audio.duration||0;
-  const s=parseTrim(document.getElementById('se-offset').value);
-  const res=dur>0?Math.max(0,dur-s):0;
-  document.getElementById('se-trim-result').textContent=dur>0?`→ ${fmt(res)} remaining (from ${fmt(dur)})`:'';
+  // intentionally no trim text in Step 3 per UX preference
 }
 
 function sePreviewFromOffset(){
