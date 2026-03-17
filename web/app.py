@@ -2,6 +2,7 @@
 """Media Tracks — Web GUI v3.2"""
 
 import atexit, hashlib, json, os, queue, re, signal, subprocess, sys, threading, time as _time
+import csv
 from datetime import datetime
 from pathlib import Path
 
@@ -15,8 +16,11 @@ app = Flask(__name__)
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/config/config.yaml")
 LOGS_DIR    = Path("/app/logs")
 RUNS_DIR    = LOGS_DIR / "runs"
+TASKS_FILE  = LOGS_DIR / "task_history.jsonl"
+EXPORTS_DIR = LOGS_DIR / "exports"
 SCRIPT_PATH = "/app/script/media_tracks.py"
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
+EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Shared storage (SQLite) ───────────────────────────────────────────────────
 _SHARED = "/app/shared"
@@ -29,6 +33,7 @@ from storage import (
     LEDGER_HEADERS,
     sync_theme_cache,       # FIX: now imported so download-now and trim update theme metadata
     ffprobe_duration,
+    get_db_path,
 )
 
 EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
@@ -92,6 +97,8 @@ _tmdb_lookup_cache = {}
 _TMDB_LOOKUP_TTL   = 86400
 _bio_cache = {}
 _BIO_TTL   = 86400
+_GOLDEN_CACHE_DIR = LOGS_DIR / "golden_source_cache"
+_GOLDEN_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 def _broadcast(msg):
     is_progress = msg.startswith("@@PROGRESS@@")
@@ -131,6 +138,52 @@ def _parse_run_stats(lines):
             m = re.search(r"Downloaded:\s*(\d+)\s*Failed:\s*(\d+)\s*Skipped:\s*(\d+)", line)
             if m: stats["pass3"] = {"downloaded":int(m.group(1)),"failed":int(m.group(2)),"skipped":int(m.group(3))}
     return stats
+
+def _record_task(task_name, status="success", scope="", summary="", details=None, duration_seconds=None):
+    entry = {
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "task": str(task_name or "Task"),
+        "status": str(status or "success"),
+        "scope": str(scope or ""),
+        "summary": str(summary or ""),
+        "details": details or {},
+        "duration_seconds": float(duration_seconds or 0),
+    }
+    try:
+        with open(TASKS_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+def _load_task_entries(limit=250):
+    entries = []
+    if TASKS_FILE.exists():
+        for line in TASKS_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entries.append(json.loads(line))
+            except Exception:
+                continue
+    run_entries = []
+    for f in sorted(RUNS_DIR.glob("*.json")):
+        try:
+            run = json.loads(f.read_text(encoding="utf-8"))
+            run_entries.append({
+                "time": run.get("time", ""),
+                "task": {1: "Scan Libraries", 2: "Find Sources", 3: "Download Approved"}.get(run.get("pass"), "Pipeline Run"),
+                "status": "success",
+                "scope": "",
+                "summary": run.get("summary", ""),
+                "details": {"pass": run.get("pass", 0), "stats": run.get("stats", {})},
+                "duration_seconds": run.get("duration_seconds") or 0,
+                "is_run_history": True,
+            })
+        except Exception:
+            continue
+    all_entries = sorted(entries + run_entries, key=lambda e: e.get("time", ""), reverse=True)
+    return all_entries[:max(1, int(limit or 250))]
 
 def load_config():
     try:
@@ -282,15 +335,12 @@ def _normalize_golden_source_url(url):
         return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
     return url
 
-def _fetch_golden_source_catalog(url):
-    normalized = _normalize_golden_source_url(url)
-    if not normalized:
-        raise ValueError("Golden Source URL is not configured")
-    t0 = _time.perf_counter()
-    r = http_requests.get(normalized, timeout=20)
-    r.raise_for_status()
-    fetch_ms = round((_time.perf_counter() - t0) * 1000, 1)
-    text = r.content.decode("utf-8-sig", errors="replace")
+def _golden_cache_path(normalized_url):
+    digest = hashlib.sha256(normalized_url.encode("utf-8", errors="ignore")).hexdigest()[:16]
+    return _GOLDEN_CACHE_DIR / f"catalog_{digest}.csv"
+
+
+def _parse_golden_source_csv(text):
     reader = import_csv_reader(text)
     if not reader.fieldnames:
         raise ValueError("Golden Source CSV has no header row")
@@ -306,7 +356,38 @@ def _fetch_golden_source_catalog(url):
         clean["start_offset"] = clean.get("start_offset", "0") or "0"
         clean["end_offset"] = clean.get("end_offset", "0") or "0"
         rows.append(clean)
-    return normalized, rows, fetch_ms
+    return rows
+
+
+def _fetch_golden_source_catalog(url, force_refresh=False, cache_ttl_sec=1800):
+    normalized = _normalize_golden_source_url(url)
+    if not normalized:
+        raise ValueError("Golden Source URL is not configured")
+
+    # Allow local file path as source for truly local matching.
+    local_path = Path(normalized)
+    if local_path.exists() and local_path.is_file():
+        text = local_path.read_text(encoding="utf-8-sig", errors="replace")
+        rows = _parse_golden_source_csv(text)
+        return normalized, rows, 0.0, "local-file"
+
+    cache_path = _golden_cache_path(normalized)
+    now = _time.time()
+    if not force_refresh and cache_path.exists():
+        age = now - cache_path.stat().st_mtime
+        if age <= max(0, int(cache_ttl_sec or 0)):
+            text = cache_path.read_text(encoding="utf-8-sig", errors="replace")
+            rows = _parse_golden_source_csv(text)
+            return normalized, rows, 0.0, "local-cache"
+
+    t0 = _time.perf_counter()
+    r = http_requests.get(normalized, timeout=20)
+    r.raise_for_status()
+    fetch_ms = round((_time.perf_counter() - t0) * 1000, 1)
+    text = r.content.decode("utf-8-sig", errors="replace")
+    rows = _parse_golden_source_csv(text)
+    cache_path.write_text(text, encoding="utf-8")
+    return normalized, rows, fetch_ms, "remote-fetch"
 
 def import_csv_reader(text):
     import csv as _csv
@@ -434,7 +515,7 @@ def test_golden_source():
     data = request.json or {}
     url = data.get("url") or load_config().get("golden_source_url","")
     try:
-        normalized_url, rows, fetch_ms = _fetch_golden_source_catalog(url)
+        normalized_url, rows, fetch_ms, fetch_mode = _fetch_golden_source_catalog(url)
         if not rows:
             return jsonify({"ok":False,"error":"CSV loaded but no usable rows found (need tmdb_id + source_url)"})
         return jsonify({
@@ -442,6 +523,7 @@ def test_golden_source():
             "source_url": normalized_url,
             "rows": len(rows),
             "fetch_ms": fetch_ms,
+            "fetch_mode": fetch_mode,
             "required_columns": ["tmdb_id", "source_url"],
             "optional_columns": ["title", "year", "start_offset", "verified", "updated_at", "notes"],
         })
@@ -474,6 +556,8 @@ def patch_ledger(key):
                     return jsonify(err), 400
             for k, v in req.items():
                 if k in EDITABLE_LEDGER_FIELDS: row[k] = str(v)
+            if "url" in req and str(req.get("url") or "").strip():
+                row["source_origin"] = "manual"
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if "notes" not in req: row["notes"] = "Edited via web UI"
             save_ledger(path, rows)
@@ -508,9 +592,16 @@ def import_golden_source():
     source_url = data.get("url") or cfg.get("golden_source_url","")
     overwrite = _boolish(data.get("overwrite_existing", False))
     auto_approve = _boolish(data.get("auto_approve", False))
+    force_refresh = _boolish(data.get("force_refresh", False))
+    cache_ttl_sec = int(cfg.get("golden_source_cache_ttl_sec", 1800) or 1800)
+    resolve_missing_tmdb = _boolish(data.get("resolve_missing_tmdb", cfg.get("golden_source_resolve_tmdb", False)))
     t0_total = _time.perf_counter()
     try:
-        normalized_url, catalog_rows, fetch_ms = _fetch_golden_source_catalog(source_url)
+        normalized_url, catalog_rows, fetch_ms, fetch_mode = _fetch_golden_source_catalog(
+            source_url,
+            force_refresh=force_refresh,
+            cache_ttl_sec=cache_ttl_sec,
+        )
     except Exception as e:
         return jsonify({"ok":False,"error":f"Golden Source fetch failed: {str(e)[:180]}"}), 400
     catalog = {str(r.get("tmdb_id","")).strip(): r for r in catalog_rows if str(r.get("tmdb_id","")).strip()}
@@ -546,15 +637,21 @@ def import_golden_source():
                 match = catalog_title_year.get(f"{title_key}|{year_key}")
                 if match and not tmdb_id:
                     tmdb_id = str(match.get("tmdb_id","") or "").strip()
-        if not match:
+        if not match and resolve_missing_tmdb:
             key = str(row.get("rating_key","") or "")
             cached = tmdb_cache.get(key)
             if cached is None:
                 cached = _resolve_row_tmdb_id(row, cfg); tmdb_cache[key] = cached
             tmdb_id = tmdb_id or cached
-            if not tmdb_id: missing_tmdb += 1; continue
-            match = catalog.get(str(tmdb_id))
-            if not match: no_match += 1; continue
+            if tmdb_id:
+                match = catalog.get(str(tmdb_id))
+
+        if not match:
+            if tmdb_id:
+                no_match += 1
+            else:
+                missing_tmdb += 1
+            continue
         existing_url = str(row.get("url","") or "").strip()
         if existing_url and not overwrite:
             skipped_existing += 1
@@ -562,6 +659,7 @@ def import_golden_source():
             continue
         row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id","") or "").strip()
         row["url"] = match.get("source_url","")
+        row["source_origin"] = "golden_source"
         row["start_offset"] = match.get("start_offset","0") or "0"
         row["end_offset"] = match.get("end_offset","0") or "0"
         row["status"] = "APPROVED" if auto_approve else "STAGED"
@@ -581,6 +679,9 @@ def import_golden_source():
         "no_match": no_match,
         "skipped_downloaded": skipped_downloaded,
         "fetch_ms": fetch_ms,
+        "fetch_mode": fetch_mode,
+        "cache_ttl_sec": cache_ttl_sec,
+        "resolve_missing_tmdb": resolve_missing_tmdb,
         "total_ms": total_ms,
     })
 
@@ -725,7 +826,7 @@ def delete_theme():
         theme_path.unlink()
         if row:
             _clear_theme_metadata(row)
-            row["notes"] = "Theme deleted via Database+"
+            row["notes"] = "Theme deleted via Theme manager"
             save_ledger(path_ledger, rows)
             return jsonify({"ok":True,"message":f"Deleted {filename} — status reset to Pending","matched_by":matched_by or "folder_hint"})
         return jsonify({"ok":True,"message":f"Deleted {filename} (ledger row not found — status not updated)","matched_by":matched_by or "folder_hint"})
@@ -1063,6 +1164,14 @@ def _do_run(force_pass=0):
         with open(RUNS_DIR/fname,"w") as f:
             json.dump({"time":timestamp,"pass":run_pass,"summary":summary,
                        "log":"\n".join(run_log),"duration_seconds":duration,"stats":stats}, f)
+        _record_task(
+            {1:'Run Scan Now',2:'Run Find Sources Now',3:'Run Download Approved Now'}.get(run_pass, 'Run Pipeline'),
+            'success' if (_run_proc is None) else 'error',
+            '',
+            summary,
+            {'pass': run_pass, 'stats': stats},
+            duration,
+        )
         _run_started_at = None
 
 @app.route("/api/run/stream")
@@ -1088,6 +1197,157 @@ def get_history():
             with open(f) as fh: runs.append(json.load(fh))
         except: pass
     return jsonify(runs)
+
+@app.route('/api/tasks/history')
+def tasks_history():
+    limit = int(request.args.get('limit', 250) or 250)
+    return jsonify(_load_task_entries(limit=limit))
+
+@app.route('/api/tasks/export-golden-source', methods=['POST'])
+def export_golden_source_csv():
+    t0 = _time.perf_counter()
+    data = request.json or {}
+    lib = (data.get('library', '') or '').strip()
+    if not lib:
+        return jsonify({'ok': False, 'error': 'Missing library'}), 400
+    rows = load_ledger(ledger_path_for(lib))
+    out_rows = []
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    for r in rows:
+        url = str(r.get('url', '') or '').strip()
+        if not url:
+            continue
+        updated = str(r.get('last_updated', '') or '').strip() or now
+        out_rows.append({
+            'tmdb_id': str(r.get('tmdb_id', '') or '').strip(),
+            'title': str(r.get('title', '') or r.get('plex_title', '') or '').strip(),
+            'year': str(r.get('year', '') or '').strip(),
+            'source_url': url,
+            'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
+            'verified': 'yes' if str(r.get('source_origin', 'unknown') or 'unknown') == 'golden_source' else 'no',
+            'updated_at': updated,
+            'notes': str(r.get('notes', '') or '').strip(),
+        })
+    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    fname = f'golden_source_export_{re.sub(r"[^a-z0-9]+", "_", lib.lower()).strip("_") or "library"}_{stamp}.csv'
+    fpath = EXPORTS_DIR / fname
+    with open(fpath, 'w', newline='', encoding='utf-8') as fh:
+        w = csv.DictWriter(fh, fieldnames=['tmdb_id','title','year','source_url','start_offset','verified','updated_at','notes'])
+        w.writeheader()
+        w.writerows(out_rows)
+    _record_task('Export Golden Source CSV', 'success', lib, f'Exported {len(out_rows)} rows',
+                 {'library': lib, 'rows_exported': len(out_rows), 'file': fname}, _time.perf_counter()-t0)
+    return jsonify({'ok': True, 'rows_exported': len(out_rows), 'file': fname, 'download_url': f'/api/tasks/download/{fname}'})
+
+@app.route('/api/tasks/download/<path:filename>')
+def download_task_file(filename):
+    safe = Path(filename).name
+    fpath = EXPORTS_DIR / safe
+    if not fpath.exists():
+        abort(404)
+    return send_file(str(fpath), as_attachment=True)
+
+@app.route('/api/tasks/cleanup-logs', methods=['POST'])
+def cleanup_logs():
+    data = request.json or {}
+    keep_days = int(data.get('keep_days', 14) or 14)
+    cutoff = _time.time() - (keep_days * 86400)
+    deleted = 0
+    for f in LOGS_DIR.glob('*.log'):
+        try:
+            if f.stat().st_mtime < cutoff:
+                f.unlink(missing_ok=True)
+                deleted += 1
+        except Exception:
+            pass
+    _record_task('Clean Up Logs', 'success', '', f'Removed {deleted} log files', {'keep_days': keep_days, 'deleted': deleted})
+    return jsonify({'ok': True, 'deleted': deleted, 'keep_days': keep_days})
+
+@app.route('/api/tasks/prune-history', methods=['POST'])
+def prune_task_history():
+    data = request.json or {}
+    keep_runs = int(data.get('keep_runs', 100) or 100)
+    run_files = sorted(RUNS_DIR.glob('*.json'))
+    removed_runs = 0
+    for f in run_files[:-max(1, keep_runs)]:
+        try:
+            f.unlink(missing_ok=True)
+            removed_runs += 1
+        except Exception:
+            pass
+    task_entries = []
+    if TASKS_FILE.exists():
+        for line in TASKS_FILE.read_text(encoding='utf-8', errors='ignore').splitlines():
+            try:
+                task_entries.append(json.loads(line))
+            except Exception:
+                pass
+    kept = task_entries[-max(1, keep_runs):]
+    with open(TASKS_FILE, 'w', encoding='utf-8') as fh:
+        for entry in kept:
+            fh.write(json.dumps(entry, ensure_ascii=False) + '\n')
+    _record_task('Prune Task History', 'success', '', f'Removed {removed_runs} run entries', {'removed_runs': removed_runs, 'kept_entries': len(kept)})
+    return jsonify({'ok': True, 'removed_runs': removed_runs, 'kept_task_entries': len(kept)})
+
+@app.route('/api/tasks/refresh-themes', methods=['POST'])
+def tasks_refresh_themes():
+    data = request.json or {}
+    lib = (data.get('library', '') or '').strip()
+    if not lib:
+        return jsonify({'ok': False, 'error': 'Missing library'}), 400
+    result = sync_library_themes()
+    payload = result.get_json() if hasattr(result, 'get_json') else {'ok': False}
+    _record_task('Refresh Local Theme Detection', 'success' if payload.get('ok') else 'error', lib,
+                 f"Updated {payload.get('updated', 0)} rows",
+                 {'library': lib, **payload})
+    return result
+
+@app.route('/api/tasks/sqlite-maintenance', methods=['POST'])
+def sqlite_maintenance():
+    data = request.json or {}
+    do_backup = bool(data.get('backup', True))
+    do_vacuum = bool(data.get('vacuum', True))
+    db_path = Path(get_db_path())
+    if not db_path.exists():
+        return jsonify({'ok': False, 'error': f'Database not found: {db_path}'}), 404
+    backup_file = ''
+    if do_backup:
+        stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_file = f'media_tracks_backup_{stamp}.db'
+        (EXPORTS_DIR / backup_file).write_bytes(db_path.read_bytes())
+    if do_vacuum:
+        import sqlite3
+        conn = sqlite3.connect(str(db_path), timeout=60)
+        try:
+            conn.execute('VACUUM')
+            conn.commit()
+        finally:
+            conn.close()
+    _record_task('SQLite Maintenance', 'success', '', 'Backup/Vacuum completed', {'backup_file': backup_file, 'vacuum': do_vacuum})
+    return jsonify({'ok': True, 'backup_file': backup_file, 'download_url': f'/api/tasks/download/{backup_file}' if backup_file else ''})
+
+@app.route('/api/tasks/clear-source-urls', methods=['POST'])
+def clear_all_source_urls():
+    data = request.json or {}
+    lib = (data.get('library', '') or '').strip()
+    if not lib:
+        return jsonify({'ok': False, 'error': 'Missing library'}), 400
+    rows = load_ledger(ledger_path_for(lib))
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cleared = 0
+    for row in rows:
+        if str(row.get('url', '') or '').strip():
+            row['url'] = ''
+            row['source_origin'] = 'unknown'
+            if str(row.get('status', '') or '').upper() in ('STAGED', 'APPROVED'):
+                row['status'] = 'PENDING'
+            row['last_updated'] = now
+            row['notes'] = 'Source URL cleared via Tasks maintenance'
+            cleared += 1
+    if cleared:
+        save_ledger(ledger_path_for(lib), rows)
+    _record_task('Clear All Source URLs', 'success', lib, f'Cleared {cleared} URLs', {'library': lib, 'cleared': cleared})
+    return jsonify({'ok': True, 'library': lib, 'cleared': cleared})
 
 @app.route("/api/run/status")
 def run_status():
