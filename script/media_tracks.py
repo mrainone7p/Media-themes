@@ -563,6 +563,8 @@ def _parse_golden_source_text(text: str) -> dict:
         source_url = clean.get("source_url", "")
         if not tmdb_id or not source_url:
             continue
+        # Backward compatibility: tolerate legacy Golden Source columns (e.g. verified) and ignore them.
+        clean.pop("verified", None)
         rows[str(tmdb_id)] = {
             "source_url": source_url,
             "start_offset": clean.get("start_offset", "0") or "0",

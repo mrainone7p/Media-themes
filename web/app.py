@@ -359,6 +359,8 @@ def _parse_golden_source_csv(text):
         clean["source_url"] = source_url
         clean["start_offset"] = clean.get("start_offset", "0") or "0"
         clean["end_offset"] = clean.get("end_offset", "0") or "0"
+        # Backward compatibility: tolerate legacy Golden Source columns we no longer use.
+        clean.pop("verified", None)
         rows.append(clean)
     return rows
 
@@ -1259,7 +1261,6 @@ def export_golden_source_csv():
                 'year': str(r.get('year', '') or '').strip(),
                 'source_url': url,
                 'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
-                'verified': 'yes' if str(r.get('source_origin', 'unknown') or 'unknown').startswith('golden_source') else 'no',
                 'updated_at': updated,
                 'notes': str(r.get('notes', '') or '').strip(),
             })
@@ -1268,7 +1269,7 @@ def export_golden_source_csv():
     fname = f'golden_source_export_{re.sub(r"[^a-z0-9]+", "_", scope_name.lower()).strip("_") or "library"}_{stamp}.csv'
     fpath = EXPORTS_DIR / fname
     with open(fpath, 'w', newline='', encoding='utf-8') as fh:
-        w = csv.DictWriter(fh, fieldnames=['tmdb_id','title','year','source_url','start_offset','verified','updated_at','notes'])
+        w = csv.DictWriter(fh, fieldnames=['tmdb_id','title','year','source_url','start_offset','updated_at','notes'])
         w.writeheader()
         w.writerows(out_rows)
     _record_task('Export Golden Source CSV', 'success', lib or 'all libraries', f'Exported {len(out_rows)} rows',
