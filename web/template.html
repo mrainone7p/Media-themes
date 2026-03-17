@@ -71,8 +71,8 @@ body.nav-collapsed main{margin-left:48px}
 .page-desc{font-size:13px;color:var(--text2);margin-top:3px}
 .page-body{padding:24px 32px;flex:1;overflow-y:auto}
 .content{max-width:var(--max-w);width:100%}
-#page-settings .content,#page-run .content{max-width:var(--max-w)}
-#page-settings .section-intro,#page-run .section-intro,#page-settings .settings-lead{max-width:var(--max-w)}
+#page-configuration .content,#page-schedule .content{max-width:var(--max-w)}
+#page-configuration .section-intro,#page-schedule .section-intro,#page-configuration .settings-lead{max-width:var(--max-w)}
 
 /* ─── Cards ─── */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
@@ -568,7 +568,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <button class="collapse-btn" onclick="toggleNav()" title="Collapse sidebar" id="nav-collapse-btn">«</button>
   </div>
   <div class="nav-section">
-    <div class="nav-item active" onclick="showPage('settings')" id="nav-settings">
+    <div class="nav-item active" onclick="showPage('configuration')" id="nav-configuration">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
       <span>Configuration</span>
     </div>
@@ -576,7 +576,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       <span>Database+</span>
     </div>
-    <div class="nav-item" onclick="showPage('run')" id="nav-run">
+    <div class="nav-item" onclick="showPage('schedule')" id="nav-schedule">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span>Schedule</span>
     </div>
@@ -598,8 +598,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="global-run-sub" id="global-run-sub"></div>
   </div>
 
-<!-- ══════════════════════════════════════ SETTINGS ═══════════════════════════ -->
-<div class="page active" id="page-settings">
+<!-- ══════════════════════════════════════ CONFIGURATION ═══════════════════════════ -->
+<div class="page active" id="page-configuration">
   <div class="page-head">
     <div>
       <div class="page-title">Configuration</div>
@@ -876,7 +876,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
   </div></div>
   <div class="save-bar">
-    <button class="btn btn-amber" onclick="saveSettings()">Save Configuration</button>
+    <button class="btn btn-amber" onclick="saveConfiguration()">Save Configuration</button>
   </div>
 </div>
 
@@ -912,7 +912,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <option value="PENDING">Pending</option><option value="STAGED">Staged</option>
         <option value="APPROVED">Approved</option><option value="DOWNLOADED">Available</option>
         <option value="FAILED">Failed</option>
-        <option value="REJECTED">Rejected</option><option value="IGNORED">Ignored</option><option value="REMOVED">Removed</option>
+        <option value="REJECTED">Rejected</option><option value="IGNORED">Ignored</option>
       </select>
       <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()">✓ Approve All Staged</button>
     </div>
@@ -955,7 +955,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
-<div class="page" id="page-run">
+<div class="page" id="page-schedule">
   <div class="page-head"><div><div class="page-title">Schedule</div><div class="page-desc">Configure automated runs and manually trigger pipeline steps for the libraries selected below</div></div></div>
   <div class="page-body"><div class="content">
 
@@ -1410,7 +1410,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   </div>
 </div>
 
-<!-- Trim Editor Modal (My Themes — trim existing local theme file) -->
+<!-- Trim Editor Modal (trim existing local theme file) -->
 <div class="modal-overlay" id="trim-modal" onclick="if(event.target===this)closeTrimModal()">
   <div class="modal" style="max-width:540px;position:relative;padding:0">
 
@@ -1470,6 +1470,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <!-- Source editor is now Step 3 of the search modal above -->
 
+
+<!-- Generic Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirmModal()">
+  <div class="modal" style="max-width:440px;position:relative">
+    <div class="modal-title" id="confirm-modal-title">Confirm Action</div>
+    <div style="font-size:13px;color:var(--text2);margin:12px 0;line-height:1.6" id="confirm-modal-message"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
+      <button class="btn btn-amber" id="confirm-modal-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <!-- Delete Confirm Modal -->
 <div class="modal-overlay" id="delete-modal" onclick="if(event.target===this)closeDeleteModal()">
   <div class="modal" style="max-width:420px;position:relative">
@@ -1486,6 +1499,144 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <script>
 // ── Utils ────────────────────────────────────────────────────────────────────
+
+let _confirmResolver=null;
+
+function toSafeConfirmUrl(rawUrl){
+  try{
+    const parsed=new URL(String(rawUrl||''), window.location.origin);
+    if(['http:','https:','mailto:'].includes(parsed.protocol)) return parsed.href;
+  }catch(_err){
+    return '';
+  }
+  return '';
+}
+
+function sanitizeConfirmHtml(input){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(String(input||''),'text/html');
+  const allowedTags=new Set(['BR','A','STRONG','EM','CODE']);
+
+  function sanitizeNode(node){
+    if(node.nodeType===Node.TEXT_NODE) return document.createTextNode(node.textContent||'');
+    if(node.nodeType!==Node.ELEMENT_NODE) return document.createDocumentFragment();
+
+    const tag=node.tagName.toUpperCase();
+    const frag=document.createDocumentFragment();
+    Array.from(node.childNodes).forEach(child=>frag.appendChild(sanitizeNode(child)));
+
+    if(!allowedTags.has(tag)) return frag;
+    if(tag==='BR') return document.createElement('br');
+
+    const safeEl=document.createElement(tag.toLowerCase());
+    if(tag==='A'){
+      const safeHref=toSafeConfirmUrl(node.getAttribute('href')||'');
+      if(safeHref){
+        safeEl.setAttribute('href',safeHref);
+        safeEl.setAttribute('target','_blank');
+        safeEl.setAttribute('rel','noopener noreferrer');
+      }
+    }
+
+    safeEl.appendChild(frag);
+    return safeEl;
+  }
+
+  const out=document.createDocumentFragment();
+  Array.from(doc.body.childNodes).forEach(node=>out.appendChild(sanitizeNode(node)));
+  return out;
+}
+
+function renderConfirmText(parent,text){
+  const content=String(text||'');
+  if(!content) return;
+  const parts=content.split('\n');
+  parts.forEach((part,idx)=>{
+    if(idx>0) parent.appendChild(document.createElement('br'));
+    parent.appendChild(document.createTextNode(part));
+  });
+}
+
+function renderConfirmMessage(msgEl,message){
+  if(!msgEl) return;
+  msgEl.replaceChildren();
+
+  const payload=(message&&typeof message==='object'&&!Array.isArray(message))?message:{text:message||''};
+  if(payload.text){
+    const textBlock=document.createElement('div');
+    renderConfirmText(textBlock,payload.text);
+    msgEl.appendChild(textBlock);
+  }
+
+  if(Array.isArray(payload.fields)){
+    payload.fields.forEach(field=>{
+      if(!field||(!field.value&&field.value!==0)) return;
+      const row=document.createElement('div');
+      row.style.marginTop='10px';
+
+      if(field.label){
+        const label=document.createElement('div');
+        label.style.fontSize='11px';
+        label.style.color='var(--text3)';
+        label.textContent=String(field.label);
+        row.appendChild(label);
+      }
+
+      if(field.type==='url'){
+        const safeHref=toSafeConfirmUrl(field.value);
+        const link=document.createElement('a');
+        link.style.wordBreak='break-all';
+        if(safeHref){
+          link.href=safeHref;
+          link.target='_blank';
+          link.rel='noopener noreferrer';
+          link.textContent=String(field.value);
+        }else{
+          link.textContent=String(field.value);
+        }
+        row.appendChild(link);
+      }else{
+        const value=document.createElement('div');
+        value.textContent=String(field.value);
+        if(field.mono){
+          value.style.fontFamily='var(--mono)';
+          value.style.fontSize='11px';
+          value.style.wordBreak='break-all';
+        }
+        row.appendChild(value);
+      }
+      msgEl.appendChild(row);
+    });
+  }
+
+  if(payload.html){
+    const htmlBlock=document.createElement('div');
+    htmlBlock.style.marginTop='10px';
+    htmlBlock.appendChild(sanitizeConfirmHtml(payload.html));
+    msgEl.appendChild(htmlBlock);
+  }
+}
+
+function openConfirmModal(title, message, okLabel='Confirm'){
+  const modal=document.getElementById('confirm-modal');
+  const titleEl=document.getElementById('confirm-modal-title');
+  const msgEl=document.getElementById('confirm-modal-message');
+  const okBtn=document.getElementById('confirm-modal-ok');
+  if(titleEl) titleEl.textContent=title||'Confirm Action';
+  renderConfirmMessage(msgEl,message);
+  if(okBtn) okBtn.textContent=okLabel||'Confirm';
+  modal.classList.add('open');
+  return new Promise(resolve=>{
+    _confirmResolver=resolve;
+    okBtn.onclick=()=>{ if(modal) modal.classList.remove('open'); _confirmResolver=null; resolve(true); };
+  });
+}
+function closeConfirmModal(){
+  const modal=document.getElementById('confirm-modal');
+  if(modal) modal.classList.remove('open');
+  if(_confirmResolver){ const r=_confirmResolver; _confirmResolver=null; r(false); }
+}
+
 const _rawFetch = window.fetch.bind(window);
 let _authPrompted = false;
 function getApiToken(){ return localStorage.getItem('mt-api-token') || ''; }
@@ -1530,8 +1681,8 @@ function showPage(name) {
   if(history && history.replaceState){ history.replaceState(null,'','#'+name); }
   if(name==='database'){ loadDatabase(); setTimeout(()=>{if(!_dbColsInit){initResizableCols('#page-database table');_dbColsInit=true;}},500); }
   if(name==='history') loadHistory();
-  if(name==='settings') loadSettings();
-  if(name==='run') loadRunPage();
+  if(name==='configuration') loadConfiguration();
+  if(name==='schedule') loadRunPage();
   removeItemDetailsPanel();
 }
 
@@ -1595,8 +1746,13 @@ try{
     updateGlobalRunStatus();
     setInterval(updateGlobalRunStatus, 4000);
     setInterval(removeItemDetailsPanel, 2000);
-    const initial=((location.hash||'').replace(/^#/,'').trim());
-    if(['settings','database','run','history'].includes(initial)){
+    let initial=((location.hash||'').replace(/^#/,'').trim());
+    const legacyHashRedirect={settings:'configuration',run:'schedule'};
+    if(legacyHashRedirect[initial]){
+      initial=legacyHashRedirect[initial];
+      if(history && history.replaceState){ history.replaceState(null,'','#'+initial); }
+    }
+    if(['configuration','database','schedule','history'].includes(initial)){
       showPage(initial);
     }
   });
@@ -1614,10 +1770,12 @@ function testBadge(elId, ok, msg){
   el.textContent=(ok?'✓ ':'✗ ')+msg;
 }
 
-// ── Settings ─────────────────────────────────────────────────────────────────
+// ── Configuration ─────────────────────────────────────────────────────────────────
 let _libs=[], _maxDur=45;
 
-async function loadSettings(){
+
+
+async function loadConfiguration(){
   const r=await fetch('/api/config'); const cfg=await r.json();
   ['plex_url','plex_token','tmdb_api_key',
    'search_mode','search_query_playlist','search_query_direct','golden_source_url',
@@ -1794,7 +1952,7 @@ async function testGoldenSource(){
   }
 }
 
-async function saveSettings(){
+async function saveConfiguration(){
   const strFields=['plex_url','plex_token','tmdb_api_key',
     'search_mode','search_query_playlist','search_query_direct','golden_source_url',
     'cookies_file','audio_format','quality_profile','theme_filename'];
@@ -1841,9 +1999,9 @@ let _rowMap={}; // rating_key → full row object, avoids onclick escaping bugs
 let _selectedKeys=new Set();
 let _lastDbCheckIndex=null;
 const PAGE=80;
-const SC={'PENDING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','DOWNLOADED':'#2dd4a0','FAILED':'#f05252','REJECTED':'#555570','IGNORED':'#f97316','REMOVED':'#3a3a5a'};
-const STATUSES=['PENDING','STAGED','APPROVED','DOWNLOADED','FAILED','REJECTED','IGNORED','REMOVED'];
-const STATUS_DISPLAY={'PENDING':'Pending','STAGED':'Staged','APPROVED':'Approved','DOWNLOADED':'Available','FAILED':'Failed','REJECTED':'Rejected','IGNORED':'Ignored','REMOVED':'Removed'};
+const SC={'PENDING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','DOWNLOADED':'#2dd4a0','FAILED':'#f05252','REJECTED':'#555570','IGNORED':'#f97316'};
+const STATUSES=['PENDING','STAGED','APPROVED','DOWNLOADED','FAILED','REJECTED','IGNORED'];
+const STATUS_DISPLAY={'PENDING':'Pending','STAGED':'Staged','APPROVED':'Approved','DOWNLOADED':'Available','FAILED':'Failed','REJECTED':'Rejected','IGNORED':'Ignored'};
 const STATUS_DESC={
   PENDING:'Queued for search',
   STAGED:'Source found, awaiting approval',
@@ -1851,10 +2009,37 @@ const STATUS_DESC={
   DOWNLOADED:'Theme saved to disk',
   FAILED:'Download failed',
   IGNORED:'Skipped intentionally',
-  REJECTED:'Wrong source',
-  REMOVED:'No longer in library'
+  REJECTED:'Wrong source'
 };
 function displayStatus(s){ return STATUS_DISPLAY[s] || s; }
+
+function _hasLocalTheme(row){
+  return String(row?.theme_exists||'')==='1';
+}
+
+function _hasSourceUrl(row){
+  return !!String(row?.url||'').trim();
+}
+
+function _statusValidation(row, attemptedStatus){
+  const attempted=String(attemptedStatus||'').toUpperCase();
+  const current=String(row?.status||'').toUpperCase();
+  if(current===attempted) return {ok:true};
+  if(attempted==='STAGED' && !_hasSourceUrl(row)){
+    return {ok:false, reason:'Add a source URL before staging this item.'};
+  }
+  if((attempted==='DOWNLOADED' || attempted==='AVAILABLE') && !_hasLocalTheme(row)){
+    return {ok:false, reason:'Local theme file is missing. Download it first.'};
+  }
+  if(attempted==='APPROVED' && !['STAGED','APPROVED'].includes(current)){
+    return {ok:false, reason:'Only staged items can be approved.'};
+  }
+  return {ok:true};
+}
+
+function allowedStatuses(row){
+  return STATUSES.filter(status=>_statusValidation(row,status).ok);
+}
 
 function renderStatusKey(){
   const el=document.getElementById('status-key');
@@ -1977,9 +2162,11 @@ function sortTable(col){ if(_sortCol===col)_sortDir*=-1; else{_sortCol=col;_sort
 let _curAudio=null, _curKey=null;
 const _audioEl=()=>document.getElementById('global-audio');
 
-function renderStatusCell(rk,status){
-  const opts=STATUSES.map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
-  return `<span class="badge s-${status}" title="${STATUS_DESC[status]||''}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value);this.closest('td').innerHTML=renderStatusCell('${rk}',this.value)">${opts}</select>${displayStatus(status)}</span>`;
+function renderStatusCell(row){
+  const rk=row.rating_key;
+  const status=row.status;
+  const opts=allowedStatuses(row).map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
+  return `<span class="badge s-${status}" title="${STATUS_DESC[status]||''}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select>${displayStatus(status)}</span>`;
 }
 
 function _htmlAttr(s){
@@ -2043,12 +2230,14 @@ function renderSourceBtn(row){
   const rk=_htmlAttr(row.rating_key);
   const url=_htmlAttr(row.url||'');
   const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
-  const preview=row.url?`<button class="btn btn-purple btn-xs action-icon"
+  const canPreview=_hasSourceUrl(row);
+  const canDownloadNow=_hasSourceUrl(row) && !hasTheme && !!row.rating_key;
+  const preview=`<button class="btn btn-purple btn-xs action-icon"
     data-action="preview-source" data-rk="${rk}" data-url="${url}"
-    onclick="_previewSource(this)" title="Preview source">▶</button>`:'';
-  const dlNow=(row.url && !hasTheme)?`<button class="btn btn-green btn-xs action-icon"
+    onclick="_previewSource(this)" title="${canPreview?'Preview source':'Add a source URL to preview'}" ${canPreview?'':'disabled'}>▶</button>`;
+  const dlNow=`<button class="btn btn-green btn-xs action-icon"
     data-action="download-now" data-rk="${rk}"
-    onclick="_downloadNow(this)" title="Download now">↓</button>`:'';
+    onclick="_downloadNow(this)" title="${canDownloadNow?'Download now':'Requires source URL, Plex ID, and no local theme'}" ${canDownloadNow?'':'disabled'}>↓</button>`;
   const manual=`<button class="btn btn-ghost btn-xs action-icon"
     data-action="manual-search" data-rk="${rk}"
     onclick="_manualSearch(this)" title="Manual search">🔍</button>`;
@@ -2056,6 +2245,7 @@ function renderSourceBtn(row){
 }
 
 function _previewSource(btn){
+  if(btn.disabled) return;
   const rk=btn.dataset.rk;
   const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
   const url=(row?.url)||btn.dataset.url||'';
@@ -2065,6 +2255,7 @@ function _previewSource(btn){
   openYtModal(rk, title, year, url, encodeURIComponent(_activeLib||''));
 }
 function _downloadNow(btn){
+  if(btn.disabled) return;
   const rk=btn.dataset.rk;
   const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
   if(!row) return;
@@ -2237,7 +2428,6 @@ function renderTable(){
   empty.style.display='none';
   tbody.innerHTML=slice.map(row=>{
     const rk=row.rating_key;
-    const opts=STATUSES.map(s=>`<option value="${s}"${row.status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
     const checked=_selectedKeys.has(rk)?'checked':'';
     const rawTitle=(row.title||row.plex_title||'');
     const titleAttr=rawTitle.replace(/"/g,'&quot;');
@@ -2251,13 +2441,7 @@ function renderTable(){
       </td>
       <td style="color:var(--text3)">${row.year||''}</td>
       <td>
-        <span class="badge s-${row.status}" style="cursor:pointer;position:relative">
-          <span class="si"></span>
-          <select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value);this.closest('td').innerHTML=renderStatusCell('${rk}',this.value)">
-            ${opts}
-          </select>
-          ${displayStatus(row.status)}
-        </span>
+        ${renderStatusCell(row)}
       </td>
       <td>${renderThemeBtn(row)}</td>
       <td>${renderSourceBtn(row)}</td>
@@ -2283,6 +2467,15 @@ function goPage(p){ _page=p; renderTable(); window.scrollTo(0,0); }
 
 async function updateRow(key,field,value,selEl){
   const row=_rows.find(r=>r.rating_key===key);
+  const prevValue=row?row[field]:undefined;
+  if(field==='status' && row){
+    const localCheck=_statusValidation(row,value);
+    if(!localCheck.ok){
+      toast(localCheck.reason,'info');
+      renderTable();
+      return;
+    }
+  }
   if(row){
     row[field]=value;
     if(_rowMap[key]) _rowMap[key][field]=value; // keep map in sync
@@ -2290,12 +2483,20 @@ async function updateRow(key,field,value,selEl){
   const r=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(_activeLib),{
     method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:value})
   });
+  const data=await r.json().catch(()=>({}));
   if(r.ok){
     toast('Saved','ok');
     renderChips();
     renderTable();
-    
-  } else toast('Save failed','err');
+  } else {
+    if(row){
+      row[field]=prevValue;
+      if(_rowMap[key]) _rowMap[key][field]=prevValue;
+    }
+    const msg=[data.error,data.reason_code?`(${data.reason_code})`:'' ,data.current_status&&data.attempted_status?`[${data.current_status} → ${data.attempted_status}]`:'' ].filter(Boolean).join(' ').trim();
+    toast(msg||'Save failed','err');
+    await loadDatabase(false);
+  }
 }
 
 async function updateRowAndRefresh(key,field,value){
@@ -2341,14 +2542,22 @@ async function downloadNow(rk, title, lib){
   const row = _rows.find(r=>r.rating_key===rk);
   if(!row){ toast('Row not found','err'); return; }
   if(!row.url){ toast('No source URL on this row — add a source first','info'); return; }
-  if(!confirm(`Download theme now for:\n${title}\n\nSource: ${row.url}\n\nThis will save the theme file immediately.`)) return;
+  const ok=await openConfirmModal('Manual Download', {
+    text:`Download theme now for ${title}?`,
+    fields:[{label:'Source URL', value:row.url, type:'url', mono:true}]
+  }, 'Download Now');
+  if(!ok) return;
   toast('Downloading…','info');
   const r = await fetch('/api/theme/download-now',{
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({rating_key:rk, library:lib||_activeLib})
+    body: JSON.stringify({rating_key:rk, library:lib||_activeLib, folder:row.folder||'', tmdb_id:row.tmdb_id||''})
   });
   const data = await r.json();
-  if(data.ok){ toast(data.message||'Downloaded','ok'); loadDatabase(); }
+  if(data.ok){
+    const how=data.matched_by?` (${data.matched_by})`:'';
+    toast((data.message||'Downloaded')+how,'ok');
+    loadDatabase();
+  }
   else toast(data.error||'Download failed','err');
 }
 
@@ -2420,21 +2629,28 @@ async function bulkSetStatus2(status){
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({keys,status})
   });
+  const d=await r.json().catch(()=>({}));
   if(r.ok){
-    const d=await r.json();
     const updated=d.updated ?? keys.length;
     const skipped=d.skipped ?? 0;
     toast(`${updated} items → ${status}${skipped?` · ${skipped} skipped`:''}`,'ok');
     clearSelection(); loadDatabase();
   }
-  else toast('Bulk update failed','err');
+  else{
+    const msg=[d.error,d.reason_code?`(${d.reason_code})`:'' ,d.current_status&&d.attempted_status?`[${d.current_status} → ${d.attempted_status}]`:'' ].filter(Boolean).join(' ').trim();
+    toast(msg||'Bulk update failed','err');
+    await loadDatabase(false);
+  }
 }
 
 async function clearSourcesSelected(){
   const keys=[..._selectedKeys];
   const rows=_rows.filter(r=>keys.includes(r.rating_key));
   if(!rows.length){ toast('Nothing selected','info'); return; }
-  if(!confirm(`Clear source URLs for ${rows.length} selected items?`)) return;
+  const ok=await openConfirmModal('Clear Source URLs', {
+    text:`Clear source URLs for ${rows.length} selected items?`
+  }, 'Clear URLs');
+  if(!ok) return;
   await Promise.all(rows.map(r=>fetch('/api/ledger/'+r.rating_key+'?library='+encodeURIComponent(_activeLib),{
     method:'PATCH',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({url:'',status:'PENDING',notes:'Source cleared via Database'})
@@ -2636,7 +2852,12 @@ async function confirmDelete(){
     body:JSON.stringify({rating_key:key, library:lib, folder:folder})
   });
   const data=await r.json();
-  if(data.ok){toast(data.message||'Deleted','ok');stopCurrentAudio();loadDatabase();}
+  if(data.ok){
+    const how=data.matched_by?` (${data.matched_by})`:'';
+    toast((data.message||'Deleted')+how,'ok');
+    stopCurrentAudio();
+    loadDatabase();
+  }
   else toast(data.error||'Failed','err');
 }
 
@@ -3420,7 +3641,7 @@ function toggleTheme(){
 (function(){try{const t=localStorage.getItem('mt-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');setTimeout(()=>{const b=document.getElementById('theme-toggle-btn');if(b)b.textContent='☾';},0);}}catch(e){}})();
 
 // ── Init ─────────────────────────────────────────────────────────────────────
-loadSettings();
+loadConfiguration();
 bindOffsetWheel();
 </script>
 </body>
