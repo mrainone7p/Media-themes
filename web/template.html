@@ -568,7 +568,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .dual-inline{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px;align-items:start}
 .dual-inline .toggle-card{height:100%}
 .label-stack{display:flex;flex-direction:column;gap:4px}
-.performance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.performance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.schedule-step2-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-width:720px}
+.manual-methods{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:16px}
 .muted-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:11px;color:var(--text2)}
 .schedule-master{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px}
 .schedule-master-copy{min-width:0;flex:1}
@@ -823,6 +825,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <div class="toggle-note golden">Skip YouTube search and only match against the curated source list. This can be faster, but titles not covered by your list will stay unmatched.</div>
               </div>
             </div>
+            <div class="toggle-card" style="margin-top:10px">
+              <label class="toggle" style="margin-top:2px">
+                <input type="checkbox" id="cfg-refresh_golden_source_each_run">
+                <span class="toggle-track"></span>
+              </label>
+              <div>
+                <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
+                <div class="toggle-note">Global for manual and scheduled Step 2 runs. Pull a fresh Golden Source list before matching.</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -871,7 +883,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
           </div>
         </div>
-        <div class="settings-grid-3" style="margin-bottom:16px">
+        <div class="settings-subcard" style="margin-bottom:16px">
+          <div class="subcard-title">Pending titles per run</div>
+          <div class="subcard-intro">Control how many PENDING items are processed during each Find Sources run. <strong>0 = unlimited.</strong></div>
+          <div class="field">
+            <label>Pending Titles Per Run</label>
+            <input type="number" id="cfg-test_limit" min="0">
+          </div>
+        </div>
+        <div class="performance-grid" style="margin-bottom:16px">
           <div class="field">
             <label>Audio Format</label>
             <select id="cfg-audio_format">
@@ -888,13 +908,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <option value="smallest">Smallest — about 96 kbps equivalent</option>
             </select>
             <div class="field-help compact">Actual bitrate varies by source and output codec. Best available keeps the highest practical quality.</div>
-          </div>
-        </div>
-        <div class="performance-grid">
-          <div class="field">
-            <label>Pending Titles Per Run</label>
-            <input type="number" id="cfg-test_limit" min="0">
-            <div class="field-help compact danger-note">Manual searches only: how many pending titles Media Tracks tries to match in one manual Find Sources run. <strong>0 = unlimited.</strong></div>
           </div>
           <div class="field">
             <label>Max Retries</label>
@@ -1082,8 +1095,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:15px;font-weight:700">Find Theme Sources</span>
             </div>
             <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Searches sources for a theme based on the configured search logic for each PENDING media item. Saves the URL and moves status to STAGED. <span style="color:var(--purple);font-weight:600">Uses: TMDB + YouTube or Golden Source if configured.</span></div>
-            <div style="display:flex;flex-direction:column;gap:8px;max-width:520px">
-              <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;width:fit-content">
+            <div class="schedule-step2-options">
+              <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;height:100%">
                 <label class="toggle" style="transform:scale(.85)">
                   <input type="checkbox" id="sched-only-golden" onchange="saveRunSchedule()">
                   <span class="toggle-track"></span>
@@ -1093,7 +1106,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                   <div style="font-size:11px;color:var(--amber)">Use curated Golden Source matches only during Step 2 for tighter and faster source discovery.</div>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:fit-content">
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
                 <div>
                   <span style="font-size:12px;font-weight:600;color:var(--text)">Pending Titles Per Run</span>
                   <div style="font-size:11px;color:var(--text3)">Limits how many PENDING titles are processed per scheduled Step 2 run. 0 = unlimited.</div>
@@ -1117,7 +1130,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:15px;font-weight:700">Download Themes</span>
             </div>
             <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Downloads audio for every APPROVED media item, saves the theme file into the media folder, and moves status to AVAILABLE. <span style="color:var(--green);font-weight:600">Uses: yt-dlp + ffmpeg.</span></div>
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:fit-content">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
               <label class="toggle" style="transform:scale(.85)">
                 <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
                 <span class="toggle-track"></span>
@@ -1142,11 +1155,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="run-bar">
       <div class="run-dot" id="run-dot"></div>
       <span id="run-status" style="color:var(--text2)">Idle — select a step above to run manually</span>
-      <button class="btn btn-ghost btn-sm" onclick="clearTerminal()" style="margin-left:auto">Clear</button>
-      <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopRun()" style="display:none">■ Stop</button>
-    </div>
-    <div class="terminal" id="terminal">
-      <div class="ll ll-info">Ready. Toggle steps for automated runs, or click Run Now for manual execution.</div>
+      <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopRun()" style="margin-left:auto;display:none">■ Stop</button>
     </div>
 
   </div></div>
@@ -1317,16 +1326,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="modal-overlay" id="search-modal" onclick="if(event.target===this)closeSearchModal()">
   <div class="modal" style="max-width:640px;position:relative;padding:0;display:flex;flex-direction:column;max-height:92vh">
 
-    <!-- Movie header -->
-    <div class="modal-header" style="flex-shrink:0">
-      <img class="modal-poster" id="search-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
-      <div class="modal-movie-info">
-        <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
-        <div class="modal-movie-meta"><span id="search-modal-year-meta" style="color:var(--text2)"></span></div>
-        <div class="modal-movie-links" id="search-modal-links"></div>
-      </div>
-    </div>
-
     <!-- Step rail - TOP -->
     <div style="display:flex;align-items:center;gap:0;padding:10px 22px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0" id="search-step-rail">
       <div class="srail-step active" id="srail-1" onclick="_srailClick(1)">
@@ -1342,13 +1341,23 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
     </div>
 
+    <!-- Movie header -->
+    <div class="modal-header" style="flex-shrink:0">
+      <img class="modal-poster" id="search-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
+      <div class="modal-movie-info">
+        <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
+        <div class="modal-movie-meta"><span id="search-modal-year-meta" style="color:var(--text2)"></span></div>
+        <div class="modal-movie-links" id="search-modal-links"></div>
+      </div>
+    </div>
+
     <!-- Bio -->
     <div class="modal-bio" id="search-modal-bio" style="display:none"></div>
 
     <!-- Step 1: Choose Method -->
     <div id="search-step-1" class="search-step-body" style="overflow-y:auto;flex:1">
       <div class="modal-section" style="padding-bottom:0">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+        <div class="manual-methods">
           <div class="search-method-card active" id="sm-card-playlist" onclick="selectSearchMethod('playlist')">
             <div class="sm-card-icon">🎵</div>
             <div class="sm-card-title">Playlist</div>
@@ -1438,7 +1447,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Re-YouTube</button>
           <a href="#" style="font-size:11px;color:var(--blue);white-space:nowrap;text-decoration:none;flex-shrink:0" onclick="event.preventDefault();const u=document.getElementById('se-url').value;if(u)window.open(u,'_blank')">↗ Open</a>
         </div>
-        <div id="se-links" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
 
       <!-- Start Offset -->
@@ -1452,7 +1460,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
           <div class="modal-trim-result" id="se-trim-result"></div>
           <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
-          <button class="btn btn-purple btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
+          <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
         </div>
       </div>
     </div>
@@ -1896,6 +1904,8 @@ async function loadConfiguration(){
   if(matchingModeEl) matchingModeEl.value = cfg.search_fuzzy ? 'fuzzy' : 'strict';
   const goldenOnlyEl = document.getElementById('cfg-search_only_golden');
   if(goldenOnlyEl) goldenOnlyEl.checked = !!cfg.search_only_golden;
+  const goldenRefreshEl = document.getElementById('cfg-refresh_golden_source_each_run');
+  if(goldenRefreshEl) goldenRefreshEl.checked = cfg.refresh_golden_source_each_run !== false;
   syncMatchingModeSelect();
   const manAuto=document.getElementById('cfg-auto_approve_manual');
   if(manAuto) manAuto.checked = !!cfg.auto_approve_manual;
@@ -2074,6 +2084,7 @@ async function saveConfiguration(){
   cfg.search_fallback = document.getElementById('cfg-search_fallback').checked;
   cfg.search_fuzzy = (document.getElementById('cfg-search_matching_mode')?.value || 'strict') === 'fuzzy';
   cfg.search_only_golden = document.getElementById('cfg-search_only_golden').checked;
+  cfg.refresh_golden_source_each_run = document.getElementById('cfg-refresh_golden_source_each_run').checked;
   if(cfg.search_fuzzy) cfg.search_fallback = false;
   cfg.auto_approve_manual = document.getElementById('cfg-auto_approve_manual').checked;
   const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
@@ -3082,18 +3093,18 @@ function _setSearchFooter(step){
   if(!back || !primary || !dlnow) return;
   if(step===1){
     back.style.display='none';
+    primary.style.display='';
     primary.textContent='🔍 Search';
     primary.className='btn btn-amber';
     primary.onclick=doSearch;
     dlnow.style.display='none';
   } else if(step===2){
     back.style.display='';
-    primary.textContent='Select First Result';
-    primary.className='btn btn-ghost';
-    primary.onclick=()=>{ if(_lastSearchResults.length) goToStep3(_lastSearchResults[0].url); };
+    primary.style.display='none';
     dlnow.style.display='none';
   } else if(step===3){
     back.style.display='';
+    primary.style.display='';
     primary.textContent=_autoApproveManual?'Approve + Save':'Stage Source';
     primary.className='btn btn-amber';
     primary.onclick=saveSourceEditor;
@@ -3285,12 +3296,6 @@ function goToStep3(url){
   const loadBtn=document.getElementById('se-load-btn');
   if(loadBtn){ loadBtn.textContent='Loading…'; loadBtn.disabled=true; }
   document.getElementById('se-play-btn').innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-  const seLinks=document.getElementById('se-links');
-  if(seLinks && url){
-    const isYt=url.includes('youtube.com')||url.includes('youtu.be');
-    seLinks.innerHTML=isYt?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`
-      :`<a class="modal-link-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">↗ Source</a>`;
-  }
   goToSearchStep(3);
   if(url) setTimeout(()=>seLoadPreview(),80);
 }
@@ -3316,15 +3321,7 @@ function backToSearch(){
   goToSearchStep(2);
 }
 
-function seUrlChanged(){
-  const url=(document.getElementById('se-url').value||'').trim();
-  const seLinks=document.getElementById('se-links');
-  if(seLinks&&url){
-    const isYt=url.includes('youtube.com')||url.includes('youtu.be');
-    seLinks.innerHTML=isYt?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`
-      :`<a class="modal-link-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">↗ Source</a>`;
-  }
-}
+function seUrlChanged(){}
 
 async function seLoadPreview(){
   const url=(document.getElementById('se-url').value||'').trim();
@@ -3651,7 +3648,8 @@ function startPass(pass){
   document.getElementById('btn-stop').style.display='inline-flex';
   const labels={1:'Scanning libraries…',2:'Finding YouTube sources…',3:'Downloading approved themes…'};
   document.getElementById('run-status').textContent=labels[pass];
-  document.getElementById('terminal').innerHTML='';
+  const terminal=document.getElementById('terminal');
+  if(terminal) terminal.innerHTML='';
 
   const prog=document.getElementById('run-progress');
   prog.classList.add('active');
@@ -3694,12 +3692,13 @@ function startPass(pass){
 
 function appendLine(line){
   const t=document.getElementById('terminal');
+  if(!t) return;
   const d=document.createElement('div');
   d.className='ll '+(line.includes('[OK]')?'ll-ok':line.includes('[FAILED]')?'ll-err':line.includes('[RESOLVE]')?'ll-resolve':line.includes('WARNING')||line.includes('WARN')?'ll-warn':line.includes('ERROR')?'ll-err':line.startsWith('═')||line.startsWith('─')||line.startsWith('=')?'ll-head':line.includes('Library:')||line.includes('═══')?'ll-lib':'ll-info');
   d.textContent=line; t.appendChild(d); t.scrollTop=t.scrollHeight;
 }
 
-function clearTerminal(){ document.getElementById('terminal').innerHTML='<div class="ll ll-info">Cleared.</div>'; }
+function clearTerminal(){ const t=document.getElementById('terminal'); if(t) t.innerHTML='<div class="ll ll-info">Cleared.</div>'; }
 async function stopRun(){
   toast('Stopping…','info');
   await fetch('/api/run/stop',{method:'POST'});
