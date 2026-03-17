@@ -92,6 +92,8 @@ _tmdb_lookup_cache = {}
 _TMDB_LOOKUP_TTL   = 86400
 _bio_cache = {}
 _BIO_TTL   = 86400
+_GOLDEN_CACHE_DIR = LOGS_DIR / "golden_source_cache"
+_GOLDEN_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 def _broadcast(msg):
     is_progress = msg.startswith("@@PROGRESS@@")
@@ -282,15 +284,12 @@ def _normalize_golden_source_url(url):
         return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
     return url
 
-def _fetch_golden_source_catalog(url):
-    normalized = _normalize_golden_source_url(url)
-    if not normalized:
-        raise ValueError("Golden Source URL is not configured")
-    t0 = _time.perf_counter()
-    r = http_requests.get(normalized, timeout=20)
-    r.raise_for_status()
-    fetch_ms = round((_time.perf_counter() - t0) * 1000, 1)
-    text = r.content.decode("utf-8-sig", errors="replace")
+def _golden_cache_path(normalized_url):
+    digest = hashlib.sha256(normalized_url.encode("utf-8", errors="ignore")).hexdigest()[:16]
+    return _GOLDEN_CACHE_DIR / f"catalog_{digest}.csv"
+
+
+def _parse_golden_source_csv(text):
     reader = import_csv_reader(text)
     if not reader.fieldnames:
         raise ValueError("Golden Source CSV has no header row")
@@ -306,7 +305,38 @@ def _fetch_golden_source_catalog(url):
         clean["start_offset"] = clean.get("start_offset", "0") or "0"
         clean["end_offset"] = clean.get("end_offset", "0") or "0"
         rows.append(clean)
-    return normalized, rows, fetch_ms
+    return rows
+
+
+def _fetch_golden_source_catalog(url, force_refresh=False, cache_ttl_sec=1800):
+    normalized = _normalize_golden_source_url(url)
+    if not normalized:
+        raise ValueError("Golden Source URL is not configured")
+
+    # Allow local file path as source for truly local matching.
+    local_path = Path(normalized)
+    if local_path.exists() and local_path.is_file():
+        text = local_path.read_text(encoding="utf-8-sig", errors="replace")
+        rows = _parse_golden_source_csv(text)
+        return normalized, rows, 0.0, "local-file"
+
+    cache_path = _golden_cache_path(normalized)
+    now = _time.time()
+    if not force_refresh and cache_path.exists():
+        age = now - cache_path.stat().st_mtime
+        if age <= max(0, int(cache_ttl_sec or 0)):
+            text = cache_path.read_text(encoding="utf-8-sig", errors="replace")
+            rows = _parse_golden_source_csv(text)
+            return normalized, rows, 0.0, "local-cache"
+
+    t0 = _time.perf_counter()
+    r = http_requests.get(normalized, timeout=20)
+    r.raise_for_status()
+    fetch_ms = round((_time.perf_counter() - t0) * 1000, 1)
+    text = r.content.decode("utf-8-sig", errors="replace")
+    rows = _parse_golden_source_csv(text)
+    cache_path.write_text(text, encoding="utf-8")
+    return normalized, rows, fetch_ms, "remote-fetch"
 
 def import_csv_reader(text):
     import csv as _csv
@@ -434,7 +464,7 @@ def test_golden_source():
     data = request.json or {}
     url = data.get("url") or load_config().get("golden_source_url","")
     try:
-        normalized_url, rows, fetch_ms = _fetch_golden_source_catalog(url)
+        normalized_url, rows, fetch_ms, fetch_mode = _fetch_golden_source_catalog(url)
         if not rows:
             return jsonify({"ok":False,"error":"CSV loaded but no usable rows found (need tmdb_id + source_url)"})
         return jsonify({
@@ -442,6 +472,7 @@ def test_golden_source():
             "source_url": normalized_url,
             "rows": len(rows),
             "fetch_ms": fetch_ms,
+            "fetch_mode": fetch_mode,
             "required_columns": ["tmdb_id", "source_url"],
             "optional_columns": ["title", "year", "start_offset", "verified", "updated_at", "notes"],
         })
@@ -508,9 +539,16 @@ def import_golden_source():
     source_url = data.get("url") or cfg.get("golden_source_url","")
     overwrite = _boolish(data.get("overwrite_existing", False))
     auto_approve = _boolish(data.get("auto_approve", False))
+    force_refresh = _boolish(data.get("force_refresh", False))
+    cache_ttl_sec = int(cfg.get("golden_source_cache_ttl_sec", 1800) or 1800)
+    resolve_missing_tmdb = _boolish(data.get("resolve_missing_tmdb", cfg.get("golden_source_resolve_tmdb", False)))
     t0_total = _time.perf_counter()
     try:
-        normalized_url, catalog_rows, fetch_ms = _fetch_golden_source_catalog(source_url)
+        normalized_url, catalog_rows, fetch_ms, fetch_mode = _fetch_golden_source_catalog(
+            source_url,
+            force_refresh=force_refresh,
+            cache_ttl_sec=cache_ttl_sec,
+        )
     except Exception as e:
         return jsonify({"ok":False,"error":f"Golden Source fetch failed: {str(e)[:180]}"}), 400
     catalog = {str(r.get("tmdb_id","")).strip(): r for r in catalog_rows if str(r.get("tmdb_id","")).strip()}
@@ -546,15 +584,21 @@ def import_golden_source():
                 match = catalog_title_year.get(f"{title_key}|{year_key}")
                 if match and not tmdb_id:
                     tmdb_id = str(match.get("tmdb_id","") or "").strip()
-        if not match:
+        if not match and resolve_missing_tmdb:
             key = str(row.get("rating_key","") or "")
             cached = tmdb_cache.get(key)
             if cached is None:
                 cached = _resolve_row_tmdb_id(row, cfg); tmdb_cache[key] = cached
             tmdb_id = tmdb_id or cached
-            if not tmdb_id: missing_tmdb += 1; continue
-            match = catalog.get(str(tmdb_id))
-            if not match: no_match += 1; continue
+            if tmdb_id:
+                match = catalog.get(str(tmdb_id))
+
+        if not match:
+            if tmdb_id:
+                no_match += 1
+            else:
+                missing_tmdb += 1
+            continue
         existing_url = str(row.get("url","") or "").strip()
         if existing_url and not overwrite:
             skipped_existing += 1
@@ -581,6 +625,9 @@ def import_golden_source():
         "no_match": no_match,
         "skipped_downloaded": skipped_downloaded,
         "fetch_ms": fetch_ms,
+        "fetch_mode": fetch_mode,
+        "cache_ttl_sec": cache_ttl_sec,
+        "resolve_missing_tmdb": resolve_missing_tmdb,
         "total_ms": total_ms,
     })
 

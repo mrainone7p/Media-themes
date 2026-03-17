@@ -40,6 +40,9 @@ max_theme_duration: 60
 mode: manual
 
 golden_source_url: 
+# Optional Golden Source performance tuning
+# golden_source_cache_ttl_sec: 1800
+# golden_source_resolve_tmdb: false
 cron_schedule: 0 3 * * *
 schedule_enabled: false
 ```
@@ -90,7 +93,9 @@ Open `http://your-host:8182` in a browser.
 | `libraries` | List of Plex library names to manage |
 | `theme_filename` | Output filename — default `theme.mp3` |
 | `max_theme_duration` | Trim downloads to this many seconds (0 = no limit) |
-| `golden_source_url` | URL to a curated CSV of known-good theme sources |
+| `golden_source_url` | URL (or local file path inside container) to a curated CSV of known-good theme sources |
+| `golden_source_cache_ttl_sec` | Seconds to reuse cached Golden Source CSV before re-fetching (default `1800`) |
+| `golden_source_resolve_tmdb` | When `true`, import may call TMDB for rows missing `tmdb_id` (slower but can increase matches) |
 | `cron_schedule` | When automated runs fire — standard cron syntax |
 | `schedule_enabled` | `true` to enable automated runs |
 
