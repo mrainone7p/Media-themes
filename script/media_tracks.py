@@ -1073,6 +1073,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
     plex_token   = cfg.get("plex_token", "")
     theme_file   = cfg.get("theme_filename", "theme.mp3")
     test_limit   = int(cfg.get("test_limit", 0))
+    schedule_test_limit = int(cfg.get("schedule_test_limit", test_limit) or test_limit)
     auto_approve = cfg.get("auto_approve", False)
 
     step1_enabled = cfg.get("schedule_step1", True)
@@ -1158,9 +1159,9 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
 
     # ── Pass 2 (auto mode) ────────────────────────────────────────────────────
     if step2_enabled and pending:
-        to_resolve = pending[:test_limit] if test_limit > 0 else pending
-        if test_limit > 0:
-            log.info(f"RESOLVE BATCH SIZE {test_limit} — resolving {len(to_resolve)} of {len(pending)}")
+        to_resolve = pending[:schedule_test_limit] if schedule_test_limit > 0 else pending
+        if schedule_test_limit > 0:
+            log.info(f"RESOLVE BATCH SIZE {schedule_test_limit} (scheduled) — resolving {len(to_resolve)} of {len(pending)}")
         log.info(f"─── Pass 2: resolving URLs for {len(to_resolve)} pending movies ───")
         t0    = time.time()
         stats = pass2_resolve(ledger, to_resolve, cfg)
