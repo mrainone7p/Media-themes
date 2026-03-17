@@ -406,6 +406,14 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .task-status.info{background:var(--blue-soft);color:var(--blue)}
 @media (max-width: 1100px){.task-grid{grid-template-columns:1fr}.task-history-head,.task-history-item{grid-template-columns:1fr}}
 
+.golden-emphasis{border-color:rgba(245,166,35,.42);box-shadow:inset 0 0 0 1px rgba(245,166,35,.2)}
+.golden-btn{border-color:rgba(245,166,35,.45)!important;background:var(--amber-soft)!important;color:var(--amber)!important}
+.danger-note{color:var(--red)!important;font-weight:700}
+.task-lib-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.task-lib-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface2);font-size:12px;cursor:pointer}
+.task-lib-pill.active{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.task-wide{grid-column:1 / -1}
+
 .db-topbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
 .db-topbar .chips{margin-bottom:0;flex:1;min-width:220px}
 .db-main-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
@@ -825,25 +833,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </summary>
       <div class="card-body">
         <div class="section-intro">These settings control what gets written to disk, how aggressively Media Tracks processes downloads and source matching, and how cookies can improve reliability on harder YouTube fetches.</div>
-        <div class="settings-grid-3" style="margin-bottom:16px">
-          <div class="field">
-            <label>Audio Format</label>
-            <select id="cfg-audio_format">
-              <option value="mp3">mp3</option><option value="m4a">m4a</option>
-              <option value="flac">flac</option><option value="opus">opus</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Quality Profile</label>
-            <select id="cfg-quality_profile">
-              <option value="high">Best available — source dependent</option>
-              <option value="balanced">Balanced — about 192 kbps equivalent</option>
-              <option value="small">Compact — about 128 kbps equivalent</option>
-              <option value="smallest">Smallest — about 96 kbps equivalent</option>
-            </select>
-            <div class="field-help compact">Actual bitrate varies by source and output codec. Best available keeps the highest practical quality.</div>
-          </div>
-        </div>
         <div class="settings-subcard" style="margin-bottom:16px">
           <div class="subcard-title">Theme filename &amp; length</div>
           <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is; longer downloads are trimmed.</div>
@@ -876,13 +865,31 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="settings-actions">
             <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
           </div>
-          <div class="field-help compact">Browser-exported YouTube cookies can help with age-restricted, sign-in-gated, region-limited, or bot-protected results and playlists.</div>
+        </div>
+        <div class="settings-grid-3" style="margin-bottom:16px">
+          <div class="field">
+            <label>Audio Format</label>
+            <select id="cfg-audio_format">
+              <option value="mp3">mp3</option><option value="m4a">m4a</option>
+              <option value="flac">flac</option><option value="opus">opus</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Quality Profile</label>
+            <select id="cfg-quality_profile">
+              <option value="high">Best available — source dependent</option>
+              <option value="balanced">Balanced — about 192 kbps equivalent</option>
+              <option value="small">Compact — about 128 kbps equivalent</option>
+              <option value="smallest">Smallest — about 96 kbps equivalent</option>
+            </select>
+            <div class="field-help compact">Actual bitrate varies by source and output codec. Best available keeps the highest practical quality.</div>
+          </div>
         </div>
         <div class="performance-grid">
           <div class="field">
             <label>Pending Titles Per Run</label>
             <input type="number" id="cfg-test_limit" min="0">
-            <div class="field-help compact">How many pending titles Media Tracks tries to match in one Find Sources run. <strong>0 = unlimited.</strong> Lower values keep runs lighter on CPU and memory.</div>
+            <div class="field-help compact danger-note">Manual searches only: how many pending titles Media Tracks tries to match in one manual Find Sources run. <strong>0 = unlimited.</strong></div>
           </div>
           <div class="field">
             <label>Max Retries</label>
@@ -917,13 +924,31 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="progress-bar"><div class="progress-fill" id="db-progress-fill"></div></div>
     </div>
 
+    <div class="pipe-actions" style="margin-bottom:10px">
+      <div class="pipe-action scan">
+        <div class="pipe-action-step scan">Step 1 · Action</div>
+        <div class="pipe-action-name scan">⟳ Scan Library</div>
+        <div class="pipe-action-desc">Connects to Plex, indexes all media, marks items without a theme.mp3 as PENDING</div>
+      </div>
+      <div class="pipe-action find">
+        <div class="pipe-action-step find">Step 2 · Action</div>
+        <div class="pipe-action-name find">⚡ Find Sources</div>
+        <div class="pipe-action-desc">Uses TMDB title/year metadata to build a source lookup for each PENDING item, then saves valid matches as STAGED</div>
+      </div>
+      <div class="pipe-action dl">
+        <div class="pipe-action-step dl">Step 3 · Action</div>
+        <div class="pipe-action-name dl">↓ Download</div>
+        <div class="pipe-action-desc">Downloads audio for every APPROVED item, trims to offset, saves theme.mp3 to Plex folder</div>
+      </div>
+    </div>
+
     <div class="tabs" id="lib-tabs" style="margin-bottom:10px;border-bottom:1px solid var(--border)"></div>
     <div class="db-topbar">
       <div class="chips" id="db-chips"></div>
       <div class="db-main-actions">
         <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan Library</button>
         <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
-        <button class="btn btn-ghost btn-sm" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
+        <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
         <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()">↓ Download All Approved</button>
         <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
       </div>
@@ -966,7 +991,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <th onclick="sortTable('status')">Status ↕</th>
           <th onclick="sortTable('status')">Current Theme ↕</th>
           <th onclick="sortTable('url')">Source ↕</th>
-          <th>Source URL</th>
+          <th>Proxy</th>
+          <th onclick="sortTable('url')">Source URL ↕</th>
           <th onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
           <th onclick="sortTable('last_updated')">Updated ↕</th>
           <th onclick="sortTable('notes')">Notes ↕</th>
@@ -984,25 +1010,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="page" id="page-schedule">
   <div class="page-head"><div><div class="page-title">Schedule</div><div class="page-desc">Configure automated runs and manually trigger pipeline steps for the libraries selected below</div></div></div>
   <div class="page-body"><div class="content">
-
-    <!-- Pipeline overview (same 3 steps as Database page) -->
-    <div class="pipe-actions" style="margin-bottom:6px">
-      <div class="pipe-action scan">
-        <div class="pipe-action-step scan">Step 1 · Action</div>
-        <div class="pipe-action-name scan">⟳ Scan Library</div>
-        <div class="pipe-action-desc">Connects to Plex, indexes all media, marks items without a theme.mp3 as PENDING</div>
-      </div>
-      <div class="pipe-action find">
-        <div class="pipe-action-step find">Step 2 · Action</div>
-        <div class="pipe-action-name find">⚡ Find Sources</div>
-        <div class="pipe-action-desc">Uses TMDB title/year metadata to build a source lookup for each PENDING item, then saves valid matches as STAGED</div>
-      </div>
-      <div class="pipe-action dl">
-        <div class="pipe-action-step dl">Step 3 · Action</div>
-        <div class="pipe-action-name dl">↓ Download</div>
-        <div class="pipe-action-desc">Downloads audio for every APPROVED item, trims to offset, saves theme.mp3 to Plex folder</div>
-      </div>
-    </div>
 
     <div class="schedule-master">
       <div class="schedule-master-copy">
@@ -1026,6 +1033,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <label>Cron Schedule</label>
           <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
           <div class="field-hint">When the automated pipeline runs. Restart container to apply changes.</div>
+        </div>
+        <div class="field" style="max-width:340px;margin-bottom:14px">
+          <label>Pending Titles Per Run (Scheduled searches)</label>
+          <input id="run-schedule-limit" type="number" min="0" onblur="saveRunSchedule()">
+          <div class="field-hint danger-note">Scheduled Find Sources only. Limits how many PENDING titles are processed per automated run. 0 = unlimited.</div>
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Libraries Included</label>
@@ -1126,17 +1138,23 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   <div class="page-head"><div><div class="page-title">Tasks</div><div class="page-desc">Run utilities, export curated data, perform maintenance, and review task/run history.</div></div></div>
   <div class="page-body"><div class="content">
     <div class="card">
-      <div class="card-title">Run Tasks</div>
+      <div class="card-title">Run Pipeline Tasks</div>
+      <div class="task-desc" style="margin-bottom:10px">Select one or more libraries for pipeline runs.</div>
+      <div class="task-row" style="margin-bottom:8px">
+        <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(true)">Select all</button>
+        <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(false)">Clear</button>
+      </div>
+      <div class="task-lib-pills" id="task-lib-pills"></div>
       <div class="task-grid">
-        <div class="task-card"><div class="task-title">Run Scan Now</div><div class="task-desc">Run Pass 1 for the selected library.</div><div class="task-row"><select class="filter-sel" id="task-lib-scan"></select><button class="btn btn-blue btn-sm" onclick="taskRunPass(1)">Run</button></div></div>
-        <div class="task-card"><div class="task-title">Run Find Sources Now</div><div class="task-desc">Run Pass 2 and stage source matches.</div><div class="task-row"><select class="filter-sel" id="task-lib-find"></select><button class="btn btn-purple btn-sm" onclick="taskRunPass(2)">Run</button></div></div>
-        <div class="task-card"><div class="task-title">Run Download Approved Now</div><div class="task-desc">Run Pass 3 to download approved themes.</div><div class="task-row"><select class="filter-sel" id="task-lib-download"></select><button class="btn btn-green btn-sm" onclick="taskRunPass(3)">Run</button></div></div>
+        <div class="task-card"><div class="task-title">Run Scan Now</div><div class="task-desc">Run Pass 1 for selected libraries.</div><div class="task-row"><button class="btn btn-blue btn-sm" onclick="taskRunPass(1)">Run</button></div></div>
+        <div class="task-card"><div class="task-title">Run Find Sources Now</div><div class="task-desc">Run Pass 2 for selected libraries.</div><div class="task-row"><button class="btn btn-purple btn-sm" onclick="taskRunPass(2)">Run</button></div></div>
+        <div class="task-card"><div class="task-title">Run Download Approved Now</div><div class="task-desc">Run Pass 3 for selected libraries.</div><div class="task-row"><button class="btn btn-green btn-sm" onclick="taskRunPass(3)">Run</button></div></div>
       </div>
     </div>
     <div class="card">
       <div class="card-title">Export / Data Tasks</div>
-      <div class="task-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-        <div class="task-card"><div class="task-title">Export Golden Source CSV</div><div class="task-desc">Exports rows with source URLs only. Includes verified=yes for golden-source provenance.</div><div class="task-row"><select class="filter-sel" id="task-lib-export"></select><button class="btn btn-amber btn-sm" onclick="taskExportGoldenSource()">Export</button></div></div>
+      <div class="task-grid" style="grid-template-columns:1fr">
+        <div class="task-card golden-emphasis task-wide"><div class="task-title">★ Export Golden Source CSV</div><div class="task-desc">Exports rows with source URLs only. Includes verified=yes for golden-source provenance. Tooltips explain each field.</div><div class="task-row"><select class="filter-sel" id="task-lib-export" title="Library scope for this export"></select><button class="btn btn-amber btn-sm" onclick="taskExportGoldenSource()" title="Download a curated Golden Source-format CSV">Export</button></div><div class="field-help compact" title="tmdb_id,title,year,source_url,start_offset,verified,updated_at,notes">Fields: tmdb_id · title · year · source_url · start_offset · verified · updated_at · notes</div></div>
       </div>
     </div>
     <div class="card">
@@ -1146,8 +1164,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="task-card"><div class="task-title">Prune Task History</div><div class="task-desc">Keep only the newest run/task history entries.</div><div class="task-row"><input class="filter-sel" id="task-keep-runs" value="100" style="max-width:90px"><button class="btn btn-ghost btn-sm" onclick="taskPruneHistory()">Run</button></div></div>
         <div class="task-card"><div class="task-title">Refresh Local Theme Detection</div><div class="task-desc">Resync disk theme files with database state.</div><div class="task-row"><select class="filter-sel" id="task-lib-refresh"></select><button class="btn btn-ghost btn-sm" onclick="taskRefreshThemes()">Run</button></div></div>
       </div>
-      <div class="task-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px">
-        <div class="task-card"><div class="task-title">SQLite Backup + Vacuum</div><div class="task-desc">Create a timestamped DB backup and optimize SQLite storage.</div><div class="task-row"><button class="btn btn-ghost btn-sm" onclick="taskSqliteMaintenance()">Run</button></div></div>
+      <div class="task-grid" style="grid-template-columns:1fr;margin-top:8px">
+        <div class="task-card task-wide"><div class="task-title">SQLite Backup + Optimize/Vacuum</div><div class="task-desc">Creates a timestamped SQLite DB backup, then runs VACUUM to compact and optimize the database file for faster reads and lower disk usage.</div><div class="task-row"><button class="btn btn-ghost btn-sm" onclick="taskSqliteMaintenance()">Run</button></div></div>
+        <div class="task-card task-wide"><div class="task-title" style="color:var(--red)">Destructive: Clear All Source URLs</div><div class="task-desc">Clears stored source URLs for the selected library. <strong class="danger-note">Irreversible.</strong></div><div class="task-row"><select class="filter-sel" id="task-lib-clear-sources"></select><button class="btn btn-red btn-sm" onclick="taskClearAllSources()">Clear URLs</button></div></div>
       </div>
     </div>
     <div class="card">
@@ -2289,12 +2308,12 @@ function renderSourceBtn(row){
   const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
   const canPreview=_hasSourceUrl(row);
   const canDownloadNow=_hasSourceUrl(row) && !hasTheme && !!row.rating_key;
-  const preview=`<button class="btn btn-purple btn-xs action-icon"
+  const preview=canPreview?`<button class="btn btn-purple btn-xs action-icon"
     data-action="preview-source" data-rk="${rk}" data-url="${url}"
-    onclick="_previewSource(this)" title="${canPreview?'Preview source':'Add a source URL to preview'}" ${canPreview?'':'disabled'}><span class="icon-only">▶</span></button>`;
-  const dlNow=`<button class="btn btn-green btn-xs action-icon"
+    onclick="_previewSource(this)" title="Preview source"><span class="icon-only">▶</span></button>`:'';
+  const dlNow=canDownloadNow?`<button class="btn btn-green btn-xs action-icon"
     data-action="download-now" data-rk="${rk}"
-    onclick="_downloadNow(this)" title="${canDownloadNow?'Download now':'Requires source URL, Plex ID, and no local theme'}" ${canDownloadNow?'':'disabled'}><span class="icon-only">↓</span></button>`;
+    onclick="_downloadNow(this)" title="Download now"><span class="icon-only">↓</span></button>`:'';
   const manual=`<button class="btn btn-ghost btn-xs action-icon"
     data-action="manual-search" data-rk="${rk}"
     onclick="_manualSearch(this)" title="Manual search"><span class="icon-only">🔍</span></button>`;
@@ -2502,6 +2521,7 @@ function renderTable(){
       </td>
       <td>${renderThemeBtn(row)}</td>
       <td>${renderSourceBtn(row)}</td>
+      <td style="text-align:center">${row.source_origin==='golden_source'?'<span title="Verified via Golden Source" style="color:var(--amber);font-size:14px">★</span>':'—'}</td>
       <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px;margin-right:4px" title="${safeUrlAttr}">↗</a>`:''}
         <input class="inline-ed" value="${safeUrlAttr}" placeholder="paste URL…" style="min-width:80px;max-width:140px;font-size:10px" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
       <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:74px;font-size:11px"
@@ -3460,6 +3480,7 @@ let _evtSrc=null;
 async function loadRunPage(){
   const cfg=(await (await fetch('/api/config')).json());
   document.getElementById('run-cron').value=cfg.cron_schedule||'0 3 * * *';
+  document.getElementById('run-schedule-limit').value=cfg.schedule_test_limit ?? cfg.test_limit ?? 0;
   document.getElementById('sched-enabled').checked = cfg.schedule_enabled !== false;
   const enabledLibs=(cfg.libraries||[]).filter(l=>l.enabled!==false && (!l.type||l.type==='movie'||l.type==='show'));
   const selected=new Set((cfg.schedule_libraries&&cfg.schedule_libraries.length)?cfg.schedule_libraries:enabledLibs.map(l=>l.name));
@@ -3508,6 +3529,7 @@ async function saveRunSchedule(){
     cfg.schedule_step1=document.getElementById('sched-step1').checked;
     cfg.schedule_step2=document.getElementById('sched-step2').checked;
     cfg.schedule_step3=document.getElementById('sched-step3').checked;
+    cfg.schedule_test_limit=parseInt(document.getElementById('run-schedule-limit').value||'0',10)||0;
     cfg.auto_approve=document.getElementById('sched-autoapprove').checked;
     await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
     toast(enabled ? 'Schedule saved' : 'Automation disabled','ok');
@@ -3622,17 +3644,40 @@ async function loadTaskHistoryList(){
 }
 
 function taskLibValue(id){ const el=document.getElementById(id); return el?el.value:''; }
+let _taskLibSelection=new Set();
 function _fillTaskLibSelects(){
   const opts = (_libs||[]).map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
-  ['task-lib-scan','task-lib-find','task-lib-download','task-lib-export','task-lib-refresh'].forEach(id=>{
+  ['task-lib-export','task-lib-refresh','task-lib-clear-sources'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.innerHTML=opts;
   });
+  if(!_taskLibSelection.size){ (_libs||[]).forEach(l=>_taskLibSelection.add(l.name)); }
+  const pills=document.getElementById('task-lib-pills');
+  if(pills){
+    pills.innerHTML=(_libs||[]).map(l=>{
+      const active=_taskLibSelection.has(l.name);
+      const safe=encodeURIComponent(String(l.name||''));
+      return `<button class="task-lib-pill ${active?'active':''}" onclick="toggleTaskLib(decodeURIComponent('${safe}'))" title="Include ${l.name} in pipeline runs">${active?'✓':''} ${l.name}</button>`;
+    }).join('');
+  }
+}
+
+function toggleTaskLib(name){
+  if(_taskLibSelection.has(name)) _taskLibSelection.delete(name);
+  else _taskLibSelection.add(name);
+  _fillTaskLibSelects();
+}
+function taskSelectAllLibs(v){
+  _taskLibSelection=new Set(v?(_libs||[]).map(l=>l.name):[]);
+  _fillTaskLibSelects();
 }
 
 async function taskRunPass(passNum){
-  const map={1:'task-lib-scan',2:'task-lib-find',3:'task-lib-download'};
-  const lib=taskLibValue(map[passNum]);
-  if(lib) _activeLib=lib;
+  const libs=[..._taskLibSelection];
+  if(!libs.length) return toast('Select at least one library','err');
+  const cfg=await (await fetch('/api/config')).json();
+  cfg.schedule_libraries=libs;
+  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
+  _activeLib=libs[0];
   await dbRunPass(passNum);
   setTimeout(loadTasksPage,1200);
 }
@@ -3675,6 +3720,20 @@ async function taskSqliteMaintenance(){
   toast('SQLite backup/vacuum complete','ok');
   if(d.download_url) window.open(apiUrl(d.download_url),'_blank');
   loadTasksPage();
+}
+async function taskClearAllSources(){
+  const lib=taskLibValue('task-lib-clear-sources');
+  if(!lib) return toast('Select a library first','err');
+  const ok=await openConfirmModal('Clear all source URLs',{
+    detail:`This will clear all source URLs in ${lib}. This is irreversible.`,
+    okLabel:'Clear URLs',
+    tone:'danger'
+  });
+  if(!ok) return;
+  const r=await fetch('/api/tasks/clear-source-urls',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:lib})});
+  const d=await r.json();
+  toast(d.ok?`Cleared ${d.cleared} URLs`:(d.error||'Failed'), d.ok?'ok':'err');
+  loadDatabase(); loadTasksPage();
 }
 
 // ── Sidebar collapse ─────────────────────────────────────────────────────────

@@ -1326,6 +1326,29 @@ def sqlite_maintenance():
     _record_task('SQLite Maintenance', 'success', '', 'Backup/Vacuum completed', {'backup_file': backup_file, 'vacuum': do_vacuum})
     return jsonify({'ok': True, 'backup_file': backup_file, 'download_url': f'/api/tasks/download/{backup_file}' if backup_file else ''})
 
+@app.route('/api/tasks/clear-source-urls', methods=['POST'])
+def clear_all_source_urls():
+    data = request.json or {}
+    lib = (data.get('library', '') or '').strip()
+    if not lib:
+        return jsonify({'ok': False, 'error': 'Missing library'}), 400
+    rows = load_ledger(ledger_path_for(lib))
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cleared = 0
+    for row in rows:
+        if str(row.get('url', '') or '').strip():
+            row['url'] = ''
+            row['source_origin'] = 'unknown'
+            if str(row.get('status', '') or '').upper() in ('STAGED', 'APPROVED'):
+                row['status'] = 'PENDING'
+            row['last_updated'] = now
+            row['notes'] = 'Source URL cleared via Tasks maintenance'
+            cleared += 1
+    if cleared:
+        save_ledger(ledger_path_for(lib), rows)
+    _record_task('Clear All Source URLs', 'success', lib, f'Cleared {cleared} URLs', {'library': lib, 'cleared': cleared})
+    return jsonify({'ok': True, 'library': lib, 'cleared': cleared})
+
 @app.route("/api/run/status")
 def run_status():
     return jsonify({"active":_run_active,"started_at":_run_started_at,
