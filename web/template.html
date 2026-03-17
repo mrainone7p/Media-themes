@@ -71,8 +71,8 @@ body.nav-collapsed main{margin-left:48px}
 .page-desc{font-size:13px;color:var(--text2);margin-top:3px}
 .page-body{padding:24px 32px;flex:1;overflow-y:auto}
 .content{max-width:var(--max-w);width:100%}
-#page-settings .content,#page-run .content{max-width:var(--max-w)}
-#page-settings .section-intro,#page-run .section-intro,#page-settings .settings-lead{max-width:var(--max-w)}
+#page-configuration .content,#page-schedule .content{max-width:var(--max-w)}
+#page-configuration .section-intro,#page-schedule .section-intro,#page-configuration .settings-lead{max-width:var(--max-w)}
 
 /* ─── Cards ─── */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
@@ -568,7 +568,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <button class="collapse-btn" onclick="toggleNav()" title="Collapse sidebar" id="nav-collapse-btn">«</button>
   </div>
   <div class="nav-section">
-    <div class="nav-item active" onclick="showPage('settings')" id="nav-settings">
+    <div class="nav-item active" onclick="showPage('configuration')" id="nav-configuration">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
       <span>Configuration</span>
     </div>
@@ -576,7 +576,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       <span>Database+</span>
     </div>
-    <div class="nav-item" onclick="showPage('run')" id="nav-run">
+    <div class="nav-item" onclick="showPage('schedule')" id="nav-schedule">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span>Schedule</span>
     </div>
@@ -598,8 +598,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="global-run-sub" id="global-run-sub"></div>
   </div>
 
-<!-- ══════════════════════════════════════ SETTINGS ═══════════════════════════ -->
-<div class="page active" id="page-settings">
+<!-- ══════════════════════════════════════ CONFIGURATION ═══════════════════════════ -->
+<div class="page active" id="page-configuration">
   <div class="page-head">
     <div>
       <div class="page-title">Configuration</div>
@@ -876,7 +876,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
   </div></div>
   <div class="save-bar">
-    <button class="btn btn-amber" onclick="saveSettings()">Save Configuration</button>
+    <button class="btn btn-amber" onclick="saveConfiguration()">Save Configuration</button>
   </div>
 </div>
 
@@ -912,7 +912,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <option value="PENDING">Pending</option><option value="STAGED">Staged</option>
         <option value="APPROVED">Approved</option><option value="DOWNLOADED">Available</option>
         <option value="FAILED">Failed</option>
-        <option value="REJECTED">Rejected</option><option value="IGNORED">Ignored</option><option value="REMOVED">Removed</option>
+        <option value="REJECTED">Rejected</option><option value="IGNORED">Ignored</option>
       </select>
       <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()">✓ Approve All Staged</button>
     </div>
@@ -955,7 +955,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
-<div class="page" id="page-run">
+<div class="page" id="page-schedule">
   <div class="page-head"><div><div class="page-title">Schedule</div><div class="page-desc">Configure automated runs and manually trigger pipeline steps for the libraries selected below</div></div></div>
   <div class="page-body"><div class="content">
 
@@ -1410,7 +1410,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   </div>
 </div>
 
-<!-- Trim Editor Modal (My Themes — trim existing local theme file) -->
+<!-- Trim Editor Modal (trim existing local theme file) -->
 <div class="modal-overlay" id="trim-modal" onclick="if(event.target===this)closeTrimModal()">
   <div class="modal" style="max-width:540px;position:relative;padding:0">
 
@@ -1470,6 +1470,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <!-- Source editor is now Step 3 of the search modal above -->
 
+
+<!-- Generic Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal" onclick="if(event.target===this)closeConfirmModal()">
+  <div class="modal" style="max-width:440px;position:relative">
+    <div class="modal-title" id="confirm-modal-title">Confirm Action</div>
+    <div style="font-size:13px;color:var(--text2);margin:12px 0;line-height:1.6" id="confirm-modal-message"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
+      <button class="btn btn-amber" id="confirm-modal-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <!-- Delete Confirm Modal -->
 <div class="modal-overlay" id="delete-modal" onclick="if(event.target===this)closeDeleteModal()">
   <div class="modal" style="max-width:420px;position:relative">
@@ -1486,6 +1499,28 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <script>
 // ── Utils ────────────────────────────────────────────────────────────────────
+
+let _confirmResolver=null;
+function openConfirmModal(title, message, okLabel='Confirm'){
+  const modal=document.getElementById('confirm-modal');
+  const titleEl=document.getElementById('confirm-modal-title');
+  const msgEl=document.getElementById('confirm-modal-message');
+  const okBtn=document.getElementById('confirm-modal-ok');
+  if(titleEl) titleEl.textContent=title||'Confirm Action';
+  if(msgEl) msgEl.innerHTML=message||'';
+  if(okBtn) okBtn.textContent=okLabel||'Confirm';
+  modal.classList.add('open');
+  return new Promise(resolve=>{
+    _confirmResolver=resolve;
+    okBtn.onclick=()=>{ if(modal) modal.classList.remove('open'); _confirmResolver=null; resolve(true); };
+  });
+}
+function closeConfirmModal(){
+  const modal=document.getElementById('confirm-modal');
+  if(modal) modal.classList.remove('open');
+  if(_confirmResolver){ const r=_confirmResolver; _confirmResolver=null; r(false); }
+}
+
 const _rawFetch = window.fetch.bind(window);
 let _authPrompted = false;
 function getApiToken(){ return localStorage.getItem('mt-api-token') || ''; }
@@ -1519,6 +1554,8 @@ window.fetch = function(input, init){
 };
 
 function showPage(name) {
+  if(name==='settings') name='configuration';
+  if(name==='run') name='schedule';
   stopAllAudio();
   const pageEl=document.getElementById('page-'+name);
   const navEl=document.getElementById('nav-'+name);
@@ -1530,8 +1567,8 @@ function showPage(name) {
   if(history && history.replaceState){ history.replaceState(null,'','#'+name); }
   if(name==='database'){ loadDatabase(); setTimeout(()=>{if(!_dbColsInit){initResizableCols('#page-database table');_dbColsInit=true;}},500); }
   if(name==='history') loadHistory();
-  if(name==='settings') loadSettings();
-  if(name==='run') loadRunPage();
+  if(name==='configuration') loadConfiguration();
+  if(name==='schedule') loadRunPage();
   removeItemDetailsPanel();
 }
 
@@ -1596,8 +1633,10 @@ try{
     setInterval(updateGlobalRunStatus, 4000);
     setInterval(removeItemDetailsPanel, 2000);
     const initial=((location.hash||'').replace(/^#/,'').trim());
-    if(['settings','database','run','history'].includes(initial)){
-      showPage(initial);
+    const legacyMap={settings:'configuration',run:'schedule'};
+    const normalized=legacyMap[initial]||initial;
+    if(['configuration','database','schedule','history'].includes(normalized)){
+      showPage(normalized);
     }
   });
 }catch(e){}
@@ -1614,10 +1653,14 @@ function testBadge(elId, ok, msg){
   el.textContent=(ok?'✓ ':'✗ ')+msg;
 }
 
-// ── Settings ─────────────────────────────────────────────────────────────────
+// ── Configuration ─────────────────────────────────────────────────────────────────
 let _libs=[], _maxDur=45;
 
-async function loadSettings(){
+
+function loadSettings(){ return loadConfiguration(); }
+function saveSettings(){ return saveConfiguration(); }
+
+async function loadConfiguration(){
   const r=await fetch('/api/config'); const cfg=await r.json();
   ['plex_url','plex_token','tmdb_api_key',
    'search_mode','search_query_playlist','search_query_direct','golden_source_url',
@@ -1794,7 +1837,7 @@ async function testGoldenSource(){
   }
 }
 
-async function saveSettings(){
+async function saveConfiguration(){
   const strFields=['plex_url','plex_token','tmdb_api_key',
     'search_mode','search_query_playlist','search_query_direct','golden_source_url',
     'cookies_file','audio_format','quality_profile','theme_filename'];
@@ -1841,9 +1884,9 @@ let _rowMap={}; // rating_key → full row object, avoids onclick escaping bugs
 let _selectedKeys=new Set();
 let _lastDbCheckIndex=null;
 const PAGE=80;
-const SC={'PENDING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','DOWNLOADED':'#2dd4a0','FAILED':'#f05252','REJECTED':'#555570','IGNORED':'#f97316','REMOVED':'#3a3a5a'};
-const STATUSES=['PENDING','STAGED','APPROVED','DOWNLOADED','FAILED','REJECTED','IGNORED','REMOVED'];
-const STATUS_DISPLAY={'PENDING':'Pending','STAGED':'Staged','APPROVED':'Approved','DOWNLOADED':'Available','FAILED':'Failed','REJECTED':'Rejected','IGNORED':'Ignored','REMOVED':'Removed'};
+const SC={'PENDING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','DOWNLOADED':'#2dd4a0','FAILED':'#f05252','REJECTED':'#555570','IGNORED':'#f97316'};
+const STATUSES=['PENDING','STAGED','APPROVED','DOWNLOADED','FAILED','REJECTED','IGNORED'];
+const STATUS_DISPLAY={'PENDING':'Pending','STAGED':'Staged','APPROVED':'Approved','DOWNLOADED':'Available','FAILED':'Failed','REJECTED':'Rejected','IGNORED':'Ignored'};
 const STATUS_DESC={
   PENDING:'Queued for search',
   STAGED:'Source found, awaiting approval',
@@ -1851,8 +1894,7 @@ const STATUS_DESC={
   DOWNLOADED:'Theme saved to disk',
   FAILED:'Download failed',
   IGNORED:'Skipped intentionally',
-  REJECTED:'Wrong source',
-  REMOVED:'No longer in library'
+  REJECTED:'Wrong source'
 };
 function displayStatus(s){ return STATUS_DISPLAY[s] || s; }
 
@@ -2341,14 +2383,19 @@ async function downloadNow(rk, title, lib){
   const row = _rows.find(r=>r.rating_key===rk);
   if(!row){ toast('Row not found','err'); return; }
   if(!row.url){ toast('No source URL on this row — add a source first','info'); return; }
-  if(!confirm(`Download theme now for:\n${title}\n\nSource: ${row.url}\n\nThis will save the theme file immediately.`)) return;
+  const ok=await openConfirmModal('Manual Download', `Download theme now for <b>${title}</b>?<br><br><span style="font-family:var(--mono);font-size:11px;word-break:break-all">${row.url}</span>`, 'Download Now');
+  if(!ok) return;
   toast('Downloading…','info');
   const r = await fetch('/api/theme/download-now',{
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({rating_key:rk, library:lib||_activeLib})
+    body: JSON.stringify({rating_key:rk, library:lib||_activeLib, folder:row.folder||'', tmdb_id:row.tmdb_id||''})
   });
   const data = await r.json();
-  if(data.ok){ toast(data.message||'Downloaded','ok'); loadDatabase(); }
+  if(data.ok){
+    const how=data.matched_by?` (${data.matched_by})`:'';
+    toast((data.message||'Downloaded')+how,'ok');
+    loadDatabase();
+  }
   else toast(data.error||'Download failed','err');
 }
 
@@ -2434,7 +2481,8 @@ async function clearSourcesSelected(){
   const keys=[..._selectedKeys];
   const rows=_rows.filter(r=>keys.includes(r.rating_key));
   if(!rows.length){ toast('Nothing selected','info'); return; }
-  if(!confirm(`Clear source URLs for ${rows.length} selected items?`)) return;
+  const ok=await openConfirmModal('Clear Source URLs', `Clear source URLs for <b>${rows.length}</b> selected items?`, 'Clear URLs');
+  if(!ok) return;
   await Promise.all(rows.map(r=>fetch('/api/ledger/'+r.rating_key+'?library='+encodeURIComponent(_activeLib),{
     method:'PATCH',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({url:'',status:'PENDING',notes:'Source cleared via Database'})
@@ -2636,7 +2684,12 @@ async function confirmDelete(){
     body:JSON.stringify({rating_key:key, library:lib, folder:folder})
   });
   const data=await r.json();
-  if(data.ok){toast(data.message||'Deleted','ok');stopCurrentAudio();loadDatabase();}
+  if(data.ok){
+    const how=data.matched_by?` (${data.matched_by})`:'';
+    toast((data.message||'Deleted')+how,'ok');
+    stopCurrentAudio();
+    loadDatabase();
+  }
   else toast(data.error||'Failed','err');
 }
 
@@ -3420,7 +3473,7 @@ function toggleTheme(){
 (function(){try{const t=localStorage.getItem('mt-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');setTimeout(()=>{const b=document.getElementById('theme-toggle-btn');if(b)b.textContent='☾';},0);}}catch(e){}})();
 
 // ── Init ─────────────────────────────────────────────────────────────────────
-loadSettings();
+loadConfiguration();
 bindOffsetWheel();
 </script>
 </body>
