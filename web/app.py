@@ -1208,35 +1208,40 @@ def export_golden_source_csv():
     t0 = _time.perf_counter()
     data = request.json or {}
     lib = (data.get('library', '') or '').strip()
-    if not lib:
-        return jsonify({'ok': False, 'error': 'Missing library'}), 400
-    rows = load_ledger(ledger_path_for(lib))
+    cfg = load_config()
+    libs = [l.get('name','').strip() for l in cfg.get('libraries',[]) if l.get('name')]
+    target_libs = [lib] if lib else libs
+    if not target_libs:
+        return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
     out_rows = []
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    for r in rows:
-        url = str(r.get('url', '') or '').strip()
-        if not url:
-            continue
-        updated = str(r.get('last_updated', '') or '').strip() or now
-        out_rows.append({
-            'tmdb_id': str(r.get('tmdb_id', '') or '').strip(),
-            'title': str(r.get('title', '') or r.get('plex_title', '') or '').strip(),
-            'year': str(r.get('year', '') or '').strip(),
-            'source_url': url,
-            'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
-            'verified': 'yes' if str(r.get('source_origin', 'unknown') or 'unknown') == 'golden_source' else 'no',
-            'updated_at': updated,
-            'notes': str(r.get('notes', '') or '').strip(),
-        })
+    for target_lib in target_libs:
+        rows = load_ledger(ledger_path_for(target_lib))
+        for r in rows:
+            url = str(r.get('url', '') or '').strip()
+            if not url:
+                continue
+            updated = str(r.get('last_updated', '') or '').strip() or now
+            out_rows.append({
+                'tmdb_id': str(r.get('tmdb_id', '') or '').strip(),
+                'title': str(r.get('title', '') or r.get('plex_title', '') or '').strip(),
+                'year': str(r.get('year', '') or '').strip(),
+                'source_url': url,
+                'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
+                'verified': 'yes' if str(r.get('source_origin', 'unknown') or 'unknown') == 'golden_source' else 'no',
+                'updated_at': updated,
+                'notes': str(r.get('notes', '') or '').strip(),
+            })
     stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    fname = f'golden_source_export_{re.sub(r"[^a-z0-9]+", "_", lib.lower()).strip("_") or "library"}_{stamp}.csv'
+    scope_name = lib or 'all_libraries'
+    fname = f'golden_source_export_{re.sub(r"[^a-z0-9]+", "_", scope_name.lower()).strip("_") or "library"}_{stamp}.csv'
     fpath = EXPORTS_DIR / fname
     with open(fpath, 'w', newline='', encoding='utf-8') as fh:
         w = csv.DictWriter(fh, fieldnames=['tmdb_id','title','year','source_url','start_offset','verified','updated_at','notes'])
         w.writeheader()
         w.writerows(out_rows)
-    _record_task('Export Golden Source CSV', 'success', lib, f'Exported {len(out_rows)} rows',
-                 {'library': lib, 'rows_exported': len(out_rows), 'file': fname}, _time.perf_counter()-t0)
+    _record_task('Export Golden Source CSV', 'success', lib or 'all libraries', f'Exported {len(out_rows)} rows',
+                 {'library': lib or '', 'libraries_exported': len(target_libs), 'rows_exported': len(out_rows), 'file': fname}, _time.perf_counter()-t0)
     return jsonify({'ok': True, 'rows_exported': len(out_rows), 'file': fname, 'download_url': f'/api/tasks/download/{fname}'})
 
 @app.route('/api/tasks/download/<path:filename>')
@@ -1330,24 +1335,32 @@ def sqlite_maintenance():
 def clear_all_source_urls():
     data = request.json or {}
     lib = (data.get('library', '') or '').strip()
-    if not lib:
-        return jsonify({'ok': False, 'error': 'Missing library'}), 400
-    rows = load_ledger(ledger_path_for(lib))
+    cfg = load_config()
+    libs = [l.get('name','').strip() for l in cfg.get('libraries',[]) if l.get('name')]
+    target_libs = [lib] if lib else libs
+    if not target_libs:
+        return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cleared = 0
-    for row in rows:
-        if str(row.get('url', '') or '').strip():
-            row['url'] = ''
-            row['source_origin'] = 'unknown'
-            if str(row.get('status', '') or '').upper() in ('STAGED', 'APPROVED'):
-                row['status'] = 'PENDING'
-            row['last_updated'] = now
-            row['notes'] = 'Source URL cleared via Tasks maintenance'
-            cleared += 1
-    if cleared:
-        save_ledger(ledger_path_for(lib), rows)
-    _record_task('Clear All Source URLs', 'success', lib, f'Cleared {cleared} URLs', {'library': lib, 'cleared': cleared})
-    return jsonify({'ok': True, 'library': lib, 'cleared': cleared})
+    changed_libs = 0
+    for target_lib in target_libs:
+        rows = load_ledger(ledger_path_for(target_lib))
+        lib_cleared = 0
+        for row in rows:
+            if str(row.get('url', '') or '').strip():
+                row['url'] = ''
+                row['source_origin'] = 'unknown'
+                if str(row.get('status', '') or '').upper() in ('STAGED', 'APPROVED'):
+                    row['status'] = 'PENDING'
+                row['last_updated'] = now
+                row['notes'] = 'Source URL cleared via Tasks maintenance'
+                lib_cleared += 1
+        if lib_cleared:
+            save_ledger(ledger_path_for(target_lib), rows)
+            changed_libs += 1
+            cleared += lib_cleared
+    _record_task('Clear All Source URLs', 'success', lib or 'all libraries', f'Cleared {cleared} URLs', {'library': lib or '', 'libraries_cleared': changed_libs, 'cleared': cleared})
+    return jsonify({'ok': True, 'library': lib, 'libraries_cleared': changed_libs, 'cleared': cleared})
 
 @app.route("/api/run/status")
 def run_status():

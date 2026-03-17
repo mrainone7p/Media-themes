@@ -133,10 +133,13 @@ body.nav-collapsed main{margin-left:48px}
 .toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .toggle-card{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;min-width:0}
 .toggle-card.alert{border-color:rgba(239,68,68,.35)}
+.toggle-card.golden{border-color:rgba(245,166,35,.42);background:color-mix(in srgb, var(--amber-soft) 65%, var(--surface2));box-shadow:inset 0 0 0 1px rgba(245,166,35,.2)}
 .toggle-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
 .toggle-title.alert{color:var(--red)}
+.toggle-title.golden{color:var(--amber)}
 .toggle-note{font-size:12px;color:var(--text2);line-height:1.45;margin-top:4px}
 .toggle-note.alert{color:var(--red);font-weight:600}
+.toggle-note.golden{color:var(--amber);font-weight:600}
 .run-lib-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .run-lib-pill{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;min-width:0}
 .run-lib-pill span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -610,7 +613,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     </div>
     <div class="nav-item" data-page="schedule" id="nav-schedule">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span>Schedule</span>
+      <span>Scheduler</span>
     </div>
     <div class="nav-item" data-page="tasks" id="nav-tasks">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 16 14"/></svg>
@@ -785,7 +788,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <summary>
         <div class="card-title" style="margin-bottom:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M8 7h8M8 17h8"/><circle cx="6" cy="7" r="1"/><circle cx="18" cy="17" r="1"/></svg>
-          Curated Source &amp; Access
+          Currated Source Discovery
         </div>
         <div class="settings-chev">˅</div>
       </summary>
@@ -805,17 +808,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span id="golden-test-result"></span>
             </div>
           </div>
-          <div class="settings-subcard">
+          <div class="settings-subcard golden-emphasis">
             <div class="subcard-title">Golden Source mode</div>
             <div class="subcard-intro">Use only the curated list when you want faster, more controlled matching.</div>
-            <div class="toggle-card alert" style="margin-top:8px">
+            <div class="toggle-card golden" style="margin-top:8px">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-search_only_golden">
                 <span class="toggle-track"></span>
               </label>
               <div>
-                <label class="toggle-title alert" style="cursor:pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
-                <div class="toggle-note alert">Skip YouTube search and only match against the curated source list. This can be faster, but titles not covered by your list will stay unmatched.</div>
+                <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
+                <div class="toggle-note golden">Skip YouTube search and only match against the curated source list. This can be faster, but titles not covered by your list will stay unmatched.</div>
               </div>
             </div>
           </div>
@@ -991,7 +994,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <th onclick="sortTable('status')">Status ↕</th>
           <th onclick="sortTable('status')">Current Theme ↕</th>
           <th onclick="sortTable('url')">Source ↕</th>
-          <th>Proxy</th>
+          <th>Verified</th>
           <th onclick="sortTable('url')">Source URL ↕</th>
           <th onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
           <th onclick="sortTable('last_updated')">Updated ↕</th>
@@ -1008,7 +1011,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
 <div class="page" id="page-schedule">
-  <div class="page-head"><div><div class="page-title">Schedule</div><div class="page-desc">Configure automated runs and manually trigger pipeline steps for the libraries selected below</div></div></div>
+  <div class="page-head"><div><div class="page-title">Scheduler</div><div class="page-desc">Configure automated runs and manually trigger pipeline steps for the libraries selected below</div></div></div>
   <div class="page-body"><div class="content">
 
     <div class="schedule-master">
@@ -1033,11 +1036,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <label>Cron Schedule</label>
           <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
           <div class="field-hint">When the automated pipeline runs. Restart container to apply changes.</div>
-        </div>
-        <div class="field" style="max-width:340px;margin-bottom:14px">
-          <label>Pending Titles Per Run (Scheduled searches)</label>
-          <input id="run-schedule-limit" type="number" min="0" onblur="saveRunSchedule()">
-          <div class="field-hint danger-note">Scheduled Find Sources only. Limits how many PENDING titles are processed per automated run. 0 = unlimited.</div>
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Libraries Included</label>
@@ -1081,7 +1079,26 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple)">Step 2</span>
               <span style="font-size:15px;font-weight:700">Find Theme Sources</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5">Searches sources for a theme based on the configured search logic for each PENDING media item. Saves the URL and moves status to STAGED. <span style="color:var(--purple);font-weight:600">Uses: TMDB + YouTube or Golden Source if configured.</span></div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Searches sources for a theme based on the configured search logic for each PENDING media item. Saves the URL and moves status to STAGED. <span style="color:var(--purple);font-weight:600">Uses: TMDB + YouTube or Golden Source if configured.</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;max-width:520px">
+              <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;width:fit-content">
+                <label class="toggle" style="transform:scale(.85)">
+                  <input type="checkbox" id="sched-only-golden" onchange="saveRunSchedule()">
+                  <span class="toggle-track"></span>
+                </label>
+                <div>
+                  <span style="font-size:12px;font-weight:600;color:var(--amber)">Only use Golden Source</span>
+                  <div style="font-size:11px;color:var(--amber)">Use curated Golden Source matches only during Step 2 for tighter and faster source discovery.</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:fit-content">
+                <div>
+                  <span style="font-size:12px;font-weight:600;color:var(--text)">Pending Titles Per Run</span>
+                  <div style="font-size:11px;color:var(--text3)">Limits how many PENDING titles are processed per scheduled Step 2 run. 0 = unlimited.</div>
+                </div>
+                <input id="run-schedule-limit" type="number" min="0" onblur="saveRunSchedule()" style="width:86px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-family:var(--mono)">
+              </div>
+            </div>
           </div>
           <button class="btn btn-purple btn-sm" id="btn-pass2" onclick="startPass(2)">⚡ Run Now</button>
         </div>
@@ -1146,9 +1163,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
       <div class="task-lib-pills" id="task-lib-pills"></div>
       <div class="task-grid">
-        <div class="task-card"><div class="task-title">Run Scan Now</div><div class="task-desc">Run Pass 1 for selected libraries.</div><div class="task-row"><button class="btn btn-blue btn-sm" onclick="taskRunPass(1)">Run</button></div></div>
-        <div class="task-card"><div class="task-title">Run Find Sources Now</div><div class="task-desc">Run Pass 2 for selected libraries.</div><div class="task-row"><button class="btn btn-purple btn-sm" onclick="taskRunPass(2)">Run</button></div></div>
-        <div class="task-card"><div class="task-title">Run Download Approved Now</div><div class="task-desc">Run Pass 3 for selected libraries.</div><div class="task-row"><button class="btn btn-green btn-sm" onclick="taskRunPass(3)">Run</button></div></div>
+        <div class="task-card"><div class="task-title">Run Scan Now</div><div class="task-desc">Step 1 scans Plex for selected libraries, checks each media folder for an existing theme file, then sets statuses (PENDING when missing, AVAILABLE when found).</div><div class="task-row"><button class="btn btn-blue btn-sm" onclick="taskRunPass(1)">Run Step 1</button></div></div>
+        <div class="task-card"><div class="task-title">Run Find Sources Now</div><div class="task-desc">Step 2 builds source searches for PENDING titles using TMDB metadata, applies Golden Source rules when enabled, and stages valid matches for review.</div><div class="task-row"><button class="btn btn-purple btn-sm" onclick="taskRunPass(2)">Run Step 2</button></div></div>
+        <div class="task-card"><div class="task-title">Run Download Approved Now</div><div class="task-desc">Step 3 downloads audio for APPROVED titles, trims from start offset, writes theme files to media folders, and marks completed rows AVAILABLE.</div><div class="task-row"><button class="btn btn-green btn-sm" onclick="taskRunPass(3)">Run Step 3</button></div></div>
       </div>
     </div>
     <div class="card">
@@ -1166,7 +1183,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
       <div class="task-grid" style="grid-template-columns:1fr;margin-top:8px">
         <div class="task-card task-wide"><div class="task-title">SQLite Backup + Optimize/Vacuum</div><div class="task-desc">Creates a timestamped SQLite DB backup, then runs VACUUM to compact and optimize the database file for faster reads and lower disk usage.</div><div class="task-row"><button class="btn btn-ghost btn-sm" onclick="taskSqliteMaintenance()">Run</button></div></div>
-        <div class="task-card task-wide"><div class="task-title" style="color:var(--red)">Destructive: Clear All Source URLs</div><div class="task-desc">Clears stored source URLs for the selected library. <strong class="danger-note">Irreversible.</strong></div><div class="task-row"><select class="filter-sel" id="task-lib-clear-sources"></select><button class="btn btn-red btn-sm" onclick="taskClearAllSources()">Clear URLs</button></div></div>
+        <div class="task-card task-wide"><div class="task-title" style="color:var(--red)">Clear All Source URLs</div><div class="task-desc">Clears stored source URLs for the selected library. <strong class="danger-note">Irreversible.</strong></div><div class="task-row"><select class="filter-sel" id="task-lib-clear-sources"></select><button class="btn btn-red btn-sm" onclick="taskClearAllSources()">Clear URLs</button></div></div>
       </div>
     </div>
     <div class="card">
@@ -3490,6 +3507,7 @@ async function loadRunPage(){
   document.getElementById('sched-step2').checked = cfg.schedule_step2 !== false;
   document.getElementById('sched-step3').checked = cfg.schedule_step3 !== false;
   document.getElementById('sched-autoapprove').checked = !!cfg.auto_approve;
+  document.getElementById('sched-only-golden').checked = !!cfg.search_only_golden;
   applyScheduleEnabledState();
 }
 
@@ -3531,6 +3549,7 @@ async function saveRunSchedule(){
     cfg.schedule_step3=document.getElementById('sched-step3').checked;
     cfg.schedule_test_limit=parseInt(document.getElementById('run-schedule-limit').value||'0',10)||0;
     cfg.auto_approve=document.getElementById('sched-autoapprove').checked;
+    cfg.search_only_golden=document.getElementById('sched-only-golden').checked;
     await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
     toast(enabled ? 'Schedule saved' : 'Automation disabled','ok');
     renderRunLibs();
@@ -3646,10 +3665,11 @@ async function loadTaskHistoryList(){
 function taskLibValue(id){ const el=document.getElementById(id); return el?el.value:''; }
 let _taskLibSelection=new Set();
 function _fillTaskLibSelects(){
-  const opts = (_libs||[]).map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
-  ['task-lib-export','task-lib-refresh','task-lib-clear-sources'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.innerHTML=opts;
-  });
+  const libraryOpts = (_libs||[]).map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
+  const scopedOpts = '<option value="__all__">All libraries</option>' + libraryOpts;
+  const exportEl=document.getElementById('task-lib-export'); if(exportEl) exportEl.innerHTML=scopedOpts;
+  const clearEl=document.getElementById('task-lib-clear-sources'); if(clearEl) clearEl.innerHTML=scopedOpts;
+  const refreshEl=document.getElementById('task-lib-refresh'); if(refreshEl) refreshEl.innerHTML=libraryOpts;
   if(!_taskLibSelection.size){ (_libs||[]).forEach(l=>_taskLibSelection.add(l.name)); }
   const pills=document.getElementById('task-lib-pills');
   if(pills){
@@ -3684,7 +3704,7 @@ async function taskRunPass(passNum){
 async function taskExportGoldenSource(){
   const lib=taskLibValue('task-lib-export');
   if(!lib) return toast('Select a library first','err');
-  const r=await fetch('/api/tasks/export-golden-source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:lib})});
+  const r=await fetch('/api/tasks/export-golden-source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:lib==='__all__'?'':lib})});
   const d=await r.json();
   if(!d.ok) return toast(d.error||'Export failed','err');
   toast(`Exported ${d.rows_exported} rows`,'ok');
@@ -3724,15 +3744,16 @@ async function taskSqliteMaintenance(){
 async function taskClearAllSources(){
   const lib=taskLibValue('task-lib-clear-sources');
   if(!lib) return toast('Select a library first','err');
+  const scopeLabel = lib==='__all__' ? 'all libraries' : lib;
   const ok=await openConfirmModal('Clear all source URLs',{
-    detail:`This will clear all source URLs in ${lib}. This is irreversible.`,
+    detail:`This will clear all source URLs in ${scopeLabel}. This action is irreversible.`,
     okLabel:'Clear URLs',
     tone:'danger'
   });
   if(!ok) return;
-  const r=await fetch('/api/tasks/clear-source-urls',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:lib})});
+  const r=await fetch('/api/tasks/clear-source-urls',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:lib==='__all__'?'':lib})});
   const d=await r.json();
-  toast(d.ok?`Cleared ${d.cleared} URLs`:(d.error||'Failed'), d.ok?'ok':'err');
+  toast(d.ok?`Cleared ${d.cleared} URLs${d.libraries_cleared?` across ${d.libraries_cleared} libraries`:''}`:(d.error||'Failed'), d.ok?'ok':'err');
   loadDatabase(); loadTasksPage();
 }
 
