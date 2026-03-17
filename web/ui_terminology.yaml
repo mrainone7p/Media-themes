@@ -1,0 +1,52 @@
+nav:
+  configuration: Configuration
+  database: Library
+  schedule: Schedule
+  tasks: Tasks
+pages:
+  configuration:
+    title: Configuration
+    description: Set up connections, choose library scope, control source discovery, and tune downloads.
+  database:
+    title: Library
+    description: Browse, review, preview, fine-tune, and manage themes in one place.
+  schedule:
+    title: Schedule
+    description: Configure automated runs and manually trigger pipeline steps for the selected libraries.
+  tasks:
+    title: Tasks
+    description: Run utilities, export curated data, perform maintenance, and review task/run history.
+statuses:
+  PENDING:
+    label: Pending
+    description: Queued for source discovery
+  STAGED:
+    label: Staged
+    description: Source found, waiting for approval
+  APPROVED:
+    label: Approved
+    description: Ready to download
+  DOWNLOADED:
+    label: Available
+    description: Theme saved to disk
+  FAILED:
+    label: Failed
+    description: Download failed
+  REJECTED:
+    label: Rejected
+    description: Source rejected
+  IGNORED:
+    label: Ignored
+    description: Skipped intentionally
+actions:
+  approve_all_staged: Approve All Staged
+  download_all_approved: Download All Approved
+  bulk:
+    approve: Approve
+    set_pending: Set Pending
+    set_staged: Set Staged
+    ignore: Ignore
+    reject: Reject
+  toasts:
+    manual_saved_auto_approved: Saved — auto-approved
+    manual_saved_staged: Saved — staged for approval
