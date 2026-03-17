@@ -625,7 +625,7 @@ def import_golden_source():
     tmdb_cache = {}
     for row in rows:
         cur = str(row.get("status","") or "").upper()
-        if cur in ("DOWNLOADED","AVAILABLE"):
+        if cur == "DOWNLOADED":
             skipped_downloaded += 1; continue
         match = None
         tmdb_id = str(row.get("tmdb_id","") or "").strip()
@@ -659,10 +659,13 @@ def import_golden_source():
             continue
         row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id","") or "").strip()
         row["url"] = match.get("source_url","")
-        row["source_origin"] = "golden_source"
+        verified_raw = str(match.get("verified","") or "").strip().lower()
+        is_verified = verified_raw in {"1", "true", "yes", "y", "verified", "star", "★", "*"}
+        row["source_origin"] = "golden_source_verified" if is_verified else "golden_source"
         row["start_offset"] = match.get("start_offset","0") or "0"
         row["end_offset"] = match.get("end_offset","0") or "0"
-        row["status"] = "APPROVED" if auto_approve else "STAGED"
+        if cur not in ("AVAILABLE", "DOWNLOADED"):
+            row["status"] = "APPROVED" if auto_approve else "STAGED"
         row["last_updated"] = now
         row["notes"] = f"Imported from Golden Source ({Path(normalized_url).name})"
         imported += 1
@@ -1228,7 +1231,7 @@ def export_golden_source_csv():
                 'year': str(r.get('year', '') or '').strip(),
                 'source_url': url,
                 'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
-                'verified': 'yes' if str(r.get('source_origin', 'unknown') or 'unknown') == 'golden_source' else 'no',
+                'verified': 'yes' if str(r.get('source_origin', 'unknown') or 'unknown').startswith('golden_source') else 'no',
                 'updated_at': updated,
                 'notes': str(r.get('notes', '') or '').strip(),
             })

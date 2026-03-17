@@ -641,6 +641,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   .modal-section{padding:12px 16px 4px}
   .modal-footer{padding:10px 16px}
   .modal-close{top:10px;right:10px}
+  #search-step-rail{padding:8px 10px!important;overflow-x:auto}
+  #search-step-rail .srail-label{font-size:10px;letter-spacing:.04em}
+  .search-method-card{padding:10px 10px;border-radius:10px}
+  .sm-card-main{width:100%}
+  .sm-card-copy{gap:2px}
+  .sm-card-actions{width:100%!important;max-width:none!important;margin-left:0;justify-content:flex-start;flex-wrap:wrap}
+  .sm-card-first{white-space:normal;overflow:visible;text-overflow:clip}
+  .search-result-card{padding:10px;gap:8px;flex-direction:column}
+  .search-result-card > div:last-child{width:100%;flex-direction:row!important;justify-content:flex-start!important;align-items:center!important;flex-wrap:wrap}
+  #search-modal-footer{padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px))}
   #toast{right:12px;left:12px;bottom:82px;max-width:none}
 }
 
@@ -1057,9 +1067,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <th onclick="sortTable('title')">Title ↕</th>
           <th onclick="sortTable('year')">Year ↕</th>
           <th onclick="sortTable('status')">Status ↕</th>
-          <th onclick="sortTable('status')">Current Theme ↕</th>
-          <th onclick="sortTable('url')">Source ↕</th>
-          <th>Verified</th>
+          <th onclick="sortTable('current_theme')">Current Theme ↕</th>
+          <th onclick="sortTable('source_origin')">Source ↕</th>
+          <th onclick="sortTable('verified')">Verified ↕</th>
           <th onclick="sortTable('url')">Source URL ↕</th>
           <th onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
           <th onclick="sortTable('last_updated')">Updated ↕</th>
@@ -2320,16 +2330,33 @@ function updateDbActionHints(counts){
 function filterByStatus(s){ document.getElementById('db-filter').value=s; filterTable(); }
 function clearDbFilter(){ document.getElementById('db-filter').value=''; document.getElementById('db-search').value=''; filterTable(); }
 
+function _isGoldenVerified(row){
+  const origin=(row?.source_origin||'').toString().toLowerCase();
+  return origin==='golden_source_verified';
+}
+
+function _sortVal(row,col){
+  if(col==='title') return (row.title||row.plex_title||'').toString().toLowerCase();
+  if(col==='year') return Number(row.year||0);
+  if(col==='start_offset') return parseTrim(row.start_offset||'0');
+  if(col==='last_updated') return Date.parse((row.last_updated||'').replace(' ','T'))||0;
+  if(col==='verified') return _isGoldenVerified(row)?2:((row.source_origin||'').toString().startsWith('golden_source')?1:0);
+  if(col==='source_origin') return (row.source_origin||'').toString().toLowerCase();
+  if(col==='current_theme') return ((row.status==='DOWNLOADED'||row.status==='AVAILABLE')?1:0);
+  return (row[col]||'').toString().toLowerCase();
+}
+
 function filterTable(){
-  const q=(document.getElementById('db-search').value||'').toLowerCase();
+  const q=(document.getElementById('db-search').value||'').toLowerCase().trim();
   const st=document.getElementById('db-filter').value;
   _filtered=_rows.filter(r=>{
     if(st&&r.status!==st) return false;
-    if(q&&!`${r.title} ${r.plex_title} ${r.status} ${r.url} ${r.notes}`.toLowerCase().includes(q)) return false;
+    const titleOnly=`${r.title||''} ${r.plex_title||''}`.toLowerCase();
+    if(q&&!titleOnly.includes(q)) return false;
     return true;
   });
   _filtered.sort((a,b)=>{
-    const av=(a[_sortCol]||'').toString().toLowerCase(), bv=(b[_sortCol]||'').toString().toLowerCase();
+    const av=_sortVal(a,_sortCol), bv=_sortVal(b,_sortCol);
     return av<bv?-_sortDir:av>bv?_sortDir:0;
   });
   _page=0; renderTable();
@@ -2630,7 +2657,7 @@ function renderTable(){
       </td>
       <td>${renderThemeBtn(row)}</td>
       <td>${renderSourceBtn(row)}</td>
-      <td style="text-align:center">${row.source_origin==='golden_source'?'<span title="Verified via Golden Source" style="color:var(--amber);font-size:14px">★</span>':'—'}</td>
+      <td style="text-align:center">${_isGoldenVerified(row)?'<span title="Verified in Golden Source" style="color:var(--amber);font-size:14px">★</span>':((row.source_origin||'').startsWith('golden_source')?'<span title="Imported from Golden Source" style="color:var(--text3);font-size:13px">•</span>':'—')}</td>
       <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px;margin-right:4px" title="${safeUrlAttr}">↗</a>`:''}
         <input class="inline-ed" value="${safeUrlAttr}" placeholder="paste URL…" style="min-width:80px;max-width:140px;font-size:10px" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
       <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:74px;font-size:11px"
