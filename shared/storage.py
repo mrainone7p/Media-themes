@@ -36,6 +36,7 @@ LEDGER_HEADERS = [
     "tmdb_id",
     "last_updated",
     "notes",
+    "source_origin",
     "theme_exists",
     "theme_duration",
     "theme_size",
@@ -100,6 +101,7 @@ def _normalize_row(row: dict) -> dict:
     out["end_offset"]   = str(out.get("end_offset", "0") or "0")
     out["start_offset"] = str(out.get("start_offset", "0") or "0")
     out["tmdb_id"]      = str(out.get("tmdb_id", "") or "").strip()
+    out["source_origin"] = str(out.get("source_origin", "") or "unknown").strip() or "unknown"
     out["folder"]       = str(out.get("folder", "") or "").strip()
 
     out["theme_exists"] = 1 if str(out.get("theme_exists", "0") or "0").strip() in {"1", "true", "True"} else 0
@@ -178,6 +180,7 @@ def _init_db(conn: sqlite3.Connection):
             tmdb_id TEXT,
             last_updated TEXT,
             notes TEXT,
+            source_origin TEXT DEFAULT 'unknown',
             theme_exists INTEGER DEFAULT 0,
             theme_duration REAL DEFAULT 0,
             theme_size INTEGER DEFAULT 0,
@@ -196,6 +199,7 @@ def _init_db(conn: sqlite3.Connection):
         "theme_size": "INTEGER DEFAULT 0",
         "theme_mtime": "REAL DEFAULT 0",
         "tmdb_id": "TEXT",
+        "source_origin": "TEXT DEFAULT 'unknown'",
     }
     for name, ddl in wanted.items():
         if name not in cols:
@@ -240,14 +244,14 @@ def _import_csv_if_needed(conn: sqlite3.Connection, path: str, slug: str):
             """
             INSERT OR REPLACE INTO items(
                 library_slug,rating_key,title,year,status,url,start_offset,end_offset,
-                plex_title,folder,tmdb_id,last_updated,notes,theme_exists,theme_duration,
+                plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                 theme_size,theme_mtime,created_at,updated_at
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
                 row["start_offset"], row["end_offset"], row["plex_title"], row["folder"],
-                row["tmdb_id"], row["last_updated"], row["notes"],
+                row["tmdb_id"], row["last_updated"], row["notes"], row.get("source_origin", "unknown"),
                 int(row["theme_exists"]), float(row["theme_duration"]),
                 int(row["theme_size"]), float(row["theme_mtime"]), now, now,
             ),
@@ -265,7 +269,7 @@ def _sqlite_load_rows(path: str) -> list[dict]:
             cur = conn.execute(
                 """
                 SELECT title,year,status,url,start_offset,end_offset,plex_title,folder,
-                       rating_key,tmdb_id,last_updated,notes,theme_exists,theme_duration,
+                       rating_key,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                        theme_size,theme_mtime
                 FROM items
                 WHERE library_slug=?
@@ -300,8 +304,8 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                     INSERT INTO items(
                         library_slug,rating_key,title,year,status,url,start_offset,end_offset,
                         plex_title,folder,tmdb_id,last_updated,notes,theme_exists,theme_duration,
-                        theme_size,theme_mtime,created_at,updated_at
-                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        source_origin,theme_size,theme_mtime,created_at,updated_at
+                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(library_slug,rating_key) DO UPDATE SET
                         title=excluded.title,
                         year=excluded.year,
@@ -314,6 +318,7 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                         tmdb_id=excluded.tmdb_id,
                         last_updated=excluded.last_updated,
                         notes=excluded.notes,
+                        source_origin=excluded.source_origin,
                         theme_exists=excluded.theme_exists,
                         theme_duration=excluded.theme_duration,
                         theme_size=excluded.theme_size,
@@ -324,7 +329,7 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                         slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
                         row["start_offset"], row["end_offset"], row["plex_title"], row["folder"],
                         row["tmdb_id"], row["last_updated"], row["notes"],
-                        int(row["theme_exists"]), float(row["theme_duration"]),
+                        row.get("source_origin", "unknown"), int(row["theme_exists"]), float(row["theme_duration"]),
                         int(row["theme_size"]), float(row["theme_mtime"]), now, now,
                     ),
                 )
