@@ -227,6 +227,7 @@ def _extract_tmdb_id(item: dict) -> Optional[str]:
 def get_plex_movies(plex_url: str, token: str, library_name: str) -> list:
     base    = plex_url.rstrip("/")
     headers = {"X-Plex-Token": token, "Accept": "application/json"}
+    page_size = 200
 
     try:
         resp = requests.get(f"{base}/library/sections", headers=headers, timeout=15)
@@ -245,17 +246,50 @@ def get_plex_movies(plex_url: str, token: str, library_name: str) -> list:
             f"Available: {[s.get('title') for s in sections]}"
         )
 
-    try:
-        resp = requests.get(
-            f"{base}/library/sections/{section_id}/all",
-            headers=headers, timeout=30,
+    metadata_items = []
+    start = 0
+    total_size = None
+
+    while total_size is None or start < total_size:
+        try:
+            resp = requests.get(
+                f"{base}/library/sections/{section_id}/all",
+                headers={
+                    **headers,
+                    "X-Plex-Container-Start": str(start),
+                    "X-Plex-Container-Size": str(page_size),
+                },
+                params={
+                    "X-Plex-Container-Start": start,
+                    "X-Plex-Container-Size": page_size,
+                },
+                timeout=30,
+            )
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            raise RuntimeError(f"Failed to fetch movie list: {e}") from e
+
+        container = resp.json().get("MediaContainer", {})
+        page_items = container.get("Metadata", [])
+        if total_size is None:
+            total_size = int(container.get("totalSize", len(page_items) or 0))
+
+        metadata_items.extend(page_items)
+        log.info(
+            "Plex: fetched page start=%s size=%s items=%s accumulated=%s total=%s",
+            start,
+            page_size,
+            len(page_items),
+            len(metadata_items),
+            total_size,
         )
-        resp.raise_for_status()
-    except requests.RequestException as e:
-        raise RuntimeError(f"Failed to fetch movie list: {e}") from e
+
+        if not page_items:
+            break
+        start += len(page_items)
 
     movies = []
-    for item in resp.json().get("MediaContainer", {}).get("Metadata", []):
+    for item in metadata_items:
         try:
             file_path = item["Media"][0]["Part"][0]["file"]
         except (KeyError, IndexError):
