@@ -274,12 +274,23 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .ll-head{color:var(--amber);font-weight:500}
 .ll-lib{color:var(--purple);font-weight:700}
 
-/* ─── Progress bar ─── */
+/* ─── Shared pipeline progress ─── */
 .progress-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;display:none}
 .progress-wrap.active{display:block}
-.progress-label{font-size:12px;font-family:var(--mono);color:var(--text2);margin-bottom:8px}
+.progress-head{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
+.progress-copy{font-size:12px;font-family:var(--mono);color:var(--text2)}
+.progress-meta{font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:7px;min-height:1.2em}
+.progress-actions{display:flex;gap:6px}
+.progress-state{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--border);border-radius:999px;padding:2px 8px}
+.progress-wrap[data-state="queued"] .progress-state{background:var(--gray-soft);color:var(--text2)}
+.progress-wrap[data-state="running"] .progress-state{background:var(--amber-soft);color:var(--amber);border-color:color-mix(in srgb,var(--amber) 36%,var(--border))}
+.progress-wrap[data-state="stopped"] .progress-state{background:var(--gray-soft);color:var(--text2)}
+.progress-wrap[data-state="success"] .progress-state{background:var(--green-soft);color:var(--green)}
+.progress-wrap[data-state="error"] .progress-state{background:var(--red-soft);color:var(--red)}
 .progress-bar{height:6px;background:var(--border);border-radius:4px;overflow:hidden}
 .progress-fill{height:100%;background:var(--amber);border-radius:4px;transition:width .3s ease;width:0%}
+.progress-wrap[data-state="success"] .progress-fill{background:var(--green)}
+.progress-wrap[data-state="error"] .progress-fill{background:var(--red)}
 
 /* ─── History ─── */
 .run-cards{display:flex;flex-direction:column;gap:8px}
@@ -1003,9 +1014,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   </div>
   <div class="page-body">
     <!-- Progress bar -->
-    <div class="progress-wrap" id="db-progress">
-      <div class="progress-label" id="db-progress-label">Working...</div>
+    <div class="progress-wrap" id="db-progress" data-state="queued">
+      <div class="progress-head">
+        <div class="progress-copy" id="db-progress-label">Queued — waiting to start.</div>
+        <div class="progress-actions">
+          <span class="progress-state" id="db-progress-state">Queued</span>
+          <button class="btn btn-red btn-xs" id="db-progress-stop" onclick="stopRun('db')" style="display:none">Stop</button>
+          <button class="btn btn-ghost btn-xs" id="db-progress-retry" onclick="retryRun('db')" style="display:none">Retry</button>
+        </div>
+      </div>
       <div class="progress-bar"><div class="progress-fill" id="db-progress-fill"></div></div>
+      <div class="progress-meta" id="db-progress-meta"></div>
     </div>
 
     <div class="pipe-actions" style="margin-bottom:10px">
@@ -1094,7 +1113,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="run-bar" style="margin-bottom:14px">
       <div class="run-dot" id="run-dot"></div>
       <span id="run-status" style="color:var(--text2)">Idle — select a step above to run manually</span>
-      <button class="btn btn-red btn-sm" id="btn-stop" onclick="stopRun()" style="margin-left:auto;display:none">■ Stop</button>
     </div>
 
     <div class="schedule-master">
@@ -1215,9 +1233,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     </div>
 
     <!-- Progress -->
-    <div class="progress-wrap" id="run-progress">
-      <div class="progress-label" id="run-progress-label">Working...</div>
+    <div class="progress-wrap" id="run-progress" data-state="queued">
+      <div class="progress-head">
+        <div class="progress-copy" id="run-progress-label">Queued — waiting to start.</div>
+        <div class="progress-actions">
+          <span class="progress-state" id="run-progress-state">Queued</span>
+          <button class="btn btn-red btn-xs" id="run-progress-stop" onclick="stopRun('run')" style="display:none">Stop</button>
+          <button class="btn btn-ghost btn-xs" id="run-progress-retry" onclick="retryRun('run')" style="display:none">Retry</button>
+        </div>
+      </div>
       <div class="progress-bar"><div class="progress-fill" id="run-progress-fill"></div></div>
+      <div class="progress-meta" id="run-progress-meta"></div>
     </div>
 
 
@@ -1260,6 +1286,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="task-card task-wide"><div class="task-title" style="color:var(--red)">Clear All Source URLs</div><div class="task-desc">Clears stored source URLs for the selected library. <strong class="danger-note">Irreversible.</strong></div><div class="task-row"><select class="filter-sel" id="task-lib-clear-sources"></select><button class="btn btn-red btn-sm" onclick="taskClearAllSources()">Clear URLs</button></div></div>
       </div>
     </div>
+    <div class="progress-wrap" id="tasks-progress" data-state="queued">
+      <div class="progress-head">
+        <div class="progress-copy" id="tasks-progress-label">Queued — waiting to start.</div>
+        <div class="progress-actions">
+          <span class="progress-state" id="tasks-progress-state">Queued</span>
+          <button class="btn btn-red btn-xs" id="tasks-progress-stop" onclick="stopRun('tasks')" style="display:none">Stop</button>
+          <button class="btn btn-ghost btn-xs" id="tasks-progress-retry" onclick="retryRun('tasks')" style="display:none">Retry</button>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="tasks-progress-fill"></div></div>
+      <div class="progress-meta" id="tasks-progress-meta"></div>
+    </div>
+
     <div class="card">
       <div class="card-title">Recent Task History</div>
       <div class="task-history-head"><div>Task</div><div>Status</div><div>Time</div><div>Scope</div><div>Summary</div></div>
@@ -1921,6 +1960,21 @@ async function updateGlobalRunStatus(){
 }
 
 
+function initSharedProgress(){
+  ['db','run','tasks'].forEach(scope=>{
+    const el=_progressEls(scope);
+    if(!el.wrap) return;
+    el.wrap.classList.remove('active');
+    el.wrap.dataset.state='queued';
+    if(el.fill) el.fill.style.width='0%';
+    if(el.label) el.label.textContent='queued';
+    if(el.meta) el.meta.textContent='';
+    if(el.state) el.state.textContent='Queued';
+    if(el.stop) el.stop.style.display='none';
+    if(el.retry) el.retry.style.display='none';
+  });
+}
+
 function initSidebarNav(){
   document.querySelectorAll('.nav-item[data-page]').forEach(item=>{
     item.addEventListener('click', (e)=>{
@@ -1936,6 +1990,7 @@ try{
   document.addEventListener('DOMContentLoaded', async ()=>{
     await loadUiTerminology();
     initSidebarNav();
+    initSharedProgress();
     removeItemDetailsPanel();
     updateGlobalRunStatus();
     setInterval(updateGlobalRunStatus, 4000);
@@ -2947,138 +3002,176 @@ async function clearSourcesSelected(){
 }
 
 
+function _progressEls(scope){
+  return {
+    wrap:document.getElementById(scope+'-progress'),
+    fill:document.getElementById(scope+'-progress-fill'),
+    label:document.getElementById(scope+'-progress-label'),
+    meta:document.getElementById(scope+'-progress-meta'),
+    state:document.getElementById(scope+'-progress-state'),
+    stop:document.getElementById(scope+'-progress-stop'),
+    retry:document.getElementById(scope+'-progress-retry')
+  };
+}
+
+function setProgressState(scope,state,{copy='',meta='',pct=0,showStop=false,showRetry=false}={}){
+  const el=_progressEls(scope);
+  if(!el.wrap) return;
+  const stateLabel={queued:'Queued',running:'Running',stopped:'Stopped',success:'Success',error:'Error'};
+  el.wrap.classList.add('active');
+  el.wrap.dataset.state=state;
+  if(el.fill) el.fill.style.width=Math.max(0,Math.min(100,pct))+'%';
+  if(el.label && copy) el.label.textContent=copy;
+  if(el.meta) el.meta.textContent=meta||'';
+  if(el.state) el.state.textContent=stateLabel[state]||state;
+  if(el.stop) el.stop.style.display=showStop?'inline-flex':'none';
+  if(el.retry) el.retry.style.display=showRetry?'inline-flex':'none';
+}
+
 function dbProgressStart(label='Working…'){
-  const prog=document.getElementById('db-progress');
+  setProgressState('db','running',{copy:label,pct:12,showStop:true,meta:'Running pass…'});
   const pill=document.getElementById('db-run-pill');
-  const fill=document.getElementById('db-progress-fill');
-  const txt=document.getElementById('db-progress-label');
-  if(prog) prog.classList.add('active');
-  if(fill) fill.style.width='12%';
-  if(txt) txt.textContent=label;
   if(pill) pill.classList.add('active');
 }
-
-function dbProgressSet(pct,label){
-  const fill=document.getElementById('db-progress-fill');
-  const txt=document.getElementById('db-progress-label');
-  if(fill) fill.style.width=Math.max(0,Math.min(100,pct))+'%';
-  if(txt && label) txt.textContent=label;
-}
-
+function dbProgressSet(pct,label){ setProgressState('db','running',{copy:label||'Running…',pct,showStop:true}); }
 function dbProgressDone(label='Done'){
-  const fill=document.getElementById('db-progress-fill');
-  const txt=document.getElementById('db-progress-label');
-  const prog=document.getElementById('db-progress');
-  const pill=document.getElementById('db-run-pill');
-  if(fill) fill.style.width='100%';
-  if(txt) txt.textContent=label;
-  if(pill) pill.classList.remove('active');
-  setTimeout(()=>{ if(prog) prog.classList.remove('active'); }, 1200);
+  setProgressState('db','success',{copy:label,pct:100,meta:'Run completed successfully.',showRetry:true});
+  const pill=document.getElementById('db-run-pill'); if(pill) pill.classList.remove('active');
+}
+function dbProgressFail(label='Failed'){
+  setProgressState('db','error',{copy:label,pct:100,meta:'Run ended with an error.',showRetry:true});
+  const pill=document.getElementById('db-run-pill'); if(pill) pill.classList.remove('active');
 }
 
-function dbProgressFail(label='Failed'){
-  const txt=document.getElementById('db-progress-label');
-  const prog=document.getElementById('db-progress');
-  const pill=document.getElementById('db-run-pill');
-  if(txt) txt.textContent=label;
-  if(pill) pill.classList.remove('active');
-  setTimeout(()=>{ if(prog) prog.classList.remove('active'); }, 1800);
-}
-// ── DB Run buttons with progress ─────────────────────────────────────────────
 let _dbEvtSrc=null, _dbPollTimer=null, _dbLastProgress=0;
+let _activeRunContext=null;
+let _lastRunRequest={db:null,run:null,tasks:null};
 
 function _dbStopPoll(){ clearInterval(_dbPollTimer); _dbPollTimer=null; }
 
-function _dbStartPoll(btns, prog){
-  // Fallback: poll /api/run/status every 2s in case SSE stalls
+function _statusCopy(pass){
+  return {1:'running (pass 1/3)',2:'running (pass 2/3)',3:'running (pass 3/3)'}[pass]||'running';
+}
+
+function _setRunUiActive(pass){
+  const btns=[1,2,3].map(i=>document.getElementById('btn-pass'+i));
+  btns.forEach(b=>{ if(b) b.disabled=true; });
+  const dot=document.getElementById('run-dot');
+  const status=document.getElementById('run-status');
+  if(dot) dot.className='run-dot active';
+  if(status) status.textContent=_statusCopy(pass);
+}
+
+function _setRunUiIdle(text='Idle — select a step above to run manually',done=false){
+  const btns=[1,2,3].map(i=>document.getElementById('btn-pass'+i));
+  btns.forEach(b=>{ if(b) b.disabled=false; });
+  const dot=document.getElementById('run-dot');
+  const status=document.getElementById('run-status');
+  if(dot) dot.className=done?'run-dot done':'run-dot';
+  if(status) status.textContent=text;
+}
+
+function _setDbButtons(disabled){
+  ['db-btn-scan','db-btn-resolve','db-btn-download'].forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=disabled; });
+}
+
+function _applyContextStart(ctx){
+  const copy=_statusCopy(ctx.pass);
+  setProgressState(ctx.scope,'running',{copy,pct:0,showStop:true,showRetry:false,meta:'Connecting to runner…'});
+  if(ctx.scope==='db') _setDbButtons(true);
+  if(ctx.scope==='run') _setRunUiActive(ctx.pass);
+  if(ctx.scope==='tasks') setProgressState('tasks','running',{copy,pct:0,showStop:true,meta:'Running selected libraries…'});
+}
+
+function _applyContextFinish(ctx,state,meta,pct=100){
+  const copy=state==='success'?'success':state==='stopped'?'stopped':'error';
+  setProgressState(ctx.scope,state,{copy,pct,showRetry:true,meta,showStop:false});
+  if(ctx.scope==='db') _setDbButtons(false);
+  if(ctx.scope==='run') _setRunUiIdle(state==='success'?'Done · '+new Date().toLocaleTimeString():(state==='stopped'?'Stopped':'Error'), state==='success');
+  if(ctx.scope==='tasks'){}
+}
+
+function _handleProgressData(ctx,p){
+  const pct=p.total>0?Math.round(p.current/p.total*100):0;
+  const copy=`running (pass ${ctx.pass}/3)`;
+  const meta=p.action==='error'?(p.message||'Error'):`${p.current}/${p.total} ${p.action} "${p.title}"`;
+  const state=p.action==='error'?'error':'running';
+  setProgressState(ctx.scope,state,{copy,meta,pct,showStop:state==='running',showRetry:state!=='running'});
+  if(ctx.scope==='run') _setRunUiActive(ctx.pass);
+}
+
+function _connectRunStream(ctx){
+  if(_dbEvtSrc){ _dbEvtSrc.close(); }
+  _dbEvtSrc=new EventSource(apiUrl('/api/run/stream'));
+  _dbEvtSrc.onmessage=e=>{
+    _dbLastProgress=Date.now();
+    if(!_activeRunContext) return;
+    if(e.data==='__DONE__'){
+      _dbEvtSrc.close(); _dbEvtSrc=null; _dbStopPoll();
+      _applyContextFinish(_activeRunContext,'success','Run completed.');
+      loadDatabase(); loadTasksPage();
+      _activeRunContext=null;
+      return;
+    }
+    if(e.data.startsWith('@@PROGRESS@@')){
+      try{ _handleProgressData(_activeRunContext,JSON.parse(e.data.slice(12))); }catch(ex){}
+      return;
+    }
+    setProgressState(_activeRunContext.scope,'running',{copy:_statusCopy(_activeRunContext.pass),meta:e.data.slice(0,140),pct:Math.min(98,parseInt(_progressEls(_activeRunContext.scope).fill?.style.width||'0',10)||0),showStop:true});
+  };
+  _dbEvtSrc.onerror=()=>{ if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; } };
+}
+
+function _dbStartPoll(){
   _dbStopPoll();
   _dbPollTimer=setInterval(async()=>{
     try{
       const d=await(await fetch('/api/run/status')).json();
+      if(!_activeRunContext) return;
       if(!d.active){
-        // Run finished — clean up even if SSE missed __DONE__
         _dbStopPoll();
         if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
-        btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=false; });
-        if(prog) prog.classList.remove('active');
+        const doneMeta=(_activeRunContext.stoppedByUser?'Stopped by user.':'Run completed.');
+        _applyContextFinish(_activeRunContext,_activeRunContext.stoppedByUser?'stopped':'success',doneMeta);
         loadDatabase(); loadTasksPage();
+        _activeRunContext=null;
         return;
       }
-      // Update label from last_line if SSE seems stalled (no SSE event in 4s)
-      if(d.last_line && Date.now()-_dbLastProgress > 4000){
-        const label=document.getElementById('db-progress-label');
-        if(label) label.textContent=d.last_line.slice(0,140);
+      if(d.last_line && Date.now()-_dbLastProgress > 2500){
+        setProgressState(_activeRunContext.scope,'running',{copy:_statusCopy(_activeRunContext.pass),meta:d.last_line.slice(0,140),showStop:true,pct:Math.min(98,parseInt(_progressEls(_activeRunContext.scope).fill?.style.width||'0',10)||10)});
       }
     }catch(e){}
   }, 2000);
 }
 
-function dbRunPass(passNum){
-  const btns=['db-btn-scan','db-btn-resolve','db-btn-download'];
-  btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=true; });
-  const labels={1:'Scanning…',2:'Finding sources…',3:'Downloading…'};
-
-  const prog=document.getElementById('db-progress');
-  prog.classList.add('active');
-  document.getElementById('db-progress-label').textContent=labels[passNum];
-  document.getElementById('db-progress-fill').style.width='0%';
+async function startPipelineRun(passNum,scope='db'){
+  _lastRunRequest[scope]=passNum;
+  const ctx={scope,pass:passNum,stoppedByUser:false};
+  _activeRunContext=ctx;
   _dbLastProgress=Date.now();
-
-  fetch('/api/run/pass/'+passNum,{method:'POST'});
-
-  function _connectSse(){
-    if(_dbEvtSrc){ _dbEvtSrc.close(); }
-    _dbEvtSrc=new EventSource(apiUrl('/api/run/stream'));
-    _dbEvtSrc.onmessage=e=>{
-      _dbLastProgress=Date.now();
-      if(e.data==='__DONE__'){
-        _dbEvtSrc.close(); _dbEvtSrc=null;
-        _dbStopPoll();
-        btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=false; });
-        prog.classList.remove('active');
-        loadDatabase(); loadTasksPage();
-        return;
-      }
-      if(e.data.startsWith('@@PROGRESS@@')){
-        try{
-          const p=JSON.parse(e.data.slice(12));
-          const pct=p.total>0?Math.round(p.current/p.total*100):0;
-          document.getElementById('db-progress-fill').style.width=pct+'%';
-          if(p.action==='error'){
-            document.getElementById('db-progress-label').textContent=p.message||'Error';
-            toast(p.message||'Scan failed','err');
-          }else{
-            document.getElementById('db-progress-label').textContent=
-              `${p.current}/${p.total} ${p.action} "${p.title}"`;
-          }
-        }catch(ex){}
-        return;
-      }
-      const label=document.getElementById('db-progress-label');
-      if(label && e.data) label.textContent=e.data.slice(0,140);
-    };
-    _dbEvtSrc.onerror=()=>{
-      // SSE disconnected — reconnect after short delay, polling will cover the gap
-      if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
-      setTimeout(()=>{
-        // Only reconnect if a run is still active
-        fetch('/api/run/status').then(r=>r.json()).then(d=>{
-          if(d.active) _connectSse();
-          else{
-            _dbStopPoll();
-            btns.forEach(id=>{ const el=document.getElementById(id); if(el) el.disabled=false; });
-            prog.classList.remove('active');
-            loadDatabase(); loadTasksPage();
-          }
-        }).catch(()=>{});
-      }, 1500);
-    };
+  _applyContextStart(ctx);
+  const r=await fetch('/api/run/pass/'+passNum,{method:'POST'});
+  if(!r.ok){
+    const d=await r.json().catch(()=>({}));
+    _applyContextFinish(ctx,'error',d.error||'Unable to start run.');
+    _activeRunContext=null;
+    return;
   }
-
-  _connectSse();
-  _dbStartPoll(btns, prog);
+  _connectRunStream(ctx);
+  _dbStartPoll();
 }
 
+function dbRunPass(passNum){ return startPipelineRun(passNum,'db'); }
+function startPass(passNum){
+  const terminal=document.getElementById('terminal');
+  if(terminal) terminal.innerHTML='';
+  return startPipelineRun(passNum,'run');
+}
+
+function retryRun(scope){
+  const pass=_lastRunRequest[scope]||1;
+  return startPipelineRun(pass,scope);
+}
 let _mediaEvtSrc=null;
 function mediaRunPass(passNum){
   const btn=document.querySelector('#page-media .page-head .btn.btn-ghost');
@@ -3923,7 +4016,6 @@ async function ytModalSave(){
   closeYtModal(); toast('Offset saved','ok');
   if(document.getElementById('page-database').classList.contains('active')) loadDatabase();
 }
-let _evtSrc=null;
 
 async function loadRunPage(){
   const cfg=(await (await fetch('/api/config')).json());
@@ -3988,55 +4080,6 @@ async function saveRunSchedule(){
   },500);
 }
 
-function startPass(pass){
-  const btns=[1,2,3].map(i=>document.getElementById('btn-pass'+i));
-  btns.forEach(b=>b.disabled=true);
-  document.getElementById('run-dot').className='run-dot active';
-  document.getElementById('btn-stop').style.display='inline-flex';
-  const labels={1:'Scanning libraries…',2:'Finding YouTube sources…',3:'Downloading approved themes…'};
-  document.getElementById('run-status').textContent=labels[pass];
-  const terminal=document.getElementById('terminal');
-  if(terminal) terminal.innerHTML='';
-
-  const prog=document.getElementById('run-progress');
-  prog.classList.add('active');
-  document.getElementById('run-progress-fill').style.width='0%';
-  document.getElementById('run-progress-label').textContent=labels[pass];
-
-  fetch('/api/run/pass/'+pass,{method:'POST'});
-  if(_evtSrc) _evtSrc.close();
-  _evtSrc=new EventSource(apiUrl('/api/run/stream'));
-  _evtSrc.onmessage=e=>{
-    if(e.data==='__DONE__'){
-      _evtSrc.close(); btns.forEach(b=>b.disabled=false);
-      document.getElementById('run-dot').className='run-dot done';
-      document.getElementById('run-status').textContent='Done · '+new Date().toLocaleTimeString();
-      document.getElementById('btn-stop').style.display='none';
-      prog.classList.remove('active');
-      loadTasksPage(); loadDatabase();
-      return;
-    }
-    // Structured progress
-    if(e.data.startsWith('@@PROGRESS@@')){
-      try{
-        const p=JSON.parse(e.data.slice(12));
-        const pct=p.total>0?Math.round(p.current/p.total*100):0;
-        document.getElementById('run-progress-fill').style.width=pct+'%';
-        document.getElementById('run-progress-label').textContent=
-          `${p.current}/${p.total} ${p.action} "${p.title}"`;
-      }catch(ex){}
-      return;
-    }
-    appendLine(e.data);
-  };
-  _evtSrc.onerror=()=>{
-    _evtSrc.close(); btns.forEach(b=>b.disabled=false);
-    document.getElementById('run-dot').className='run-dot';
-    document.getElementById('run-status').textContent='Connection lost';
-    prog.classList.remove('active');
-  };
-}
-
 function appendLine(line){
   const t=document.getElementById('terminal');
   if(!t) return;
@@ -4046,12 +4089,28 @@ function appendLine(line){
 }
 
 function clearTerminal(){ const t=document.getElementById('terminal'); if(t) t.innerHTML='<div class="ll ll-info">Cleared.</div>'; }
-async function stopRun(){
-  toast('Stopping…','info');
+async function stopRun(scope='run'){
+  toast('Stopping run…','info');
+  if(_activeRunContext) _activeRunContext.stoppedByUser=true;
   await fetch('/api/run/stop',{method:'POST'});
+  const activeScope=_activeRunContext?.scope||scope;
+  setProgressState(activeScope,'stopped',{copy:'Stopped',meta:'Stop requested. Waiting for process shutdown…',showRetry:true,pct:Math.min(99,parseInt(_progressEls(activeScope).fill?.style.width||'0',10)||0)});
+  if(activeScope==='run') _setRunUiIdle('Stopping…',false);
 }
 
 // ── Tasks / History ───────────────────────────────────────────────────────────
+function openRunResults(pass){
+  const map={1:'PENDING',2:'STAGED',3:'AVAILABLE'};
+  const st=map[pass]||'';
+  showPage('database');
+  setTimeout(()=>{
+    if(st) filterByStatus(st);
+    const search=document.getElementById('db-search');
+    if(search) search.value='';
+    toast(st?`Showing ${displayStatus(st)} rows from completed pass ${pass}.`:'Showing run rows.','info');
+  },350);
+}
+
 async function loadTasksPage(){
   await loadTaskHistoryList();
   const r=await fetch('/api/history'); const runs=await r.json();
@@ -4072,6 +4131,7 @@ async function loadTasksPage(){
           <div class="hcard-time">${run.time}</div>
           <div class="hcard-sum">${(run.summary||'').replace(/</g,'&lt;')}${dur?` · ${dur}`:''}</div>
           ${statsLine?`<div class="hcard-sum">${statsLine}</div>`:''}
+          <div style="margin-top:7px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openRunResults(${run.pass||0})">Open filtered rows</button></div>
         </div>
         <span class="pass-badge ${cls}">${parts.join(' ')}</span>
       </div>
@@ -4131,7 +4191,7 @@ async function taskRunPass(passNum){
   cfg.schedule_libraries=libs;
   await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
   _activeLib=libs[0];
-  await dbRunPass(passNum);
+  await startPipelineRun(passNum,'tasks');
   setTimeout(loadTasksPage,1200);
 }
 async function taskExportGoldenSource(){
