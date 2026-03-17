@@ -190,7 +190,8 @@ def _is_retryable_resolve_reason(reason: str) -> bool:
 def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
                   year: str, folder: str, status: str, url: str = "",
                   start_offset=0, end_offset=0, notes: str = "", tmdb_id: str = "",
-                  source_origin: str | None = None):
+                  source_origin: str | None = None, golden_source_url: str = "",
+                  golden_source_offset=0):
     """Insert or update a row. Never overwrites a user-supplied URL."""
     existing = ledger.get(rating_key, {})
     if source_origin is None:
@@ -201,6 +202,8 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         "status":         status,
         "url":            url if url else existing.get("url", ""),
         "start_offset":   str(start_offset) if start_offset else existing.get("start_offset", "0"),
+        "golden_source_url": golden_source_url if golden_source_url else existing.get("golden_source_url", ""),
+        "golden_source_offset": str(golden_source_offset) if golden_source_offset else existing.get("golden_source_offset", "0"),
         "end_offset":     str(end_offset) if end_offset else existing.get("end_offset", "0"),
         "plex_title":     plex_title,
         "folder":         folder,
@@ -529,7 +532,7 @@ def _pick_youtube_source(query: str, search_title: str, year: str, mode: str,
 
 GOLDEN_SOURCE_EXPECTED_COLUMNS = [
     "tmdb_id", "title", "year", "source_url",
-    "start_offset", "verified", "updated_at", "notes",
+    "start_offset", "updated_at", "notes",
 ]
 GOLDEN_SOURCE_REQUIRED_COLUMNS = ["tmdb_id", "source_url"]
 
@@ -563,7 +566,6 @@ def _parse_golden_source_text(text: str) -> dict:
         rows[str(tmdb_id)] = {
             "source_url": source_url,
             "start_offset": clean.get("start_offset", "0") or "0",
-            "verified": clean.get("verified", ""),
             "updated_at": clean.get("updated_at", ""),
             "notes": clean.get("notes", ""),
             "title": clean.get("title", ""),
@@ -880,15 +882,11 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                 continue
             ledger_upsert(
                 ledger, key, plex_title, title, year, folder, ST_STAGED,
-                url=match.get("source_url", ""),
-                start_offset=match.get("start_offset", 0),
+                golden_source_url=match.get("source_url", ""),
+                golden_source_offset=match.get("start_offset", 0),
                 end_offset=match.get("end_offset", 0),
                 notes="Matched from Golden Source", tmdb_id=tmdb_id,
-                source_origin=(
-                    "golden_source_verified"
-                    if str(match.get("verified", "") or "").strip().lower() in {"1", "true", "yes", "y", "verified", "star", "★", "*"}
-                    else "golden_source"
-                ),
+                source_origin="golden_source",
             )
             stats["staged"]         += 1
             stats["golden_matched"] += 1

@@ -546,7 +546,7 @@ def test_golden_source():
             "fetch_ms": fetch_ms,
             "fetch_mode": fetch_mode,
             "required_columns": ["tmdb_id", "source_url"],
-            "optional_columns": ["title", "year", "start_offset", "verified", "updated_at", "notes"],
+            "optional_columns": ["title", "year", "start_offset", "updated_at", "notes"],
         })
     except Exception as e:
         return jsonify({"ok":False,"error":str(e)[:180]})
@@ -678,12 +678,10 @@ def import_golden_source():
             continue
         row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id","") or "").strip()
         incoming_url = str(match.get("source_url", "") or "").strip()
-        row["url"] = incoming_url
-        verified_raw = str(match.get("verified","") or "").strip().lower()
-        is_verified = verified_raw in {"1", "true", "yes", "y", "verified", "star", "★", "*"}
-        row["source_origin"] = ("golden_source_verified" if is_verified else "golden_source") if incoming_url else "unknown"
-        row["start_offset"] = match.get("start_offset","0") or "0"
+        row["golden_source_url"] = incoming_url
+        row["golden_source_offset"] = match.get("start_offset","0") or "0"
         row["end_offset"] = match.get("end_offset","0") or "0"
+        row["source_origin"] = "golden_source" if incoming_url else "unknown"
         if not incoming_url and cur in ("STAGED", "APPROVED"):
             row["status"] = "PENDING"
         elif cur not in ("AVAILABLE", "DOWNLOADED"):
