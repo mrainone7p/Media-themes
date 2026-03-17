@@ -1554,8 +1554,6 @@ window.fetch = function(input, init){
 };
 
 function showPage(name) {
-  if(name==='settings') name='configuration';
-  if(name==='run') name='schedule';
   stopAllAudio();
   const pageEl=document.getElementById('page-'+name);
   const navEl=document.getElementById('nav-'+name);
@@ -1632,11 +1630,14 @@ try{
     updateGlobalRunStatus();
     setInterval(updateGlobalRunStatus, 4000);
     setInterval(removeItemDetailsPanel, 2000);
-    const initial=((location.hash||'').replace(/^#/,'').trim());
-    const legacyMap={settings:'configuration',run:'schedule'};
-    const normalized=legacyMap[initial]||initial;
-    if(['configuration','database','schedule','history'].includes(normalized)){
-      showPage(normalized);
+    let initial=((location.hash||'').replace(/^#/,'').trim());
+    const legacyHashRedirect={settings:'configuration',run:'schedule'};
+    if(legacyHashRedirect[initial]){
+      initial=legacyHashRedirect[initial];
+      if(history && history.replaceState){ history.replaceState(null,'','#'+initial); }
+    }
+    if(['configuration','database','schedule','history'].includes(initial)){
+      showPage(initial);
     }
   });
 }catch(e){}
@@ -1657,8 +1658,6 @@ function testBadge(elId, ok, msg){
 let _libs=[], _maxDur=45;
 
 
-function loadSettings(){ return loadConfiguration(); }
-function saveSettings(){ return saveConfiguration(); }
 
 async function loadConfiguration(){
   const r=await fetch('/api/config'); const cfg=await r.json();
