@@ -1732,6 +1732,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <script>
 // ── Utils ────────────────────────────────────────────────────────────────────
 
+// === MODAL HANDLING ===
 let _confirmResolver=null;
 
 function toSafeConfirmUrl(rawUrl){
@@ -1869,6 +1870,7 @@ function closeConfirmModal(){
   if(_confirmResolver){ const r=_confirmResolver; _confirmResolver=null; r(false); }
 }
 
+// === API HELPERS ===
 const _rawFetch = window.fetch.bind(window);
 let _authPrompted = false;
 function getApiToken(){ return localStorage.getItem('mt-api-token') || ''; }
@@ -2290,6 +2292,7 @@ let _rowMap={}; // rating_key → full row object, avoids onclick escaping bugs
 let _selectedKeys=new Set();
 let _lastDbCheckIndex=null;
 const PAGE=80;
+// === STATE / STATUS MAPPING ===
 const SC={'PENDING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','DOWNLOADED':'#2dd4a0','FAILED':'#f05252','REJECTED':'#555570','IGNORED':'#f97316'};
 const STATUSES=['PENDING','STAGED','APPROVED','DOWNLOADED','FAILED','REJECTED','IGNORED'];
 function statusDesc(status){
@@ -2325,6 +2328,13 @@ function _statusValidation(row, attemptedStatus){
 
 function allowedStatuses(row){
   return STATUSES.filter(status=>_statusValidation(row,status).ok);
+}
+
+function renderStatusCell(row){
+  const rk=row.rating_key;
+  const status=row.status;
+  const opts=allowedStatuses(row).map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
+  return `<span class="badge s-${status}" title="${statusDesc(status)}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select>${displayStatus(status)}</span>`;
 }
 
 function renderStatusKey(){
@@ -2464,13 +2474,6 @@ function sortTable(col){ if(_sortCol===col)_sortDir*=-1; else{_sortCol=col;_sort
 // ── Audio player ─────────────────────────────────────────────────────────────
 let _curAudio=null, _curKey=null;
 const _audioEl=()=>document.getElementById('global-audio');
-
-function renderStatusCell(row){
-  const rk=row.rating_key;
-  const status=row.status;
-  const opts=allowedStatuses(row).map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
-  return `<span class="badge s-${status}" title="${statusDesc(status)}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select>${displayStatus(status)}</span>`;
-}
 
 function _htmlAttr(s){
   if(s==null||s===undefined) return '';
@@ -2744,6 +2747,7 @@ document.addEventListener('click',(e)=>{
   if(!e.target.closest('.row-action-wrap')) document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
 });
 
+// === TABLE / ROW RENDERING ===
 // ── Table render ─────────────────────────────────────────────────────────────
 function renderTable(){
   const start=_page*PAGE, slice=_filtered.slice(start,start+PAGE);
@@ -3281,6 +3285,7 @@ async function confirmDelete(){
 }
 
 
+// === MODAL HANDLING ===
 // ── Golden Source Modal ───────────────────────────────────────────────────────
 function openGoldenSourceModal(lib){
   document.getElementById('gs-modal-lib-label').textContent = `Library: ${lib}`;
@@ -4098,6 +4103,7 @@ async function stopRun(scope='run'){
   if(activeScope==='run') _setRunUiIdle('Stopping…',false);
 }
 
+// === TASK OPERATIONS & MAINTENANCE ACTIONS ===
 // ── Tasks / History ───────────────────────────────────────────────────────────
 function openRunResults(pass){
   const map={1:'PENDING',2:'STAGED',3:'AVAILABLE'};
