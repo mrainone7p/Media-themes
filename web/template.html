@@ -394,6 +394,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .action-icon{padding:4px 8px;font-size:11px;min-width:28px;justify-content:center}
 .action-icon span{display:none}
 .action-icon .icon-only{display:inline-block}
+.row-action-wrap{position:relative;display:flex;align-items:center;gap:6px;justify-content:flex-start}
+.row-primary-action{min-width:96px}
+.row-action-more{min-width:30px;padding:4px 8px}
+.row-action-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:170px;background:var(--surface-elev);border:1px solid var(--border);border-radius:8px;padding:6px;display:none;flex-direction:column;gap:5px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.row-action-menu.open{display:flex}
+.row-action-item{width:100%;justify-content:flex-start;text-align:left}
 
 .task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .task-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
@@ -1053,9 +1059,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="bulk-actions">
         <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Approve</button>
         <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('PENDING')" data-ui="actions.bulk.set_pending">↺ Set Pending</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('STAGED')" data-ui="actions.bulk.set_staged">◎ Set Staged</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('IGNORED')" data-ui="actions.bulk.ignore">⊸ Ignore</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('REJECTED')" data-ui="actions.bulk.reject">— Reject</button>
         <button class="btn btn-ghost btn-sm" id="db-clear-sel" onclick="clearSourcesSelected()">🧹 Clear Sources</button>
         <button class="btn btn-red btn-sm" onclick="clearSelection()">✕ Clear</button>
       </div>
@@ -1067,8 +1070,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <th onclick="sortTable('title')">Title ↕</th>
           <th onclick="sortTable('year')">Year ↕</th>
           <th onclick="sortTable('status')">Status ↕</th>
-          <th onclick="sortTable('current_theme')">Current Theme ↕</th>
-          <th onclick="sortTable('source_origin')">Source ↕</th>
+          <th>Next Action</th>
           <th onclick="sortTable('verified')">Verified ↕</th>
           <th onclick="sortTable('url')">Source URL ↕</th>
           <th onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
@@ -2420,25 +2422,72 @@ function _htmlAttr(s){
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
-function renderThemeBtn(row){
-  if((row.status==='DOWNLOADED' || row.status==='AVAILABLE') && row.rating_key){
-    const rk=_htmlAttr(row.rating_key);
-    const folder=_htmlAttr(row.folder||'');
-    const title=_htmlAttr(row.title||row.plex_title||'');
-    const year=_htmlAttr(row.year||'');
-    return `<div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-green btn-xs action-icon"
-        data-action="play-theme" data-rk="${rk}" data-folder="${folder}" data-title="${title}" data-year="${year}"
-        onclick="_playTheme(this)" title="Play theme"><span class="icon-only">▶</span></button>
-      <button class="btn btn-red btn-xs action-icon"
-        data-action="delete-theme" data-rk="${rk}" data-folder="${folder}" data-title="${title}"
-        onclick="_deleteTheme(this)" title="Delete local theme"><span class="icon-only">✕</span></button>
-    </div>`;
-  }
-  if((row.status==='DOWNLOADED' || row.status==='AVAILABLE') && !row.rating_key){
-    return '<span class="no-theme" title="Run ⟳ Scan Library to restore Plex ID">⚠ rescan</span>';
-  }
-  return '<span class="no-theme">—</span>';
+function _recommendedAction(row){
+  const hasSource=_hasSourceUrl(row);
+  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
+  if((row.status==='DOWNLOADED'||row.status==='AVAILABLE') && row.rating_key) return {label:'Review', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
+  if(row.status==='STAGED') return {label:'Approve', cls:'btn btn-green btn-xs row-primary-action', fn:'_approveRow'};
+  if(row.status==='APPROVED' && hasSource && !hasTheme && row.rating_key) return {label:'Download', cls:'btn btn-green btn-xs row-primary-action', fn:'_downloadNow'};
+  if(hasSource && row.status==='PENDING') return {label:'Stage', cls:'btn btn-purple btn-xs row-primary-action', fn:'_stageRow'};
+  return {label:'Review', cls:'btn btn-ghost btn-xs row-primary-action', fn:'_manualSearch'};
+}
+
+function _rowSecondaryActions(row){
+  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
+  const hasSource=_hasSourceUrl(row);
+  const actions=[];
+  if(hasSource) actions.push({label:'Preview source', fn:'_previewSource'});
+  if(row.status!=='STAGED' && hasSource) actions.push({label:'Set staged', fn:'_stageRow'});
+  if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve', fn:'_approveRow'});
+  if(hasTheme && row.rating_key) actions.push({label:'Play theme', fn:'_playTheme'});
+  if(hasTheme && row.rating_key) actions.push({label:'Delete theme', fn:'_deleteTheme'});
+  actions.push({label:'Manual search', fn:'_manualSearch'});
+  return actions;
+}
+
+function renderRowActionCell(row){
+  const rk=_htmlAttr(row.rating_key);
+  const url=_htmlAttr(row.url||'');
+  const folder=_htmlAttr(row.folder||'');
+  const title=_htmlAttr(row.title||row.plex_title||'');
+  const year=_htmlAttr(row.year||'');
+  const primary=_recommendedAction(row);
+  const secondaries=_rowSecondaryActions(row)
+    .filter(a=>a.fn!==primary.fn)
+    .map(a=>`<button class="btn btn-ghost btn-xs row-action-item" data-rk="${rk}" data-url="${url}" data-folder="${folder}" data-title="${title}" data-year="${year}" onclick="_rowActionInvoke('${a.fn}',this)">${a.label}</button>`)
+    .join('');
+  return `<div class="row-action-wrap">
+    <button class="${primary.cls}" data-rk="${rk}" data-url="${url}" data-folder="${folder}" data-title="${title}" data-year="${year}" onclick="${primary.fn}(this)">${primary.label}</button>
+    <button class="btn btn-ghost btn-xs row-action-more" onclick="toggleRowMenu(this,event)" title="More actions">⋯</button>
+    <div class="row-action-menu">${secondaries||'<span class="bulk-hint" style="padding:6px">No secondary actions</span>'}</div>
+  </div>`;
+}
+
+function toggleRowMenu(btn, evt){
+  if(evt) evt.stopPropagation();
+  const wrap=btn.closest('.row-action-wrap');
+  if(!wrap) return;
+  const menu=wrap.querySelector('.row-action-menu');
+  const willOpen=!menu.classList.contains('open');
+  document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
+  if(willOpen) menu.classList.add('open');
+}
+
+function _rowActionInvoke(fnName, btn){
+  document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
+  if(typeof window[fnName]==='function') window[fnName](btn);
+}
+
+function _stageRow(btn){
+  const rk=btn.dataset.rk;
+  if(!rk) return;
+  updateRow(rk,'status','STAGED');
+}
+
+function _approveRow(btn){
+  const rk=btn.dataset.rk;
+  if(!rk) return;
+  updateRow(rk,'status','APPROVED');
 }
 
 // Safe action helpers — read data from DOM attributes, _rowMap is secondary fallback
@@ -2470,24 +2519,6 @@ function _openTmdbRow(rk, evt){
   const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
   if(!row) return true;
   return openTmdb(row.title||row.plex_title||'', row.year||'', evt);
-}
-
-function renderSourceBtn(row){
-  const rk=_htmlAttr(row.rating_key);
-  const url=_htmlAttr(row.url||'');
-  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
-  const canPreview=_hasSourceUrl(row);
-  const canDownloadNow=_hasSourceUrl(row) && !hasTheme && !!row.rating_key;
-  const preview=canPreview?`<button class="btn btn-purple btn-xs action-icon"
-    data-action="preview-source" data-rk="${rk}" data-url="${url}"
-    onclick="_previewSource(this)" title="Preview source"><span class="icon-only">▶</span></button>`:'';
-  const dlNow=canDownloadNow?`<button class="btn btn-green btn-xs action-icon"
-    data-action="download-now" data-rk="${rk}"
-    onclick="_downloadNow(this)" title="Download now"><span class="icon-only">↓</span></button>`:'';
-  const manual=`<button class="btn btn-ghost btn-xs action-icon"
-    data-action="manual-search" data-rk="${rk}"
-    onclick="_manualSearch(this)" title="Manual search"><span class="icon-only">🔍</span></button>`;
-  return `<div style="display:flex;gap:6px;flex-wrap:wrap">${preview}${dlNow}${manual}</div>`;
 }
 
 function _previewSource(btn){
@@ -2654,6 +2685,10 @@ async function previewUrl(key, encodedUrl){
   } catch(e){ toast('Preview error','err'); }
 }
 
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('.row-action-wrap')) document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
+});
+
 // ── Table render ─────────────────────────────────────────────────────────────
 function renderTable(){
   const start=_page*PAGE, slice=_filtered.slice(start,start+PAGE);
@@ -2689,8 +2724,7 @@ function renderTable(){
       <td>
         ${renderStatusCell(row)}
       </td>
-      <td>${renderThemeBtn(row)}</td>
-      <td>${renderSourceBtn(row)}</td>
+      <td>${renderRowActionCell(row)}</td>
       <td style="text-align:center">${_isGoldenVerified(row)?'<span title="Verified in Golden Source" style="color:var(--amber);font-size:14px">★</span>':((row.source_origin||'').startsWith('golden_source')?'<span title="Imported from Golden Source" style="color:var(--text3);font-size:13px">•</span>':'—')}</td>
       <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px;margin-right:4px" title="${safeUrlAttr}">↗</a>`:''}
         <input class="inline-ed" value="${safeUrlAttr}" placeholder="paste URL…" style="min-width:80px;max-width:140px;font-size:10px" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
