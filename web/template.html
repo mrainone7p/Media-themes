@@ -255,7 +255,7 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .run-dot.done{background:var(--green)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes qp-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes qp-marquee{0%,10%{transform:translateX(0)}90%,100%{transform:translateX(calc(-1 * var(--qp-scroll-distance, 0px)))}}
 
 /* Global run status bar */
 .global-run{position:sticky;top:0;z-index:80;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:12px;font-family:var(--mono)}
@@ -567,9 +567,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .srail-step.done .srail-num{background:var(--green);color:#000}
 .srail-step.done .srail-label{color:var(--green)}
 .srail-sep{flex:1;height:2px;background:var(--border);min-width:12px;max-width:40px}
-.search-method-card{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;text-align:center;background:var(--surface2);user-select:none}
+.search-method-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.95fr);align-items:center;gap:10px;padding:12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;background:var(--surface2);user-select:none;min-height:84px;overflow:hidden}
 .search-method-card:hover{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.active{border-color:var(--purple);background:var(--purple-soft)}
+.search-method-card.golden-source{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 35%, var(--surface2))}
+.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 62%, var(--surface2))}
+.search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 20%, var(--surface2));opacity:.68;cursor:not-allowed}
 .sm-card-icon{font-size:22px;line-height:1}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.35}
@@ -619,23 +622,28 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .performance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .schedule-step2-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
 .manual-methods{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px}
-.search-method-card{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;text-align:left;background:var(--surface2);user-select:none}
+.search-method-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.95fr);align-items:center;gap:10px;padding:12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;text-align:left;background:var(--surface2);user-select:none;min-height:84px;overflow:hidden}
 .search-method-card:hover{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.active{border-color:var(--purple);background:var(--purple-soft)}
+.search-method-card.golden-source{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 35%, var(--surface2))}
+.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 62%, var(--surface2))}
+.search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 20%, var(--surface2));opacity:.68;cursor:not-allowed}
 .sm-card-main{display:flex;align-items:flex-start;gap:8px;min-width:0;flex:1}
 .sm-card-copy{display:flex;flex-direction:column;gap:1px;min-width:0}
 .sm-card-icon{font-size:16px;line-height:1;margin-top:1px}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.3}
-.sm-card-actions{display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;width:320px;max-width:52%;margin-left:auto}
-.sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left}
+.sm-card-actions{display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;flex-shrink:0;min-width:0;width:100%;max-width:none;margin-left:0;flex-direction:column}
+.sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left;overflow:hidden}
 .sm-card-first button{margin-top:0}
 .sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
 .sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;white-space:nowrap;margin-bottom:4px;position:relative}
-.sm-quickpick-track{display:inline-flex;white-space:nowrap;min-width:max-content}
-.sm-quickpick-copy{display:inline-block;padding-right:28px}
-.sm-quickpick-title.scroll .sm-quickpick-track{animation:qp-marquee 9s linear infinite}
+.sm-quickpick-track{display:inline-block;white-space:nowrap;min-width:max-content;will-change:transform}
+.sm-quickpick-copy{display:inline-block;padding-right:0}
+.sm-quickpick-title.scroll .sm-quickpick-track{animation:qp-marquee var(--qp-duration, 14s) linear infinite}
 .sm-quickpick-loading{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);font-family:var(--mono)}
+.sm-quickpick-buttons{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
 .sm-quickpick-loading::before{content:"";width:10px;height:10px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--purple);animation:spin .8s linear infinite}
 .muted-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:11px;color:var(--text2)}
 .schedule-master{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px}
@@ -693,6 +701,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   .search-method-card{padding:10px 10px;border-radius:10px}
   .sm-card-main{width:100%}
   .sm-card-copy{gap:2px}
+  .search-method-card{grid-template-columns:1fr;align-items:flex-start;min-height:unset}
   .sm-card-actions{width:100%!important;max-width:none!important;margin-left:0;justify-content:flex-start;flex-wrap:wrap}
   .sm-card-first{white-space:normal;overflow:visible;text-overflow:clip}
   .search-result-card{padding:10px;gap:8px;flex-direction:column}
@@ -1448,7 +1457,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Step rail - TOP -->
     <div style="display:flex;align-items:center;gap:0;padding:10px 22px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0" id="search-step-rail">
       <div class="srail-step active" id="srail-1" onclick="_srailClick(1)">
-        <span class="srail-num">1</span><span class="srail-label">Choose Method</span>
+        <span class="srail-num">1</span><span class="srail-label">Choose Search Method</span>
       </div>
       <div class="srail-sep"></div>
       <div class="srail-step" id="srail-2" onclick="_srailClick(2)">
@@ -1523,7 +1532,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <input id="search-paste-url" class="search-method-input" placeholder="https://www.youtube.com/watch?v=..." onkeydown="if(event.key==='Enter')searchModalPrimary()">
             </div>
           </div>
-          <div class="search-method-card" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
+          <div class="search-method-card golden-source" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
             <div class="sm-card-main">
               <div class="sm-card-icon">★</div>
               <div class="sm-card-copy">
@@ -1614,8 +1623,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),1)">▲</button>
             <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),-1)">▼</button>
           </div>
+          <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ Play from offset</button>
           <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
-          <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ From offset</button>
         </div>
         </div>
       </div>
@@ -3746,9 +3755,13 @@ function _setMethodQuickPick(method, result){
   const safeTitle=rawTitle.replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const isLong=rawTitle.length>34;
   const titleClass=isLong?'sm-quickpick-title scroll':'sm-quickpick-title';
-  const titleBody=isLong?`<span class=\"sm-quickpick-track\"><span class=\"sm-quickpick-copy\">${safeTitle}</span><span class=\"sm-quickpick-copy\">${safeTitle}</span></span>`:`<span>${safeTitle}</span>`;
-  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}">${titleBody}</span><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}')">Select</button>`;
+  const titleBody=`<span class="sm-quickpick-track"><span class="sm-quickpick-copy">${safeTitle}</span></span>`;
+  const duration=Math.max(12, Math.min(24, Math.ceil(rawTitle.length/3)));
+  const distance=Math.max(0, (rawTitle.length*6)-190);
+  const styleAttr=isLong?` style="--qp-duration:${duration}s;--qp-scroll-distance:${distance}px"`:'';
+  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"${styleAttr}>${titleBody}</span><div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}')">Pick</button></div>`;
 }
+
 
 async function previewQuickPick(method,url,btn){
   if(!url || !btn) return;
