@@ -884,8 +884,13 @@ def download_now():
     if not is_allowed_folder(folder, roots):
         return jsonify({"ok":False,"error":f"Folder not allowed: {folder!r} — check media_roots in config.yaml"}), 403
     theme_path = Path(folder) / filename
+    replaced_existing = False
     if theme_path.exists():
-        return jsonify({"ok":False,"error":"Theme file already exists — delete it first"}), 409
+        try:
+            theme_path.unlink(missing_ok=True)
+            replaced_existing = True
+        except Exception as e:
+            return jsonify({"ok":False,"error":f"Failed to replace existing theme file: {str(e)[:160]}"}), 500
     quality_map = {"high":"bestaudio","balanced":"bestaudio[abr<=192]/bestaudio",
                    "small":"bestaudio[abr<=128]/bestaudio","smallest":"bestaudio[abr<=96]/bestaudio"}
     fmt_str = quality_map.get(quality_profile,"bestaudio")
@@ -921,11 +926,12 @@ def download_now():
         downloaded.rename(theme_path)
         row["status"] = "DOWNLOADED"
         row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        row["notes"] = "Downloaded via manual download"
+        row["notes"] = "Downloaded via manual download (replaced existing local theme)" if replaced_existing else "Downloaded via manual download"
         # FIX: sync theme cache so theme_exists / duration / size / mtime are accurate
         row, _ = sync_theme_cache(row, filename, probe_duration=True)
         save_ledger(path_ledger, rows)
-        return jsonify({"ok":True,"message":f"Downloaded and saved as {filename}","matched_by":matched_by or "rating_key"})
+        msg = f"Downloaded and replaced existing {filename}" if replaced_existing else f"Downloaded and saved as {filename}"
+        return jsonify({"ok":True,"message":msg,"matched_by":matched_by or "rating_key","replaced_existing":replaced_existing})
     except subprocess.TimeoutExpired:
         for f in Path(folder).glob(f"mt_tmp_{slug}.*"): f.unlink(missing_ok=True)
         return jsonify({"ok":False,"error":"Download timed out (180s)"})
