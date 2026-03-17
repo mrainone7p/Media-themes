@@ -347,7 +347,10 @@ def _parse_golden_source_csv(text):
         raise ValueError("Golden Source CSV has no header row")
     rows = []
     for row in reader:
-        clean = {str(k or "").strip(): str(v or "").strip() for k, v in row.items()}
+        clean = {
+            str(k or "").strip().lower(): str(v or "").strip()
+            for k, v in row.items()
+        }
         tmdb_id = clean.get("tmdb_id", "")
         source_url = clean.get("source_url", "")
         if not tmdb_id:
