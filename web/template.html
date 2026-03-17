@@ -497,6 +497,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-modal-meta-card{margin:0 22px 10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
 .theme-modal-verified{font-size:11px;color:var(--amber);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
 .theme-modal-file{font-size:11px;font-family:var(--mono);color:var(--text3);word-break:break-word}
+.review-card{margin:0 22px 10px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
+.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.review-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;background:var(--surface);border:1px solid var(--border)}
+.review-kv{font-size:11px;color:var(--text2);display:flex;justify-content:space-between;gap:8px}
+.review-warning{font-size:11px;color:var(--red);margin-top:8px}
+.review-actions{display:flex;gap:8px;align-items:center}
+.review-overflow{position:relative}
+.review-overflow > summary{list-style:none;cursor:pointer}
+.review-overflow[open]{z-index:2}
+.review-overflow-menu{position:absolute;right:0;bottom:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:170px}
+.review-overflow-menu button{width:100%;text-align:left}
 
 /* ─── Pipeline graphic (Database page) ─── */
 .pipeline-wrap{padding:16px var(--content-pad,20px) 0;border-bottom:1px solid var(--border)}
@@ -1609,7 +1620,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   </div>
 </div>
 
-<!-- Theme Preview Modal (Database page — ▶ Play on downloaded rows) -->
+<!-- Review Modal (decision center for any item state) -->
 <div class="modal-overlay" id="theme-modal">
   <div class="modal" style="max-width:540px;position:relative;padding:0">
 
@@ -1622,43 +1633,73 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <span id="theme-modal-year"></span>
           <span id="theme-modal-dur-meta" style="color:var(--green)"></span>
         </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px" id="theme-modal-chips"></div>
         <div class="modal-movie-links" id="theme-modal-links"></div>
       </div>
     </div>
 
-    <!-- Bio -->
-    <div class="modal-bio" id="theme-modal-bio" style="display:none"></div>
-    <div class="theme-modal-meta-card">
+    <div class="review-card">
+      <div class="modal-section-label">Current State</div>
+      <div style="font-size:12px;color:var(--text);margin-bottom:6px" id="theme-modal-summary">—</div>
+      <div class="review-kv"><span>Next recommended action</span><b id="theme-modal-next">—</b></div>
+      <div class="review-kv"><span>Why this state</span><span id="theme-modal-notes">—</span></div>
+      <div class="review-kv"><span>Last updated</span><span id="theme-modal-updated">—</span></div>
+      <div class="review-warning" id="theme-modal-warning" style="display:none"></div>
+    </div>
+
+    <div class="review-card" id="theme-local-card">
+      <div class="modal-section-label">Local Theme</div>
       <div id="theme-modal-verified" class="theme-modal-verified" style="display:none">★ Verified Theme · Golden Source</div>
-      <div class="theme-modal-file" id="theme-modal-file">File: —</div>
-    </div>
-
-    <!-- Section heading -->
-    <div style="padding:14px 22px 10px">
-      <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)">Now Playing</div>
-      <div style="height:1px;background:var(--border)"></div>
-    </div>
-
-    <!-- Playback -->
-    <div class="modal-section" style="padding-top:0;padding-bottom:16px">
-      <div class="modal-player-row">
-        <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
-          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </button>
-        <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
-        <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
-        <div class="modal-scrubber-wrap">
-          <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
-          <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
-        </div>
+      <div class="review-grid" style="margin-bottom:8px">
+        <div class="review-kv"><span>File path</span><span id="theme-modal-file">—</span></div>
+        <div class="review-kv"><span>Duration</span><span id="theme-modal-local-dur">—</span></div>
+        <div class="review-kv"><span>Size</span><span id="theme-modal-size">—</span></div>
+        <div class="review-kv"><span>Offsets</span><span id="theme-modal-offsets">—</span></div>
       </div>
-      <audio id="theme-modal-audio" style="display:none"></audio>
+      <div id="theme-local-missing" style="font-size:12px;color:var(--text3);display:none">No local theme file yet.</div>
+      <div id="theme-local-player" style="display:none">
+        <div class="modal-player-row">
+          <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
+          <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
+          <div class="modal-scrubber-wrap">
+            <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
+            <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
+          </div>
+        </div>
+        <audio id="theme-modal-audio" style="display:none"></audio>
+      </div>
+    </div>
+
+    <div class="review-card">
+      <div class="modal-section-label">Source</div>
+      <div class="review-kv"><span>Source URL</span><span id="theme-modal-source-url">—</span></div>
+      <div class="review-kv"><span>Source origin</span><span id="theme-modal-origin">—</span></div>
+      <div class="review-kv"><span>TMDB ID</span><span id="theme-modal-tmdb">—</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn btn-ghost btn-sm" onclick="themeModalOpenSource()">↗ Open Source</button>
+        <button class="btn btn-ghost btn-sm" onclick="themeModalOpenManualSearch()">Replace / Search Source</button>
+        <button class="btn btn-ghost btn-sm" onclick="themeModalSyncFromDisk()">Sync from disk</button>
+      </div>
     </div>
 
     <!-- Footer -->
     <div class="modal-footer" style="justify-content:space-between">
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" onclick="themeModalOpenManualSearch()">Manual Search</button>
+      <div class="review-actions">
+        <button class="btn btn-green" id="theme-modal-primary" onclick="themeModalPrimaryAction()">Review</button>
+        <button class="btn btn-ghost" id="theme-modal-secondary" onclick="themeModalSecondaryAction()">Manual Search</button>
+        <details class="review-overflow">
+          <summary class="btn btn-ghost">⋯ More</summary>
+          <div class="review-overflow-menu">
+            <button class="btn btn-ghost btn-sm" onclick="themeModalEditTrim()">Edit Trim</button>
+            <button class="btn btn-ghost btn-sm" onclick="themeModalSetStatus('PENDING')">Set Pending</button>
+            <button class="btn btn-ghost btn-sm" onclick="themeModalSetStatus('REJECTED')">Reject</button>
+            <button class="btn btn-ghost btn-sm" onclick="themeModalSetStatus('IGNORED')">Ignore</button>
+            <button class="btn btn-red btn-sm" onclick="themeModalDelete()">Delete Theme</button>
+          </div>
+        </details>
       </div>
       <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
     </div>
@@ -2562,12 +2603,7 @@ function _htmlAttr(s){
 }
 
 function _recommendedAction(row){
-  const hasSource=_hasSourceUrl(row);
-  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
-  if((row.status==='DOWNLOADED'||row.status==='AVAILABLE') && row.rating_key) return {label:'Review', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
-  if(row.status==='STAGED') return {label:'Approve', cls:'btn btn-green btn-xs row-primary-action', fn:'_approveRow'};
-  if(row.status==='APPROVED' && hasSource && !hasTheme && row.rating_key) return {label:'Download', cls:'btn btn-green btn-xs row-primary-action', fn:'_downloadNow'};
-  if(hasSource && row.status==='PENDING') return {label:'Stage', cls:'btn btn-purple btn-xs row-primary-action', fn:'_stageRow'};
+  if(row.rating_key) return {label:'Review', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
   return {label:'Review', cls:'btn btn-ghost btn-xs row-primary-action', fn:'_manualSearch'};
 }
 
@@ -2578,7 +2614,7 @@ function _rowSecondaryActions(row){
   if(hasSource) actions.push({label:'Preview source', fn:'_previewSource'});
   if(row.status!=='STAGED' && hasSource) actions.push({label:'Set staged', fn:'_stageRow'});
   if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve', fn:'_approveRow'});
-  if(hasTheme && row.rating_key) actions.push({label:'Play theme', fn:'_playTheme'});
+  if(row.rating_key) actions.push({label:'Open review', fn:'_playTheme'});
   if(hasTheme && row.rating_key) actions.push({label:'Delete theme', fn:'_deleteTheme'});
   actions.push({label:'Manual search', fn:'_manualSearch'});
   return actions;
@@ -4028,6 +4064,7 @@ function resetActivePreviewBtn(){
 }
 
 // ── Trim modal preview ────────────────────────────────────────────────────────
+let _trimRk='';
 function trimModalUpdateResult(){
   const row=_mediaRows.find(r=>r.rating_key===_trimRk); if(!row) return;
   const dur=row.duration||0,s=parseTrim(document.getElementById('trim-modal-offset').value);
@@ -4052,6 +4089,16 @@ function trimModalSkip(s){ _trimModalAudio.skip(s); }
 function closeTrimModal(){
   closeModal('trim-modal');
   runModalMediaCleanup(()=>_trimModalAudio.cleanup());
+}
+async function applyTrimFromModal(){
+  if(!_trimRk) return;
+  const start=parseTrim(document.getElementById('trim-modal-offset').value||'0');
+  const r=await fetch('/api/theme/trim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:_activeLib||'',rating_key:_trimRk,start_offset:start,end_offset:0})});
+  const d=await r.json().catch(()=>({ok:false,error:'Trim failed'}));
+  if(!r.ok || d.ok===false) return toast(d.error||'Trim failed','err');
+  toast(d.message||'Trim applied','ok');
+  closeTrimModal();
+  await loadDatabase();
 }
 
 // ── YouTube Modal (Database page) ────────────────────────────────────────────
@@ -4632,35 +4679,152 @@ function toggleNav(){
 
 // ── Theme preview modal ──────────────────────────────────────────────────────
 let _themeModalContext={};
+function _themeHasLocal(row){
+  if(!row) return false;
+  return ['DOWNLOADED','AVAILABLE'].includes(String(row.status||'').toUpperCase()) || String(row.theme_exists||'')==='1';
+}
+function _themeOriginLabel(origin){
+  const v=String(origin||'').toLowerCase();
+  if(v==='golden_source_verified') return 'Verified Golden Source';
+  if(v==='golden_source') return 'Golden Source';
+  if(v==='manual') return 'Manual';
+  return 'Unknown';
+}
+function _themeRecommended(row){
+  const hasSource=!!String(row?.url||'').trim();
+  const hasTheme=_themeHasLocal(row);
+  if(!hasTheme && !hasSource) return 'Find a source URL';
+  if(!hasTheme && hasSource) return 'Download now';
+  return 'Play, replace, trim, or delete local theme';
+}
+function _themeWarning(row){
+  const hasSource=!!String(row?.url||'').trim();
+  const hasTheme=_themeHasLocal(row);
+  const st=String(row?.status||'').toUpperCase();
+  if(hasSource && !hasTheme && ['DOWNLOADED','AVAILABLE'].includes(st)) return 'Warning: status says local theme exists, but file metadata indicates missing.';
+  if(!hasSource && ['STAGED','APPROVED'].includes(st)) return 'Warning: source URL missing; STAGED/APPROVED are not valid until a source is present.';
+  if(hasTheme && !['DOWNLOADED','AVAILABLE'].includes(st)) return 'Warning: local theme exists but status is stale; consider Sync from disk.';
+  return '';
+}
 function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
   _themeModalContext={rk,title,year,folder,row};
+  const hasTheme=_themeHasLocal(row);
+  const hasSource=!!String(row?.url||'').trim();
+  const originLabel=_themeOriginLabel(row?.source_origin||'unknown');
+  const statusLabel=displayStatus(String(row?.status||'PENDING').toUpperCase());
+  const verified=String(row?.source_origin||'').toLowerCase()==='golden_source_verified';
+  const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
+  const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
+
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
-  document.getElementById('theme-modal-dur-meta').textContent='';
-  document.getElementById('theme-modal-file').textContent=`File: ${folder||'Unknown folder'}`;
+  document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'No local theme';
+  document.getElementById('theme-modal-file').textContent=themeFile;
+  document.getElementById('theme-modal-local-dur').textContent=row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—';
+  document.getElementById('theme-modal-size').textContent=row?.theme_size?`${Math.max(0,Number(row.theme_size||0)/1024).toFixed(1)} KB`:'—';
+  document.getElementById('theme-modal-offsets').textContent=`${fmt(parseTrim(row?.start_offset||'0'))} / ${fmt(parseTrim(row?.end_offset||'0'))}`;
+  document.getElementById('theme-modal-source-url').textContent=hasSource?(row.url||''):'—';
+  document.getElementById('theme-modal-origin').textContent=originLabel;
+  document.getElementById('theme-modal-tmdb').textContent=row?.tmdb_id||'—';
+  document.getElementById('theme-modal-summary').textContent=hasTheme?'Theme saved locally and playable.':'No local theme file yet.';
+  document.getElementById('theme-modal-next').textContent=_themeRecommended(row);
+  document.getElementById('theme-modal-notes').textContent=row?.notes||'—';
+  document.getElementById('theme-modal-updated').textContent=row?.last_updated||'—';
+
+  const warning=_themeWarning(row);
+  const warningEl=document.getElementById('theme-modal-warning');
+  warningEl.textContent=warning;
+  warningEl.style.display=warning?'block':'none';
+
+  document.getElementById('theme-local-player').style.display=hasTheme?'block':'none';
+  document.getElementById('theme-local-missing').style.display=hasTheme?'none':'block';
+
+  document.getElementById('theme-modal-chips').innerHTML=`
+    <span class="review-chip s-${String(row?.status||'PENDING').toUpperCase()}">${statusLabel}</span>
+    <span class="review-chip">${originLabel}</span>
+    <span class="review-chip">${hasTheme?'Local: Present':'Local: Missing'}</span>
+  `;
+
+  const primary=document.getElementById('theme-modal-primary');
+  const secondary=document.getElementById('theme-modal-secondary');
+  primary.dataset.mode=hasTheme?'play':(hasSource?'download':'search');
+  primary.textContent=hasTheme?'Play / Pause':(hasSource?'Download Now':'Find Source');
+  secondary.dataset.mode=hasTheme?'replace':'search';
+  secondary.textContent=hasTheme?'Replace Theme':'Manual Search';
+
   const verifiedEl=document.getElementById('theme-modal-verified');
-  const verified=String(row?.source_origin||'').startsWith('golden_source');
   if(verifiedEl) verifiedEl.style.display=verified?'block':'none';
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
   // TMDB link
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
+  const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
   document.getElementById('theme-modal-links').innerHTML=
-    `<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">TMDB</a>`;
-  setBio('theme-modal-bio', rk);
+    `<a class="modal-link-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
   _themeModalAudio.cleanup({clearSrc:false});
-  _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+  if(hasTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+  else _themeModalAudio.audio.src='';
   openModal('theme-modal');
-  _themeModalAudio.setHandlers({
-    onloadedmetadata:(audio)=>{
-      const d=fmt(audio.duration);
-      document.getElementById('theme-modal-dur-meta').textContent='Duration: '+d;
-      _themeModalAudio.play().catch(()=>{});
-    }
-  });
-  _themeModalAudio.audio.load();
+  _themeModalAudio.setHandlers();
+  if(hasTheme) _themeModalAudio.audio.load();
   if(_curKey) stopCurrentAudio();
+}
+function themeModalPrimaryAction(){
+  const mode=document.getElementById('theme-modal-primary')?.dataset.mode;
+  if(mode==='play') return themeModalToggle();
+  if(mode==='download'){
+    const c=_themeModalContext||{};
+    return downloadNow(c.rk||'', c.title||'', _activeLib||'');
+  }
+  return themeModalOpenManualSearch();
+}
+function themeModalSecondaryAction(){
+  const mode=document.getElementById('theme-modal-secondary')?.dataset.mode;
+  if(mode==='replace' || mode==='search') return themeModalOpenManualSearch();
+}
+function themeModalOpenSource(){
+  const url=String(_themeModalContext?.row?.url||'').trim();
+  if(!url) return toast('No source URL on this row','info');
+  window.open(url,'_blank');
+}
+function themeModalSetStatus(status){
+  const key=_themeModalContext?.rk;
+  if(!key) return;
+  updateRow(key,'status',status);
+  closeThemeModal();
+}
+function themeModalDelete(){
+  const c=_themeModalContext||{};
+  if(!c.rk) return;
+  closeThemeModal();
+  openDeleteModal(c.rk,c.title||'',_activeLib||'',c.folder||'');
+}
+function themeModalEditTrim(){
+  const c=_themeModalContext||{};
+  if(!c.rk) return;
+  closeThemeModal();
+  _trimRk=c.rk;
+  document.getElementById('trim-modal-title').textContent=c.title||'Edit Trim';
+  document.getElementById('trim-modal-meta').textContent=[c.year||'',`Duration: ${fmt(parseFloat(c.row?.theme_duration||0)||0)}`].filter(Boolean).join(' · ');
+  document.getElementById('trim-modal-poster').src=apiUrl('/api/poster?key='+encodeURIComponent(c.rk));
+  document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">TMDB</a>`;
+  document.getElementById('trim-modal-info').textContent='Trim local theme start offset and preview the remaining clip.';
+  document.getElementById('trim-modal-offset').value=String(c.row?.start_offset||'0');
+  trimModalUpdateResult();
+  _trimModalAudio.cleanup({clearSrc:false});
+  _trimModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(c.folder||''));
+  openModal('trim-modal');
+  _trimModalAudio.setHandlers();
+  _trimModalAudio.audio.load();
+}
+async function themeModalSyncFromDisk(){
+  if(!_activeLib) return toast('No active library selected','err');
+  const r=await fetch('/api/library/sync-themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:_activeLib})});
+  const d=await r.json().catch(()=>({ok:false,error:'Sync failed'}));
+  if(!r.ok || d.ok===false) return toast(d.error||'Sync failed','err');
+  toast(`Synced local theme metadata (${d.updated||0} updated)`,'ok');
+  await loadDatabase();
 }
 function themeModalOpenManualSearch(){
   const rk=_themeModalContext.rk;
