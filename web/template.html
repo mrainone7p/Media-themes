@@ -255,7 +255,7 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .run-dot.done{background:var(--green)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes qp-marquee{0%,10%{transform:translateX(0)}45%,55%{transform:translateX(calc(-100% + 220px))}100%{transform:translateX(0)}}
+@keyframes qp-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
 /* Global run status bar */
 .global-run{position:sticky;top:0;z-index:80;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:12px;font-family:var(--mono)}
@@ -580,13 +580,14 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .sm-card-icon{font-size:16px;line-height:1;margin-top:1px}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.3}
-.sm-card-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-shrink:0;width:280px;max-width:48%}
+.sm-card-actions{display:flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;width:320px;max-width:52%;margin-left:auto}
 .sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left}
 .sm-card-first button{margin-top:0}
 .sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
 .sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;white-space:nowrap;margin-bottom:4px;position:relative}
-.sm-quickpick-title > span{display:inline-block;white-space:nowrap;padding-right:20px}
-.sm-quickpick-title.scroll > span{animation:qp-marquee 7s linear infinite}
+.sm-quickpick-track{display:inline-flex;white-space:nowrap;min-width:max-content}
+.sm-quickpick-copy{display:inline-block;padding-right:28px}
+.sm-quickpick-title.scroll .sm-quickpick-track{animation:qp-marquee 9s linear infinite}
 .sm-quickpick-loading{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);font-family:var(--mono)}
 .sm-quickpick-loading::before{content:"";width:10px;height:10px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--purple);animation:spin .8s linear infinite}
 .muted-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:11px;color:var(--text2)}
@@ -1468,6 +1469,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
         <audio id="se-audio" style="display:none"></audio>
         <div class="modal-status-txt" id="se-info" style="padding-left:0;padding-top:3px">Select a result or paste a URL to preview</div>
+      </div>
+
+      <div class="modal-section" style="padding-top:8px;padding-bottom:0">
+        <div class="modal-section-label">Selected Source</div>
+        <div id="se-source-title" style="font-size:12px;color:var(--text2);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
       </div>
 
       <!-- Source URL -->
@@ -3119,6 +3125,16 @@ let _lastPreviewedUrl='';
 let _step3PreparedUrl='';
 let _activeQuickPickBtn=null;
 let _activeQuickPickUrl='';
+let _selectedSourceTitle='';
+
+
+function _sourceTitleFromUrl(url){
+  try{
+    const u=new URL(url);
+    const id=u.searchParams.get('v')||u.searchParams.get('list')||u.pathname.split('/').filter(Boolean).pop()||u.hostname;
+    return `${u.hostname} · ${id}`;
+  }catch(_e){ return url||'—'; }
+}
 
 function buildSearchQuery(method,title,year){
   const base=((title||'')+' '+(year||'')).trim();
@@ -3234,6 +3250,9 @@ async function openSearchModal(rk,title,year,lib){
   document.getElementById('se-url').value=existingUrl;
   document.getElementById('se-offset').value=existingOffset;
   _step3PreparedUrl=existingUrl||'';
+  _selectedSourceTitle='';
+  const sourceEl=document.getElementById('se-source-title');
+  if(sourceEl) sourceEl.textContent=existingUrl?_sourceTitleFromUrl(existingUrl):'—';
   document.getElementById('se-info').textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
   // Decide starting step
   if(_lastSearchResults.length && _searchKey===rk){
@@ -3312,7 +3331,7 @@ function _renderResults(results){
       </div>
       <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:flex-end">
         <button class="btn btn-ghost btn-xs" onclick="previewSearchResult('${r.url.replace(/'/g,"\\'")}',this)">▶ Preview</button>
-        <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}')">Select →</button>
+        <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}',{skipPreview:false,sourceTitle:'${r.title.replace(/'/g,"\\'").replace(/</g,'&lt;')}'})">Select →</button>
       </div>
     </div>`).join('');
 }
@@ -3326,8 +3345,10 @@ function _setMethodQuickPick(method, result){
   const safeUrl=(result.url||'').replace(/'/g,"\\'");
   const rawTitle=(result.title||'1st result');
   const safeTitle=rawTitle.replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const titleClass=rawTitle.length>34?'sm-quickpick-title scroll':'sm-quickpick-title';
-  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"><span>${safeTitle}</span></span><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}')">Select</button>`;
+  const isLong=rawTitle.length>34;
+  const titleClass=isLong?'sm-quickpick-title scroll':'sm-quickpick-title';
+  const titleBody=isLong?`<span class=\"sm-quickpick-track\"><span class=\"sm-quickpick-copy\">${safeTitle}</span><span class=\"sm-quickpick-copy\">${safeTitle}</span></span>`:`<span>${safeTitle}</span>`;
+  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}">${titleBody}</span><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}')">Select</button>`;
 }
 
 async function previewQuickPick(method,url,btn){
@@ -3370,11 +3391,12 @@ async function previewQuickPick(method,url,btn){
   }
 }
 
-async function quickPickSelect(method,url){
+async function quickPickSelect(method,url,title=''){
   if(!url) return;
   _searchMethod=method||_searchMethod;
   await _searchByMethod(_searchMethod,false);
-  goToStep3(url,{skipPreview:false});
+  if(_lastSearchResults.length) _renderResults(_lastSearchResults);
+  goToStep3(url,{skipPreview:false,sourceTitle:title});
 }
 
 async function _prefetchMethodFirstResult(method){
@@ -3449,6 +3471,7 @@ async function searchModalDownloadNow(){
 
 function goToStep3(url, opts={}){
   stopAllAudio();
+  if(_lastSearchResults.length) _renderResults(_lastSearchResults);
   document.getElementById('se-url').value=url||'';
   document.getElementById('se-offset').value='0:00';
   document.getElementById('se-cur').textContent='0:00';
@@ -3456,6 +3479,9 @@ function goToStep3(url, opts={}){
   document.getElementById('se-slider').value=0;
   document.getElementById('se-info').textContent='Loading preview…';
   _step3PreparedUrl=url||'';
+  _selectedSourceTitle=(opts.sourceTitle||_selectedSourceTitle||_sourceTitleFromUrl(url||''));
+  const sourceEl=document.getElementById('se-source-title');
+  if(sourceEl) sourceEl.textContent=_selectedSourceTitle||'—';
   const loadBtn=document.getElementById('se-load-btn');
   if(loadBtn){ loadBtn.textContent='Loading…'; loadBtn.disabled=true; }
   document.getElementById('se-play-btn').innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
@@ -3467,14 +3493,14 @@ function goToStep3(url, opts={}){
 function goToStep3FromPaste(){
   const url=(document.getElementById('search-paste-url').value||'').trim();
   if(!url){ toast('Paste a URL first','info'); return; }
-  goToStep3(url,{skipPreview:false});
+  goToStep3(url,{skipPreview:false,sourceTitle:_sourceTitleFromUrl(url)});
 }
 
 // ── Source editor (Step 3) functions ────────────────────────────────────────
 function openSourceEditor(url, previewOnly){
   if(!url){ toast('No URL provided','info'); return; }
   _seKey=_searchKey; _seLib=_searchLib||_activeLib||'';
-  goToStep3(url,{skipPreview:false});
+  goToStep3(url,{skipPreview:false,sourceTitle:_sourceTitleFromUrl(url)});
 }
 
 function closeSourceEditor(){
@@ -3485,7 +3511,11 @@ function backToSearch(){
   goToSearchStep(2);
 }
 
-function seUrlChanged(){}
+function seUrlChanged(){
+  const u=(document.getElementById('se-url').value||'').trim();
+  const sourceEl=document.getElementById('se-source-title');
+  if(sourceEl) sourceEl.textContent=u?_sourceTitleFromUrl(u):(_selectedSourceTitle||'—');
+}
 
 async function seLoadPreview(){
   const url=(document.getElementById('se-url').value||'').trim();
