@@ -2013,6 +2013,34 @@ const STATUS_DESC={
 };
 function displayStatus(s){ return STATUS_DISPLAY[s] || s; }
 
+function _hasLocalTheme(row){
+  return String(row?.theme_exists||'')==='1';
+}
+
+function _hasSourceUrl(row){
+  return !!String(row?.url||'').trim();
+}
+
+function _statusValidation(row, attemptedStatus){
+  const attempted=String(attemptedStatus||'').toUpperCase();
+  const current=String(row?.status||'').toUpperCase();
+  if(current===attempted) return {ok:true};
+  if(attempted==='STAGED' && !_hasSourceUrl(row)){
+    return {ok:false, reason:'Add a source URL before staging this item.'};
+  }
+  if((attempted==='DOWNLOADED' || attempted==='AVAILABLE') && !_hasLocalTheme(row)){
+    return {ok:false, reason:'Local theme file is missing. Download it first.'};
+  }
+  if(attempted==='APPROVED' && !['STAGED','APPROVED'].includes(current)){
+    return {ok:false, reason:'Only staged items can be approved.'};
+  }
+  return {ok:true};
+}
+
+function allowedStatuses(row){
+  return STATUSES.filter(status=>_statusValidation(row,status).ok);
+}
+
 function renderStatusKey(){
   const el=document.getElementById('status-key');
   if(!el) return;
@@ -2134,9 +2162,11 @@ function sortTable(col){ if(_sortCol===col)_sortDir*=-1; else{_sortCol=col;_sort
 let _curAudio=null, _curKey=null;
 const _audioEl=()=>document.getElementById('global-audio');
 
-function renderStatusCell(rk,status){
-  const opts=STATUSES.map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
-  return `<span class="badge s-${status}" title="${STATUS_DESC[status]||''}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value);this.closest('td').innerHTML=renderStatusCell('${rk}',this.value)">${opts}</select>${displayStatus(status)}</span>`;
+function renderStatusCell(row){
+  const rk=row.rating_key;
+  const status=row.status;
+  const opts=allowedStatuses(row).map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
+  return `<span class="badge s-${status}" title="${STATUS_DESC[status]||''}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select>${displayStatus(status)}</span>`;
 }
 
 function _htmlAttr(s){
@@ -2200,12 +2230,14 @@ function renderSourceBtn(row){
   const rk=_htmlAttr(row.rating_key);
   const url=_htmlAttr(row.url||'');
   const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
-  const preview=row.url?`<button class="btn btn-purple btn-xs action-icon"
+  const canPreview=_hasSourceUrl(row);
+  const canDownloadNow=_hasSourceUrl(row) && !hasTheme && !!row.rating_key;
+  const preview=`<button class="btn btn-purple btn-xs action-icon"
     data-action="preview-source" data-rk="${rk}" data-url="${url}"
-    onclick="_previewSource(this)" title="Preview source">▶</button>`:'';
-  const dlNow=(row.url && !hasTheme)?`<button class="btn btn-green btn-xs action-icon"
+    onclick="_previewSource(this)" title="${canPreview?'Preview source':'Add a source URL to preview'}" ${canPreview?'':'disabled'}>▶</button>`;
+  const dlNow=`<button class="btn btn-green btn-xs action-icon"
     data-action="download-now" data-rk="${rk}"
-    onclick="_downloadNow(this)" title="Download now">↓</button>`:'';
+    onclick="_downloadNow(this)" title="${canDownloadNow?'Download now':'Requires source URL, Plex ID, and no local theme'}" ${canDownloadNow?'':'disabled'}>↓</button>`;
   const manual=`<button class="btn btn-ghost btn-xs action-icon"
     data-action="manual-search" data-rk="${rk}"
     onclick="_manualSearch(this)" title="Manual search">🔍</button>`;
@@ -2213,6 +2245,7 @@ function renderSourceBtn(row){
 }
 
 function _previewSource(btn){
+  if(btn.disabled) return;
   const rk=btn.dataset.rk;
   const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
   const url=(row?.url)||btn.dataset.url||'';
@@ -2222,6 +2255,7 @@ function _previewSource(btn){
   openYtModal(rk, title, year, url, encodeURIComponent(_activeLib||''));
 }
 function _downloadNow(btn){
+  if(btn.disabled) return;
   const rk=btn.dataset.rk;
   const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
   if(!row) return;
@@ -2394,7 +2428,6 @@ function renderTable(){
   empty.style.display='none';
   tbody.innerHTML=slice.map(row=>{
     const rk=row.rating_key;
-    const opts=STATUSES.map(s=>`<option value="${s}"${row.status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
     const checked=_selectedKeys.has(rk)?'checked':'';
     const rawTitle=(row.title||row.plex_title||'');
     const titleAttr=rawTitle.replace(/"/g,'&quot;');
@@ -2408,13 +2441,7 @@ function renderTable(){
       </td>
       <td style="color:var(--text3)">${row.year||''}</td>
       <td>
-        <span class="badge s-${row.status}" style="cursor:pointer;position:relative">
-          <span class="si"></span>
-          <select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value);this.closest('td').innerHTML=renderStatusCell('${rk}',this.value)">
-            ${opts}
-          </select>
-          ${displayStatus(row.status)}
-        </span>
+        ${renderStatusCell(row)}
       </td>
       <td>${renderThemeBtn(row)}</td>
       <td>${renderSourceBtn(row)}</td>
@@ -2440,6 +2467,15 @@ function goPage(p){ _page=p; renderTable(); window.scrollTo(0,0); }
 
 async function updateRow(key,field,value,selEl){
   const row=_rows.find(r=>r.rating_key===key);
+  const prevValue=row?row[field]:undefined;
+  if(field==='status' && row){
+    const localCheck=_statusValidation(row,value);
+    if(!localCheck.ok){
+      toast(localCheck.reason,'info');
+      renderTable();
+      return;
+    }
+  }
   if(row){
     row[field]=value;
     if(_rowMap[key]) _rowMap[key][field]=value; // keep map in sync
@@ -2447,12 +2483,20 @@ async function updateRow(key,field,value,selEl){
   const r=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(_activeLib),{
     method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:value})
   });
+  const data=await r.json().catch(()=>({}));
   if(r.ok){
     toast('Saved','ok');
     renderChips();
     renderTable();
-    
-  } else toast('Save failed','err');
+  } else {
+    if(row){
+      row[field]=prevValue;
+      if(_rowMap[key]) _rowMap[key][field]=prevValue;
+    }
+    const msg=[data.error,data.reason_code?`(${data.reason_code})`:'' ,data.current_status&&data.attempted_status?`[${data.current_status} → ${data.attempted_status}]`:'' ].filter(Boolean).join(' ').trim();
+    toast(msg||'Save failed','err');
+    await loadDatabase(false);
+  }
 }
 
 async function updateRowAndRefresh(key,field,value){
@@ -2585,14 +2629,18 @@ async function bulkSetStatus2(status){
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({keys,status})
   });
+  const d=await r.json().catch(()=>({}));
   if(r.ok){
-    const d=await r.json();
     const updated=d.updated ?? keys.length;
     const skipped=d.skipped ?? 0;
     toast(`${updated} items → ${status}${skipped?` · ${skipped} skipped`:''}`,'ok');
     clearSelection(); loadDatabase();
   }
-  else toast('Bulk update failed','err');
+  else{
+    const msg=[d.error,d.reason_code?`(${d.reason_code})`:'' ,d.current_status&&d.attempted_status?`[${d.current_status} → ${d.attempted_status}]`:'' ].filter(Boolean).join(' ').trim();
+    toast(msg||'Bulk update failed','err');
+    await loadDatabase(false);
+  }
 }
 
 async function clearSourcesSelected(){

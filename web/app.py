@@ -32,6 +32,47 @@ from storage import (
 )
 
 EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
+VALID_STATUSES = {"PENDING", "STAGED", "APPROVED", "DOWNLOADED", "AVAILABLE", "FAILED", "REJECTED", "IGNORED"}
+
+
+def _status_validation_error(row, attempted_status):
+    attempted = str(attempted_status or "").upper()
+    current = str(row.get("status", "") or "").upper()
+    if not attempted or attempted not in VALID_STATUSES:
+        return {
+            "error": "Invalid target status",
+            "reason_code": "INVALID_STATUS",
+            "current_status": current,
+            "attempted_status": attempted,
+        }
+    if attempted == current:
+        return None
+
+    has_url = bool(str(row.get("url", "") or "").strip())
+    has_theme = str(row.get("theme_exists", "") or "") == "1"
+
+    if attempted == "STAGED" and not has_url:
+        return {
+            "error": "Cannot set status to STAGED without a source URL",
+            "reason_code": "MISSING_URL",
+            "current_status": current,
+            "attempted_status": attempted,
+        }
+    if attempted in ("DOWNLOADED", "AVAILABLE") and not has_theme:
+        return {
+            "error": "Cannot set status to DOWNLOADED/AVAILABLE when local theme is missing",
+            "reason_code": "MISSING_LOCAL_THEME",
+            "current_status": current,
+            "attempted_status": attempted,
+        }
+    if attempted == "APPROVED" and current not in ("STAGED", "APPROVED"):
+        return {
+            "error": "Only STAGED items can be approved",
+            "reason_code": "APPROVAL_REQUIRES_STAGED",
+            "current_status": current,
+            "attempted_status": attempted,
+        }
+    return None
 
 _run_lock    = threading.Lock()
 _run_active  = False
@@ -427,10 +468,10 @@ def patch_ledger(key):
     for row in rows:
         if row.get("rating_key") == key:
             req = request.json or {}
-            if "status" in req and str(req.get("status")).upper() == "APPROVED":
-                cur = str(row.get("status","")).upper()
-                if cur not in ("STAGED","APPROVED"):
-                    return jsonify({"error":"Only STAGED items can be approved"}), 400
+            if "status" in req:
+                err = _status_validation_error(row, req.get("status"))
+                if err:
+                    return jsonify(err), 400
             for k, v in req.items():
                 if k in EDITABLE_LEDGER_FIELDS: row[k] = str(v)
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -443,13 +484,16 @@ def patch_ledger(key):
 def bulk_ledger():
     lib = request.args.get("library","")
     path = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-    data = request.json; keys = set(data.get("keys",[])); status = data.get("status","")
+    data = request.json
+    keys = set(data.get("keys",[]))
+    status = str(data.get("status","") or "").upper()
     rows = load_ledger(path); now = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); count=0; skipped=0
     for row in rows:
         if row.get("rating_key") in keys:
             cur = str(row.get("status","")).upper()
-            if str(status).upper() == "APPROVED" and cur not in ("STAGED","APPROVED"):
-                skipped += 1; continue
+            err = _status_validation_error(row, status)
+            if err:
+                return jsonify(err), 400
             row["status"] = status; row["last_updated"] = now
             row["notes"] = f"Bulk {cur}->{status} via web UI"; count += 1
     save_ledger(path, rows)
