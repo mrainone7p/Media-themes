@@ -508,6 +508,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .review-overflow[open]{z-index:2}
 .review-overflow-menu{position:absolute;right:0;bottom:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:170px}
 .review-overflow-menu button{width:100%;text-align:left}
+.review-header-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-top:8px;padding-bottom:8px}
+.simple-line{font-size:12px;color:var(--text2);margin-bottom:6px;word-break:break-word}
+.search-method-head{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.search-method-input{margin-top:6px;width:100%;font-size:12px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);outline:none}
+.search-method-card.disabled{opacity:.55;border-style:dashed;cursor:not-allowed}
 
 /* ─── Pipeline graphic (Database page) ─── */
 .pipeline-wrap{padding:16px var(--content-pad,20px) 0;border-bottom:1px solid var(--border)}
@@ -1472,6 +1477,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Step 1: Choose Method -->
     <div id="search-step-1" class="search-step-body" style="overflow-y:auto;flex:1">
       <div class="modal-section" style="padding-bottom:0">
+        <div class="search-method-head">Choose Search Method</div>
         <div class="manual-methods">
           <div class="search-method-card active" id="sm-card-playlist" onclick="selectSearchMethod('playlist')">
             <div class="sm-card-main">
@@ -1501,23 +1507,30 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <div class="sm-card-desc">Hand-tune your query</div>
               </div>
             </div>
+            <div class="sm-card-actions" style="width:100%;max-width:none;margin-left:0">
+              <input id="sm-custom-input" class="search-method-input" placeholder="Type a custom query..." oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')searchModalPrimary()">
+            </div>
           </div>
-        </div>
-
-        <!-- Query preview + actions -->
-        <div id="sm-query-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px">
-          <div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Search Query</div>
-          <div id="sm-query-display" style="font-size:13px;font-family:var(--mono);color:var(--text);word-break:break-all"></div>
-          <input id="sm-custom-input" placeholder="Type a custom search query…" style="display:none;width:100%;margin-top:8px;background:var(--surface);border:1px solid var(--amber);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')doSearch()">
-        </div>
-
-
-        <!-- Paste URL section -->
-        <div style="border-top:1px solid var(--border);padding-top:14px">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px">— Or Paste Source URL Directly —</div>
-          <div style="display:flex;gap:8px">
-            <input id="search-paste-url" placeholder="https://www.youtube.com/watch?v=…" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')goToStep3FromPaste()">
-            <button class="btn btn-green btn-sm" onclick="goToStep3FromPaste()">Use URL →</button>
+          <div class="search-method-card" id="sm-card-paste" onclick="selectSearchMethod('paste')">
+            <div class="sm-card-main">
+              <div class="sm-card-icon">📎</div>
+              <div class="sm-card-copy">
+                <div class="sm-card-title">Paste URL</div>
+                <div class="sm-card-desc">Use a known source directly</div>
+              </div>
+            </div>
+            <div class="sm-card-actions" style="width:100%;max-width:none;margin-left:0">
+              <input id="search-paste-url" class="search-method-input" placeholder="https://www.youtube.com/watch?v=..." onkeydown="if(event.key==='Enter')searchModalPrimary()">
+            </div>
+          </div>
+          <div class="search-method-card" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
+            <div class="sm-card-main">
+              <div class="sm-card-icon">★</div>
+              <div class="sm-card-copy">
+                <div class="sm-card-title">Golden Source</div>
+                <div class="sm-card-desc" id="sm-golden-desc">Use curated Golden Source URL for this item</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1633,29 +1646,18 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <span id="theme-modal-year"></span>
           <span id="theme-modal-dur-meta" style="color:var(--green)"></span>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px" id="theme-modal-chips"></div>
         <div class="modal-movie-links" id="theme-modal-links"></div>
       </div>
     </div>
+    <div class="modal-bio" id="theme-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0 22px 10px"></div>
 
-    <div class="review-card">
-      <div class="modal-section-label">Current State</div>
-      <div style="font-size:12px;color:var(--text);margin-bottom:6px" id="theme-modal-summary">—</div>
-      <div class="review-kv"><span>Next recommended action</span><b id="theme-modal-next">—</b></div>
-      <div class="review-kv"><span>Why this state</span><span id="theme-modal-notes">—</span></div>
-      <div class="review-kv"><span>Last updated</span><span id="theme-modal-updated">—</span></div>
-      <div class="review-warning" id="theme-modal-warning" style="display:none"></div>
-    </div>
+    <div class="review-header-desc" id="theme-modal-summary">—</div>
 
-    <div class="review-card" id="theme-local-card">
+      <div class="review-card" id="theme-local-card">
       <div class="modal-section-label">Local Theme</div>
       <div id="theme-modal-verified" class="theme-modal-verified" style="display:none">★ Verified Theme · Golden Source</div>
-      <div class="review-grid" style="margin-bottom:8px">
-        <div class="review-kv"><span>File path</span><span id="theme-modal-file">—</span></div>
-        <div class="review-kv"><span>Duration</span><span id="theme-modal-local-dur">—</span></div>
-        <div class="review-kv"><span>Size</span><span id="theme-modal-size">—</span></div>
-        <div class="review-kv"><span>Offsets</span><span id="theme-modal-offsets">—</span></div>
-      </div>
+      <div class="simple-line" id="theme-modal-file">File path: —</div>
+      <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
       <div id="theme-local-missing" style="font-size:12px;color:var(--text3);display:none">No local theme file yet.</div>
       <div id="theme-local-player" style="display:none">
         <div class="modal-player-row">
@@ -1670,37 +1672,27 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
         </div>
         <audio id="theme-modal-audio" style="display:none"></audio>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          <button class="btn btn-ghost btn-sm" onclick="themeModalEditTrim()">Edit Trim</button>
+          <button class="btn btn-ghost btn-sm" onclick="themeModalOpenManualSearch()">Replace Theme</button>
+          <button class="btn btn-red btn-sm" onclick="themeModalDelete()">Delete Theme</button>
+        </div>
       </div>
     </div>
 
     <div class="review-card">
       <div class="modal-section-label">Source</div>
-      <div class="review-kv"><span>Source URL</span><span id="theme-modal-source-url">—</span></div>
-      <div class="review-kv"><span>Source origin</span><span id="theme-modal-origin">—</span></div>
-      <div class="review-kv"><span>TMDB ID</span><span id="theme-modal-tmdb">—</span></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-        <button class="btn btn-ghost btn-sm" onclick="themeModalOpenSource()">↗ Open Source</button>
-        <button class="btn btn-ghost btn-sm" onclick="themeModalOpenManualSearch()">Replace / Search Source</button>
-        <button class="btn btn-ghost btn-sm" onclick="themeModalSyncFromDisk()">Sync from disk</button>
+      <div class="simple-line" id="theme-modal-source-url">Source URL: —</div>
+      <div class="simple-line" id="theme-modal-origin">Source: —</div>
+      <div class="simple-line" id="theme-modal-golden">Golden Source: —</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px" id="theme-source-actions">
+        <button class="btn btn-ghost btn-sm" id="theme-open-source-btn" onclick="themeModalOpenSource()">↗ Open Source</button>
+        <button class="btn btn-ghost btn-sm" id="theme-manual-search-btn" onclick="themeModalOpenManualSearch()">Manual Search</button>
       </div>
     </div>
 
     <!-- Footer -->
-    <div class="modal-footer" style="justify-content:space-between">
-      <div class="review-actions">
-        <button class="btn btn-green" id="theme-modal-primary" onclick="themeModalPrimaryAction()">Review</button>
-        <button class="btn btn-ghost" id="theme-modal-secondary" onclick="themeModalSecondaryAction()">Manual Search</button>
-        <details class="review-overflow">
-          <summary class="btn btn-ghost">⋯ More</summary>
-          <div class="review-overflow-menu">
-            <button class="btn btn-ghost btn-sm" onclick="themeModalEditTrim()">Edit Trim</button>
-            <button class="btn btn-ghost btn-sm" onclick="themeModalSetStatus('PENDING')">Set Pending</button>
-            <button class="btn btn-ghost btn-sm" onclick="themeModalSetStatus('REJECTED')">Reject</button>
-            <button class="btn btn-ghost btn-sm" onclick="themeModalSetStatus('IGNORED')">Ignore</button>
-            <button class="btn btn-red btn-sm" onclick="themeModalDelete()">Delete Theme</button>
-          </div>
-        </details>
-      </div>
+    <div class="modal-footer" style="justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
     </div>
   </div>
@@ -3531,25 +3523,21 @@ function buildSearchQuery(method,title,year){
   const base=((title||'')+' '+(year||'')).trim();
   if(method==='playlist') return (base+' soundtrack playlist').trim();
   if(method==='direct') return (base+' theme song').trim();
+  if(method==='golden_source') return '';
+  if(method==='paste') return '';
   return _searchCustomQuery || base;
 }
 
 function _updateQueryDisplay(){
-  const q = buildSearchQuery(_searchMethod,_searchTitle,_searchYear);
-  const disp = document.getElementById('sm-query-display');
   const inp = document.getElementById('sm-custom-input');
-  if(_searchMethod==='custom'){
-    if(disp) disp.style.display='none';
-    if(inp){ inp.style.display=''; inp.value=_searchCustomQuery||q; }
-  } else {
-    if(disp){ disp.style.display=''; disp.textContent=q; }
-    if(inp) inp.style.display='none';
-  }
+  if(inp) inp.value=_searchCustomQuery||buildSearchQuery('custom',_searchTitle,_searchYear);
 }
 
 function selectSearchMethod(method){
+  const goldenCard=document.getElementById('sm-card-golden');
+  if(method==='golden_source' && goldenCard?.classList.contains('disabled')) return;
   _searchMethod=method;
-  ['playlist','direct','custom'].forEach(m=>{
+  ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
     const card=document.getElementById('sm-card-'+m);
     if(card) card.classList.toggle('active',m===method);
   });
@@ -3628,7 +3616,7 @@ async function openSearchModal(rk,title,year,lib){
   document.getElementById('search-modal-links').innerHTML=`<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">🎬 TMDB</a>`;
   setBio('search-modal-bio',rk);
   // Restore or reset method cards
-  ['playlist','direct','custom'].forEach(m=>{
+  ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
     const card=document.getElementById('sm-card-'+m);
     if(card) card.classList.toggle('active',m===_searchMethod);
   });
@@ -3645,6 +3633,18 @@ async function openSearchModal(rk,title,year,lib){
   const sourceEl=document.getElementById('se-source-title');
   if(sourceEl) sourceEl.textContent=existingUrl?_sourceTitleFromUrl(existingUrl):'—';
   document.getElementById('se-info').textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
+  const goldenCard=document.getElementById('sm-card-golden');
+  const goldenDesc=document.getElementById('sm-golden-desc');
+  const hasGolden=String(existingRow?.source_origin||'').startsWith('golden_source') && !!String(existingRow?.url||'').trim();
+  if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
+  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated Golden Source URL':'Not currently available';
+  if(_searchMethod==='golden_source' && !hasGolden){
+    _searchMethod='playlist';
+    ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
+      const card=document.getElementById('sm-card-'+m);
+      if(card) card.classList.toggle('active',m===_searchMethod);
+    });
+  }
   // Decide starting step
   if(_lastSearchResults.length && _searchKey===rk){
     goToSearchStep(2);
@@ -3701,6 +3701,14 @@ async function _searchByMethod(method, showStep=true){
 
 async function doSearch(){
   _searchMethod=_searchMethod||'playlist';
+  if(_searchMethod==='paste') return goToStep3FromPaste();
+  if(_searchMethod==='golden_source'){
+    const row=_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
+    const isGolden=String(row?.source_origin||'').startsWith('golden_source');
+    const url=String(row?.url||'').trim();
+    if(!isGolden || !url) return toast('Golden Source URL not currently available for this item','info');
+    return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL'});
+  }
   await _searchByMethod(_searchMethod, true);
 }
 
@@ -4690,68 +4698,40 @@ function _themeOriginLabel(origin){
   if(v==='manual') return 'Manual';
   return 'Unknown';
 }
-function _themeRecommended(row){
-  const hasSource=!!String(row?.url||'').trim();
-  const hasTheme=_themeHasLocal(row);
-  if(!hasTheme && !hasSource) return 'Find a source URL';
-  if(!hasTheme && hasSource) return 'Download now';
-  return 'Play, replace, trim, or delete local theme';
-}
-function _themeWarning(row){
-  const hasSource=!!String(row?.url||'').trim();
-  const hasTheme=_themeHasLocal(row);
-  const st=String(row?.status||'').toUpperCase();
-  if(hasSource && !hasTheme && ['DOWNLOADED','AVAILABLE'].includes(st)) return 'Warning: status says local theme exists, but file metadata indicates missing.';
-  if(!hasSource && ['STAGED','APPROVED'].includes(st)) return 'Warning: source URL missing; STAGED/APPROVED are not valid until a source is present.';
-  if(hasTheme && !['DOWNLOADED','AVAILABLE'].includes(st)) return 'Warning: local theme exists but status is stale; consider Sync from disk.';
-  return '';
-}
 function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
   _themeModalContext={rk,title,year,folder,row};
   const hasTheme=_themeHasLocal(row);
   const hasSource=!!String(row?.url||'').trim();
   const originLabel=_themeOriginLabel(row?.source_origin||'unknown');
-  const statusLabel=displayStatus(String(row?.status||'PENDING').toUpperCase());
-  const verified=String(row?.source_origin||'').toLowerCase()==='golden_source_verified';
+  const originRaw=String(row?.source_origin||'').toLowerCase();
+  const verified=originRaw==='golden_source_verified';
+  const isGolden=originRaw.startsWith('golden_source');
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
 
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
-  document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'No local theme';
-  document.getElementById('theme-modal-file').textContent=themeFile;
-  document.getElementById('theme-modal-local-dur').textContent=row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—';
-  document.getElementById('theme-modal-size').textContent=row?.theme_size?`${Math.max(0,Number(row.theme_size||0)/1024).toFixed(1)} KB`:'—';
-  document.getElementById('theme-modal-offsets').textContent=`${fmt(parseTrim(row?.start_offset||'0'))} / ${fmt(parseTrim(row?.end_offset||'0'))}`;
-  document.getElementById('theme-modal-source-url').textContent=hasSource?(row.url||''):'—';
-  document.getElementById('theme-modal-origin').textContent=originLabel;
-  document.getElementById('theme-modal-tmdb').textContent=row?.tmdb_id||'—';
+  document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'Theme missing';
   document.getElementById('theme-modal-summary').textContent=hasTheme?'Theme saved locally and playable.':'No local theme file yet.';
-  document.getElementById('theme-modal-next').textContent=_themeRecommended(row);
-  document.getElementById('theme-modal-notes').textContent=row?.notes||'—';
-  document.getElementById('theme-modal-updated').textContent=row?.last_updated||'—';
+  document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
+  document.getElementById('theme-modal-local-dur').textContent=`Duration: ${row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
+  const sourceUrlEl=document.getElementById('theme-modal-source-url');
+  sourceUrlEl.innerHTML=hasSource
+    ?`Source URL: <a href="${(row.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="color:var(--blue)">${(row.url||'').replace(/</g,'&lt;')}</a>`
+    :'Source URL: —';
+  document.getElementById('theme-modal-origin').textContent=`Source: ${originLabel}`;
+  document.getElementById('theme-modal-golden').textContent=`Golden Source: ${isGolden?(verified?'Yes · Verified':'Yes'):'No'}`;
 
-  const warning=_themeWarning(row);
-  const warningEl=document.getElementById('theme-modal-warning');
-  warningEl.textContent=warning;
-  warningEl.style.display=warning?'block':'none';
+  const sourceActions=document.getElementById('theme-source-actions');
+  if(sourceActions) sourceActions.style.display='flex';
+  const openSourceBtn=document.getElementById('theme-open-source-btn');
+  const manualSearchBtn=document.getElementById('theme-manual-search-btn');
+  if(openSourceBtn) openSourceBtn.style.display=hasSource?'':'none';
+  if(manualSearchBtn) manualSearchBtn.textContent=hasSource?'Replace Theme':'Manual Search';
 
   document.getElementById('theme-local-player').style.display=hasTheme?'block':'none';
   document.getElementById('theme-local-missing').style.display=hasTheme?'none':'block';
-
-  document.getElementById('theme-modal-chips').innerHTML=`
-    <span class="review-chip s-${String(row?.status||'PENDING').toUpperCase()}">${statusLabel}</span>
-    <span class="review-chip">${originLabel}</span>
-    <span class="review-chip">${hasTheme?'Local: Present':'Local: Missing'}</span>
-  `;
-
-  const primary=document.getElementById('theme-modal-primary');
-  const secondary=document.getElementById('theme-modal-secondary');
-  primary.dataset.mode=hasTheme?'play':(hasSource?'download':'search');
-  primary.textContent=hasTheme?'Play / Pause':(hasSource?'Download Now':'Find Source');
-  secondary.dataset.mode=hasTheme?'replace':'search';
-  secondary.textContent=hasTheme?'Replace Theme':'Manual Search';
 
   const verifiedEl=document.getElementById('theme-modal-verified');
   if(verifiedEl) verifiedEl.style.display=verified?'block':'none';
@@ -4762,6 +4742,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
   document.getElementById('theme-modal-links').innerHTML=
     `<a class="modal-link-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
+  setBio('theme-modal-bio', rk);
   _themeModalAudio.cleanup({clearSrc:false});
   if(hasTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
   else _themeModalAudio.audio.src='';
@@ -4769,19 +4750,6 @@ function openThemeModal(rk,title,year,folder,row={}){
   _themeModalAudio.setHandlers();
   if(hasTheme) _themeModalAudio.audio.load();
   if(_curKey) stopCurrentAudio();
-}
-function themeModalPrimaryAction(){
-  const mode=document.getElementById('theme-modal-primary')?.dataset.mode;
-  if(mode==='play') return themeModalToggle();
-  if(mode==='download'){
-    const c=_themeModalContext||{};
-    return downloadNow(c.rk||'', c.title||'', _activeLib||'');
-  }
-  return themeModalOpenManualSearch();
-}
-function themeModalSecondaryAction(){
-  const mode=document.getElementById('theme-modal-secondary')?.dataset.mode;
-  if(mode==='replace' || mode==='search') return themeModalOpenManualSearch();
 }
 function themeModalOpenSource(){
   const url=String(_themeModalContext?.row?.url||'').trim();
