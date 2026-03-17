@@ -236,7 +236,8 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .player{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;min-width:180px}
 .play-btn{width:26px;height:26px;border-radius:50%;background:var(--amber);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .play-btn:hover{background:#fbbf24}
-.play-btn svg{width:10px;height:10px;fill:#000;margin-left:1px}
+.play-btn svg{width:10px;height:10px;fill:#000;margin-left:0}
+.play-btn svg.icon-play{margin-left:1px}
 .skip-btn{width:20px;height:20px;border-radius:50%;background:var(--surface);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text2);font-size:8px;font-weight:700;font-family:var(--mono);transition:all .15s}
 .skip-btn:hover{border-color:var(--text3);color:var(--text)}
 .player-meta{flex:1;min-width:0}
@@ -574,6 +575,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .search-method-card.golden-source{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 35%, var(--surface2))}
 .search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 62%, var(--surface2))}
 .search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 20%, var(--surface2));opacity:.68;cursor:not-allowed}
+.search-method-card.golden-source{position:relative}
+.sm-golden-recommended{position:absolute;top:10px;right:12px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green);display:none}
+.search-method-card.golden-source.recommended .sm-golden-recommended{display:block}
+.golden-link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-decoration:none;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(245,166,35,.4);white-space:nowrap}
+.golden-link-pill:hover{text-decoration:none;filter:brightness(1.04)}
+.result-idx{display:inline-flex;align-items:center;justify-content:center;min-width:24px;font-size:11px;color:var(--text3);font-family:var(--mono)}
 .sm-card-icon{font-size:22px;line-height:1}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.35}
@@ -1460,15 +1467,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Step rail - TOP -->
     <div style="display:flex;align-items:center;gap:0;padding:10px 22px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0" id="search-step-rail">
       <div class="srail-step active" id="srail-1" onclick="_srailClick(1)">
-        <span class="srail-num">1</span><span class="srail-label">Choose Search Method</span>
+        <span class="srail-num">1.</span><span class="srail-label">Choose Search Method</span>
       </div>
       <div class="srail-sep"></div>
       <div class="srail-step" id="srail-2" onclick="_srailClick(2)">
-        <span class="srail-num">2</span><span class="srail-label">Review Results</span>
+        <span class="srail-num">2.</span><span class="srail-label">Review Results</span>
       </div>
       <div class="srail-sep"></div>
       <div class="srail-step" id="srail-3" onclick="_srailClick(3)">
-        <span class="srail-num">3</span><span class="srail-label">Confirm Source</span>
+        <span class="srail-num">3.</span><span class="srail-label">Confirm Source</span>
       </div>
     </div>
 
@@ -1536,6 +1543,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </div>
           </div>
           <div class="search-method-card golden-source" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
+            <div class="sm-golden-recommended" id="sm-golden-recommended">Recommended</div>
             <div class="sm-card-main">
               <div class="sm-card-icon">★</div>
               <div class="sm-card-copy">
@@ -1543,6 +1551,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <div class="sm-card-desc" id="sm-golden-desc">Use curated Golden Source URL for this item</div>
               </div>
             </div>
+            <div class="sm-card-actions"><div class="sm-card-first" id="sm-first-golden_source"></div></div>
           </div>
         </div>
       </div>
@@ -1564,6 +1573,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="modal-time-row"><span id="sm-preview-cur">0:00</span><span id="sm-preview-dur">—</span></div>
           </div>
         </div>
+      </div>
+      <div style="padding:0 22px 6px;display:flex;justify-content:flex-end">
+        <div id="sm-results-count" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></div>
       </div>
       <div id="search-results" style="padding:0 22px 16px"></div>
     </div>
@@ -2593,8 +2605,8 @@ function sortTable(col){ if(_sortCol===col)_sortDir*=-1; else{_sortCol=col;_sort
 // ── Audio player ─────────────────────────────────────────────────────────────
 let _curAudio=null, _curKey=null;
 const _audioEl=()=>document.getElementById('global-audio');
-const PLAY_ICON_SVG='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-const PAUSE_ICON_SVG='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+const PLAY_ICON_SVG='<svg class="icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+const PAUSE_ICON_SVG='<svg class="icon-pause" viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
 
 function _htmlAttr(s){
   if(s==null||s===undefined) return '';
@@ -2900,7 +2912,7 @@ function renderTable(){
         ${renderStatusCell(row)}
       </td>
       <td>${renderRowActionCell(row)}</td>
-      <td style="white-space:nowrap">${row.golden_source_url?`<a href="${String(row.golden_source_url).replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px" title="${String(row.golden_source_url).replace(/"/g,'&quot;')}">↗ Golden Source</a>`:'Not available'}</td>
+      <td style="white-space:nowrap">${row.golden_source_url?`<a class="golden-link-pill" href="${String(row.golden_source_url).replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${String(row.golden_source_url).replace(/"/g,'&quot;')}">★ Golden Source ↗</a>`:'Not available'}</td>
       <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px;margin-right:4px" title="${safeUrlAttr}">↗</a>`:''}
         <input class="inline-ed" value="${safeUrlAttr}" placeholder="paste URL…" style="min-width:80px;max-width:140px;font-size:10px" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
       <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:74px;font-size:11px"
@@ -3464,6 +3476,7 @@ let _step3PreparedUrl='';
 let _activeQuickPickBtn=null;
 let _activeQuickPickUrl='';
 let _selectedSourceTitle='';
+let _sePreviewLoadSeq=0;
 
 function _setSearchPreviewPlayIcon(isPlaying){
   const pbtn=document.getElementById('sm-preview-play');
@@ -3628,7 +3641,6 @@ async function openSearchModal(rk,title,year,lib){
     if(card) card.classList.toggle('active',m===_searchMethod);
   });
   _updateQueryDisplay();
-  _initMethodQuickPicks();
   document.getElementById('search-paste-url').value='';
   const existingRow=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
   const existingUrl=(existingRow?.url||'').trim();
@@ -3646,9 +3658,12 @@ async function openSearchModal(rk,title,year,lib){
   document.getElementById('se-info').textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
   const goldenCard=document.getElementById('sm-card-golden');
   const goldenDesc=document.getElementById('sm-golden-desc');
-  const hasGolden=String(existingRow?.source_origin||'').startsWith('golden_source') && !!String(existingRow?.url||'').trim();
+  const goldenUrl=String(existingRow?.golden_source_url||'').trim();
+  const hasGolden=!!goldenUrl;
   if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
+  if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
   if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated Golden Source URL':'Not currently available';
+  _initMethodQuickPicks(existingRow);
   if(_searchMethod==='golden_source' && !hasGolden){
     _searchMethod='playlist';
     ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
@@ -3715,9 +3730,8 @@ async function doSearch(){
   if(_searchMethod==='paste') return goToStep3FromPaste();
   if(_searchMethod==='golden_source'){
     const row=_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
-    const isGolden=String(row?.source_origin||'').startsWith('golden_source');
-    const url=String(row?.url||'').trim();
-    if(!isGolden || !url) return toast('Golden Source URL not currently available for this item','info');
+    const url=String(row?.golden_source_url||'').trim();
+    if(!url) return toast('Golden Source URL not currently available for this item','info');
     return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL'});
   }
   await _searchByMethod(_searchMethod, true);
@@ -3726,12 +3740,15 @@ async function doSearch(){
 function _renderResults(results){
   const el=document.getElementById('search-results');
   document.getElementById('sm-results-meta').textContent=results.length ? `${results.length} results` : '';
+  const countEl=document.getElementById('sm-results-count');
+  if(countEl) countEl.textContent=results.length?`${Math.min(results.length,10)} results`:'';
   if(!results.length){
     el.innerHTML='<div style="color:var(--text3);padding:16px 0;font-size:13px;text-align:center">No results found.</div>';
     return;
   }
   el.innerHTML=results.map((r,i)=>`
     <div class="search-result-card ${i===0?'recommended':''}">
+      <div class="result-idx">${i+1}.</div>
       <div style="flex:1;min-width:0">
         ${i===0?`<div style="margin-bottom:4px"><span class="src-badge recommended">Best match</span></div>`:''}
         <a href="${r.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--blue);text-decoration:none">${r.title.replace(/</g,'&lt;')} <span style="font-size:11px">↗</span></a>
@@ -3800,7 +3817,7 @@ async function previewQuickPick(method,url,btn){
 async function quickPickSelect(method,url,title=''){
   if(!url) return;
   _searchMethod=method||_searchMethod;
-  await _searchByMethod(_searchMethod,false);
+  if(_searchMethod!=='golden_source') await _searchByMethod(_searchMethod,false);
   if(_lastSearchResults.length) _renderResults(_lastSearchResults);
   goToStep3(url,{skipPreview:false,sourceTitle:title});
 }
@@ -3816,9 +3833,12 @@ async function _prefetchMethodFirstResult(method){
   }catch(_e){ _setMethodQuickPick(method,false); }
 }
 
-function _initMethodQuickPicks(){
+function _initMethodQuickPicks(existingRow){
   _setMethodQuickPick('playlist',null);
   _setMethodQuickPick('direct',null);
+  const row=existingRow||_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
+  const goldenUrl=String(row?.golden_source_url||'').trim();
+  _setMethodQuickPick('golden_source', goldenUrl ? {title:'Golden Source URL', url:goldenUrl} : false);
   _prefetchMethodFirstResult('playlist');
   _prefetchMethodFirstResult('direct');
 }
@@ -3931,6 +3951,7 @@ function seUrlChanged(){
 async function seLoadPreview(){
   const url=(document.getElementById('se-url').value||'').trim();
   if(!url){ toast('Enter a URL first','info'); return; }
+  const loadSeq=++_sePreviewLoadSeq;
   const btn=document.getElementById('se-load-btn');
   if(btn){ btn.textContent='Loading…'; btn.disabled=true; }
   const cached=_previewCache[url];
@@ -3945,19 +3966,26 @@ async function seLoadPreview(){
       data=await r.json();
       if(data?.ok) _previewCache[url]={audio_url:data.audio_url};
     }
+    if(loadSeq!==_sePreviewLoadSeq) return;
     if(btn){ btn.textContent='↺ Refresh'; btn.disabled=false; }
     if(!data.ok){ document.getElementById('se-info').textContent='Error: '+(data.error||'Failed'); return; }
     const audio=_sourceEditorAudio.audio;
     stopAllAudio('se-audio');
     audio.src=apiUrl(data.audio_url);
     _lastPreviewedUrl=url;
+    const startedAt=Date.now();
     _sourceEditorAudio.setHandlers({
       onloadedmetadata:(loaded)=>{
+        if(loadSeq!==_sePreviewLoadSeq) return;
         document.getElementById('se-info').textContent=`Duration: ${fmt(loaded.duration)}`;
         seUpdateTrim();
         _sourceEditorAudio.play().catch(()=>{});
       },
-      onerror:()=>{ document.getElementById('se-info').textContent='Playback error — try a different URL'; }
+      onerror:()=>{
+        if(loadSeq!==_sePreviewLoadSeq) return;
+        if(Date.now()-startedAt<700) return;
+        document.getElementById('se-info').textContent='Playback error — click Refresh to retry';
+      }
     });
     audio.load();
   }catch(e){ if(btn){ btn.textContent='↺ Refresh'; btn.disabled=false; } toast('Error: '+e,'err'); }
