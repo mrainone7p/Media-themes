@@ -254,6 +254,7 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .run-dot.active{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse 1.2s infinite}
 .run-dot.done{background:var(--green)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Global run status bar */
 .global-run{position:sticky;top:0;z-index:80;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:12px;font-family:var(--mono)}
@@ -582,7 +583,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .sm-card-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sm-card-first button{margin-top:0}
-.sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
+.sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+.sm-quickpick-loading{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);font-family:var(--mono)}
+.sm-quickpick-loading::before{content:"";width:10px;height:10px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--purple);animation:spin .8s linear infinite}
 .muted-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:11px;color:var(--text2)}
 .schedule-master{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px}
 .schedule-master-copy{min-width:0;flex:1}
@@ -3268,16 +3272,39 @@ function _renderResults(results){
 function _setMethodQuickPick(method, result){
   const el=document.getElementById('sm-first-'+method);
   if(!el) return;
-  if(!result){ el.textContent=''; return; }
+  if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
+  if(!result){ el.innerHTML='<span class="sm-quickpick-title">No quick pick available</span>'; return; }
   const safeUrl=(result.url||'').replace(/'/g,"\\'");
-  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}')">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}')">Select</button>`;
+  const safeTitle=(result.title||'1st result').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="sm-quickpick-title" title="${safeTitle}">${safeTitle}</span><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}')">Select</button>`;
 }
 
-async function previewQuickPick(method,url){
+async function previewQuickPick(method,url,btn){
   if(!url) return;
   _searchMethod=method||_searchMethod;
-  await _searchByMethod(_searchMethod,false);
-  goToStep3(url,{skipPreview:false});
+  _lastSearchMethod=_searchMethod;
+  if(btn){ btn.disabled=true; btn.textContent='Loading…'; }
+  try{
+    const cached=_previewCache[url];
+    let data=null;
+    if(cached){
+      data={ok:true,audio_url:cached.audio_url};
+    }else{
+      const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+      data=await r.json();
+      if(data?.ok) _previewCache[url]={audio_url:data.audio_url};
+    }
+    if(!data?.ok){ toast(data?.error||'Preview failed','err'); return; }
+    stopAllAudio();
+    const audio=_audioEl();
+    audio.src=apiUrl(data.audio_url);
+    _lastPreviewedUrl=url;
+    await audio.play().catch(()=>{});
+    const pbtn=document.getElementById('sm-preview-play');
+    if(pbtn) pbtn.innerHTML='<svg viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='▶ Preview'; }
+  }
 }
 
 async function quickPickSelect(method,url){
@@ -3294,8 +3321,8 @@ async function _prefetchMethodFirstResult(method){
   try{
     const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
     const data=await r.json();
-    _setMethodQuickPick(method, (data.ok && data.results && data.results.length)?data.results[0]:null);
-  }catch(_e){ _setMethodQuickPick(method,null); }
+    _setMethodQuickPick(method, (data.ok && data.results && data.results.length)?data.results[0]:false);
+  }catch(_e){ _setMethodQuickPick(method,false); }
 }
 
 function _initMethodQuickPicks(){
@@ -3464,15 +3491,27 @@ async function saveSourceEditor(skipClose=false){
   const lib=_seLib||_searchLib||_activeLib||'';
   const status=_autoApproveManual?'APPROVED':'STAGED';
   const notes=_autoApproveManual?'Manual source auto-approved':'URL set via manual search — staged for approval';
-  const resp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
+
+  const saveUrlResp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
     method:'PATCH', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({url,start_offset:offset,status,notes})
+    body: JSON.stringify({url,start_offset:offset,notes})
   });
-  const payload=await resp.json().catch(()=>({}));
-  if(!resp.ok || payload?.ok===false){
-    toast(payload.error||'Failed to save source on row','err');
-    throw new Error(payload.error||'save_failed');
+  const saveUrlPayload=await saveUrlResp.json().catch(()=>({}));
+  if(!saveUrlResp.ok || saveUrlPayload?.ok===false){
+    toast(saveUrlPayload.error||'Failed to save source URL on row','err');
+    throw new Error(saveUrlPayload.error||'save_url_failed');
   }
+
+  const statusResp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({status,notes})
+  });
+  const statusPayload=await statusResp.json().catch(()=>({}));
+  if(!statusResp.ok || statusPayload?.ok===false){
+    toast(statusPayload.error||'Saved URL but failed to set status','err');
+    throw new Error(statusPayload.error||'save_status_failed');
+  }
+
   const row=_rows.find(r=>String(r.rating_key)===String(key));
   if(row){ row.url=url; row.start_offset=String(offset); row.status=status; }
   if(!skipClose){
