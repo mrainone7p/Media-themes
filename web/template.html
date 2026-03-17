@@ -615,6 +615,35 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   .sm-card-actions{width:100%;max-width:none}
 }
 
+@media (max-width: 860px){
+  body{display:block}
+  nav,nav.collapsed{width:100%;min-height:0;height:68px;top:auto;left:0;right:0;bottom:0;border-right:none;border-top:1px solid var(--border);flex-direction:row;background:color-mix(in srgb, var(--surface) 92%, transparent);backdrop-filter:blur(10px)}
+  .logo,.nav-footer,.collapse-btn{display:none!important}
+  .nav-section{display:flex;align-items:stretch;gap:0;width:100%;padding:0}
+  .nav-item,.nav.collapsed .nav-item{flex:1;justify-content:center;align-items:center;flex-direction:column;gap:3px;padding:8px 4px;border-left:none;border-top:2px solid transparent;font-size:10px}
+  .nav-item span,nav.collapsed .nav-item span{display:block}
+  .nav-item.active{border-top-color:var(--amber)}
+  .nav-item svg{width:15px;height:15px;margin:0}
+  main,body.nav-collapsed main{margin-left:0;padding-bottom:84px;min-height:100vh}
+  .page-head{padding:16px 14px 12px;gap:10px}
+  .page-title{font-size:20px}
+  .page-desc{font-size:12px}
+  .page-body{padding:14px 12px 18px}
+  .card{padding:14px;margin-bottom:12px;border-radius:10px}
+  .settings-section > summary{padding:12px 14px}
+  .settings-section .card-body{padding:14px}
+  .toolbar{padding:10px}
+  .tabs{margin-bottom:12px}
+  .tab{padding:8px 12px;font-size:12px}
+  .modal-overlay{align-items:flex-end}
+  .modal{width:100%;max-width:none;max-height:90vh;border-radius:14px 14px 0 0;padding:16px}
+  .modal-header{padding:16px 16px 0;gap:12px}
+  .modal-section{padding:12px 16px 4px}
+  .modal-footer{padding:10px 16px}
+  .modal-close{top:10px;right:10px}
+  #toast{right:12px;left:12px;bottom:82px;max-width:none}
+}
+
 </style>
 </head>
 <body>

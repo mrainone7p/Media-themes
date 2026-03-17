@@ -83,6 +83,16 @@ Open `http://your-host:8182` in a browser.
 
 ---
 
+
+## Mobile & responsive UI behavior
+
+The web UI now uses a single responsive layout tuned for phones and tablets (no separate mobile app/view to maintain):
+
+- On small screens, the global page navigation sidebar is repositioned to a **fixed bottom navigation bar**.
+- Page spacing and card padding are reduced on mobile to avoid cramped content and excessive whitespace.
+- Popups/modals switch to a mobile-friendly bottom-sheet style with full-width layout and safer height limits.
+- Toast notifications move above the bottom nav so they do not overlap navigation controls.
+
 ## Configuration
 
 | Key | Description |
