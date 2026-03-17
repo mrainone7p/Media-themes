@@ -582,6 +582,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .sm-card-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
 .sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sm-card-first button{margin-top:0}
+.sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
 .muted-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:11px;color:var(--text2)}
 .schedule-master{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:16px}
 .schedule-master-copy{min-width:0;flex:1}
@@ -1358,14 +1359,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="modal-header" style="flex-shrink:0">
       <img class="modal-poster" id="search-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
       <div class="modal-movie-info">
-        <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+          <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
+          <div class="modal-movie-links" id="search-modal-links" style="margin-top:0"></div>
+        </div>
         <div class="modal-movie-meta"><span id="search-modal-year-meta" style="color:var(--text2)"></span></div>
-        <div class="modal-movie-links" id="search-modal-links"></div>
+        <div class="modal-bio" id="search-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0;max-width:none"></div>
       </div>
     </div>
-
-    <!-- Bio -->
-    <div class="modal-bio" id="search-modal-bio" style="display:none"></div>
+    <div class="modal-divider"></div>
 
     <!-- Step 1: Choose Method -->
     <div id="search-step-1" class="search-step-body" style="overflow-y:auto;flex:1">
@@ -1409,9 +1411,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <input id="sm-custom-input" placeholder="Type a custom search query…" style="display:none;width:100%;margin-top:8px;background:var(--surface);border:1px solid var(--amber);border-radius:6px;padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')doSearch()">
         </div>
 
-        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-          <button class="btn btn-amber" style="flex:1" onclick="doSearch()">🔍 Search</button>
-        </div>
 
         <!-- Paste URL section -->
         <div style="border-top:1px solid var(--border);padding-top:14px">
@@ -3064,6 +3063,9 @@ let _seKey=null,_seLib='';
 // Persistent state so Back works
 let _lastSearchResults=[];
 let _lastSearchMethod='playlist';
+let _previewCache={};
+let _lastPreviewedUrl='';
+let _step3PreparedUrl='';
 
 function buildSearchQuery(method,title,year){
   const base=((title||'')+' '+(year||'')).trim();
@@ -3178,6 +3180,7 @@ async function openSearchModal(rk,title,year,lib){
   const existingOffset=fmt(parseTrim(existingRow?.start_offset||'0:00'));
   document.getElementById('se-url').value=existingUrl;
   document.getElementById('se-offset').value=existingOffset;
+  _step3PreparedUrl=existingUrl||'';
   document.getElementById('se-info').textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
   // Decide starting step
   if(_lastSearchResults.length && _searchKey===rk){
@@ -3206,23 +3209,36 @@ function searchModalPrimary(){
   else if(_searchCurrentStep===3) saveSourceEditor();
 }
 
-async function doSearch(){
-  const q=buildSearchQuery(_searchMethod,_searchTitle,_searchYear);
-  if(!q){ toast('No query','info'); return; }
-  _lastSearchMethod=_searchMethod;
-  stopAllAudio(); resetActivePreviewBtn();
-  goToSearchStep(2);
-  document.getElementById('search-results').innerHTML='<div style="color:var(--text3);padding:16px 0;font-size:13px;text-align:center">Searching…</div>';
-  document.getElementById('sm-results-meta').textContent='';
+async function _searchByMethod(method, showStep=true){
+  const q=buildSearchQuery(method,_searchTitle,_searchYear);
+  if(!q){ toast('No query','info'); return null; }
+  _lastSearchMethod=method;
+  if(showStep){
+    stopAllAudio(); resetActivePreviewBtn();
+    goToSearchStep(2);
+    document.getElementById('search-results').innerHTML='<div style="color:var(--text3);padding:16px 0;font-size:13px;text-align:center">Searching…</div>';
+    document.getElementById('sm-results-meta').textContent='';
+  }
   const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
   const data=await r.json();
   if(!data.ok){
-    document.getElementById('search-results').innerHTML=`<div style="color:var(--red);padding:16px 0;font-size:13px">${data.error}</div>`;
-    _setSearchFooter(2); return;
+    if(showStep){
+      document.getElementById('search-results').innerHTML=`<div style="color:var(--red);padding:16px 0;font-size:13px">${data.error}</div>`;
+      _setSearchFooter(2);
+    }
+    return null;
   }
   _lastSearchResults=data.results||[];
-  _renderResults(_lastSearchResults);
-  _setSearchFooter(2);
+  if(showStep){
+    _renderResults(_lastSearchResults);
+    _setSearchFooter(2);
+  }
+  return _lastSearchResults;
+}
+
+async function doSearch(){
+  _searchMethod=_searchMethod||'playlist';
+  await _searchByMethod(_searchMethod, true);
 }
 
 function _renderResults(results){
@@ -3254,14 +3270,21 @@ function _setMethodQuickPick(method, result){
   if(!el) return;
   if(!result){ el.textContent=''; return; }
   const safeUrl=(result.url||'').replace(/'/g,"\\'");
-  el.innerHTML=`<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${safeUrl}')">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();goToStep3('${safeUrl}')">Select</button>`;
+  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}')">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}')">Select</button>`;
 }
 
-function previewQuickPick(url){
+async function previewQuickPick(method,url){
   if(!url) return;
-  document.getElementById('se-url').value=url;
-  goToSearchStep(3);
-  setTimeout(()=>seLoadPreview(),80);
+  _searchMethod=method||_searchMethod;
+  await _searchByMethod(_searchMethod,false);
+  goToStep3(url,{skipPreview:false});
+}
+
+async function quickPickSelect(method,url){
+  if(!url) return;
+  _searchMethod=method||_searchMethod;
+  await _searchByMethod(_searchMethod,false);
+  goToStep3(url,{skipPreview:false});
 }
 
 async function _prefetchMethodFirstResult(method){
@@ -3305,7 +3328,11 @@ async function searchModalDownloadNow(){
   const key=_seKey||_searchKey;
   const lib=_seLib||_searchLib||_activeLib||'';
   if(!key){ toast('No row selected','err'); return; }
-  await saveSourceEditor(true);
+  try{
+    await saveSourceEditor(true);
+  }catch(_e){
+    return;
+  }
   closeSearchModal();
   toast('Staged source — downloading now…','info');
   const row=_rows.find(r=>r.rating_key===key);
@@ -3321,7 +3348,7 @@ async function searchModalDownloadNow(){
   loadDatabase();
 }
 
-function goToStep3(url){
+function goToStep3(url, opts={}){
   stopAllAudio();
   document.getElementById('se-url').value=url||'';
   document.getElementById('se-offset').value='0:00';
@@ -3330,24 +3357,26 @@ function goToStep3(url){
   document.getElementById('se-dur').textContent='—';
   document.getElementById('se-slider').value=0;
   document.getElementById('se-info').textContent='Loading preview…';
+  _step3PreparedUrl=url||'';
   const loadBtn=document.getElementById('se-load-btn');
   if(loadBtn){ loadBtn.textContent='Loading…'; loadBtn.disabled=true; }
   document.getElementById('se-play-btn').innerHTML='<svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
   goToSearchStep(3);
-  if(url) setTimeout(()=>seLoadPreview(),80);
+  if(url && opts.skipPreview!==true) setTimeout(()=>seLoadPreview(),80);
 }
+
 
 function goToStep3FromPaste(){
   const url=(document.getElementById('search-paste-url').value||'').trim();
   if(!url){ toast('Paste a URL first','info'); return; }
-  goToStep3(url);
+  goToStep3(url,{skipPreview:false});
 }
 
 // ── Source editor (Step 3) functions ────────────────────────────────────────
 function openSourceEditor(url, previewOnly){
   if(!url){ toast('No URL provided','info'); return; }
   _seKey=_searchKey; _seLib=_searchLib||_activeLib||'';
-  goToStep3(url);
+  goToStep3(url,{skipPreview:false});
 }
 
 function closeSourceEditor(){
@@ -3365,15 +3394,24 @@ async function seLoadPreview(){
   if(!url){ toast('Enter a URL first','info'); return; }
   const btn=document.getElementById('se-load-btn');
   if(btn){ btn.textContent='Loading…'; btn.disabled=true; }
-  document.getElementById('se-info').textContent='Resolving stream…';
+  const cached=_previewCache[url];
   try{
-    const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-    const data=await r.json();
+    let data=null;
+    if(cached){
+      data={ok:true,audio_url:cached.audio_url};
+      document.getElementById('se-info').textContent='Loaded cached preview';
+    }else{
+      document.getElementById('se-info').textContent='Resolving stream…';
+      const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+      data=await r.json();
+      if(data?.ok) _previewCache[url]={audio_url:data.audio_url};
+    }
     if(btn){ btn.textContent='↺ Refresh'; btn.disabled=false; }
     if(!data.ok){ document.getElementById('se-info').textContent='Error: '+(data.error||'Failed'); return; }
     const audio=document.getElementById('se-audio');
     stopAllAudio();
     audio.src=apiUrl(data.audio_url);
+    _lastPreviewedUrl=url;
     audio.onloadedmetadata=()=>{
       document.getElementById('se-dur').textContent=fmt(audio.duration);
       document.getElementById('se-info').textContent=`Duration: ${fmt(audio.duration)}`;
@@ -3426,16 +3464,25 @@ async function saveSourceEditor(skipClose=false){
   const lib=_seLib||_searchLib||_activeLib||'';
   const status=_autoApproveManual?'APPROVED':'STAGED';
   const notes=_autoApproveManual?'Manual source auto-approved':'URL set via manual search — staged for approval';
-  await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
+  const resp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
     method:'PATCH', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({url,start_offset:offset,status,notes})
   });
+  const payload=await resp.json().catch(()=>({}));
+  if(!resp.ok || payload?.ok===false){
+    toast(payload.error||'Failed to save source on row','err');
+    throw new Error(payload.error||'save_failed');
+  }
+  const row=_rows.find(r=>String(r.rating_key)===String(key));
+  if(row){ row.url=url; row.start_offset=String(offset); row.status=status; }
   if(!skipClose){
     closeSearchModal();
     toast(_autoApproveManual?'Saved — auto-approved':'Saved — staged for approval','ok');
   }
   loadDatabase();
+  return true;
 }
+
 
 function previewSearchResult(url, btn){
   btn.dataset.previewUrl = url;
@@ -3447,6 +3494,8 @@ function previewSearchResult(url, btn){
     .then(r=>r.json()).then(data=>{
       btn.textContent = '▶ Preview'; btn.disabled = false;
       if(!data.ok){ toast(data.error||'Failed','err'); return; }
+      _previewCache[url]={audio_url:data.audio_url};
+      _lastPreviewedUrl=url;
       stopAllAudio();
       const audio = _audioEl();
       audio.src = apiUrl(data.audio_url); audio.play();
