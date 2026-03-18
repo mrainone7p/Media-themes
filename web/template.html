@@ -527,8 +527,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .review-header-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;padding:0 22px 8px}
 .review-section-divider{height:1px;background:var(--border);margin:2px 22px 12px}
 .simple-line{font-size:12px;color:var(--text2);margin-bottom:6px;word-break:break-word}
-.review-meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
-.review-meta-item{display:flex;flex-direction:column;gap:4px;min-width:0}
+.review-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 22px 8px}
+.review-panel-title{font-size:15px;font-weight:700;color:var(--text)}
+.review-meta-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--surface) 45%, transparent);overflow:hidden}
+.review-meta-item{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 12px;border-top:1px solid var(--border)}
+.review-meta-item:first-child{border-top:none}
 .review-meta-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
 .review-meta-value{font-size:12px;color:var(--text2);line-height:1.5;word-break:break-word}
 .review-meta-value a{color:var(--blue)}
@@ -540,7 +543,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .review-source-pill.is-manual{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
 .review-source-pill.is-unknown{color:var(--text3)}
 .review-footer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;width:100%}
-@media (max-width: 640px){.review-meta-grid{grid-template-columns:1fr}.review-card-header{flex-direction:column;align-items:flex-start}.review-footer-actions{justify-content:stretch}.review-footer-actions .btn{flex:1}}
+@media (max-width: 640px){.review-card-header,.review-panel-head{flex-direction:column;align-items:flex-start}.review-footer-actions{justify-content:stretch}.review-footer-actions .btn{flex:1}}
 .search-method-head{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
 .search-method-input{margin-top:6px;width:100%;font-size:12px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);outline:none}
 .search-method-card.disabled{opacity:.55;border-style:dashed;cursor:not-allowed}
@@ -602,11 +605,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .search-method-card:hover{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.active{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.golden-source{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 35%, var(--surface2))}
-.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 62%, var(--surface2))}
+.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 50%, var(--surface2))}
 .search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 20%, var(--surface2));opacity:.68;cursor:not-allowed}
-.search-method-card.golden-source{position:relative}
-.sm-golden-recommended{position:absolute;top:10px;right:12px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green);display:none}
-.search-method-card.golden-source.recommended .sm-golden-recommended{display:block}
+.sm-card-topline{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sm-card-badge{display:none;align-items:center;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.sm-card-badge.recommended{background:var(--green-soft);color:var(--green);border:1px solid rgba(45,212,160,.35)}
+.search-method-card.recommended .sm-card-badge{display:inline-flex}
 .golden-link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-decoration:none;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(245,166,35,.4);white-space:nowrap}
 .golden-link-pill:hover{text-decoration:none;filter:brightness(1.04)}
 .result-idx{display:inline-flex;align-items:center;justify-content:center;min-width:24px;font-size:11px;color:var(--text3);font-family:var(--mono)}
@@ -667,18 +671,20 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .search-method-card:hover{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.active{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.golden-source{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 35%, var(--surface2))}
-.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 62%, var(--surface2))}
+.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 50%, var(--surface2))}
 .search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 20%, var(--surface2));opacity:.68;cursor:not-allowed}
 .sm-card-main{display:flex;align-items:flex-start;gap:8px;min-width:0;flex:1}
-.sm-card-copy{display:flex;flex-direction:column;gap:1px;min-width:0}
+.sm-card-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
 .sm-card-icon{font-size:16px;line-height:1;margin-top:1px}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.3}
+.sm-card-submeta{font-size:10px;color:var(--text3);font-family:var(--mono)}
 .sm-card-actions{display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;flex-shrink:0;min-width:0;width:100%;max-width:none;margin-left:0;flex-direction:column}
-.sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left;overflow:hidden}
+.sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .sm-card-first button{margin-top:0}
 .sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
 .sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;white-space:nowrap;margin-bottom:4px;position:relative}
+.search-method-card.golden-source .sm-card-actions{justify-content:flex-start}
 .sm-quickpick-link{display:inline-flex;align-items:center;gap:4px;color:var(--blue);text-decoration:none}
 .sm-quickpick-link:hover{text-decoration:underline}
 .sm-quickpick-track{display:inline-block;white-space:nowrap;min-width:max-content;will-change:transform}
@@ -1603,13 +1609,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </div>
           </div>
           <div class="search-method-card golden-source" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
-            <div class="sm-golden-recommended" id="sm-golden-recommended">Recommended</div>
             <div class="sm-card-main">
               <div class="sm-card-icon">★</div>
               <div class="sm-card-copy">
-                <div class="sm-card-title">Golden Source</div>
+                <div class="sm-card-topline">
+                  <div class="sm-card-title">Golden Source</div>
+                  <div class="sm-card-badge recommended" id="sm-golden-recommended">Recommended</div>
+                </div>
                 <div class="sm-card-desc" id="sm-golden-desc">Use curated Golden Source URL for this item</div>
-                <div class="field-hint" id="sm-golden-offset" style="margin-top:4px">Offset: —</div>
+                <div class="sm-card-submeta" id="sm-golden-offset">Offset: —</div>
               </div>
             </div>
             <div class="sm-card-actions"><div class="sm-card-first" id="sm-first-golden_source"></div></div>
@@ -1729,7 +1737,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="modal-bio" id="theme-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0 22px 10px"></div>
     <div class="review-section-divider"></div>
 
-    <div class="review-header-desc" id="theme-modal-summary">—</div>
+    <div class="review-panel-head">
+      <div class="review-panel-title" id="theme-modal-summary">Manage Theme</div>
+      <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
+    </div>
 
     <div class="review-card" id="theme-local-card">
       <div class="review-card-header">
@@ -1764,19 +1775,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="review-card" id="theme-source-card">
       <div class="review-card-header">
         <div class="review-card-heading">
-          <div class="modal-section-label" style="margin-bottom:0">Source</div>
-          <div class="review-card-subtitle" id="theme-modal-source-summary">Track where this source came from and what metadata was applied when it was imported.</div>
+          <div class="modal-section-label" style="margin-bottom:0">Source Details</div>
+          <div class="review-card-subtitle" id="theme-modal-source-summary">Theme used for download and the details applied to it.</div>
         </div>
         <div class="review-source-pill is-unknown" id="theme-modal-source-pill">Unknown</div>
       </div>
-      <div class="review-meta-grid">
+      <div class="review-meta-list">
         <div class="review-meta-item">
-          <div class="review-meta-label">Source URL</div>
+          <div class="review-meta-label">Theme Source</div>
           <div class="review-meta-value" id="theme-modal-source-url">—</div>
-        </div>
-        <div class="review-meta-item">
-          <div class="review-meta-label">Golden Source URL</div>
-          <div class="review-meta-value" id="theme-modal-golden">Not available</div>
         </div>
         <div class="review-meta-item">
           <div class="review-meta-label">Imported</div>
@@ -4972,6 +4979,9 @@ function _themeSourceMeta(row={}){
   const classMap={golden:'is-golden',playlist:'is-playlist',direct:'is-direct',custom:'is-custom',unknown:'is-unknown'};
   return {type,label:labelMap[type]||'Unknown',method,className:classMap[type]||'is-unknown'};
 }
+function _themeModalPrimarySourceUrl(row={}){
+  return String(row?.url||'').trim() || String(row?.golden_source_url||'').trim();
+}
 function _themeModalLink(url,fallback='—'){
   const v=String(url||'').trim();
   if(!v) return fallback;
@@ -5005,7 +5015,8 @@ function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
   _themeModalContext={rk,title,year,folder,row};
   const hasTheme=_themeHasLocal(row);
-  const hasSource=!!String(row?.url||'').trim();
+  const primarySourceUrl=_themeModalPrimarySourceUrl(row);
+  const hasSource=!!primarySourceUrl;
   const sourceMeta=_themeSourceMeta(row);
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
@@ -5013,24 +5024,27 @@ function openThemeModal(rk,title,year,folder,row={}){
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
   document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'Theme missing';
-  document.getElementById('theme-modal-summary').textContent=hasTheme
-    ?'Use this hub to review the local file, confirm source details, and decide what to do next.'
-    :'No local theme file yet. Review the source details below and use the footer actions to find, approve, or replace the theme.';
+  document.getElementById('theme-modal-summary').textContent='Manage Theme';
+  const statusBadge=document.getElementById('theme-modal-status-badge');
+  const status=String(row?.status||'MISSING').toUpperCase();
+  if(statusBadge){
+    statusBadge.className=`badge s-${status}`;
+    statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
+  }
   document.getElementById('theme-modal-local-status').textContent=hasTheme
     ?'Theme saved locally and playable.'
     :'No local file is saved right now.';
   document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
   document.getElementById('theme-modal-local-dur').textContent=`Duration: ${hasTheme&&row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
-  document.getElementById('theme-modal-source-url').innerHTML=_themeModalLink(row?.url,'—');
+  document.getElementById('theme-modal-source-url').innerHTML=_themeModalLink(primarySourceUrl,'—');
   document.getElementById('theme-modal-origin').textContent=sourceMeta.method;
   const goldenSourceUrl=String(row?.golden_source_url||'').trim();
-  document.getElementById('theme-modal-golden').innerHTML=_themeModalLink(goldenSourceUrl,'Not available');
   document.getElementById('theme-modal-imported').textContent=_themeModalImportedAt(row);
   document.getElementById('theme-modal-offset').textContent=_themeModalOffsetLabel(row, hasTheme);
   document.getElementById('theme-modal-source-notes').textContent=String(row?.notes||'').trim()||'No source notes recorded.';
-  document.getElementById('theme-modal-source-summary').textContent=hasSource || goldenSourceUrl
-    ?'Track where this source came from and what metadata was applied when it was imported.'
-    :'No source is attached yet. Use Find Theme to attach one.';
+  document.getElementById('theme-modal-source-summary').textContent=hasSource
+    ?'Theme used for download and the details applied to it.'
+    :'No download source is attached yet. Use Find Theme to attach one.';
   const sourcePill=document.getElementById('theme-modal-source-pill');
   sourcePill.textContent=sourceMeta.label;
   sourcePill.className=`review-source-pill ${sourceMeta.className}`;
@@ -5112,7 +5126,7 @@ async function themeModalDownloadApproved(){
 }
 
 function themeModalOpenSource(){
-  const url=String(_themeModalContext?.row?.url||'').trim();
+  const url=_themeModalPrimarySourceUrl(_themeModalContext?.row||{});
   if(!url) return toast('No source URL on this row','info');
   window.open(url,'_blank');
 }
