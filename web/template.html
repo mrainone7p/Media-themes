@@ -768,26 +768,26 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   <div class="page-head">
     <div>
       <div class="page-title" data-ui="pages.configuration.title">Configuration</div>
-      <div class="page-desc" data-ui="pages.configuration.description">Set up connections, choose library scope, control source discovery, and tune downloads.</div>
+      <div class="page-desc" data-ui="pages.configuration.description">Set up connections, libraries, discovery sources, and download preferences.</div>
     </div>
   </div>
   <div class="page-body"><div class="content">
-    <div class="settings-lead" style="margin-bottom:16px">Media Tracks works best when this page is set up in order: connect Plex, choose the movie or TV libraries you want to manage, choose how it should find sources, then tune output and performance.</div>
+    <div class="settings-lead" style="margin-bottom:16px">Configure this page top to bottom for the cleanest setup: connect <strong>Plex</strong> and <strong>TMDB</strong>, choose your libraries, define source discovery behavior, then set download preferences.</div>
 
     <details class="card settings-section" open>
       <summary>
         <div class="card-title" style="margin-bottom:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="18" cy="18" r="2"/></svg>
-          Connections
+          CONNECTIONS
         </div>
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">Connect Plex and TMDB first. Plex powers library discovery and scans. TMDB helps normalize movie titles and years so source matching is cleaner.</div>
+        <div class="section-intro">Connect <strong>Plex</strong> and <strong>TMDB</strong> to enable library discovery, metadata matching, and scans.</div>
         <div class="settings-grid-2">
           <div class="settings-subcard">
             <div class="subcard-title">Plex</div>
-            <div class="subcard-intro">Used for library discovery, scan/indexing, posters, and local media metadata.</div>
+            <div class="subcard-intro">Used for library discovery, scan and indexing, and local media metadata such as file paths.</div>
             <div class="field-grid field-grid-2">
               <div class="field">
                 <label>Plex URL</label>
@@ -805,11 +805,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
           <div class="settings-subcard">
             <div class="subcard-title">TMDB</div>
-            <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and power TMDB posters and links.</div>
+            <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and provide TMDB links.</div>
             <div class="field" style="max-width:520px">
               <label>TMDB API Key</label>
               <input id="cfg-tmdb_api_key" placeholder="your-tmdb-key">
-              <div class="field-help compact">Free key at themoviedb.org/settings/api</div>
+              <div class="field-help compact">Free key at <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer"><strong>themoviedb.org/settings/api</strong></a></div>
             </div>
             <div class="settings-actions">
               <button class="btn btn-ghost btn-sm" onclick="testTmdb()">⚡ Test API Key</button>
@@ -824,19 +824,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <summary>
         <div class="card-title" style="margin-bottom:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
-          Library Scope
+          MEDIA LIBRARIES
         </div>
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">Choose which movie and TV libraries Media Tracks should manage. Imported libraries start disabled so you can opt in only to the libraries you want.</div>
+        <div class="section-intro">Choose which movie and TV libraries should be managed. Libraries start disabled so you can opt in only to the ones you want.</div>
         <div class="lib-list" id="lib-list"></div>
         <div class="library-actions" style="margin-top:12px">
           <button class="btn btn-ghost btn-sm" onclick="addLibrary()">+ Add Library</button>
-          <button class="btn btn-blue btn-sm" onclick="importLibraries()">⬇ Import from Plex</button>
+          <button class="btn btn-blue btn-sm" onclick="importLibraries()">↓ Import from Plex</button>
           <span id="lib-import-result"></span>
         </div>
-        <div class="field-help compact" style="margin-top:10px">Library names must match Plex exactly. Only movie and TV libraries are offered in the import picker.</div>
+        <div class="field-help compact" style="margin-top:10px">Library names must match Plex exactly. Only movie and TV libraries are accepted.</div>
       </div>
     </details>
 
@@ -844,15 +844,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <summary>
         <div class="card-title" style="margin-bottom:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-          Source Discovery
+          SOURCE DISCOVERY
         </div>
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">These settings control how Media Tracks finds a theme source for each pending title. Keep strict matching on for cleaner results. Turn on fuzzy matching only when you want looser, first-result behavior.</div>
+        <div class="section-intro">These settings control how sources are found for each pending title.</div>
         <div class="settings-subcard">
           <div class="subcard-title">Search setup</div>
-          <div class="subcard-intro">Choose how Media Tracks should look for theme sources and how closely it should validate matches.</div>
+          <div class="subcard-intro">Choose how source discovery searches for and validates theme sources.</div>
           <div class="field-grid field-grid-2">
             <div class="field">
               <label>Primary Search Mode</label>
@@ -860,7 +860,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <option value="playlist">Playlist — find soundtrack playlists, then take track 1</option>
                 <option value="direct">Direct — search movie &quot;theme&quot; song</option>
               </select>
-              <div class="field-help compact">Playlist mode looks for soundtrack playlists. Direct mode looks for a single theme/song result.</div>
+              <div class="field-help compact">Playlist mode looks for soundtrack playlists. Direct mode looks for a single theme or song result.</div>
             </div>
             <div class="field">
               <label>Matching Mode</label>
@@ -868,7 +868,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <option value="strict">Strict matching</option>
                 <option value="fuzzy">Fuzzy matching</option>
               </select>
-              <div class="field-help compact" id="search-matching-help">Strict matching checks the result title for the movie title terms, the year, and the expected mode wording.</div>
+              <div class="field-help compact" id="search-matching-help">Strict matching checks that the source includes the full query. Fuzzy matching uses the query and accepts the first result.</div>
             </div>
           </div>
         </div>
@@ -890,7 +890,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </label>
             <div>
               <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
-              <div class="toggle-note">Manual search selections skip Staged and go straight to Approved.</div>
+              <div class="toggle-note">Manual search selections skip Review and go straight to Approved.</div>
             </div>
           </div>
         </div>
@@ -918,16 +918,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <summary>
         <div class="card-title" style="margin-bottom:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M8 7h8M8 17h8"/><circle cx="6" cy="7" r="1"/><circle cx="18" cy="17" r="1"/></svg>
-          Currated Source Discovery
+          CURATED SOURCE DISCOVERY
         </div>
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">Golden Source is your curated list of known theme matches. It can speed up matching for titles it covers, but it may still have gaps depending on what exists in your library.</div>
+        <div class="section-intro">A curated list of trusted theme matches. It can speed up matching and improve result quality for supported titles, though some gaps may remain depending on your library.</div>
         <div class="field-grid field-grid-2">
           <div class="settings-subcard">
             <div class="subcard-title">Golden Source</div>
-            <div class="subcard-intro">Point Media Tracks at your curated CSV, then test it before using it for imports or source matching.</div>
+            <div class="subcard-intro">Point to a trusted source CSV, then test it before using it for source matching.</div>
             <div class="field">
               <label>Golden Source URL</label>
               <input id="cfg-golden_source_url" placeholder="https://example.com/golden_source.csv">
@@ -948,7 +948,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </label>
               <div>
                 <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
-                <div class="toggle-note golden">Skip YouTube search and only match against the curated source list. This can be faster, but titles not covered by your list will stay unmatched.</div>
+                <div class="toggle-note golden">Disable YouTube source discovery and only match against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
               </div>
             </div>
             <div class="toggle-card" style="margin-top:10px">
@@ -958,7 +958,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </label>
               <div>
                 <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
-                <div class="toggle-note">Global for manual and scheduled Step 2 runs. Pull a fresh Golden Source list before matching.</div>
+                <div class="toggle-note">Refresh the Golden Source list before each source-matching run.</div>
               </div>
             </div>
           </div>
@@ -970,15 +970,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <summary>
         <div class="card-title" style="margin-bottom:0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          Download Output &amp; Performance
+          DOWNLOAD OUTPUT &amp; PERFORMANCE
         </div>
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">These settings control what gets written to disk, how aggressively Media Tracks processes downloads and source matching, and how cookies can improve reliability on harder YouTube fetches.</div>
+        <div class="section-intro">These settings control what gets downloaded and how source matching behaves.</div>
         <div class="settings-subcard" style="margin-bottom:16px">
           <div class="subcard-title">Theme filename &amp; length</div>
-          <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is; longer downloads are trimmed.</div>
+          <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is, while longer downloads are trimmed.</div>
           <div class="field" style="margin-bottom:10px">
             <label>Theme Filename</label>
             <input id="cfg-theme_filename" placeholder="theme.mp3">
@@ -998,7 +998,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
         <div class="settings-subcard" style="margin-bottom:16px">
           <div class="subcard-title">Cookies</div>
-          <div class="subcard-intro">Optional yt-dlp helper for reliability and performance when YouTube is harder to fetch.</div>
+          <div class="subcard-intro">Optional yt-dlp helper for improved reliability and performance when YouTube is harder to fetch.</div>
           <div class="field">
             <label>Cookies File</label>
             <select id="cfg-cookies_file" onchange="updateCookieIndicator()">
@@ -1011,7 +1011,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
         <div class="settings-subcard" style="margin-bottom:16px">
           <div class="subcard-title">Pending titles per run</div>
-          <div class="subcard-intro">Control how many Pending items are processed during each Find Sources run. <strong>0 = unlimited.</strong></div>
+          <div class="subcard-intro">Control how many Pending items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
           <div class="field">
             <label>Pending Titles Per Run</label>
             <input type="number" id="cfg-test_limit" min="0">
@@ -1038,7 +1038,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="field">
             <label>Max Retries</label>
             <input type="number" id="cfg-max_retries" min="1">
-            <div class="field-help compact">How many times yt-dlp retries a failed download before that item is marked Failed.</div>
+            <div class="field-help compact">How many times yt-dlp retries a failed download before the item is marked as Failed.</div>
           </div>
           <div class="field">
             <label>Delay Between Downloads (s)</label>
@@ -2240,7 +2240,7 @@ function syncMatchingModeSelect(){
   if(help){
     help.textContent = fuzzy
       ? 'Fuzzy matching uses the query and accepts the first result. It turns off fallback search.'
-      : 'Strict matching checks the result title for the movie title terms, the year, and the expected mode wording.';
+      : 'Strict matching checks that the source includes the full query. Fuzzy matching uses the query and accepts the first result.';
   }
 }
 

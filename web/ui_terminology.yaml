@@ -6,7 +6,7 @@ nav:
 pages:
   configuration:
     title: Configuration
-    description: Set up connections, choose library scope, control source discovery, and tune downloads.
+    description: Set up connections, libraries, discovery sources, and download preferences.
   database:
     title: Library
     description: Browse, review, preview, fine-tune, and manage themes in one place.
