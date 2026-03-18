@@ -24,62 +24,62 @@ schedule:
     step1:
       label: STATUS KEY · Step 1
       title: ⟳ Scan Libraries
-      description: Checks the selected Plex libraries for existing theme files and updates each title to Missing or Available.
+      description: Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.
     step2:
       label: AUTO SCHEDULE · Step 2
       title: ⚡ Find Theme Sources
-      description: Searches for Missing titles, saves matching source URLs, and moves successful matches to Staged.
+      description: Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.
     step3:
       label: PIPELINE STEPS · Step 3
       title: ↓ Download Themes
-      description: Downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.
+      description: Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.
   cards:
     auto_schedule:
       title: AUTO SCHEDULE
     pipeline_steps:
       title: PIPELINE STEPS
-      description: Choose which parts of the automated pipeline run on schedule. Manual Run Now buttons are always available.
+      description: Choose which parts of the automated pipeline should run. Manual "Run Now" buttons work regardless of these settings.
       step1:
-        description: Checks the selected Plex libraries for existing theme files and updates each title to Missing or Available.
+        description: Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.
       step2:
-        description: Searches for Missing titles using the configured source rules, saves matching source URLs, and moves successful matches to Staged.
+        description: Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.
         only_golden:
           title: Only use Golden Source
-          description: Use curated Golden Source matches only during Step 2 for faster, more controlled source discovery.
+          description: Use a curated Golden Source for tighter, faster, and more reliable source discovery.
         limit:
           title: Missing Titles Per Run
-          description: Limits how many Missing titles are processed during each scheduled Step 2 run. 0 = unlimited.
+          description: Limits how many Missing items are processed per run. 0 = unlimited.
       step3:
-        description: Downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.
+        description: Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.
         auto_approve:
-          title: Auto-Approve Staged Items
-          description: Automatically moves Staged titles to Approved before download for a fully automated Step 3 run.
+          title: Auto-Approve STAGED Items
+          description: Automatically move Staged items to Approved before downloading for a fully hands-off pipeline.
 statuses:
   UNMONITORED:
-    label: Unmonitored
+    label: UNMONITORED
     description: Hidden from automation until you re-enable this title.
   MISSING:
-    label: Missing
+    label: MISSING
     description: Needs a source because no local theme file is available yet.
   STAGED:
-    label: Staged
+    label: STAGED
     description: Source saved and waiting for approval before download.
   APPROVED:
-    label: Approved
+    label: APPROVED
     description: Approved for download on the next run.
   AVAILABLE:
-    label: Available
+    label: AVAILABLE
     description: Theme file is present locally and ready to use.
   FAILED:
-    label: Failed
+    label: FAILED
     description: Source discovery or download needs attention before retrying.
 actions:
-  approve_all_staged: Approve Staged Items
-  download_all_approved: Download Approved Items
+  approve_all_staged: Approve STAGED Items
+  download_all_approved: Download APPROVED Items
   bulk:
-    approve: Set Approved
-    mark_missing: Set Missing
-    mark_unmonitored: Set Unmonitored
+    approve: Set APPROVED
+    mark_missing: Set MISSING
+    mark_unmonitored: Set UNMONITORED
     stage: Stage Selected
   toasts:
     manual_saved_auto_approved: Saved — auto-approved
