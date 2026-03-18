@@ -47,6 +47,7 @@ LEDGER_HEADERS = [
 
 _csv_lock = threading.Lock()
 _db_lock = threading.Lock()
+VALID_STATUSES = {"UNMONITORED", "MISSING", "STAGED", "APPROVED", "AVAILABLE", "FAILED"}
 
 
 def _now_str() -> str:
@@ -107,6 +108,11 @@ def _normalize_row(row: dict) -> dict:
         out["status"] = mapped
         notes = (out.get("notes", "") or "").strip()
         out["notes"] = f"{notes} [migrated from {original}]".strip()
+    elif out["status"] not in VALID_STATUSES:
+        original = out["status"] or "UNKNOWN"
+        out["status"] = "MISSING"
+        notes = (out.get("notes", "") or "").strip()
+        out["notes"] = f"{notes} [normalized unsupported status {original} -> MISSING]".strip()
 
     # Guarantee rating_key is always a non-None string — critical for delete/patch lookups
     out["rating_key"] = str(out.get("rating_key") or "").strip()

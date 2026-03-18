@@ -58,12 +58,23 @@ def _status_validation_error(row, attempted_status):
     has_theme = str(row.get("theme_exists", "") or "") == "1"
     allowed_transitions = {
         "UNMONITORED": {"MISSING"},
-        "MISSING": {"UNMONITORED", "STAGED", "FAILED"},
-        "STAGED": {"UNMONITORED", "MISSING", "APPROVED", "FAILED"},
-        "APPROVED": {"UNMONITORED", "MISSING", "STAGED", "AVAILABLE", "FAILED"},
-        "AVAILABLE": {"UNMONITORED", "MISSING"},
-        "FAILED": {"UNMONITORED", "MISSING", "STAGED"},
+        "MISSING": {"STAGED", "FAILED"},
+        "STAGED": {"APPROVED", "MISSING", "FAILED"},
+        "APPROVED": {"AVAILABLE", "MISSING", "FAILED"},
+        "AVAILABLE": {"MISSING"},
+        "FAILED": {"MISSING", "STAGED"},
     }
+
+    def _manual_targets_for(status):
+        status = str(status or "").upper()
+        base = set(allowed_transitions.get(status, set()))
+        base.add("UNMONITORED")
+        return sorted(base)
+
+    supported_targets = _manual_targets_for(current)
+
+    if attempted == "UNMONITORED":
+        return None
 
     if attempted == "STAGED" and not has_url:
         return {
@@ -71,6 +82,7 @@ def _status_validation_error(row, attempted_status):
             "reason_code": "MISSING_URL",
             "current_status": current,
             "attempted_status": attempted,
+            "supported_targets": supported_targets,
         }
     if attempted == "AVAILABLE" and not has_theme:
         return {
@@ -78,6 +90,7 @@ def _status_validation_error(row, attempted_status):
             "reason_code": "MISSING_LOCAL_THEME",
             "current_status": current,
             "attempted_status": attempted,
+            "supported_targets": supported_targets,
         }
     if attempted == "APPROVED" and current != "STAGED":
         return {
@@ -85,13 +98,18 @@ def _status_validation_error(row, attempted_status):
             "reason_code": "APPROVAL_REQUIRES_STAGED",
             "current_status": current,
             "attempted_status": attempted,
+            "supported_targets": supported_targets,
         }
     if current in allowed_transitions and attempted not in allowed_transitions[current]:
         return {
-            "error": f"Cannot move status from {current} to {attempted}",
+            "error": (
+                f"Unsupported manual status transition: {current} -> {attempted}. "
+                f"Allowed manual targets from {current}: {', '.join(supported_targets)}"
+            ),
             "reason_code": "INVALID_STATUS_TRANSITION",
             "current_status": current,
             "attempted_status": attempted,
+            "supported_targets": supported_targets,
         }
     return None
 
@@ -588,12 +606,22 @@ def patch_ledger(key):
     for row in rows:
         if row.get("rating_key") == key:
             req = request.json or {}
+            attempted_status = None
             if "status" in req:
-                err = _status_validation_error(row, req.get("status"))
+                attempted_status = str(req.get("status") or "").upper()
+                candidate_row = dict(row)
+                for k, v in req.items():
+                    if k in EDITABLE_LEDGER_FIELDS:
+                        candidate_row[k] = str(v)
+                err = _status_validation_error(candidate_row, attempted_status)
                 if err:
+                    err["rating_key"] = key
+                    err["title"] = row.get("title") or row.get("plex_title") or ""
                     return jsonify(err), 400
             for k, v in req.items():
                 if k in EDITABLE_LEDGER_FIELDS: row[k] = str(v)
+            if attempted_status:
+                row["status"] = attempted_status
             if "url" in req and str(req.get("url") or "").strip():
                 row["source_origin"] = "manual"
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -615,6 +643,9 @@ def bulk_ledger():
             cur = str(row.get("status","")).upper()
             err = _status_validation_error(row, status)
             if err:
+                err["rating_key"] = row.get("rating_key", "")
+                err["title"] = row.get("title") or row.get("plex_title") or ""
+                err["requested_keys"] = len(keys)
                 return jsonify(err), 400
             row["status"] = status; row["last_updated"] = now
             row["notes"] = f"Bulk {cur}->{status} via web UI"; count += 1
@@ -701,7 +732,7 @@ def import_golden_source():
         row["source_origin"] = "golden_source" if incoming_url else "unknown"
         if cur == "UNMONITORED":
             pass
-        elif not incoming_url and cur in ("STAGED", "APPROVED"):
+        elif not incoming_url and cur != "AVAILABLE":
             row["status"] = "MISSING"
         elif cur != "AVAILABLE":
             row["status"] = "APPROVED" if auto_approve else "STAGED"
@@ -981,7 +1012,6 @@ def sync_library_themes():
     updated = found = missing = promoted = 0
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     for row in rows:
-        old_exists = int(row.get("theme_exists", 0) or 0)
         new_row, changed = sync_theme_cache(row, filename, probe_duration=False)
         if changed:
             row.update(new_row)
@@ -989,8 +1019,8 @@ def sync_library_themes():
         new_exists = int(row.get("theme_exists", 0) or 0)
         if new_exists:
             found += 1
-            # Promote status if file is present but status doesn't reflect it
-            if row.get("status") not in ("AVAILABLE", "REMOVED"):
+            # Promote status if file is present but status doesn't reflect it.
+            if str(row.get("status", "") or "").upper() != "AVAILABLE":
                 row["status"] = "AVAILABLE"
                 row["last_updated"] = now
                 row["notes"] = "Promoted to Available — theme file detected on disk"
@@ -998,8 +1028,8 @@ def sync_library_themes():
                 promoted += 1
         else:
             missing += 1
-            # Reset status if file is gone but status claims availability
-            if row.get("status") == "AVAILABLE" and old_exists:
+            # Reset status if file is gone but status still claims availability.
+            if str(row.get("status", "") or "").upper() == "AVAILABLE":
                 row["status"] = "MISSING"
                 row["last_updated"] = now
                 row["notes"] = "Reset to Missing — theme file no longer on disk"
