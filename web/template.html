@@ -1080,19 +1080,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
     <div class="pipe-actions" style="margin-bottom:10px">
       <div class="pipe-action scan">
-        <div class="pipe-action-step scan">Step 1 · Action</div>
-        <div class="pipe-action-name scan">⟳ Scan Library</div>
-        <div class="pipe-action-desc">Connects to Plex, indexes all media, marks items without a theme.mp3 as Missing</div>
+        <div class="pipe-action-step scan" data-ui="schedule.summary.step1.label">STATUS KEY · Step 1</div>
+        <div class="pipe-action-name scan" data-ui="schedule.summary.step1.title">⟳ Scan Libraries</div>
+        <div class="pipe-action-desc" data-ui="schedule.summary.step1.description">Checks the selected Plex libraries for existing theme files and updates each title to Missing or Available.</div>
       </div>
       <div class="pipe-action find">
-        <div class="pipe-action-step find">Step 2 · Action</div>
-        <div class="pipe-action-name find">⚡ Find Sources</div>
-        <div class="pipe-action-desc">Uses TMDB title/year metadata to build a source lookup for each Missing item, then saves valid matches as Staged</div>
+        <div class="pipe-action-step find" data-ui="schedule.summary.step2.label">AUTO SCHEDULE · Step 2</div>
+        <div class="pipe-action-name find" data-ui="schedule.summary.step2.title">⚡ Find Theme Sources</div>
+        <div class="pipe-action-desc" data-ui="schedule.summary.step2.description">Searches for Missing titles, saves matching source URLs, and moves successful matches to Staged.</div>
       </div>
       <div class="pipe-action dl">
-        <div class="pipe-action-step dl">Step 3 · Action</div>
-        <div class="pipe-action-name dl">↓ Download</div>
-        <div class="pipe-action-desc">Downloads audio for every Approved item, trims to offset, and saves theme.mp3 to the Plex folder</div>
+        <div class="pipe-action-step dl" data-ui="schedule.summary.step3.label">PIPELINE STEPS · Step 3</div>
+        <div class="pipe-action-name dl" data-ui="schedule.summary.step3.title">↓ Download Themes</div>
+        <div class="pipe-action-desc" data-ui="schedule.summary.step3.description">Downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.</div>
       </div>
     </div>
 
@@ -1161,7 +1161,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
 <div class="page" id="page-schedule">
-  <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Schedule</div><div class="page-desc" data-ui="pages.schedule.description">Configure automated runs and manually trigger pipeline steps for the selected libraries.</div></div></div>
+  <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Schedule</div><div class="page-desc" data-ui="pages.schedule.description">Set the automated schedule, choose which pipeline steps run automatically, and launch manual runs for the selected libraries.</div></div></div>
   <div class="page-body"><div class="content">
 
     <div class="run-bar" style="margin-bottom:14px">
@@ -1171,8 +1171,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
     <div class="schedule-master">
       <div class="schedule-master-copy">
-        <div class="schedule-master-title">Automated Schedule</div>
-        <div class="schedule-master-desc">Turn automated runs on or off. Manual Run Now actions still work even when automation is disabled.</div>
+        <div class="schedule-master-title" data-ui="schedule.master.title">Automated Schedule</div>
+        <div class="schedule-master-desc" data-ui="schedule.master.description">Turn scheduled runs on or off. Manual Run Now actions still work even when the automated schedule is disabled.</div>
       </div>
       <label class="toggle" style="margin-top:2px">
         <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
@@ -1185,7 +1185,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="card">
         <div class="card-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Auto Schedule
+          <span data-ui="schedule.cards.auto_schedule.title">AUTO SCHEDULE</span>
         </div>
         <div class="field" style="max-width:340px;margin-bottom:14px">
           <label>Cron Schedule</label>
@@ -1203,9 +1203,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="card">
         <div class="card-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          Pipeline Steps
+          <span data-ui="schedule.cards.pipeline_steps.title">PIPELINE STEPS</span>
         </div>
-        <div class="field-hint" style="margin-bottom:16px">Toggle which parts of the automated pipeline should run. Manual "Run Now" buttons work regardless of these settings.</div>
+        <div class="field-hint" style="margin-bottom:16px" data-ui="schedule.cards.pipeline_steps.description">Choose which parts of the automated pipeline run on schedule. Manual Run Now buttons are always available.</div>
 
         <!-- Step 1 -->
         <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
@@ -1218,7 +1218,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)">Step 1</span>
               <span style="font-size:15px;font-weight:700">Scan Libraries</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5">Connects to Plex, indexes all media, checks which folders already have a theme file. Media without a theme is set to MISSING. Media with a theme is set to AVAILABLE. <span style="color:var(--red);font-weight:600">Uses: Plex. No YouTube or TMDB calls. Fast.</span></div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5" data-ui="schedule.cards.pipeline_steps.step1.description">Checks the selected Plex libraries for existing theme files and updates each title to Missing or Available.</div>
           </div>
           <button class="btn btn-blue btn-sm" id="btn-pass1" onclick="startPass(1)">⟳ Run Now</button>
         </div>
@@ -1234,7 +1234,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple)">Step 2</span>
               <span style="font-size:15px;font-weight:700">Find Theme Sources</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Searches sources for a theme based on the configured search logic for each MISSING media item. Saves the URL and moves status to STAGED. <span style="color:var(--purple);font-weight:600">Uses: TMDB + YouTube or Golden Source if configured.</span></div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for Missing titles using the configured source rules, saves matching source URLs, and moves successful matches to Staged.</div>
             <div class="schedule-step2-options">
               <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;height:100%">
                 <label class="toggle" style="transform:scale(.85)">
@@ -1242,14 +1242,14 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                   <span class="toggle-track"></span>
                 </label>
                 <div>
-                  <span style="font-size:12px;font-weight:600;color:var(--amber)">Only use Golden Source</span>
-                  <div style="font-size:11px;color:var(--amber)">Use curated Golden Source matches only during Step 2 for tighter and faster source discovery.</div>
+                  <span style="font-size:12px;font-weight:600;color:var(--amber)" data-ui="schedule.cards.pipeline_steps.step2.only_golden.title">Only use Golden Source</span>
+                  <div style="font-size:11px;color:var(--amber)" data-ui="schedule.cards.pipeline_steps.step2.only_golden.description">Use curated Golden Source matches only during Step 2 for faster, more controlled source discovery.</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
                 <div>
-                  <span style="font-size:12px;font-weight:600;color:var(--text)">Missing Titles Per Run</span>
-                  <div style="font-size:11px;color:var(--text3)">Limits how many MISSING titles are processed per scheduled Step 2 run. 0 = unlimited.</div>
+                  <span style="font-size:12px;font-weight:600;color:var(--text)" data-ui="schedule.cards.pipeline_steps.step2.limit.title">Missing Titles Per Run</span>
+                  <div style="font-size:11px;color:var(--text3)" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many Missing titles are processed during each scheduled Step 2 run. 0 = unlimited.</div>
                 </div>
                 <input id="run-schedule-limit" type="number" min="0" onblur="saveRunSchedule()" style="width:86px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-family:var(--mono)">
               </div>
@@ -1269,15 +1269,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green)">Step 3</span>
               <span style="font-size:15px;font-weight:700">Download Themes</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Downloads audio for every APPROVED media item, saves the theme file into the media folder, and moves status to AVAILABLE. <span style="color:var(--green);font-weight:600">Uses: yt-dlp + ffmpeg.</span></div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.</div>
             <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
               <label class="toggle" style="transform:scale(.85)">
                 <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
                 <span class="toggle-track"></span>
               </label>
               <div>
-                <span style="font-size:12px;font-weight:600;color:var(--text)">Auto-Approve</span>
-                <div style="font-size:11px;color:var(--text3)">Automatically approve all Staged media before downloading — fully hands-off pipeline</div>
+                <span style="font-size:12px;font-weight:600;color:var(--text)" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve Staged Items</span>
+                <div style="font-size:11px;color:var(--text3)" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically moves Staged titles to Approved before download for a fully automated Step 3 run.</div>
               </div>
             </div>
           </div>
@@ -4434,25 +4434,25 @@ const TASK_CARD_CONFIG={
   runPipeline:[
     {
       title:'Run Scan Now',
-      description:'Step 1 scans Plex for selected libraries, checks each media folder for an existing theme file, then sets statuses (MISSING when absent, AVAILABLE when found).',
+      description:'Step 1 checks the selected Plex libraries for existing theme files and updates each title to Missing or Available.',
       controlType:'button',
-      buttonLabel:'Run Step 1',
+      buttonLabel:'Run Scan',
       buttonClass:'btn btn-blue btn-sm',
       handler:'taskRunPass(1)'
     },
     {
       title:'Run Find Sources Now',
-      description:'Step 2 builds source searches for MISSING titles using TMDB metadata, applies Golden Source rules when enabled, and stages valid matches for review.',
+      description:'Step 2 searches for Missing titles, saves matching source URLs, and moves successful matches to Staged.',
       controlType:'button',
-      buttonLabel:'Run Step 2',
+      buttonLabel:'Run Source Match',
       buttonClass:'btn btn-purple btn-sm',
       handler:'taskRunPass(2)'
     },
     {
       title:'Run Download Approved Now',
-      description:'Step 3 downloads audio for Approved titles, trims from the saved start offset, writes theme files to media folders, and marks completed rows as Available.',
+      description:'Step 3 downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.',
       controlType:'button',
-      buttonLabel:'Run Step 3',
+      buttonLabel:'Run Download',
       buttonClass:'btn btn-green btn-sm',
       handler:'taskRunPass(3)'
     }
