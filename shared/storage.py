@@ -91,11 +91,22 @@ def _normalize_row(row: dict) -> dict:
         v = row.get(k)
         out[k] = "" if v is None else v
 
-    out["status"] = str(out.get("status", "") or "PENDING").strip().upper()
-    if out["status"] == "NO_PLAYLIST":
-        out["status"] = "PENDING"
+    out["status"] = str(out.get("status", "") or "MISSING").strip().upper()
+    # Compatibility choice: normalize legacy rows on read so existing databases
+    # keep working without a one-time migration step.
+    legacy_status_map = {
+        "PENDING": "MISSING",
+        "DOWNLOADED": "AVAILABLE",
+        "IGNORED": "UNMONITORED",
+        "REJECTED": "UNMONITORED",
+        "NO_PLAYLIST": "MISSING",
+    }
+    mapped = legacy_status_map.get(out["status"])
+    if mapped:
+        original = out["status"]
+        out["status"] = mapped
         notes = (out.get("notes", "") or "").strip()
-        out["notes"] = f"{notes} [migrated]".strip()
+        out["notes"] = f"{notes} [migrated from {original}]".strip()
 
     # Guarantee rating_key is always a non-None string — critical for delete/patch lookups
     out["rating_key"] = str(out.get("rating_key") or "").strip()
