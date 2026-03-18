@@ -892,7 +892,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </label>
             <div>
               <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
-              <div class="toggle-note">Manual search selections skip Review and go straight to Approved.</div>
+              <div class="toggle-note">Manual search selections skip staging and go straight to Approved.</div>
             </div>
           </div>
         </div>
@@ -1103,7 +1103,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan Library</button>
         <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
         <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
-        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download All Approved</button>
+        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download Approved Items</button>
         <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
       </div>
     </div>
@@ -1112,12 +1112,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <input class="search" type="text" placeholder="Search titles, years, URLs, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search database" style="min-width:260px">
       <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
         <option value="">All statuses</option>
-        <option value="UNMONITORED">Unmonitored</option><option value="MISSING">Missing</option><option value="STAGED">Staged</option>
-        <option value="APPROVED">Approved</option><option value="AVAILABLE">Available</option>
+        <option value="UNMONITORED">Unmonitored</option>
+        <option value="MISSING">Missing</option>
+        <option value="STAGED">Staged</option>
+        <option value="APPROVED">Approved</option>
+        <option value="AVAILABLE">Available</option>
         <option value="FAILED">Failed</option>
       </select>
       <div class="db-toolbar-actions">
-        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve All Staged</button>
+        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve Staged Items</button>
       </div>
     </div>
     <div class="bulk-bar" id="db-bulk-bar">
@@ -1126,9 +1129,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <button class="btn btn-ghost btn-xs" onclick="selectAllVisible()">Select all on page</button>
       <span class="bulk-spacer"></span>
       <div class="bulk-actions">
-        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Approve Selected</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('MISSING')" data-ui="actions.bulk.mark_missing">↺ Mark Missing</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('UNMONITORED')" data-ui="actions.bulk.mark_unmonitored">⊘ Mark Unmonitored</button>
+        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Set Approved</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('MISSING')" data-ui="actions.bulk.mark_missing">↺ Set Missing</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('UNMONITORED')" data-ui="actions.bulk.mark_unmonitored">⊘ Set Unmonitored</button>
         <button class="btn btn-ghost btn-sm" id="db-clear-sel" onclick="clearSourcesSelected()">🧹 Clear Sources</button>
         <button class="btn btn-red btn-sm" onclick="clearSelection()">✕ Clear</button>
       </div>
@@ -1274,7 +1277,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </label>
               <div>
                 <span style="font-size:12px;font-weight:600;color:var(--text)">Auto-Approve</span>
-                <div style="font-size:11px;color:var(--text3)">Automatically approve all STAGED media before downloading — fully hands-off pipeline</div>
+                <div style="font-size:11px;color:var(--text3)">Automatically approve all Staged media before downloading — fully hands-off pipeline</div>
               </div>
             </div>
           </div>
@@ -2155,12 +2158,12 @@ let _libs=[], _maxDur=45;
 let _uiTerminology={};
 const _defaultStatusDisplay={'UNMONITORED':'Unmonitored','MISSING':'Missing','STAGED':'Staged','APPROVED':'Approved','AVAILABLE':'Available','FAILED':'Failed'};
 const _defaultStatusDesc={
-  UNMONITORED:'Excluded from automation until re-enabled',
-  MISSING:'No local theme file is available yet',
-  STAGED:'Source found, waiting for approval',
-  APPROVED:'Ready to download',
-  AVAILABLE:'Theme saved to disk',
-  FAILED:'Resolve or download needs attention'
+  UNMONITORED:'Hidden from automation until you re-enable this title.',
+  MISSING:'Needs a source because no local theme file is available yet.',
+  STAGED:'Source saved and waiting for approval before download.',
+  APPROVED:'Approved for download on the next run.',
+  AVAILABLE:'Theme file is present locally and ready to use.',
+  FAILED:'Source discovery or download needs attention before retrying.'
 };
 
 function uiTerm(path, fallback=''){
@@ -2441,32 +2444,37 @@ function _hasSourceUrl(row){
 function _statusValidation(row, attemptedStatus){
   const attempted=String(attemptedStatus||'').toUpperCase();
   const current=String(row?.status||'').toUpperCase();
-  if(current===attempted) return {ok:true};
-  if(attempted==='STAGED' && !_hasSourceUrl(row)){
-    return {ok:false, reason:'Add a source URL before staging this item.'};
+  if(!STATUSES.includes(attempted)){
+    return {ok:false, reason:'That status is no longer available.'};
   }
+  if(current===attempted) return {ok:true};
   const transitions={
     UNMONITORED:['MISSING'],
-    MISSING:['UNMONITORED','STAGED','FAILED'],
-    STAGED:['UNMONITORED','MISSING','APPROVED','FAILED'],
-    APPROVED:['UNMONITORED','MISSING','STAGED','AVAILABLE','FAILED'],
-    AVAILABLE:['UNMONITORED','MISSING'],
-    FAILED:['UNMONITORED','MISSING','STAGED']
+    MISSING:['STAGED','FAILED'],
+    STAGED:['APPROVED','MISSING','FAILED'],
+    APPROVED:['AVAILABLE','MISSING','FAILED'],
+    AVAILABLE:['MISSING'],
+    FAILED:['MISSING','STAGED']
   };
+  if(attempted==='UNMONITORED') return {ok:true};
+  if(attempted==='STAGED' && !_hasSourceUrl(row)){
+    return {ok:false, reason:'Add a source URL before moving this item to Staged.'};
+  }
   if(attempted==='AVAILABLE' && !_hasLocalTheme(row)){
     return {ok:false, reason:'Local theme file is missing. Download it first.'};
   }
   if(attempted==='APPROVED' && current!=='STAGED'){
-    return {ok:false, reason:'Only staged items can be approved.'};
+    return {ok:false, reason:'Only Staged items can be approved.'};
   }
-  if(transitions[current] && !transitions[current].includes(attempted)){
+  if(!transitions[current] || !transitions[current].includes(attempted)){
     return {ok:false, reason:`Cannot move ${displayStatus(current)} to ${displayStatus(attempted)}.`};
   }
   return {ok:true};
 }
 
 function allowedStatuses(row){
-  return STATUSES.filter(status=>_statusValidation(row,status).ok);
+  const current=String(row?.status||'').toUpperCase();
+  return STATUSES.filter(status=>status===current || _statusValidation(row,status).ok);
 }
 
 function renderStatusCell(row){
@@ -2479,15 +2487,7 @@ function renderStatusCell(row){
 function renderStatusKey(){
   const el=document.getElementById('status-key');
   if(!el) return;
-  const groups=[
-    ['UNMONITORED','MISSING','STAGED'],
-    ['APPROVED','AVAILABLE','FAILED']
-  ];
-  el.innerHTML=groups.map((grp,gi)=>{
-    const items=grp.map(s=>`<span class="status-key-item"><span class="badge s-${s}" style="font-size:10px;padding:2px 7px"><span class="si"></span>${displayStatus(s)}</span><span class="status-key-desc">${statusDesc(s)}</span></span>`).join('');
-    const divider=gi===0?`<span style="width:1px;background:var(--border);align-self:stretch;flex-shrink:0;margin:2px 4px"></span>`:'';
-    return items+divider;
-  }).join('');
+  el.innerHTML=STATUSES.map(s=>`<span class="status-key-item"><span class="badge s-${s}" style="font-size:10px;padding:2px 7px"><span class="si"></span>${displayStatus(s)}</span><span class="status-key-desc">${statusDesc(s)}</span></span>`).join('');
 }
 
 async function loadDatabase(syncPeer=true){
@@ -2559,11 +2559,11 @@ function updateDbActionHints(counts){
   }
   if(btnDownload){
     btnDownload.disabled=approved===0;
-    btnDownload.title=approved?`Download ${approved} approved items`:'No approved items to download';
+    btnDownload.title=approved?`Download ${approved} Approved item${approved===1?'':'s'}`:'No Approved items to download';
   }
   if(btnApproveAll){
     btnApproveAll.disabled=staged===0;
-    btnApproveAll.title=staged?`Approve ${staged} staged items`:'No staged items to approve';
+    btnApproveAll.title=staged?`Set ${staged} Staged item${staged===1?'':'s'} to Approved`:'No Staged items to approve';
   }
 }
 
@@ -2992,7 +2992,7 @@ async function saveOffsetInput(key, el){
 
 async function bulkApprove(){
   const staged=_rows.filter(r=>r.status==='STAGED');
-  if(!staged.length){ toast('No staged movies','info'); return; }
+  if(!staged.length){ toast('No Staged items','info'); return; }
   const r=await fetch('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({keys:staged.map(r=>r.rating_key),status:'APPROVED'})
@@ -3001,14 +3001,14 @@ async function bulkApprove(){
     const d=await r.json();
     const updated=d.updated ?? staged.length;
     const skipped=d.skipped ?? 0;
-    toast(`Approved ${updated} staged${skipped?` · ${skipped} skipped`:''}`,'ok');
+    toast(`Set ${updated} Staged item${updated===1?'':'s'} to Approved${skipped?` · ${skipped} skipped`:''}`,'ok');
     loadDatabase();
   } else toast('Failed','err');
 }
 
 async function dbDownloadApproved(){
   const approved=_rows.filter(r=>r.status==='APPROVED');
-  if(!approved.length){ toast('No approved items','info'); return; }
+  if(!approved.length){ toast('No Approved items','info'); return; }
   dbRunPass(3);
 }
 
@@ -3095,7 +3095,7 @@ function updateBulkBar(){
   });
   if(approveBtn){
     approveBtn.disabled=!selectedStaged;
-    approveBtn.title=selectedStaged?'Approve selected staged items':'Only staged items can be approved';
+    approveBtn.title=selectedStaged?'Set selected Staged items to Approved':'Only Staged items can be approved';
   }
   if(clearSel) clearSel.disabled=!selectedWithUrl;
   if(clearSel) clearSel.title=selectedWithUrl?'Clear source URLs for selected items':'Select items with source URLs to clear';
@@ -3876,7 +3876,7 @@ async function searchModalDownloadNow(){
     return;
   }
   closeSearchModal();
-  toast('Staged source — downloading now…','info');
+  toast('Approved source — downloading now…','info');
   dbProgressStart('Downloading selected title…');
   dbProgressSet(35,'Preparing download…');
   const row=_rows.find(r=>r.rating_key===key);
@@ -4060,7 +4060,7 @@ async function saveSourceEditor(skipClose=false){
   const row=_rows.find(r=>String(r.rating_key)===String(key));
   const isAvailable=row && ['AVAILABLE'].includes(String(row.status||'').toUpperCase());
   const status=(isAvailable || !_autoApproveManual)?'STAGED':'APPROVED';
-  const notes=status==='APPROVED'?'Manual source auto-approved':'URL set via manual search — staged for approval';
+  const notes=status==='APPROVED'?'Manual source auto-approved':'URL set via manual search — moved to Staged for approval';
 
   const saveUrlResp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
     method:'PATCH', headers:{'Content-Type':'application/json'},
@@ -4259,7 +4259,7 @@ async function mediaDownloadApproved(){
   toast(`Downloading ${approved} approved items from ${lib}…`,'info');
   await fetch('/api/run/pass/3',{method:'POST'});
   // Re-enable after a delay (the actual process runs async)
-  setTimeout(()=>{btn.textContent='↓ Download All Approved';btn.disabled=false;},3000);
+  setTimeout(()=>{btn.textContent='↓ Download Approved Items';btn.disabled=false;},3000);
 }
 function openYtModal(rk,title,year,url,lib){
   stopAllAudio();
@@ -4450,7 +4450,7 @@ const TASK_CARD_CONFIG={
     },
     {
       title:'Run Download Approved Now',
-      description:'Step 3 downloads audio for Approved titles, trims from start offset, writes theme files to media folders, and marks completed rows as Available.',
+      description:'Step 3 downloads audio for Approved titles, trims from the saved start offset, writes theme files to media folders, and marks completed rows as Available.',
       controlType:'button',
       buttonLabel:'Run Step 3',
       buttonClass:'btn btn-green btn-sm',
@@ -4564,7 +4564,7 @@ async function loadTasksPage(){
     const [cls,...parts]=bc.split(' ');
     const dur=run.duration_seconds?`${Math.round(run.duration_seconds)}s`:'';
     const s1=run.stats?.pass1, s2=run.stats?.pass2, s3=run.stats?.pass3;
-    const statsLine = s1 ? `Pass1: ${s1.total} total · ${s1.pending} pending · ${s1.staged} staged · ${s1.approved} approved`
+    const statsLine = s1 ? `Pass1: ${s1.total} total · ${s1.pending} missing · ${s1.staged} staged · ${s1.approved} approved`
       : s2 ? `Pass2: ${s2.staged} staged · ${s2.no_playlist} no source`
       : s3 ? `Pass3: ${s3.downloaded} downloaded · ${s3.failed} failed · ${s3.skipped} skipped` : '';
     return `<div class="hcard">
