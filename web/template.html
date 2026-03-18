@@ -862,7 +862,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">These settings control how sources are found for each <span class="status-term">MISSING</span> title.</div>
+        <div class="section-intro">These settings control how sources are found for each <span class="status-term">MISSING</span> theme.</div>
         <div class="settings-subcard">
           <div class="subcard-title">Search setup</div>
           <div class="subcard-intro">Choose how source discovery searches for and validates theme sources.</div>
@@ -1590,6 +1590,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <div class="sm-card-copy">
                 <div class="sm-card-title">Golden Source</div>
                 <div class="sm-card-desc" id="sm-golden-desc">Use curated Golden Source URL for this item</div>
+                <div class="field-hint" id="sm-golden-offset" style="margin-top:4px">Offset: —</div>
               </div>
             </div>
             <div class="sm-card-actions"><div class="sm-card-first" id="sm-first-golden_source"></div></div>
@@ -3577,6 +3578,36 @@ let _activeQuickPickUrl='';
 let _selectedSourceTitle='';
 let _sePreviewLoadSeq=0;
 
+function _normalizedOffsetValue(val){
+  return fmt(parseTrim(val||'0'));
+}
+
+function _goldenSourceMeta(row){
+  const sourceRow=row||_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey))||{};
+  return {
+    url:String(sourceRow?.golden_source_url||'').trim(),
+    offset:_normalizedOffsetValue(sourceRow?.start_offset||'0')
+  };
+}
+
+function _setSearchMethodOrder(hasGolden){
+  const wrap=document.querySelector('.manual-methods');
+  const goldenCard=document.getElementById('sm-card-golden');
+  if(!wrap || !goldenCard) return;
+  if(hasGolden) wrap.prepend(goldenCard);
+  else wrap.appendChild(goldenCard);
+}
+
+function _applyAudioOffset(audio, offsetValue){
+  const start=Math.max(0, parseTrim(offsetValue||'0'));
+  if(!audio || !start) return;
+  const setOffset=()=>{
+    try{ audio.currentTime=Math.min(start, audio.duration||start); }catch(_e){}
+  };
+  if(audio.readyState >= 1) setOffset();
+  else audio.addEventListener('loadedmetadata', setOffset, {once:true});
+}
+
 function _setSearchPreviewPlayIcon(isPlaying){
   const pbtn=document.getElementById('sm-preview-play');
   if(pbtn) pbtn.innerHTML=isPlaying?PAUSE_ICON_SVG:PLAY_ICON_SVG;
@@ -3757,11 +3788,15 @@ async function openSearchModal(rk,title,year,lib){
   document.getElementById('se-info').textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
   const goldenCard=document.getElementById('sm-card-golden');
   const goldenDesc=document.getElementById('sm-golden-desc');
+  const goldenOffset=document.getElementById('sm-golden-offset');
   const goldenUrl=String(existingRow?.golden_source_url||'').trim();
+  const goldenOffsetValue=_normalizedOffsetValue(existingRow?.start_offset||'0');
   const hasGolden=!!goldenUrl;
   if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
   if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
-  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated Golden Source URL':'Not currently available';
+  if(goldenDesc) goldenDesc.textContent=hasGolden?`Use the curated Golden Source URL and start at ${goldenOffsetValue}`:'Not currently available';
+  if(goldenOffset) goldenOffset.textContent=hasGolden?`Offset: ${goldenOffsetValue}`:'Offset: —';
+  _setSearchMethodOrder(hasGolden);
   _initMethodQuickPicks(existingRow);
   if(_searchMethod==='golden_source' && !hasGolden){
     _searchMethod='playlist';
@@ -3828,10 +3863,10 @@ async function doSearch(){
   _searchMethod=_searchMethod||'playlist';
   if(_searchMethod==='paste') return goToStep3FromPaste();
   if(_searchMethod==='golden_source'){
-    const row=_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
-    const url=String(row?.golden_source_url||'').trim();
+    const golden=_goldenSourceMeta();
+    const url=golden.url;
     if(!url) return toast('Golden Source URL not currently available for this item','info');
-    return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL'});
+    return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL',startOffset:golden.offset});
   }
   await _searchByMethod(_searchMethod, true);
 }
@@ -3876,7 +3911,9 @@ function _setMethodQuickPick(method, result){
   const duration=Math.max(12, Math.min(24, Math.ceil(rawTitle.length/3)));
   const distance=Math.max(0, (rawTitle.length*6)-190);
   const styleAttr=isLong?` style="--qp-duration:${duration}s;--qp-scroll-distance:${distance}px"`:'';
-  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"${styleAttr}><a class="sm-quickpick-link" href="${result.url}" target="_blank" rel="noopener">${titleBody}<span>↗</span></a></span><div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}')">Pick</button></div>`;
+  const offsetLabel=result.start_offset?`<span class="muted-chip" style="margin:4px 0 0">Offset ${_normalizedOffsetValue(result.start_offset)}</span>`:'';
+  const safeOffset=(result.start_offset||'0').replace(/'/g,"\\'");
+  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"${styleAttr}><a class="sm-quickpick-link" href="${result.url}" target="_blank" rel="noopener">${titleBody}<span>↗</span></a></span>${offsetLabel}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}','${safeOffset}')">Pick</button></div>`;
 }
 
 
@@ -3889,6 +3926,7 @@ async function previewQuickPick(method,url,btn){
   }
   _searchMethod=method||_searchMethod;
   _lastSearchMethod=_searchMethod;
+  const startOffset=method==='golden_source' ? _goldenSourceMeta().offset : '0:00';
   btn.disabled=true; btn.textContent='Loading…';
   try{
     const cached=_previewCache[url];
@@ -3904,6 +3942,7 @@ async function previewQuickPick(method,url,btn){
     _lastPreviewedUrl=url;
     resetActivePreviewBtn();
     await _searchPreviewAudio.playFrom(apiUrl(data.audio_url)).catch(()=>{});
+    _applyAudioOffset(audio, startOffset);
     window._activePreviewBtn=btn;
     _activeQuickPickBtn=btn;
     _activeQuickPickUrl=url;
@@ -3913,12 +3952,12 @@ async function previewQuickPick(method,url,btn){
   }
 }
 
-async function quickPickSelect(method,url,title=''){
+async function quickPickSelect(method,url,title='',startOffset='0:00'){
   if(!url) return;
   _searchMethod=method||_searchMethod;
   if(_searchMethod!=='golden_source') await _searchByMethod(_searchMethod,false);
   if(_lastSearchResults.length) _renderResults(_lastSearchResults);
-  goToStep3(url,{skipPreview:false,sourceTitle:title});
+  goToStep3(url,{skipPreview:false,sourceTitle:title,startOffset});
 }
 
 async function _prefetchMethodFirstResult(method){
@@ -3936,8 +3975,8 @@ function _initMethodQuickPicks(existingRow){
   _setMethodQuickPick('playlist',null);
   _setMethodQuickPick('direct',null);
   const row=existingRow||_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
-  const goldenUrl=String(row?.golden_source_url||'').trim();
-  _setMethodQuickPick('golden_source', goldenUrl ? {title:'Golden Source URL', url:goldenUrl} : false);
+  const golden=_goldenSourceMeta(row);
+  _setMethodQuickPick('golden_source', golden.url ? {title:'Golden Source URL', url:golden.url, start_offset:golden.offset} : false);
   _prefetchMethodFirstResult('playlist');
   _prefetchMethodFirstResult('direct');
 }
@@ -3990,7 +4029,7 @@ function goToStep3(url, opts={}){
   stopAllAudio();
   if(_lastSearchResults.length) _renderResults(_lastSearchResults);
   document.getElementById('se-url').value=url||'';
-  document.getElementById('se-offset').value='0:00';
+  document.getElementById('se-offset').value=_normalizedOffsetValue(opts.startOffset||'0');
   document.getElementById('se-cur').textContent='0:00';
   document.getElementById('se-dur').textContent='—';
   document.getElementById('se-slider').value=0;
@@ -4076,6 +4115,7 @@ async function seLoadPreview(){
     _sourceEditorAudio.setHandlers({
       onloadedmetadata:(loaded)=>{
         if(loadSeq!==_sePreviewLoadSeq) return;
+        _applyAudioOffset(loaded, document.getElementById('se-offset').value||'0');
         document.getElementById('se-info').textContent=`Duration: ${fmt(loaded.duration)}`;
         seUpdateTrim();
         _sourceEditorAudio.play().catch(()=>{});
