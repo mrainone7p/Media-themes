@@ -509,10 +509,14 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .trim-window-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px}
 .theme-modal-meta-card{margin:0 22px 10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
 .theme-modal-file{font-size:11px;font-family:var(--mono);color:var(--text3);word-break:break-word}
-.review-card{margin:0 22px 10px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
-.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.review-card{margin:0 22px 12px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
+.review-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.review-card-heading{display:flex;flex-direction:column;gap:4px;min-width:0}
+.review-card-subtitle{font-size:11px;color:var(--text3);line-height:1.45}
+.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .review-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;background:var(--surface);border:1px solid var(--border)}
 .review-kv{font-size:11px;color:var(--text2);display:flex;justify-content:space-between;gap:8px}
+.review-kv strong{color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:10px}
 .review-warning{font-size:11px;color:var(--red);margin-top:8px}
 .review-actions{display:flex;gap:8px;align-items:center}
 .review-overflow{position:relative}
@@ -520,8 +524,26 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .review-overflow[open]{z-index:2}
 .review-overflow-menu{position:absolute;right:0;bottom:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;min-width:170px}
 .review-overflow-menu button{width:100%;text-align:left}
-.review-header-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-top:8px;padding-bottom:8px}
+.review-header-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;padding:0 22px 8px}
+.review-section-divider{height:1px;background:var(--border);margin:2px 22px 12px}
 .simple-line{font-size:12px;color:var(--text2);margin-bottom:6px;word-break:break-word}
+.review-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 22px 8px}
+.review-panel-title{font-size:15px;font-weight:700;color:var(--text)}
+.review-meta-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--surface) 45%, transparent);overflow:hidden}
+.review-meta-item{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 12px;border-top:1px solid var(--border)}
+.review-meta-item:first-child{border-top:none}
+.review-meta-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.review-meta-value{font-size:12px;color:var(--text2);line-height:1.5;word-break:break-word}
+.review-meta-value a{color:var(--blue)}
+.review-source-pill{display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.review-source-pill.is-golden{border-color:rgba(245,166,35,.4);background:var(--amber-soft);color:var(--amber)}
+.review-source-pill.is-custom{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
+.review-source-pill.is-playlist{border-color:rgba(176,106,255,.35);background:rgba(176,106,255,.1);color:#b06aff}
+.review-source-pill.is-direct{border-color:rgba(45,212,160,.35);background:var(--green-soft);color:var(--green)}
+.review-source-pill.is-manual{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
+.review-source-pill.is-unknown{color:var(--text3)}
+.review-footer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;width:100%}
+@media (max-width: 640px){.review-card-header,.review-panel-head{flex-direction:column;align-items:flex-start}.review-footer-actions{justify-content:stretch}.review-footer-actions .btn{flex:1}}
 .search-method-head{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
 .search-method-input{margin-top:6px;width:100%;font-size:12px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);outline:none}
 .search-method-card.disabled{opacity:.55;border-style:dashed;cursor:not-allowed}
@@ -583,11 +605,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .search-method-card:hover{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.active{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.golden-source{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 35%, var(--surface2))}
-.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 62%, var(--surface2))}
+.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 50%, var(--surface2))}
 .search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 20%, var(--surface2));opacity:.68;cursor:not-allowed}
-.search-method-card.golden-source{position:relative}
-.sm-golden-recommended{position:absolute;top:10px;right:12px;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--green);display:none}
-.search-method-card.golden-source.recommended .sm-golden-recommended{display:block}
+.sm-card-topline{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sm-card-badge{display:none;align-items:center;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.sm-card-badge.recommended{background:var(--green-soft);color:var(--green);border:1px solid rgba(45,212,160,.35)}
+.search-method-card.recommended .sm-card-badge{display:inline-flex}
 .golden-link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-decoration:none;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(245,166,35,.4);white-space:nowrap}
 .golden-link-pill:hover{text-decoration:none;filter:brightness(1.04)}
 .result-idx{display:inline-flex;align-items:center;justify-content:center;min-width:24px;font-size:11px;color:var(--text3);font-family:var(--mono)}
@@ -648,18 +671,20 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .search-method-card:hover{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.active{border-color:var(--purple);background:var(--purple-soft)}
 .search-method-card.golden-source{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 35%, var(--surface2))}
-.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 62%, var(--surface2))}
+.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 50%, var(--surface2))}
 .search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 20%, var(--surface2));opacity:.68;cursor:not-allowed}
 .sm-card-main{display:flex;align-items:flex-start;gap:8px;min-width:0;flex:1}
-.sm-card-copy{display:flex;flex-direction:column;gap:1px;min-width:0}
+.sm-card-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
 .sm-card-icon{font-size:16px;line-height:1;margin-top:1px}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.3}
+.sm-card-submeta{font-size:10px;color:var(--text3);font-family:var(--mono)}
 .sm-card-actions{display:flex;align-items:flex-start;justify-content:flex-start;gap:6px;flex-shrink:0;min-width:0;width:100%;max-width:none;margin-left:0;flex-direction:column}
-.sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left;overflow:hidden}
+.sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .sm-card-first button{margin-top:0}
 .sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
 .sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;white-space:nowrap;margin-bottom:4px;position:relative}
+.search-method-card.golden-source .sm-card-actions{justify-content:flex-start}
 .sm-quickpick-link{display:inline-flex;align-items:center;gap:4px;color:var(--blue);text-decoration:none}
 .sm-quickpick-link:hover{text-decoration:underline}
 .sm-quickpick-track{display:inline-block;white-space:nowrap;min-width:max-content;will-change:transform}
@@ -1584,13 +1609,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </div>
           </div>
           <div class="search-method-card golden-source" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
-            <div class="sm-golden-recommended" id="sm-golden-recommended">Recommended</div>
             <div class="sm-card-main">
               <div class="sm-card-icon">★</div>
               <div class="sm-card-copy">
-                <div class="sm-card-title">Golden Source</div>
+                <div class="sm-card-topline">
+                  <div class="sm-card-title">Golden Source</div>
+                  <div class="sm-card-badge recommended" id="sm-golden-recommended">Recommended</div>
+                </div>
                 <div class="sm-card-desc" id="sm-golden-desc">Use curated Golden Source URL for this item</div>
-                <div class="field-hint" id="sm-golden-offset" style="margin-top:4px">Offset: —</div>
+                <div class="sm-card-submeta" id="sm-golden-offset">Offset: —</div>
               </div>
             </div>
             <div class="sm-card-actions"><div class="sm-card-first" id="sm-first-golden_source"></div></div>
@@ -1708,11 +1735,20 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
     </div>
     <div class="modal-bio" id="theme-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0 22px 10px"></div>
+    <div class="review-section-divider"></div>
 
-    <div class="review-header-desc" id="theme-modal-summary">—</div>
+    <div class="review-panel-head">
+      <div class="review-panel-title" id="theme-modal-summary">Manage Theme</div>
+      <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
+    </div>
 
-      <div class="review-card" id="theme-local-card">
-      <div class="modal-section-label">Local Theme</div>
+    <div class="review-card" id="theme-local-card">
+      <div class="review-card-header">
+        <div class="review-card-heading">
+          <div class="modal-section-label" style="margin-bottom:0">Local Theme</div>
+          <div class="review-card-subtitle" id="theme-modal-local-status">Review the local file, playback, and cleanup actions.</div>
+        </div>
+      </div>
       <div class="simple-line" id="theme-modal-file">File path: —</div>
       <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
       <div id="theme-local-missing" style="font-size:12px;color:var(--text3);display:none">No local theme file yet.</div>
@@ -1731,26 +1767,54 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <audio id="theme-modal-audio" style="display:none"></audio>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
           <button class="btn btn-ghost btn-sm" onclick="themeModalEditTrim()">Edit Trim</button>
-          <button class="btn btn-ghost btn-sm" onclick="themeModalOpenManualSearch()">Replace Theme</button>
           <button class="btn btn-red btn-sm" onclick="themeModalDelete()">Delete Theme</button>
         </div>
       </div>
     </div>
 
-    <div class="review-card">
-      <div class="modal-section-label">Source</div>
-      <div class="simple-line" id="theme-modal-source-url">Source URL: —</div>
-      <div class="simple-line" id="theme-modal-origin">Source: —</div>
-      <div class="simple-line" id="theme-modal-golden">Golden Source URL: —</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px" id="theme-source-actions">
+    <div class="review-card" id="theme-source-card">
+      <div class="review-card-header">
+        <div class="review-card-heading">
+          <div class="modal-section-label" style="margin-bottom:0">Source Details</div>
+          <div class="review-card-subtitle" id="theme-modal-source-summary">Theme used for download and the details applied to it.</div>
+        </div>
+        <div class="review-source-pill is-unknown" id="theme-modal-source-pill">Unknown</div>
+      </div>
+      <div class="review-meta-list">
+        <div class="review-meta-item">
+          <div class="review-meta-label">Theme Source</div>
+          <div class="review-meta-value" id="theme-modal-source-url">—</div>
+        </div>
+        <div class="review-meta-item">
+          <div class="review-meta-label">Imported</div>
+          <div class="review-meta-value" id="theme-modal-imported">—</div>
+        </div>
+        <div class="review-meta-item">
+          <div class="review-meta-label">Pull Method</div>
+          <div class="review-meta-value" id="theme-modal-origin">—</div>
+        </div>
+        <div class="review-meta-item">
+          <div class="review-meta-label">Length / Offset</div>
+          <div class="review-meta-value" id="theme-modal-offset">—</div>
+        </div>
+        <div class="review-meta-item">
+          <div class="review-meta-label">Notes</div>
+          <div class="review-meta-value" id="theme-modal-source-notes">—</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px" id="theme-source-actions">
         <button class="btn btn-ghost btn-sm" id="theme-open-source-btn" onclick="themeModalOpenSource()">↗ Open Source</button>
-        <button class="btn btn-ghost btn-sm" id="theme-manual-search-btn" onclick="themeModalOpenManualSearch()">Manual Search</button>
       </div>
     </div>
 
     <!-- Footer -->
-    <div class="modal-footer" style="justify-content:flex-end">
-      <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
+    <div class="modal-footer">
+      <div class="review-footer-actions">
+        <button class="btn btn-ghost" id="theme-next-step-btn" style="display:none" onclick="themeModalRunNextStep()">Next Step</button>
+        <button class="btn btn-amber" id="theme-find-btn" style="display:none" onclick="themeModalOpenManualSearch()">Find Theme</button>
+        <button class="btn btn-ghost" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace Theme</button>
+        <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4884,45 +4948,131 @@ function _themeHasLocal(row){
   if(!row) return false;
   return String(row.status||'').toUpperCase()==='AVAILABLE' || String(row.theme_exists||'')==='1';
 }
-function _themeOriginLabel(origin){
-  const v=String(origin||'').toLowerCase();
-  if(v==='golden_source_verified') return 'Golden Source';
-  if(v==='golden_source') return 'Golden Source';
-  if(v==='manual') return 'Manual';
-  return 'Unknown';
+function _themeSourceMeta(row={}){
+  const notes=String(row?.notes||'');
+  const sourceOrigin=String(row?.source_origin||'').toLowerCase();
+  const sourceUrl=String(row?.url||'').trim();
+  const goldenUrl=String(row?.golden_source_url||'').trim();
+  let type='unknown';
+  let method='Unknown';
+  if(sourceOrigin==='golden_source' || sourceOrigin==='golden_source_verified'){
+    type='golden';
+    method='Golden Source import';
+  }
+  if(/found via playlist/i.test(notes) || /playlist/i.test(sourceUrl) || /[?&]list=/.test(sourceUrl)){
+    type='playlist';
+    method='Playlist search pull';
+  }else if(/found via direct/i.test(notes)){
+    type='direct';
+    method='Direct track pull';
+  }else if(sourceOrigin==='manual'){
+    type='custom';
+    method='Custom / manual source';
+  }else if(!sourceUrl && goldenUrl){
+    type='golden';
+    method='Golden Source import';
+  }else if(sourceUrl){
+    type='direct';
+    method='Direct source link';
+  }
+  const labelMap={golden:'Golden Source',playlist:'Playlist',direct:'Direct',custom:'Custom',unknown:'Unknown'};
+  const classMap={golden:'is-golden',playlist:'is-playlist',direct:'is-direct',custom:'is-custom',unknown:'is-unknown'};
+  return {type,label:labelMap[type]||'Unknown',method,className:classMap[type]||'is-unknown'};
+}
+function _themeModalPrimarySourceUrl(row={}){
+  return String(row?.url||'').trim() || String(row?.golden_source_url||'').trim();
+}
+function _themeModalLink(url,fallback='—'){
+  const v=String(url||'').trim();
+  if(!v) return fallback;
+  const safeHref=v.replace(/"/g,'&quot;');
+  const safeText=v.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  return `<a href="${safeHref}" target="_blank" rel="noopener">${safeText}</a>`;
+}
+function _themeModalImportedAt(row={}){
+  const raw=String(row?.last_updated||'').trim();
+  if(!raw) return 'Not imported yet';
+  const iso=raw.replace(' ','T')+'Z';
+  const dt=new Date(iso);
+  if(Number.isNaN(dt.getTime())) return raw;
+  return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function _themeModalOffsetLabel(row={}, hasTheme=false){
+  const start=fmt(Math.max(0,parseTrim(row?.start_offset||0)));
+  const endVal=parseTrim(row?.end_offset||0);
+  const end=endVal>0?fmt(endVal):'None';
+  const duration=hasTheme && Number(row?.theme_duration||0)>0?fmt(parseFloat(row.theme_duration||0)):'Unknown';
+  return `Clip ${duration} · Start ${start} · End trim ${end}`;
+}
+function _themeModalNextAction(row={}, hasTheme=false){
+  const status=String(row?.status||'').toUpperCase();
+  if(status==='STAGED') return {label:'Approve Theme',className:'btn btn-amber',handler:'approve'};
+  if(status==='APPROVED') return {label:'Download Theme',className:'btn btn-green',handler:'download'};
+  if(!hasTheme) return {label:'Find Theme',className:'btn btn-amber',handler:'find'};
+  return null;
 }
 function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
   _themeModalContext={rk,title,year,folder,row};
   const hasTheme=_themeHasLocal(row);
-  const hasSource=!!String(row?.url||'').trim();
-  const originLabel=_themeOriginLabel(row?.source_origin||'unknown');
+  const primarySourceUrl=_themeModalPrimarySourceUrl(row);
+  const hasSource=!!primarySourceUrl;
+  const sourceMeta=_themeSourceMeta(row);
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
 
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
   document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'Theme missing';
-  document.getElementById('theme-modal-summary').textContent=hasTheme?'Theme saved locally and playable.':'No local theme file yet.';
+  document.getElementById('theme-modal-summary').textContent='Manage Theme';
+  const statusBadge=document.getElementById('theme-modal-status-badge');
+  const status=String(row?.status||'MISSING').toUpperCase();
+  if(statusBadge){
+    statusBadge.className=`badge s-${status}`;
+    statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
+  }
+  document.getElementById('theme-modal-local-status').textContent=hasTheme
+    ?'Theme saved locally and playable.'
+    :'No local file is saved right now.';
   document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
-  document.getElementById('theme-modal-local-dur').textContent=`Duration: ${row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
-  const sourceUrlEl=document.getElementById('theme-modal-source-url');
-  sourceUrlEl.innerHTML=hasSource
-    ?`Source URL: <a href="${(row.url||'').replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="color:var(--blue)">${(row.url||'').replace(/</g,'&lt;')}</a>`
-    :'Source URL: —';
-  document.getElementById('theme-modal-origin').textContent=`Source: ${originLabel}`;
+  document.getElementById('theme-modal-local-dur').textContent=`Duration: ${hasTheme&&row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
+  document.getElementById('theme-modal-source-url').innerHTML=_themeModalLink(primarySourceUrl,'—');
+  document.getElementById('theme-modal-origin').textContent=sourceMeta.method;
   const goldenSourceUrl=String(row?.golden_source_url||'').trim();
-  const goldenSourceEl=document.getElementById('theme-modal-golden');
-  goldenSourceEl.innerHTML=goldenSourceUrl
-    ?`Golden Source URL: <a href="${goldenSourceUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener" style="color:var(--blue)">${goldenSourceUrl.replace(/</g,'&lt;')}</a>`
-    :'Golden Source URL: Not available';
+  document.getElementById('theme-modal-imported').textContent=_themeModalImportedAt(row);
+  document.getElementById('theme-modal-offset').textContent=_themeModalOffsetLabel(row, hasTheme);
+  document.getElementById('theme-modal-source-notes').textContent=String(row?.notes||'').trim()||'No source notes recorded.';
+  document.getElementById('theme-modal-source-summary').textContent=hasSource
+    ?'Theme used for download and the details applied to it.'
+    :'No download source is attached yet. Use Find Theme to attach one.';
+  const sourcePill=document.getElementById('theme-modal-source-pill');
+  sourcePill.textContent=sourceMeta.label;
+  sourcePill.className=`review-source-pill ${sourceMeta.className}`;
 
   const sourceActions=document.getElementById('theme-source-actions');
   if(sourceActions) sourceActions.style.display='flex';
   const openSourceBtn=document.getElementById('theme-open-source-btn');
-  const manualSearchBtn=document.getElementById('theme-manual-search-btn');
   if(openSourceBtn) openSourceBtn.style.display=hasSource?'':'none';
-  if(manualSearchBtn) manualSearchBtn.textContent=hasSource?'Replace Theme':'Manual Search';
+
+  const replaceBtn=document.getElementById('theme-replace-btn');
+  const findBtn=document.getElementById('theme-find-btn');
+  const nextStepBtn=document.getElementById('theme-next-step-btn');
+  if(replaceBtn) replaceBtn.style.display=hasTheme||hasSource||goldenSourceUrl?'':'none';
+  if(findBtn) findBtn.style.display=hasTheme?'none':'';
+  const nextAction=_themeModalNextAction(row, hasTheme);
+  if(nextStepBtn){
+    if(nextAction && nextAction.handler!=='find'){
+      nextStepBtn.style.display='';
+      nextStepBtn.textContent=nextAction.label;
+      nextStepBtn.className=nextAction.className;
+      nextStepBtn.dataset.action=nextAction.handler;
+    }else{
+      nextStepBtn.style.display='none';
+      nextStepBtn.dataset.action='';
+      nextStepBtn.className='btn btn-ghost';
+      nextStepBtn.textContent='Next Step';
+    }
+  }
 
   document.getElementById('theme-local-player').style.display=hasTheme?'block':'none';
   document.getElementById('theme-local-missing').style.display=hasTheme?'none':'block';
@@ -4943,8 +5093,40 @@ function openThemeModal(rk,title,year,folder,row={}){
   if(hasTheme) _themeModalAudio.audio.load();
   if(_curKey) stopCurrentAudio();
 }
+function themeModalRunNextStep(){
+  const btn=document.getElementById('theme-next-step-btn');
+  const action=String(btn?.dataset?.action||'').trim();
+  const rk=_themeModalContext?.rk;
+  if(action==='approve' && rk){
+    updateRow(rk,'status','APPROVED');
+    closeThemeModal();
+    return;
+  }
+  if(action==='download'){
+    closeThemeModal();
+    themeModalDownloadApproved();
+    return;
+  }
+  if(action==='find'){
+    themeModalOpenManualSearch();
+  }
+}
+async function themeModalDownloadApproved(){
+  const row=_themeModalContext?.row||{};
+  if(String(row?.status||'').toUpperCase()!=='APPROVED') return;
+  const resp=await fetch('/api/theme/download-now',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:_activeLib||'',rating_key:_themeModalContext?.rk||'',folder:_themeModalContext?.folder||'',tmdb_id:_themeModalContext?.row?.tmdb_id||''})});
+  const data=await resp.json().catch(()=>({ok:false,error:'Download failed'}));
+  if(!resp.ok || data.ok===false){
+    toast(data.error||'Download failed','err');
+    return;
+  }
+  toast('Download started','ok');
+  closeThemeModal();
+  await loadDatabase(false);
+}
+
 function themeModalOpenSource(){
-  const url=String(_themeModalContext?.row?.url||'').trim();
+  const url=_themeModalPrimarySourceUrl(_themeModalContext?.row||{});
   if(!url) return toast('No source URL on this row','info');
   window.open(url,'_blank');
 }
