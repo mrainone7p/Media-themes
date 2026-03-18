@@ -714,10 +714,10 @@ def download_track(url: str, output_path: str, audio_format: str, max_retries: i
 # ─── Pass 1: Scan / Index ─────────────────────────────────────────────────────
 
 def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
-    """Sync ledger to current Plex state. Returns (pending_movies, stats)."""
+    """Sync ledger to current Plex state. Returns (missing_movies, stats)."""
     plex_keys = {m["rating_key"] for m in plex_movies}
     stats = {
-        "total": len(plex_movies), "has_theme": 0, "pending": 0,
+        "total": len(plex_movies), "has_theme": 0, "missing": 0,
         "staged": 0, "approved": 0, "removed": 0, "skipped": 0, "new": 0,
     }
 
@@ -730,7 +730,7 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
             stats["removed"]   += 1
             log.info(f"[REMOVED]  {row.get('title') or row.get('plex_title')} ({row.get('year')})")
 
-    pending = []
+    missing_movies = []
 
     for i, movie in enumerate(plex_movies, 1):
         key        = movie["rating_key"]
@@ -754,8 +754,8 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
             if has_theme:
                 stats["has_theme"] += 1
             else:
-                stats["pending"] += 1
-                pending.append(movie)
+                stats["missing"] += 1
+                missing_movies.append(movie)
             continue
 
         # Update mutable fields that may have changed in Plex
@@ -768,6 +768,7 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
         current = row["status"]
 
         if current == ST_UNMONITORED:
+            # Hidden from automation until a user explicitly re-enables it.
             stats["skipped"] += 1
             continue
 
@@ -790,17 +791,17 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
 
         current = ledger[key]["status"]
         if current == ST_AVAILABLE:   stats["has_theme"] += 1
-        elif current == ST_MISSING:    stats["pending"]   += 1; pending.append(movie)
+        elif current == ST_MISSING:    stats["missing"]   += 1; missing_movies.append(movie)
         elif current == ST_STAGED:     stats["staged"]    += 1
         elif current == ST_APPROVED:   stats["approved"]  += 1
 
-    return pending, stats
+    return missing_movies, stats
 
 
 # ─── Pass 2: Resolve source URLs ──────────────────────────────────────────────
 
-def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
-    """Find source URLs for missing movies. Sets status → STAGED or FAILED."""
+def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
+    """Find source URLs for missing movies. Sets status → STAGED, MISSING, or FAILED."""
     tmdb_api_key  = cfg.get("tmdb_api_key", "")
     resolve_retry_limit = max(0, int(cfg.get("resolve_retry_limit", 3) or 0))
     cookies_file  = cfg.get("cookies_file", "") or None
@@ -821,7 +822,7 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
     if "search_query" in cfg and "search_query_playlist" not in cfg:
         query_playlist = cfg["search_query"]
 
-    stats = {"staged": 0, "no_playlist": 0, "failed": 0, "golden_matched": 0}
+    stats = {"staged": 0, "missing": 0, "failed": 0, "golden_matched": 0}
 
     # ── Golden Source only mode ───────────────────────────────────────────────
     golden_catalog: dict = {}
@@ -836,7 +837,7 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
             log.info(f"Golden Source only mode enabled — loaded {len(golden_catalog)} rows ({mode})")
         except Exception as e:
             log.error(f"Golden Source fetch failed: {e}")
-            for movie in pending_movies:
+            for movie in missing_movies:
                 ledger_upsert(
                     ledger, movie["rating_key"], movie["plex_title"], movie["plex_title"],
                     movie["plex_year"], movie["folder"], ST_FAILED,
@@ -847,13 +848,13 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
             return stats
 
     # ── Per-movie resolution ──────────────────────────────────────────────────
-    for i, movie in enumerate(pending_movies, 1):
+    for i, movie in enumerate(missing_movies, 1):
         key        = movie["rating_key"]
         plex_title = movie["plex_title"]
         plex_year  = movie["plex_year"]
         folder     = movie["folder"]
 
-        emit_progress(2, i, len(pending_movies), plex_title, "resolving")
+        emit_progress(2, i, len(missing_movies), plex_title, "resolving")
 
         # TMDB lookup
         if tmdb_api_key:
@@ -879,8 +880,7 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                     ledger, key, plex_title, title, year, folder, ST_FAILED,
                     notes="Golden Source only mode — no TMDB match found", tmdb_id=tmdb_id,
                 )
-                stats["failed"]      += 1
-                stats["no_playlist"] += 1
+                stats["failed"] += 1
                 continue
             ledger_upsert(
                 ledger, key, plex_title, title, year, folder, ST_STAGED,
@@ -966,7 +966,7 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                 )
                 stats["failed"] += 1
 
-            stats["no_playlist"] += 1
+            stats["missing"] += 1
             continue
 
         log.info(f"  Found via {method_used}: {url}")
@@ -1072,8 +1072,8 @@ def get_libraries(cfg: dict) -> list:
 
 
 def pending_from_ledger(ledger: dict, retry_limit: Optional[int] = None) -> list:
-    """Reconstruct pending_movies list from ledger rows (for FORCE_PASS=2)."""
-    pending = []
+    """Reconstruct missing movie list from ledger rows (for FORCE_PASS=2)."""
+    missing = []
     for r in ledger.values():
         if r["status"] != ST_MISSING:
             continue
@@ -1082,14 +1082,14 @@ def pending_from_ledger(ledger: dict, retry_limit: Optional[int] = None) -> list
         if retry_limit is not None and retry_limit > 0 and attempt > retry_limit:
             continue
 
-        pending.append({
+        missing.append({
             "rating_key": r["rating_key"],
             "plex_title": r.get("plex_title") or r.get("title", "Unknown"),
             "plex_year":  r.get("year", ""),
             "folder":     r.get("folder", ""),
             "tmdb_id":    r.get("tmdb_id") or None,
         })
-    return pending
+    return missing
 
 
 # ─── Scan single library ──────────────────────────────────────────────────────
@@ -1107,7 +1107,8 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
     theme_file   = cfg.get("theme_filename", "theme.mp3")
     test_limit   = int(cfg.get("test_limit", 0))
     schedule_test_limit = int(cfg.get("schedule_test_limit", test_limit) or test_limit)
-    auto_approve = cfg.get("auto_approve", False)
+    auto_approve = bool(cfg.get("auto_approve", False))
+    schedule_auto_approve = force_pass == 0 and auto_approve
 
     step1_enabled = cfg.get("schedule_step1", True)
     step2_enabled = cfg.get("schedule_step2", True)
@@ -1118,30 +1119,27 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
     # ── Pass 2 only ───────────────────────────────────────────────────────────
     if force_pass == 2:
         ledger  = load_ledger(log_file_path)
-        pending = pending_from_ledger(ledger, retry_limit=int(cfg.get("resolve_retry_limit", 3) or 0))
-        if not pending:
+        missing = pending_from_ledger(ledger, retry_limit=int(cfg.get("resolve_retry_limit", 3) or 0))
+        if not missing:
             log.info(f"'{library_name}' — no MISSING movies to resolve")
             return
         if test_limit > 0:
             log.info(f"RESOLVE BATCH SIZE {test_limit} applied")
-            pending = pending[:test_limit]
-        log.info(f"─── Pass 2: resolving URLs for {len(pending)} missing movies ───")
+            missing = missing[:test_limit]
+        log.info(f"─── Pass 2: resolving sources for {len(missing)} missing movies ───")
         t0    = time.time()
-        stats = pass2_resolve(ledger, pending, cfg)
+        stats = pass2_resolve(ledger, missing, cfg)
         save_ledger(log_file_path, ledger)
         log.info(
             f"Pass 2 complete — Staged: {stats['staged']}  "
-            f"No playlist: {stats['no_playlist']} ({time.time()-t0:.1f}s)"
+            f"Still missing: {stats['missing']}  Failed: {stats['failed']} ({time.time()-t0:.1f}s)"
         )
-        log.info("→ Review the Database tab, set status to APPROVED, then run Download")
+        log.info("→ Review the Database tab, set STAGED rows to APPROVED, then run Download")
         return
 
     # ── Pass 3 only ───────────────────────────────────────────────────────────
     if force_pass == 3:
         ledger = load_ledger(log_file_path)
-        if auto_approve:
-            _auto_approve_staged(ledger)
-            save_ledger(log_file_path, ledger)
         if not any(r["status"] == ST_APPROVED for r in ledger.values()):
             log.info(f"'{library_name}' — no APPROVED movies to download")
             return
@@ -1149,7 +1147,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
         stats = pass3_download(ledger, cfg)
         save_ledger(log_file_path, ledger)
         log.info(
-            f"Pass 3 complete — Downloaded: {stats['downloaded']}  "
+            f"Pass 3 complete — Available: {stats['downloaded']}  "
             f"Failed: {stats['failed']}  Skipped: {stats.get('skipped', 0)} ({time.time()-t0:.1f}s)"
         )
         return
@@ -1170,11 +1168,11 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
         log.info(f"─── Pass 1: scanning {len(plex_movies)} movies ───")
         t0     = time.time()
         ledger = load_ledger(log_file_path)
-        pending, idx_stats = pass1_scan(ledger, plex_movies, theme_file)
+        missing, idx_stats = pass1_scan(ledger, plex_movies, theme_file)
         log.info(
             f"Scan — Total: {idx_stats['total']}  "
             f"Have theme: {idx_stats['has_theme']}  "
-            f"Missing: {idx_stats['pending']}  "
+            f"Missing: {idx_stats['missing']}  "
             f"Staged: {idx_stats['staged']}  "
             f"Approved: {idx_stats['approved']}  "
             f"New: {idx_stats['new']}  "
@@ -1188,26 +1186,26 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
     else:
         log.info("Step 1 (Scan) disabled in schedule — skipping")
         ledger  = load_ledger(log_file_path)
-        pending = pending_from_ledger(ledger, retry_limit=int(cfg.get("resolve_retry_limit", 3) or 0))
+        missing = pending_from_ledger(ledger, retry_limit=int(cfg.get("resolve_retry_limit", 3) or 0))
 
     # ── Pass 2 (auto mode) ────────────────────────────────────────────────────
-    if step2_enabled and pending:
-        to_resolve = pending[:schedule_test_limit] if schedule_test_limit > 0 else pending
+    if step2_enabled and missing:
+        to_resolve = missing[:schedule_test_limit] if schedule_test_limit > 0 else missing
         if schedule_test_limit > 0:
-            log.info(f"RESOLVE BATCH SIZE {schedule_test_limit} (scheduled) — resolving {len(to_resolve)} of {len(pending)}")
-        log.info(f"─── Pass 2: resolving URLs for {len(to_resolve)} missing movies ───")
+            log.info(f"RESOLVE BATCH SIZE {schedule_test_limit} (scheduled) — resolving {len(to_resolve)} of {len(missing)}")
+        log.info(f"─── Pass 2: resolving sources for {len(to_resolve)} missing movies ───")
         t0    = time.time()
         stats = pass2_resolve(ledger, to_resolve, cfg)
         save_ledger(log_file_path, ledger)
         log.info(
             f"Pass 2 complete — Staged: {stats['staged']}  "
-            f"No playlist: {stats['no_playlist']} ({time.time()-t0:.1f}s)"
+            f"Still missing: {stats['missing']}  Failed: {stats['failed']} ({time.time()-t0:.1f}s)"
         )
     elif not step2_enabled:
         log.info("Step 2 (Find Sources) disabled in schedule — skipping")
 
     # ── Auto-approve ─────────────────────────────────────────────────────────
-    if auto_approve:
+    if schedule_auto_approve:
         _auto_approve_staged(ledger)
         save_ledger(log_file_path, ledger)
 
@@ -1218,14 +1216,21 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
             stats = pass3_download(ledger, cfg)
             save_ledger(log_file_path, ledger)
             log.info(
-                f"Pass 3 complete — Downloaded: {stats['downloaded']}  "
+                f"Pass 3 complete — Available: {stats['downloaded']}  "
                 f"Failed: {stats['failed']}  Skipped: {stats.get('skipped', 0)} ({time.time()-t0:.1f}s)"
             )
             return
     else:
         log.info("Step 3 (Download) disabled in schedule — skipping")
 
-    log.info(f"'{library_name}' — all caught up, nothing to do this run.")
+    if any(r["status"] == ST_STAGED for r in ledger.values()):
+        log.info(f"'{library_name}' — staged matches are awaiting approval")
+    elif any(r["status"] == ST_APPROVED for r in ledger.values()):
+        log.info(f"'{library_name}' — approved movies are waiting for download")
+    elif any(r["status"] == ST_MISSING for r in ledger.values()):
+        log.info(f"'{library_name}' — missing movies remain queued for resolve")
+    else:
+        log.info(f"'{library_name}' — all caught up, no missing or approved movies this run.")
 
 
 def _auto_approve_staged(ledger: dict):
