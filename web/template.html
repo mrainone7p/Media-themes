@@ -206,15 +206,18 @@ body.nav-collapsed main{margin-left:48px}
 .filter-sel option{background:var(--surface2);color:var(--text);padding:4px}
 
 /* ─── Stat chips ─── */
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
-.chip{display:flex;align-items:center;gap:5px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:12px;font-family:var(--mono);cursor:pointer;transition:all .15s;user-select:none}
-.chip:hover{border-color:var(--text3)}
-.chip.active{border-color:var(--amber);color:var(--amber)}
-.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:16px}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;font-size:12px;cursor:pointer;transition:all .15s;user-select:none;min-height:76px;justify-content:center}
+.chip:hover{border-color:color-mix(in srgb,var(--amber) 38%,var(--border));transform:translateY(-1px)}
+.chip.active{border-color:var(--amber);background:var(--amber-soft);box-shadow:inset 0 0 0 1px rgba(245,166,35,.16)}
+.chip-head{display:flex;align-items:center;gap:8px;color:var(--text);font-weight:700;font-size:22px;line-height:1}
+.chip-body{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 /* ─── Table ─── */
-.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
 table{width:100%;border-collapse:collapse;font-size:12px}
+.db-table{table-layout:fixed;min-width:1540px}
 thead{background:var(--surface-elev);position:sticky;top:0;z-index:2}
 th{padding:11px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:color .15s}
 th:hover{color:var(--text)}
@@ -380,7 +383,7 @@ tr:hover td{background:rgba(255,255,255,.025)}
 
 /* ─── Resizable columns ─── */
 th.resizable{position:relative;border-right:1px solid var(--border)}
-th.resizable .col-resize{position:absolute;right:-2px;top:0;bottom:0;width:5px;cursor:col-resize;background:transparent;z-index:3}
+th.resizable .col-resize{position:absolute;right:-5px;top:0;bottom:0;width:10px;cursor:col-resize;background:transparent;z-index:3}
 th.resizable .col-resize:hover{background:var(--amber)}
 th.resizable .col-resize.dragging{background:var(--amber)}
 
@@ -411,7 +414,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .row-action-wrap{position:relative;display:flex;align-items:center;gap:6px;justify-content:flex-start}
 .row-primary-action{min-width:96px}
 .row-action-more{min-width:30px;padding:4px 8px}
-.row-action-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:170px;background:var(--surface-elev);border:1px solid var(--border);border-radius:8px;padding:6px;display:none;flex-direction:column;gap:5px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.row-action-menu{position:absolute;right:0;bottom:calc(100% + 6px);min-width:170px;background:var(--surface-elev);border:1px solid var(--border);border-radius:8px;padding:6px;display:none;flex-direction:column;gap:5px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.28)}
 .row-action-menu.open{display:flex}
 .row-action-item{width:100%;justify-content:flex-start;text-align:left}
 
@@ -438,10 +441,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .task-lib-pill.active{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
 .task-wide{grid-column:1 / -1}
 
-.db-topbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.db-topbar .chips{margin-bottom:0;flex:1;min-width:220px}
+.db-topbar{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
+.db-topbar .chips{margin-bottom:0;width:100%}
 .db-main-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
 .db-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+.toolbar-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-stack{display:flex;flex-direction:column;gap:4px;min-width:160px}
+.filter-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
 
 /* ─── Row checkbox ─── */
 .row-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--amber)}
@@ -1087,17 +1093,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="pipe-action scan">
         <div class="pipe-action-step scan" data-ui="schedule.summary.step1.label">STATUS KEY · Step 1</div>
         <div class="pipe-action-name scan" data-ui="schedule.summary.step1.title">⟳ Scan Libraries</div>
-        <div class="pipe-action-desc" data-ui="schedule.summary.step1.description">Checks the selected Plex libraries for existing theme files and updates each title to Missing or Available.</div>
+        <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
       </div>
       <div class="pipe-action find">
         <div class="pipe-action-step find" data-ui="schedule.summary.step2.label">AUTO SCHEDULE · Step 2</div>
         <div class="pipe-action-name find" data-ui="schedule.summary.step2.title">⚡ Find Theme Sources</div>
-        <div class="pipe-action-desc" data-ui="schedule.summary.step2.description">Searches for Missing titles, saves matching source URLs, and moves successful matches to Staged.</div>
+        <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step2.description">Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
       </div>
       <div class="pipe-action dl">
         <div class="pipe-action-step dl" data-ui="schedule.summary.step3.label">PIPELINE STEPS · Step 3</div>
         <div class="pipe-action-name dl" data-ui="schedule.summary.step3.title">↓ Download Themes</div>
-        <div class="pipe-action-desc" data-ui="schedule.summary.step3.description">Downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.</div>
+        <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step3.description">Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.</div>
       </div>
     </div>
 
@@ -1108,24 +1114,49 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan Library</button>
         <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
         <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
-        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download Approved Items</button>
+        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download APPROVED Items</button>
         <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
       </div>
     </div>
 
     <div class="toolbar">
       <input class="search" type="text" placeholder="Search titles, years, URLs, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search database" style="min-width:260px">
-      <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
-        <option value="">All statuses</option>
-        <option value="UNMONITORED">Unmonitored</option>
-        <option value="MISSING">Missing</option>
-        <option value="STAGED">Staged</option>
-        <option value="APPROVED">Approved</option>
-        <option value="AVAILABLE">Available</option>
-        <option value="FAILED">Failed</option>
-      </select>
+      <div class="toolbar-group">
+        <div class="filter-stack">
+          <span class="filter-label">Status</span>
+          <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
+            <option value="">All statuses</option>
+            <option value="UNMONITORED">UNMONITORED</option>
+            <option value="MISSING">MISSING</option>
+            <option value="STAGED">STAGED</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="AVAILABLE">AVAILABLE</option>
+            <option value="FAILED">FAILED</option>
+          </select>
+        </div>
+        <div class="filter-stack">
+          <span class="filter-label">Source</span>
+          <select class="filter-sel" onchange="filterBySourceState(this.value)" id="db-source-filter">
+            <option value="">All source states</option>
+            <option value="GOLDEN">With Golden Source</option>
+            <option value="NO_GOLDEN">Without Golden Source</option>
+            <option value="SOURCE_URL">With Source URL</option>
+            <option value="NO_SOURCE_URL">Without Source URL</option>
+          </select>
+        </div>
+        <div class="filter-stack">
+          <span class="filter-label">Action</span>
+          <select class="filter-sel" onchange="filterByAction(this.value)" id="db-action-filter">
+            <option value="">All actions</option>
+            <option value="MANAGE">Manage</option>
+            <option value="APPROVE">Approve</option>
+            <option value="DOWNLOAD">Download</option>
+            <option value="FIND_SOURCE">Find Source</option>
+          </select>
+        </div>
+      </div>
       <div class="db-toolbar-actions">
-        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve Staged Items</button>
+        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve STAGED Items</button>
       </div>
     </div>
     <div class="bulk-bar" id="db-bulk-bar">
@@ -1134,26 +1165,26 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <button class="btn btn-ghost btn-xs" onclick="selectAllVisible()">Select all on page</button>
       <span class="bulk-spacer"></span>
       <div class="bulk-actions">
-        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Set Approved</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('MISSING')" data-ui="actions.bulk.mark_missing">↺ Set Missing</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('UNMONITORED')" data-ui="actions.bulk.mark_unmonitored">⊘ Set Unmonitored</button>
+        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Set APPROVED</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('MISSING')" data-ui="actions.bulk.mark_missing">↺ Set MISSING</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('UNMONITORED')" data-ui="actions.bulk.mark_unmonitored">⊘ Set UNMONITORED</button>
         <button class="btn btn-ghost btn-sm" id="db-clear-sel" onclick="clearSourcesSelected()">🧹 Clear Sources</button>
         <button class="btn btn-red btn-sm" onclick="clearSelection()">✕ Clear</button>
       </div>
     </div>
     <div class="tbl-wrap">
-      <table>
+      <table class="db-table">
         <thead><tr>
           <th style="width:28px"><input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered"></th>
-          <th onclick="sortTable('title')">Title ↕</th>
-          <th onclick="sortTable('year')">Year ↕</th>
-          <th onclick="sortTable('status')">Status ↕</th>
-          <th>Next Action</th>
-          <th onclick="sortTable('golden_source_url')">Golden Source URL ↕</th>
-          <th onclick="sortTable('url')">Source URL ↕</th>
-          <th onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
-          <th onclick="sortTable('last_updated')">Updated ↕</th>
-          <th onclick="sortTable('notes')">Notes ↕</th>
+          <th style="width:230px" onclick="sortTable('title')">Title ↕</th>
+          <th style="width:90px" onclick="sortTable('year')">Year ↕</th>
+          <th style="width:165px" onclick="sortTable('status')">Status ↕</th>
+          <th style="width:170px">Action</th>
+          <th style="width:220px" onclick="sortTable('golden_source_url')">Golden Source URL ↕</th>
+          <th style="width:260px" onclick="sortTable('url')">Source URL ↕</th>
+          <th style="width:150px" onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
+          <th style="width:130px" onclick="sortTable('last_updated')">Updated ↕</th>
+          <th style="width:220px" onclick="sortTable('notes')">Notes ↕</th>
         </tr></thead>
         <tbody id="db-tbody"></tbody>
       </table>
@@ -1195,12 +1226,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="field" style="max-width:340px;margin-bottom:14px">
           <label>Cron Schedule</label>
           <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
-          <div class="field-hint">When the automated pipeline runs. Restart container to apply changes.</div>
+          <div class="field-hint">Defines when the automated pipeline runs. Restart the container to apply changes.</div>
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Libraries Included</label>
           <div id="run-lib-toggles" class="run-lib-grid"></div>
-          <div class="field-hint" style="margin-top:8px">Only libraries enabled on the Configuration page are available here. These schedule selections are separate from library availability.</div>
+          <div class="field-hint" style="margin-top:8px">Only libraries enabled on the Configuration page are available here.</div>
         </div>
       </div>
 
@@ -1210,7 +1241,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <span data-ui="schedule.cards.pipeline_steps.title">PIPELINE STEPS</span>
         </div>
-        <div class="field-hint" style="margin-bottom:16px" data-ui="schedule.cards.pipeline_steps.description">Choose which parts of the automated pipeline run on schedule. Manual Run Now buttons are always available.</div>
+        <div class="field-hint" style="margin-bottom:16px" data-ui="schedule.cards.pipeline_steps.description">Choose which parts of the automated pipeline should run. Manual "Run Now" buttons work regardless of these settings.</div>
 
         <!-- Step 1 -->
         <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
@@ -1223,7 +1254,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)">Step 1</span>
               <span style="font-size:15px;font-weight:700">Scan Libraries</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5" data-ui="schedule.cards.pipeline_steps.step1.description">Checks the selected Plex libraries for existing theme files and updates each title to Missing or Available.</div>
+            <div class="status-copy" style="font-size:12px;color:var(--text2);line-height:1.5" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
           </div>
           <button class="btn btn-blue btn-sm" id="btn-pass1" onclick="startPass(1)">⟳ Run Now</button>
         </div>
@@ -1239,7 +1270,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple)">Step 2</span>
               <span style="font-size:15px;font-weight:700">Find Theme Sources</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for Missing titles using the configured source rules, saves matching source URLs, and moves successful matches to Staged.</div>
+            <div class="status-copy" style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
             <div class="schedule-step2-options">
               <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;height:100%">
                 <label class="toggle" style="transform:scale(.85)">
@@ -1248,13 +1279,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 </label>
                 <div>
                   <span style="font-size:12px;font-weight:600;color:var(--amber)" data-ui="schedule.cards.pipeline_steps.step2.only_golden.title">Only use Golden Source</span>
-                  <div style="font-size:11px;color:var(--amber)" data-ui="schedule.cards.pipeline_steps.step2.only_golden.description">Use curated Golden Source matches only during Step 2 for faster, more controlled source discovery.</div>
+                  <div style="font-size:11px;color:var(--amber)" data-ui="schedule.cards.pipeline_steps.step2.only_golden.description">Use a curated Golden Source for tighter, faster, and more reliable source discovery.</div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
                 <div>
                   <span style="font-size:12px;font-weight:600;color:var(--text)" data-ui="schedule.cards.pipeline_steps.step2.limit.title">Missing Titles Per Run</span>
-                  <div style="font-size:11px;color:var(--text3)" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many Missing titles are processed during each scheduled Step 2 run. 0 = unlimited.</div>
+                  <div class="status-copy" style="font-size:11px;color:var(--text3)" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many Missing items are processed per run. 0 = unlimited.</div>
                 </div>
                 <input id="run-schedule-limit" type="number" min="0" onblur="saveRunSchedule()" style="width:86px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-family:var(--mono)">
               </div>
@@ -1274,15 +1305,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green)">Step 3</span>
               <span style="font-size:15px;font-weight:700">Download Themes</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.</div>
+            <div class="status-copy" style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.</div>
             <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
               <label class="toggle" style="transform:scale(.85)">
                 <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
                 <span class="toggle-track"></span>
               </label>
               <div>
-                <span style="font-size:12px;font-weight:600;color:var(--text)" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve Staged Items</span>
-                <div style="font-size:11px;color:var(--text3)" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically moves Staged titles to Approved before download for a fully automated Step 3 run.</div>
+                <span style="font-size:12px;font-weight:600;color:var(--text)" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve STAGED Items</span>
+                <div class="status-copy" style="font-size:11px;color:var(--text3)" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move Staged items to Approved before downloading for a fully hands-off pipeline.</div>
               </div>
             </div>
           </div>
@@ -2161,7 +2192,7 @@ function testBadge(elId, ok, msg){
 // ── Configuration ─────────────────────────────────────────────────────────────────
 let _libs=[], _maxDur=45;
 let _uiTerminology={};
-const _defaultStatusDisplay={'UNMONITORED':'Unmonitored','MISSING':'Missing','STAGED':'Staged','APPROVED':'Approved','AVAILABLE':'Available','FAILED':'Failed'};
+const _defaultStatusDisplay={'UNMONITORED':'UNMONITORED','MISSING':'MISSING','STAGED':'STAGED','APPROVED':'APPROVED','AVAILABLE':'AVAILABLE','FAILED':'FAILED'};
 const _defaultStatusDesc={
   UNMONITORED:'Hidden from automation until you re-enable this title.',
   MISSING:'Needs a source because no local theme file is available yet.',
@@ -2187,6 +2218,7 @@ function applyUiTerminology(){
     const val=uiTerm(key,'');
     if(val) el.textContent=val;
   });
+  emphasizeStatusCopy();
 }
 
 async function loadUiTerminology(){
@@ -2198,6 +2230,15 @@ async function loadUiTerminology(){
     _uiTerminology={};
   }
   applyUiTerminology();
+}
+
+function emphasizeStatusCopy(){
+  const terms=['UNMONITORED','MISSING','STAGED','APPROVED','AVAILABLE','FAILED'];
+  const rx=new RegExp(`\\b(${terms.join('|')})\\b`,'gi');
+  document.querySelectorAll('.status-copy').forEach(el=>{
+    const src=el.textContent||'';
+    el.innerHTML=src.replace(rx,(_,term)=>`<strong class="status-term">${String(term).toUpperCase()}</strong>`);
+  });
 }
 
 async function loadConfiguration(){
@@ -2533,13 +2574,30 @@ async function loadLibRows(name){
 
 function renderChips(){
   const counts={};
-  _rows.forEach(r=>counts[r.status]=(counts[r.status]||0)+1);
-  document.getElementById('db-chips').innerHTML=
-    `<div class="chip" onclick="clearDbFilter()"><b style="color:var(--text)">${_rows.length}</b>&nbsp;total</div>`+
-    Object.entries(counts).map(([s,c])=>
-      `<div class="chip" onclick="filterByStatus('${s}')">
-        <div class="chip-dot" style="background:${SC[s]||'#555'}"></div>${c} ${displayStatus(s).toLowerCase()}
-      </div>`).join('');
+  let golden=0, noGolden=0;
+  let manage=0;
+  _rows.forEach(r=>{
+    counts[r.status]=(counts[r.status]||0)+1;
+    if(String(r.golden_source_url||'').trim()) golden+=1;
+    else noGolden+=1;
+    if(rowActionType(r)==='MANAGE') manage+=1;
+  });
+  const filters=[
+    {label:'Total', count:_rows.length, active:!document.getElementById('db-search').value.trim() && !document.getElementById('db-filter').value && !document.getElementById('db-source-filter').value && !document.getElementById('db-action-filter').value, color:'', handler:"clearDbFilter()"},
+    {label:'MISSING', count:counts.MISSING||0, active:document.getElementById('db-filter').value==='MISSING', color:SC.MISSING, handler:"filterByStatus('MISSING')"},
+    {label:'AVAILABLE', count:counts.AVAILABLE||0, active:document.getElementById('db-filter').value==='AVAILABLE', color:SC.AVAILABLE, handler:"filterByStatus('AVAILABLE')"},
+    {label:'GOLDEN SOURCE', count:golden, active:document.getElementById('db-source-filter').value==='GOLDEN', color:'var(--amber)', handler:"filterBySourceState('GOLDEN')"},
+    {label:'NO GOLDEN SOURCE', count:noGolden, active:document.getElementById('db-source-filter').value==='NO_GOLDEN', color:'var(--text3)', handler:"filterBySourceState('NO_GOLDEN')"},
+    {label:'MANAGE', count:manage, active:document.getElementById('db-action-filter').value==='MANAGE', color:'var(--blue)', handler:"filterByAction('MANAGE')"},
+    {label:'STAGED', count:counts.STAGED||0, active:document.getElementById('db-filter').value==='STAGED', color:SC.STAGED, handler:"filterByStatus('STAGED')"},
+    {label:'APPROVED', count:counts.APPROVED||0, active:document.getElementById('db-filter').value==='APPROVED', color:SC.APPROVED, handler:"filterByStatus('APPROVED')"},
+    {label:'FAILED', count:counts.FAILED||0, active:document.getElementById('db-filter').value==='FAILED', color:SC.FAILED, handler:"filterByStatus('FAILED')"}
+  ];
+  document.getElementById('db-chips').innerHTML=filters.map(f=>`
+    <button type="button" class="chip ${f.active?'active':''}" onclick="${f.handler}">
+      <span class="chip-head">${f.count}</span>
+      <span class="chip-body">${f.color?`<span class="chip-dot" style="background:${f.color}"></span>`:''}${f.label}</span>
+    </button>`).join('');
   updateDbSummary(counts);
   updateDbGuide(counts);
   updateDbActionHints(counts);
@@ -2571,7 +2629,23 @@ function updateDbActionHints(counts){
 }
 
 function filterByStatus(s){ document.getElementById('db-filter').value=s; filterTable(); }
-function clearDbFilter(){ document.getElementById('db-filter').value=''; document.getElementById('db-search').value=''; filterTable(); }
+function filterBySourceState(value){ document.getElementById('db-source-filter').value=value; filterTable(); }
+function filterByAction(value){ document.getElementById('db-action-filter').value=value; filterTable(); }
+function clearDbFilter(opts={}){
+  document.getElementById('db-filter').value='';
+  document.getElementById('db-source-filter').value='';
+  document.getElementById('db-action-filter').value='';
+  if(!opts.keepSearch) document.getElementById('db-search').value='';
+  filterTable();
+}
+
+function rowActionType(row){
+  const status=String(row?.status||'').toUpperCase();
+  if(status==='STAGED') return 'APPROVE';
+  if(status==='APPROVED') return 'DOWNLOAD';
+  if(status==='MISSING' && !_hasSourceUrl(row)) return 'FIND_SOURCE';
+  return 'MANAGE';
+}
 
 function _sortVal(row,col){
   if(col==='title') return (row.title||row.plex_title||'').toString().toLowerCase();
@@ -2590,10 +2664,20 @@ function _sortVal(row,col){
 function filterTable(){
   const q=(document.getElementById('db-search').value||'').toLowerCase().trim();
   const st=document.getElementById('db-filter').value;
+  const sourceFilter=document.getElementById('db-source-filter').value;
+  const actionFilter=document.getElementById('db-action-filter').value;
+  renderChips();
   _filtered=_rows.filter(r=>{
     if(st&&r.status!==st) return false;
-    const titleOnly=`${r.title||''} ${r.plex_title||''}`.toLowerCase();
-    if(q&&!titleOnly.includes(q)) return false;
+    const hasGolden=!!String(r.golden_source_url||'').trim();
+    const hasSource=!!String(r.url||'').trim();
+    if(sourceFilter==='GOLDEN' && !hasGolden) return false;
+    if(sourceFilter==='NO_GOLDEN' && hasGolden) return false;
+    if(sourceFilter==='SOURCE_URL' && !hasSource) return false;
+    if(sourceFilter==='NO_SOURCE_URL' && hasSource) return false;
+    if(actionFilter && rowActionType(r)!==actionFilter) return false;
+    const haystack=[r.title||'',r.plex_title||'',r.year||'',r.url||'',r.golden_source_url||'',r.notes||'',r.status||''].join(' ').toLowerCase();
+    if(q&&!haystack.includes(q)) return false;
     return true;
   });
   _filtered.sort((a,b)=>{
@@ -2629,8 +2713,8 @@ function _htmlAttr(s){
 }
 
 function _recommendedAction(row){
-  if(row.rating_key) return {label:'Review', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
-  return {label:'Review', cls:'btn btn-ghost btn-xs row-primary-action', fn:'_manualSearch'};
+  if(row.rating_key) return {label:'Manage', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
+  return {label:'Manage', cls:'btn btn-ghost btn-xs row-primary-action', fn:'_manualSearch'};
 }
 
 function _rowSecondaryActions(row){
@@ -2638,9 +2722,9 @@ function _rowSecondaryActions(row){
   const hasSource=_hasSourceUrl(row);
   const actions=[];
   if(hasSource) actions.push({label:'Preview source', fn:'_previewSource'});
-  if(row.status!=='STAGED' && hasSource) actions.push({label:'Set staged', fn:'_stageRow'});
-  if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve', fn:'_approveRow'});
-  if(row.rating_key) actions.push({label:'Open review', fn:'_playTheme'});
+  if(row.status!=='STAGED' && hasSource) actions.push({label:'Set STAGED', fn:'_stageRow'});
+  if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve to APPROVED', fn:'_approveRow'});
+  if(row.rating_key) actions.push({label:'Open manage', fn:'_playTheme'});
   if(hasTheme && row.rating_key) actions.push({label:'Delete theme', fn:'_deleteTheme'});
   actions.push({label:'Manual search', fn:'_manualSearch'});
   return actions;
@@ -2900,7 +2984,7 @@ function renderTable(){
     tbody.innerHTML=''; 
     const q=(document.getElementById('db-search').value||'').trim();
     const st=document.getElementById('db-filter').value;
-    const hasFilter=!!(q||st);
+    const hasFilter=!!(q||st||document.getElementById('db-source-filter').value||document.getElementById('db-action-filter').value);
     empty.innerHTML=hasFilter
       ? `No matches for the current filters. <button class="btn btn-ghost btn-xs" onclick="clearDbFilter()">Clear filters</button>`
       : `No items yet. <button class="btn btn-ghost btn-xs" onclick="dbRunPass(1)">⟳ Scan Library</button>`;
@@ -4262,7 +4346,7 @@ async function mediaDownloadApproved(){
   toast(`Downloading ${approved} approved items from ${lib}…`,'info');
   await fetch('/api/run/pass/3',{method:'POST'});
   // Re-enable after a delay (the actual process runs async)
-  setTimeout(()=>{btn.textContent='↓ Download Approved Items';btn.disabled=false;},3000);
+  setTimeout(()=>{btn.textContent='↓ Download APPROVED Items';btn.disabled=false;},3000);
 }
 function openYtModal(rk,title,year,url,lib){
   stopAllAudio();
@@ -4437,7 +4521,7 @@ const TASK_CARD_CONFIG={
   runPipeline:[
     {
       title:'Run Scan Now',
-      description:'Step 1 checks the selected Plex libraries for existing theme files and updates each title to Missing or Available.',
+      description:'Step 1 connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.',
       controlType:'button',
       buttonLabel:'Run Scan',
       buttonClass:'btn btn-blue btn-sm',
@@ -4445,7 +4529,7 @@ const TASK_CARD_CONFIG={
     },
     {
       title:'Run Find Sources Now',
-      description:'Step 2 searches for Missing titles, saves matching source URLs, and moves successful matches to Staged.',
+      description:'Step 2 searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.',
       controlType:'button',
       buttonLabel:'Run Source Match',
       buttonClass:'btn btn-purple btn-sm',
@@ -4453,7 +4537,7 @@ const TASK_CARD_CONFIG={
     },
     {
       title:'Run Download Themes Now',
-      description:'Step 3 downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.',
+      description:'Step 3 downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.',
       controlType:'button',
       buttonLabel:'Run Download',
       buttonClass:'btn btn-green btn-sm',
@@ -4879,6 +4963,7 @@ function themeModalSeek(val){ _themeModalAudio.seek(val); }
 // ── Column resize ────────────────────────────────────────────────────────────
 function initResizableCols(tableSelector){
   document.querySelectorAll(tableSelector+' th').forEach(th=>{
+    if(th.querySelector('.col-resize')) return;
     th.classList.add('resizable');
     const handle=document.createElement('div');
     handle.className='col-resize';
@@ -4887,10 +4972,19 @@ function initResizableCols(tableSelector){
       e.preventDefault();
       handle.classList.add('dragging');
       const startX=e.pageX, startW=th.offsetWidth;
-      function onMove(ev){th.style.width=(startW+ev.pageX-startX)+'px';th.style.minWidth=th.style.width;}
+      function onMove(ev){
+        const next=Math.max(72,startW+ev.pageX-startX);
+        th.style.width=next+'px';
+        th.style.minWidth=next+'px';
+      }
       function onUp(){handle.classList.remove('dragging');document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
       document.addEventListener('mousemove',onMove);
       document.addEventListener('mouseup',onUp);
+    });
+    handle.addEventListener('dblclick',function(e){
+      e.preventDefault();
+      th.style.width='';
+      th.style.minWidth='';
     });
   });
 }
