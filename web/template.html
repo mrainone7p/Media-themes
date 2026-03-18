@@ -527,8 +527,23 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .review-header-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;padding:0 22px 8px}
 .review-section-divider{height:1px;background:var(--border);margin:2px 22px 12px}
 .simple-line{font-size:12px;color:var(--text2);margin-bottom:6px;word-break:break-word}
-.review-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 22px 8px}
+.review-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0 22px 8px}
+.review-panel-heading{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
 .review-panel-title{font-size:15px;font-weight:700;color:var(--text)}
+.theme-status-flow-wrap{display:flex;flex-direction:column;gap:6px;min-width:0}
+.theme-status-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.theme-status-step{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.05em;line-height:1;text-transform:uppercase;white-space:nowrap;transition:border-color .15s,color .15s,background .15s,transform .15s}
+.theme-status-step::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0}
+.theme-status-step.is-complete{color:var(--text2);border-color:color-mix(in srgb,var(--amber) 22%,var(--border))}
+.theme-status-step.is-current{font-size:11px;font-weight:800;color:var(--text);border-color:currentColor;background:color-mix(in srgb,currentColor 10%,var(--surface2));box-shadow:0 0 0 1px color-mix(in srgb,currentColor 22%,transparent);transform:translateY(-1px)}
+.theme-status-step.is-current::before,.theme-status-step.is-complete::before{opacity:1}
+.theme-status-step.status-MISSING.is-current,.theme-status-step.status-MISSING.is-complete{color:var(--text2)}
+.theme-status-step.status-STAGED.is-current,.theme-status-step.status-STAGED.is-complete{color:var(--purple)}
+.theme-status-step.status-APPROVED.is-current,.theme-status-step.status-APPROVED.is-complete{color:var(--yellow)}
+.theme-status-step.status-AVAILABLE.is-current,.theme-status-step.status-AVAILABLE.is-complete{color:var(--green)}
+.theme-status-step.status-FAILED.is-current,.theme-status-step.status-FAILED.is-complete{color:var(--red)}
+.theme-status-sep{color:var(--text3);font-size:11px;line-height:1;flex-shrink:0}
+.theme-status-helper{font-size:11px;color:var(--text3);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .review-meta-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--surface) 45%, transparent);overflow:hidden}
 .review-meta-item{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 12px;border-top:1px solid var(--border)}
 .review-meta-item:first-child{border-top:none}
@@ -543,7 +558,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .review-source-pill.is-manual{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
 .review-source-pill.is-unknown{color:var(--text3)}
 .review-footer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;width:100%}
-@media (max-width: 640px){.review-card-header,.review-panel-head{flex-direction:column;align-items:flex-start}.review-footer-actions{justify-content:stretch}.review-footer-actions .btn{flex:1}}
+@media (max-width: 640px){.review-card-header,.review-panel-head{flex-direction:column;align-items:flex-start}.review-footer-actions{justify-content:stretch}.review-footer-actions .btn{flex:1}.theme-status-helper{white-space:normal;overflow:visible;text-overflow:clip}}
 .search-method-head{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
 .search-method-input{margin-top:6px;width:100%;font-size:12px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);outline:none}
 .search-method-card.disabled{opacity:.55;border-style:dashed;cursor:not-allowed}
@@ -1738,7 +1753,23 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="review-section-divider"></div>
 
     <div class="review-panel-head">
-      <div class="review-panel-title" id="theme-modal-summary">Manage Theme</div>
+      <div class="review-panel-heading">
+        <div class="review-panel-title" id="theme-modal-summary">Manage Theme</div>
+        <div class="theme-status-flow-wrap">
+          <div class="theme-status-flow" id="theme-modal-status-flow" aria-label="Theme status progression">
+            <span class="theme-status-step status-MISSING" data-status="MISSING">Missing</span>
+            <span class="theme-status-sep" aria-hidden="true">→</span>
+            <span class="theme-status-step status-STAGED" data-status="STAGED">Staged</span>
+            <span class="theme-status-sep" aria-hidden="true">→</span>
+            <span class="theme-status-step status-APPROVED" data-status="APPROVED">Approved</span>
+            <span class="theme-status-sep" aria-hidden="true">→</span>
+            <span class="theme-status-step status-AVAILABLE" data-status="AVAILABLE">Available</span>
+            <span class="theme-status-sep" aria-hidden="true">•</span>
+            <span class="theme-status-step status-FAILED" data-status="FAILED">Failed</span>
+          </div>
+          <div class="theme-status-helper" id="theme-modal-status-helper">No source attached yet.</div>
+        </div>
+      </div>
       <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
     </div>
 
@@ -5011,6 +5042,31 @@ function _themeModalNextAction(row={}, hasTheme=false){
   if(!hasTheme) return {label:'Find Theme',className:'btn btn-amber',handler:'find'};
   return null;
 }
+const THEME_MODAL_STATUS_HELPERS={
+  MISSING:'No source attached yet.',
+  STAGED:'Source selected, awaiting approval.',
+  APPROVED:'Ready to download.',
+  AVAILABLE:'Local theme saved.',
+  FAILED:'Needs attention before retrying.'
+};
+const THEME_MODAL_STATUS_ORDER=['MISSING','STAGED','APPROVED','AVAILABLE'];
+function _themeModalUpdateStatusFlow(status='MISSING'){
+  const normalized=String(status||'MISSING').toUpperCase();
+  const flow=document.getElementById('theme-modal-status-flow');
+  if(flow){
+    const currentIndex=THEME_MODAL_STATUS_ORDER.indexOf(normalized);
+    flow.querySelectorAll('.theme-status-step').forEach(step=>{
+      const stepStatus=String(step.dataset.status||'').toUpperCase();
+      const stepIndex=THEME_MODAL_STATUS_ORDER.indexOf(stepStatus);
+      const isCurrent=stepStatus===normalized;
+      const isComplete=currentIndex>=0 && stepIndex>=0 && stepIndex<currentIndex;
+      step.classList.toggle('is-current',isCurrent);
+      step.classList.toggle('is-complete',isComplete);
+    });
+  }
+  const helper=document.getElementById('theme-modal-status-helper');
+  if(helper) helper.textContent=THEME_MODAL_STATUS_HELPERS[normalized]||'Review the current theme state.';
+}
 function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
   _themeModalContext={rk,title,year,folder,row};
@@ -5031,6 +5087,7 @@ function openThemeModal(rk,title,year,folder,row={}){
     statusBadge.className=`badge s-${status}`;
     statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
   }
+  _themeModalUpdateStatusFlow(status);
   document.getElementById('theme-modal-local-status').textContent=hasTheme
     ?'Theme saved locally and playable.'
     :'No local file is saved right now.';
