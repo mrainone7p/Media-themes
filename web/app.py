@@ -163,14 +163,14 @@ def _parse_run_stats(lines):
         if "Pass 1 complete" in line:
             m = re.search(r"Total:\s*(\d+)\s*Have theme:\s*(\d+)\s*Missing:\s*(\d+)\s*Staged:\s*(\d+)\s*Approved:\s*(\d+)\s*New:\s*(\d+)\s*Removed:\s*(\d+)", line)
             if m:
-                stats["pass1"] = {"total":int(m.group(1)),"has_theme":int(m.group(2)),"pending":int(m.group(3)),
+                stats["pass1"] = {"total":int(m.group(1)),"has_theme":int(m.group(2)),"missing":int(m.group(3)),
                                    "staged":int(m.group(4)),"approved":int(m.group(5)),"new":int(m.group(6)),"removed":int(m.group(7))}
         if "Pass 2 complete" in line:
-            m = re.search(r"Staged:\s*(\d+)\s*No playlist:\s*(\d+)", line)
-            if m: stats["pass2"] = {"staged":int(m.group(1)),"no_playlist":int(m.group(2))}
+            m = re.search(r"Staged:\s*(\d+)\s*Missing:\s*(\d+)\s*Failed:\s*(\d+)", line)
+            if m: stats["pass2"] = {"staged":int(m.group(1)),"missing":int(m.group(2)),"failed":int(m.group(3))}
         if "Pass 3 complete" in line:
-            m = re.search(r"Downloaded:\s*(\d+)\s*Failed:\s*(\d+)\s*Skipped:\s*(\d+)", line)
-            if m: stats["pass3"] = {"downloaded":int(m.group(1)),"failed":int(m.group(2)),"skipped":int(m.group(3))}
+            m = re.search(r"Available:\s*(\d+)\s*Failed:\s*(\d+)\s*Skipped:\s*(\d+)", line)
+            if m: stats["pass3"] = {"available":int(m.group(1)),"failed":int(m.group(2)),"skipped":int(m.group(3))}
     return stats
 
 def _record_task(task_name, status="success", scope="", summary="", details=None, duration_seconds=None):
@@ -206,7 +206,7 @@ def _load_task_entries(limit=250):
             run = json.loads(f.read_text(encoding="utf-8"))
             run_entries.append({
                 "time": run.get("time", ""),
-                "task": {1: "Scan Libraries", 2: "Find Sources", 3: "Download Approved"}.get(run.get("pass"), "Pipeline Run"),
+                "task": {1: "Scan Libraries", 2: "Find Sources", 3: "Download Themes"}.get(run.get("pass"), "Pipeline Run"),
                 "status": "success",
                 "scope": "",
                 "summary": run.get("summary", ""),
@@ -1245,7 +1245,7 @@ def _do_run(force_pass=0):
             json.dump({"time":timestamp,"pass":run_pass,"summary":summary,
                        "log":"\n".join(run_log),"duration_seconds":duration,"stats":stats}, f)
         _record_task(
-            {1:'Run Scan Now',2:'Run Find Sources Now',3:'Run Download Approved Now'}.get(run_pass, 'Run Pipeline'),
+            {1:'Run Scan Now',2:'Run Find Sources Now',3:'Run Download Themes Now'}.get(run_pass, 'Run Pipeline'),
             'success' if (_run_proc is None) else 'error',
             '',
             summary,
