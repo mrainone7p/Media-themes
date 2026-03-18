@@ -462,6 +462,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-movie-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .modal-link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--text2);background:var(--surface2);transition:all .15s;white-space:nowrap}
 .modal-link-pill:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.modal-link-pill.tmdb-pill{border-color:rgba(245,166,35,.4);color:var(--amber);background:var(--amber-soft)}
+.modal-link-pill.tmdb-pill:hover{border-color:var(--amber);color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 82%, var(--surface2))}
 .modal-link-pill.yt-pill{border-color:rgba(220,50,50,.35);color:#cc3030;background:rgba(220,50,50,.05)}
 .modal-link-pill.yt-pill:hover{border-color:#cc3030;background:rgba(220,50,50,.1)}
 .modal-divider{height:1px;background:var(--border);margin:14px 0 0}
@@ -604,6 +606,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .settings-subcard{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;min-width:0;height:100%}
 .subcard-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
 .subcard-intro{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px}
+.accent-link{color:var(--amber);font-weight:700;text-decoration:none}
+.accent-link:hover{text-decoration:underline}
 .field-help{font-size:12px;color:var(--text2);line-height:1.5}
 .field-help.compact{font-size:11px;color:var(--text3)}
 .settings-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -625,6 +629,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .lib-state{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em}
 .lib-state.on{background:var(--green-soft);color:var(--green)}
 .lib-state.off{background:var(--gray-soft);color:var(--text3)}
+.type-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:var(--amber-soft);color:var(--amber);font-size:10px;font-weight:700;letter-spacing:.04em;flex-shrink:0}
+.status-term{font-weight:700;text-transform:uppercase}
 .settings-test-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .dual-inline{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px;align-items:start}
 .dual-inline .toggle-card{height:100%}
@@ -807,11 +813,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
           <div class="settings-subcard">
             <div class="subcard-title">TMDB</div>
-            <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and provide TMDB links.</div>
+            <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and provide TMDB links. Free key at <a class="accent-link" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">themoviedb.org/settings/api</a>.</div>
             <div class="field" style="max-width:520px">
               <label>TMDB API Key</label>
               <input id="cfg-tmdb_api_key" placeholder="your-tmdb-key">
-              <div class="field-help compact">Free key at <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer"><strong>themoviedb.org/settings/api</strong></a></div>
             </div>
             <div class="settings-actions">
               <button class="btn btn-ghost btn-sm" onclick="testTmdb()">⚡ Test API Key</button>
@@ -835,7 +840,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="lib-list" id="lib-list"></div>
         <div class="library-actions" style="margin-top:12px">
           <button class="btn btn-ghost btn-sm" onclick="addLibrary()">+ Add Library</button>
-          <button class="btn btn-blue btn-sm" onclick="importLibraries()">↓ Import from Plex</button>
+          <button class="btn btn-amber btn-sm" onclick="importLibraries()">↓ Import from Plex</button>
           <span id="lib-import-result"></span>
         </div>
         <div class="field-help compact" style="margin-top:10px">Library names must match Plex exactly. Only movie and TV libraries are accepted.</div>
@@ -851,7 +856,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">These settings control how sources are found for each pending title.</div>
+        <div class="section-intro">These settings control how sources are found for each <span class="status-term">MISSING</span> title.</div>
         <div class="settings-subcard">
           <div class="subcard-title">Search setup</div>
           <div class="subcard-intro">Choose how source discovery searches for and validates theme sources.</div>
@@ -892,7 +897,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </label>
             <div>
               <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
-              <div class="toggle-note">Manual search selections skip staging and go straight to Approved.</div>
+              <div class="toggle-note">Manual search selections skip <span class="status-term">STAGED</span> and go straight to <span class="status-term">APPROVED</span>.</div>
             </div>
           </div>
         </div>
@@ -933,7 +938,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="field">
               <label>Golden Source URL</label>
               <input id="cfg-golden_source_url" placeholder="https://example.com/golden_source.csv">
-              <div class="field-help compact">Required: <code>tmdb_id</code>, <code>source_url</code>. Optional: <code>title</code>, <code>year</code>, <code>start_offset</code>, <code>updated_at</code>, <code>notes</code>.</div>
+              <div class="field-help compact"><strong>Required:</strong> <code>tmdb_id</code>, <code>source_url</code>. <strong>Optional:</strong> <code>title</code>, <code>year</code>, <code>start_offset</code>, <code>updated_at</code>, <code>notes</code>.</div>
             </div>
             <div class="settings-test-row">
               <button class="btn btn-ghost btn-sm" id="golden-test-btn" onclick="testGoldenSource()">⚡ Test Golden Source</button>
@@ -1012,10 +1017,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
         </div>
         <div class="settings-subcard" style="margin-bottom:16px">
-          <div class="subcard-title">Missing titles per run</div>
-          <div class="subcard-intro">Control how many Missing items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
+          <div class="subcard-title"><span class="status-term">MISSING</span> titles per run</div>
+          <div class="subcard-intro">Control how many <span class="status-term">MISSING</span> items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
           <div class="field">
-            <label>Missing Titles Per Run</label>
+            <label><span class="status-term">MISSING</span> Titles Per Run</label>
             <input type="number" id="cfg-test_limit" min="0">
           </div>
         </div>
@@ -1040,7 +1045,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="field">
             <label>Max Retries</label>
             <input type="number" id="cfg-max_retries" min="1">
-            <div class="field-help compact">How many times yt-dlp retries a failed download before the item is marked as Failed.</div>
+            <div class="field-help compact">How many times yt-dlp retries a failed download before the item is marked as <span class="status-term">FAILED</span>.</div>
           </div>
           <div class="field">
             <label>Delay Between Downloads (s)</label>
@@ -2291,9 +2296,7 @@ function slugify(s){ return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').re
 function renderLibs(){
   document.getElementById('lib-list').innerHTML=_libs.map((lib,i)=>{
     const typeLabel=lib.type==='movie'?'Movie':lib.type==='show'?'TV':'';
-    const typeColor=lib.type==='movie'?'#3b82f6':'#2dd4a0';
-    const typeBg=lib.type==='movie'?'rgba(59,130,246,.15)':'rgba(45,212,160,.15)';
-    const typeBadge=typeLabel?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;background:${typeBg};color:${typeColor};flex-shrink:0">${typeLabel}</span>`:'';
+    const typeBadge=typeLabel?`<span class="type-pill">${typeLabel}</span>`:'';
     const stateBadge=`<span class="lib-state ${lib.enabled?'on':'off'}">${lib.enabled?'Enabled':'Disabled'}</span>`;
     return `<div class="lib-row">
       <label class="toggle">
@@ -2415,7 +2418,7 @@ async function openTmdb(title, year, evt){
   window.open(_tmdbLink(title,year),'_blank');
   return false;
 }
-function _tmdbPill(title,year){ return `<a class="modal-link-pill" href="${_tmdbLink(title,year)}" target="_blank" rel="noopener">🎬 TMDB</a>`; }
+function _tmdbPill(title,year){ return `<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(title,year)}" target="_blank" rel="noopener">🎬 TMDB</a>`; }
 function _ytLink(url){ return url?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:''; }
 
 let _rows=[],_filtered=[],_sortCol='title',_sortDir=1,_page=0,_activeLib=null;
@@ -3645,7 +3648,7 @@ async function openSearchModal(rk,title,year,lib){
   const posterEl=document.getElementById('search-modal-poster');
   if(title){ posterEl.src=apiUrl('/api/poster/tmdb?title='+encodeURIComponent(title)+'&year='+encodeURIComponent(year||'')+'&size=w342'); posterEl.style.display=''; }
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
-  document.getElementById('search-modal-links').innerHTML=`<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">🎬 TMDB</a>`;
+  document.getElementById('search-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${tmdbUrl}" target="_blank" rel="noopener">🎬 TMDB</a>`;
   setBio('search-modal-bio',rk);
   // Restore or reset method cards
   ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
@@ -4275,7 +4278,7 @@ function openYtModal(rk,title,year,url,lib){
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
   const isYt=url.includes('youtube.com')||url.includes('youtu.be');
   document.getElementById('yt-modal-links').innerHTML=
-    `<a class="modal-link-pill" href="${tmdbUrl}" target="_blank" rel="noopener">TMDB</a>`+
+    `<a class="modal-link-pill tmdb-pill" href="${tmdbUrl}" target="_blank" rel="noopener">TMDB</a>`+
     (isYt?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:`<a class="modal-link-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">↗ Source</a>`);
   // Reset player
   document.getElementById('yt-modal-start').value='0:00';
@@ -4806,7 +4809,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
   const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
   document.getElementById('theme-modal-links').innerHTML=
-    `<a class="modal-link-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
+    `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
   setBio('theme-modal-bio', rk);
   _themeModalAudio.cleanup({clearSrc:false});
   if(hasTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
@@ -4841,7 +4844,7 @@ function themeModalEditTrim(){
   document.getElementById('trim-modal-title').textContent=c.title||'Edit Trim';
   document.getElementById('trim-modal-meta').textContent=[c.year||'',`Duration: ${fmt(parseFloat(c.row?.theme_duration||0)||0)}`].filter(Boolean).join(' · ');
   document.getElementById('trim-modal-poster').src=apiUrl('/api/poster?key='+encodeURIComponent(c.rk));
-  document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">TMDB</a>`;
+  document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">TMDB</a>`;
   document.getElementById('trim-modal-info').textContent='Trim local theme start offset and preview the remaining clip.';
   document.getElementById('trim-modal-offset').value=String(c.row?.start_offset||'0');
   trimModalUpdateResult();
