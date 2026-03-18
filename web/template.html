@@ -507,6 +507,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .trim-marker{position:absolute;top:-4px;width:2px;height:14px;background:var(--amber);border-radius:2px;transform:translateX(-1px)}
 .trim-marker.end{background:var(--green)}
 .trim-window-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px}
+.clip-summary-card{margin-top:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);display:flex;flex-direction:column;gap:6px;transition:border-color .15s,background .15s,box-shadow .15s}
+.clip-summary-card.is-short{border-color:color-mix(in srgb,var(--amber) 48%,var(--border));background:color-mix(in srgb,var(--amber-soft) 42%,var(--surface2));box-shadow:inset 0 0 0 1px rgba(245,166,35,.12)}
+.clip-summary-card.is-zero,.clip-summary-card.is-warning{border-color:color-mix(in srgb,var(--red) 55%,var(--border));background:color-mix(in srgb,var(--red-soft) 52%,var(--surface2));box-shadow:inset 0 0 0 1px rgba(242,109,120,.16)}
+.clip-summary-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.clip-summary-main{font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text)}
+.clip-summary-sub{font-size:11px;font-family:var(--mono);color:var(--text3)}
+.clip-summary-warning{display:none;font-size:11px;font-weight:600;line-height:1.45;color:var(--amber)}
+.clip-summary-card.is-short .clip-summary-warning{display:block;color:var(--amber)}
+.clip-summary-card.is-zero .clip-summary-warning,.clip-summary-card.is-warning .clip-summary-warning{display:block;color:var(--red)}
 .theme-modal-meta-card{margin:0 22px 10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
 .theme-modal-file{font-size:11px;font-family:var(--mono);color:var(--text3);word-break:break-word}
 .review-card{margin:0 22px 12px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
@@ -1689,6 +1698,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="trim-window-meta"><span id="se-trim-start-label">Start 0:00</span><span id="se-trim-end-label">End —</span></div>
           </div>
         </div>
+        <div class="clip-summary-card" id="se-result-summary">
+          <div class="clip-summary-label">Resulting clip</div>
+          <div class="clip-summary-main" id="se-result-main">Length — · Offset 0:00</div>
+          <div class="clip-summary-sub" id="se-result-sub">Load a preview to confirm the kept portion.</div>
+          <div class="clip-summary-warning" id="se-result-warning"></div>
+        </div>
         <audio id="se-audio" style="display:none"></audio>
         <div class="modal-status-txt" id="se-info" style="padding-left:0;padding-top:3px">Select a result or paste a URL to preview</div>
       </div>
@@ -1886,6 +1901,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <input type="range" class="modal-slider" id="trim-modal-slider" min="0" max="100" value="0" oninput="trimModalSeek(this.value)">
           <div class="modal-time-row"><span id="trim-modal-cur">0:00</span><span id="trim-modal-dur">—</span></div>
         </div>
+      </div>
+      <div class="clip-summary-card" id="trim-modal-summary">
+        <div class="clip-summary-label">Resulting clip</div>
+        <div class="clip-summary-main" id="trim-modal-summary-main">Length — · Offset 0:00</div>
+        <div class="clip-summary-sub" id="trim-modal-summary-sub">Adjust the offset to choose what portion will be kept.</div>
+        <div class="clip-summary-warning" id="trim-modal-summary-warning"></div>
       </div>
       <audio id="trim-modal-audio" style="display:none"></audio>
     </div>
@@ -4128,6 +4149,7 @@ function goToStep3(url, opts={}){
   document.getElementById('se-cur').textContent='0:00';
   document.getElementById('se-dur').textContent='—';
   document.getElementById('se-slider').value=0;
+  _setClipSummary('se-result-summary','se-result-main','se-result-sub','se-result-warning',0,document.getElementById('se-offset').value||'0',_maxDur,'preview');
   document.getElementById('se-trim-start-label').textContent='Start 0:00';
   document.getElementById('se-trim-end-label').textContent='End —';
   const trimWindow=document.getElementById('se-trim-window');
@@ -4243,25 +4265,25 @@ function seUpdateTrim(){
   const endMarker=document.getElementById('se-trim-end');
   const startLabel=document.getElementById('se-trim-start-label');
   const endLabel=document.getElementById('se-trim-end-label');
+  const offsetValue=document.getElementById('se-offset')?.value||'0';
+  const duration=audio?.duration||0;
+  _setClipSummary('se-result-summary','se-result-main','se-result-sub','se-result-warning',duration,offsetValue,_maxDur,'preview');
   if(!trimWindow || !audio || !audio.duration){
     if(trimWindow) trimWindow.style.display='none';
     if(startLabel) startLabel.textContent='Start 0:00';
     if(endLabel) endLabel.textContent='End —';
     return;
   }
-  const duration=audio.duration||0;
-  const start=Math.max(0, Math.min(parseTrim(document.getElementById('se-offset').value||'0'), duration));
-  const maxDur=Math.max(0, Number(_maxDur)||0);
-  const end=maxDur>0?Math.min(duration, start+maxDur):duration;
-  const startPct=(start/duration)*100;
-  const endPct=(end/duration)*100;
+  const meta=_clipWindowMeta(duration, offsetValue, _maxDur);
+  const startPct=(meta.start/duration)*100;
+  const endPct=(meta.end/duration)*100;
   trimWindow.style.display='block';
   startShade.style.width=`${startPct}%`;
   endShade.style.left=`${endPct}%`;
   startMarker.style.left=`${startPct}%`;
   endMarker.style.left=`${endPct}%`;
-  if(startLabel) startLabel.textContent=`Start ${fmt(start)}`;
-  if(endLabel) endLabel.textContent=`End ${fmt(end)}`;
+  if(startLabel) startLabel.textContent=`Start ${fmt(meta.start)}`;
+  if(endLabel) endLabel.textContent=`End ${fmt(meta.end)}`;
 }
 
 function sePreviewFromOffset(){
@@ -4363,9 +4385,10 @@ function resetActivePreviewBtn(){
 let _trimRk='';
 function trimModalUpdateResult(){
   const row=_mediaRows.find(r=>r.rating_key===_trimRk); if(!row) return;
-  const dur=row.duration||0,s=parseTrim(document.getElementById('trim-modal-offset').value);
-  const res=dur>0?Math.max(0,dur-s):0;
-  document.getElementById('trim-modal-result').textContent=dur>0?`→ ${fmt(res)} remaining (from ${fmt(dur)})`:'';
+  const offsetValue=document.getElementById('trim-modal-offset').value||'0';
+  const duration=Number(_trimModalAudio.audio?.duration)||Number(row.theme_duration)||Number(row.duration)||0;
+  document.getElementById('trim-modal-result').textContent=_clipLengthOffsetLabel(duration, offsetValue, 0);
+  _setClipSummary('trim-modal-summary','trim-modal-summary-main','trim-modal-summary-sub','trim-modal-summary-warning',duration,offsetValue,0,'preview');
 }
 
 function trimModalPreview(fromOffset){
@@ -5028,12 +5051,53 @@ function _themeModalImportedAt(row={}){
   if(Number.isNaN(dt.getTime())) return raw;
   return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
+function _clipWindowMeta(duration=0, offset=0, maxDur=0){
+  const total=Math.max(0, Number(duration)||0);
+  const rawOffset=Math.max(0, parseTrim(offset||0));
+  const start=total>0?Math.min(rawOffset,total):rawOffset;
+  const cap=Math.max(0, Number(maxDur)||0);
+  const end=total>0?(cap>0?Math.min(total,start+cap):total):0;
+  const length=total>0?Math.max(0,end-start):0;
+  const exceeds=total>0 && rawOffset>total;
+  const zero=total>0 && length<=0.01;
+  const short=total>0 && !zero && length<3;
+  return {total,rawOffset,start,end,length,exceeds,zero,short};
+}
+function _clipLengthOffsetLabel(duration=0, offset=0, maxDur=0){
+  const meta=_clipWindowMeta(duration, offset, maxDur);
+  return `Length ${meta.total>0?fmt(meta.length):'—'} · Offset ${fmt(meta.rawOffset)}`;
+}
+function _clipWindowRangeLabel(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
+  const meta=_clipWindowMeta(duration, offset, maxDur);
+  if(meta.total<=0) return `Load a ${scopeLabel} to confirm the kept portion.`;
+  return `Keeps ${fmt(meta.start)} → ${fmt(meta.end)} of ${fmt(meta.total)} ${scopeLabel}`;
+}
+function _clipWarningText(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
+  const meta=_clipWindowMeta(duration, offset, maxDur);
+  if(meta.total<=0) return '';
+  if(meta.exceeds) return `Offset ${fmt(meta.rawOffset)} exceeds ${scopeLabel} duration ${fmt(meta.total)}. Reduce the offset to keep audio.`;
+  if(meta.zero) return `Zero-length result — offset ${fmt(meta.rawOffset)} reaches the end of the ${scopeLabel}.`;
+  if(meta.short) return `Very short result — only ${fmt(meta.length)} will be kept.`;
+  return '';
+}
+function _setClipSummary(summaryId, mainId, subId, warningId, duration=0, offset=0, maxDur=0, scopeLabel='preview'){
+  const summary=document.getElementById(summaryId);
+  const main=document.getElementById(mainId);
+  const sub=document.getElementById(subId);
+  const warning=document.getElementById(warningId);
+  const meta=_clipWindowMeta(duration, offset, maxDur);
+  if(main) main.textContent=_clipLengthOffsetLabel(duration, offset, maxDur);
+  if(sub) sub.textContent=_clipWindowRangeLabel(duration, offset, maxDur, scopeLabel);
+  if(warning) warning.textContent=_clipWarningText(duration, offset, maxDur, scopeLabel);
+  if(summary){
+    summary.classList.toggle('is-short', !!meta.short && !meta.exceeds && !meta.zero);
+    summary.classList.toggle('is-zero', !!meta.zero && !meta.exceeds);
+    summary.classList.toggle('is-warning', !!meta.exceeds);
+  }
+}
 function _themeModalOffsetLabel(row={}, hasTheme=false){
-  const start=fmt(Math.max(0,parseTrim(row?.start_offset||0)));
-  const endVal=parseTrim(row?.end_offset||0);
-  const end=endVal>0?fmt(endVal):'None';
-  const duration=hasTheme && Number(row?.theme_duration||0)>0?fmt(parseFloat(row.theme_duration||0)):'Unknown';
-  return `Clip ${duration} · Start ${start} · End trim ${end}`;
+  const duration=hasTheme && Number(row?.theme_duration||0)>0?parseFloat(row.theme_duration||0):0;
+  return _clipLengthOffsetLabel(duration, row?.start_offset||0, 0);
 }
 function _themeModalNextAction(row={}, hasTheme=false){
   const status=String(row?.status||'').toUpperCase();
@@ -5208,7 +5272,7 @@ function themeModalEditTrim(){
   document.getElementById('trim-modal-meta').textContent=[c.year||'',`Duration: ${fmt(parseFloat(c.row?.theme_duration||0)||0)}`].filter(Boolean).join(' · ');
   document.getElementById('trim-modal-poster').src=apiUrl('/api/poster?key='+encodeURIComponent(c.rk));
   document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">TMDB</a>`;
-  document.getElementById('trim-modal-info').textContent='Trim local theme start offset and preview the remaining clip.';
+  document.getElementById('trim-modal-info').textContent='Trim local theme start offset and preview the resulting clip.';
   document.getElementById('trim-modal-offset').value=String(c.row?.start_offset||'0');
   trimModalUpdateResult();
   _trimModalAudio.cleanup({clearSrc:false});
