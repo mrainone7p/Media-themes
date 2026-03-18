@@ -19,30 +19,30 @@ pages:
 statuses:
   UNMONITORED:
     label: Unmonitored
-    description: Excluded from automation until re-enabled
+    description: Hidden from automation until you re-enable this title.
   MISSING:
     label: Missing
-    description: No local theme file is available yet
+    description: Needs a source because no local theme file is available yet.
   STAGED:
     label: Staged
-    description: Source found, waiting for approval
+    description: Source saved and waiting for approval before download.
   APPROVED:
     label: Approved
-    description: Ready to download
+    description: Approved for download on the next run.
   AVAILABLE:
     label: Available
-    description: Theme saved to disk
+    description: Theme file is present locally and ready to use.
   FAILED:
     label: Failed
-    description: Resolve or download needs attention
+    description: Source discovery or download needs attention before retrying.
 actions:
-  approve_all_staged: Approve All Staged
-  download_all_approved: Download All Approved
+  approve_all_staged: Approve Staged Items
+  download_all_approved: Download Approved Items
   bulk:
-    approve: Approve Selected
-    mark_missing: Mark Missing
-    mark_unmonitored: Mark Unmonitored
+    approve: Set Approved
+    mark_missing: Set Missing
+    mark_unmonitored: Set Unmonitored
     stage: Stage Selected
   toasts:
     manual_saved_auto_approved: Saved — auto-approved
-    manual_saved_staged: Saved — staged for approval
+    manual_saved_staged: Saved — moved to Staged for approval
