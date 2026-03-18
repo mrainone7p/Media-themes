@@ -38,7 +38,7 @@ from storage import (
 )
 
 EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
-VALID_STATUSES = {"PENDING", "STAGED", "APPROVED", "DOWNLOADED", "AVAILABLE", "FAILED", "REJECTED", "IGNORED"}
+VALID_STATUSES = {"UNMONITORED", "MISSING", "STAGED", "APPROVED", "AVAILABLE", "FAILED"}
 
 
 def _status_validation_error(row, attempted_status):
@@ -56,6 +56,14 @@ def _status_validation_error(row, attempted_status):
 
     has_url = bool(str(row.get("url", "") or "").strip())
     has_theme = str(row.get("theme_exists", "") or "") == "1"
+    allowed_transitions = {
+        "UNMONITORED": {"MISSING"},
+        "MISSING": {"UNMONITORED", "STAGED", "FAILED"},
+        "STAGED": {"UNMONITORED", "MISSING", "APPROVED", "FAILED"},
+        "APPROVED": {"UNMONITORED", "MISSING", "STAGED", "AVAILABLE", "FAILED"},
+        "AVAILABLE": {"UNMONITORED", "MISSING"},
+        "FAILED": {"UNMONITORED", "MISSING", "STAGED"},
+    }
 
     if attempted == "STAGED" and not has_url:
         return {
@@ -64,17 +72,24 @@ def _status_validation_error(row, attempted_status):
             "current_status": current,
             "attempted_status": attempted,
         }
-    if attempted in ("DOWNLOADED", "AVAILABLE") and not has_theme:
+    if attempted == "AVAILABLE" and not has_theme:
         return {
-            "error": "Cannot set status to DOWNLOADED/AVAILABLE when local theme is missing",
+            "error": "Cannot set status to AVAILABLE when the local theme is missing",
             "reason_code": "MISSING_LOCAL_THEME",
             "current_status": current,
             "attempted_status": attempted,
         }
-    if attempted == "APPROVED" and current not in ("STAGED", "APPROVED"):
+    if attempted == "APPROVED" and current != "STAGED":
         return {
             "error": "Only STAGED items can be approved",
             "reason_code": "APPROVAL_REQUIRES_STAGED",
+            "current_status": current,
+            "attempted_status": attempted,
+        }
+    if current in allowed_transitions and attempted not in allowed_transitions[current]:
+        return {
+            "error": f"Cannot move status from {current} to {attempted}",
+            "reason_code": "INVALID_STATUS_TRANSITION",
             "current_status": current,
             "attempted_status": attempted,
         }
@@ -128,7 +143,7 @@ def _parse_run_stats(lines):
     stats = {}
     for line in lines:
         if "Pass 1 complete" in line:
-            m = re.search(r"Total:\s*(\d+)\s*Have theme:\s*(\d+)\s*Pending:\s*(\d+)\s*Staged:\s*(\d+)\s*Approved:\s*(\d+)\s*New:\s*(\d+)\s*Removed:\s*(\d+)", line)
+            m = re.search(r"Total:\s*(\d+)\s*Have theme:\s*(\d+)\s*Missing:\s*(\d+)\s*Staged:\s*(\d+)\s*Approved:\s*(\d+)\s*New:\s*(\d+)\s*Removed:\s*(\d+)", line)
             if m:
                 stats["pass1"] = {"total":int(m.group(1)),"has_theme":int(m.group(2)),"pending":int(m.group(3)),
                                    "staged":int(m.group(4)),"approved":int(m.group(5)),"new":int(m.group(6)),"removed":int(m.group(7))}
@@ -684,9 +699,11 @@ def import_golden_source():
         row["golden_source_offset"] = match.get("start_offset","0") or "0"
         row["end_offset"] = match.get("end_offset","0") or "0"
         row["source_origin"] = "golden_source" if incoming_url else "unknown"
-        if not incoming_url and cur in ("STAGED", "APPROVED"):
-            row["status"] = "PENDING"
-        elif cur not in ("AVAILABLE", "DOWNLOADED"):
+        if cur == "UNMONITORED":
+            pass
+        elif not incoming_url and cur in ("STAGED", "APPROVED"):
+            row["status"] = "MISSING"
+        elif cur != "AVAILABLE":
             row["status"] = "APPROVED" if auto_approve else "STAGED"
         row["last_updated"] = now
         if incoming_url:
@@ -835,7 +852,7 @@ def delete_theme():
 
     # ── Clear theme metadata helper ───────────────────────────────────────────
     def _clear_theme_metadata(r):
-        r["status"]         = "PENDING"
+        r["status"]         = "MISSING"
         r["theme_exists"]   = 0
         r["theme_duration"] = 0.0
         r["theme_size"]     = 0
@@ -847,7 +864,7 @@ def delete_theme():
             _clear_theme_metadata(row)
             row["notes"] = "Theme file already missing — status reset"
             save_ledger(path_ledger, rows)
-        return jsonify({"ok":True,"message":"File already gone — status reset to Pending","matched_by":matched_by or "folder_hint"})
+        return jsonify({"ok":True,"message":"File already gone — status reset to Missing","matched_by":matched_by or "folder_hint"})
 
     try:
         theme_path.unlink()
@@ -855,7 +872,7 @@ def delete_theme():
             _clear_theme_metadata(row)
             row["notes"] = "Theme deleted via Theme manager"
             save_ledger(path_ledger, rows)
-            return jsonify({"ok":True,"message":f"Deleted {filename} — status reset to Pending","matched_by":matched_by or "folder_hint"})
+            return jsonify({"ok":True,"message":f"Deleted {filename} — status reset to Missing","matched_by":matched_by or "folder_hint"})
         return jsonify({"ok":True,"message":f"Deleted {filename} (ledger row not found — status not updated)","matched_by":matched_by or "folder_hint"})
     except PermissionError:
         return jsonify({"ok":False,"error":f"Permission denied deleting {theme_path}. Check file ownership."})
@@ -930,7 +947,7 @@ def download_now():
                 if trim_result.returncode == 0:
                     downloaded.unlink(missing_ok=True); downloaded = tmp_trim
         downloaded.rename(theme_path)
-        row["status"] = "DOWNLOADED"
+        row["status"] = "AVAILABLE"
         row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row["notes"] = "Downloaded via manual download (replaced existing local theme)" if replaced_existing else "Downloaded via manual download"
         # FIX: sync theme cache so theme_exists / duration / size / mtime are accurate
@@ -973,19 +990,19 @@ def sync_library_themes():
         if new_exists:
             found += 1
             # Promote status if file is present but status doesn't reflect it
-            if row.get("status") not in ("DOWNLOADED", "AVAILABLE", "REMOVED", "REJECTED"):
-                row["status"] = "DOWNLOADED"
+            if row.get("status") not in ("AVAILABLE", "REMOVED"):
+                row["status"] = "AVAILABLE"
                 row["last_updated"] = now
                 row["notes"] = "Promoted to Available — theme file detected on disk"
                 updated += 1
                 promoted += 1
         else:
             missing += 1
-            # Reset status if file is gone but status claims downloaded
-            if row.get("status") in ("DOWNLOADED", "AVAILABLE") and old_exists:
-                row["status"] = "PENDING"
+            # Reset status if file is gone but status claims availability
+            if row.get("status") == "AVAILABLE" and old_exists:
+                row["status"] = "MISSING"
                 row["last_updated"] = now
-                row["notes"] = "Reset to Pending — theme file no longer on disk"
+                row["notes"] = "Reset to Missing — theme file no longer on disk"
                 updated += 1
     if updated:
         save_ledger(path, rows)
@@ -1383,7 +1400,7 @@ def clear_all_source_urls():
                 row['url'] = ''
                 row['source_origin'] = 'unknown'
                 if str(row.get('status', '') or '').upper() in ('STAGED', 'APPROVED'):
-                    row['status'] = 'PENDING'
+                    row['status'] = 'MISSING'
                 row['last_updated'] = now
                 row['notes'] = 'Source URL cleared via Tasks maintenance'
                 lib_cleared += 1

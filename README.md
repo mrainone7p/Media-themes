@@ -89,8 +89,8 @@ Open `http://your-host:8182` in a browser.
 User-facing labels are centralized in `web/ui_terminology.yaml`.
 
 - Navigation: `Configuration`, `Library`, `Schedule`, `Tasks`
-- Status labels: `Pending`, `Staged`, `Approved`, `Available`, `Failed`, `Rejected`, `Ignored`
-- Shared action/toast wording is also defined there so button labels and success messages stay consistent with page copy.
+- Status labels: `Unmonitored`, `Missing`, `Staged`, `Approved`, `Available`, `Failed`
+- Shared action/toast wording is also defined there so bulk actions, button labels, and success messages stay consistent with page copy.
 
 ## Mobile & responsive UI behavior
 

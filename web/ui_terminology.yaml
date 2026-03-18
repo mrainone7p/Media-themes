@@ -17,36 +17,32 @@ pages:
     title: Tasks
     description: Run utilities, export curated data, perform maintenance, and review task/run history.
 statuses:
-  PENDING:
-    label: Pending
-    description: Queued for source discovery
+  UNMONITORED:
+    label: Unmonitored
+    description: Excluded from automation until re-enabled
+  MISSING:
+    label: Missing
+    description: No local theme file is available yet
   STAGED:
     label: Staged
     description: Source found, waiting for approval
   APPROVED:
     label: Approved
     description: Ready to download
-  DOWNLOADED:
+  AVAILABLE:
     label: Available
     description: Theme saved to disk
   FAILED:
     label: Failed
-    description: Download failed
-  REJECTED:
-    label: Rejected
-    description: Source rejected
-  IGNORED:
-    label: Ignored
-    description: Skipped intentionally
+    description: Resolve or download needs attention
 actions:
   approve_all_staged: Approve All Staged
   download_all_approved: Download All Approved
   bulk:
-    approve: Approve
-    set_pending: Set Pending
-    set_staged: Set Staged
-    ignore: Ignore
-    reject: Reject
+    approve: Approve Selected
+    mark_missing: Mark Missing
+    mark_unmonitored: Mark Unmonitored
+    stage: Stage Selected
   toasts:
     manual_saved_auto_approved: Saved — auto-approved
     manual_saved_staged: Saved — staged for approval

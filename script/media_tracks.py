@@ -14,7 +14,7 @@ sidecar file for every movie in your media library.
     • Marks removed movies, re-queues missing themes
 
   PASS 2 — Resolve  (TMDB + YouTube calls)
-    • Looks up official title via TMDB for each PENDING movie
+    • Looks up official title via TMDB for each MISSING movie
     • Searches YouTube for a soundtrack playlist, saves track 1 URL
     • Sets status → STAGED and waits for manual approval
     • Can run from existing ledger — no Plex connection required
@@ -27,12 +27,12 @@ sidecar file for every movie in your media library.
 
 ─── Status flow ──────────────────────────────────────────────────────────────
 
-  PENDING → STAGED → APPROVED → DOWNLOADED
-                              → FAILED
-  PENDING may move to FAILED when strict source rules do not find a valid match
-  Any     → REJECTED     (permanent skip — never retried)
-  Any     → IGNORED      (skip in future runs — can be reset to PENDING)
-  Any     → REMOVED      (no longer in library)
+  UNMONITORED → MISSING → STAGED → APPROVED → AVAILABLE
+                                ↘             ↘
+                                  FAILED        FAILED
+  MISSING may remain MISSING when a retryable resolve miss should be retried later
+  Any     → UNMONITORED (hidden from future automation until re-enabled)
+  Any     → REMOVED     (no longer in library)
 
 ─── FORCE_PASS environment variable ─────────────────────────────────────────
 
@@ -140,14 +140,14 @@ def acquire_lock(path: str):
 
 # ─── Status constants ─────────────────────────────────────────────────────────
 
-ST_PENDING    = "PENDING"
-ST_STAGED     = "STAGED"
-ST_APPROVED   = "APPROVED"
-ST_DOWNLOADED = "DOWNLOADED"
-ST_FAILED     = "FAILED"
-ST_REJECTED   = "REJECTED"
-ST_REMOVED    = "REMOVED"
-ST_IGNORED    = "IGNORED"
+ST_UNMONITORED = "UNMONITORED"
+ST_MISSING     = "MISSING"
+ST_STAGED      = "STAGED"
+ST_APPROVED    = "APPROVED"
+ST_AVAILABLE   = "AVAILABLE"
+ST_FAILED      = "FAILED"
+ST_REMOVED     = "REMOVED"
+
 
 RETRYABLE_RESOLVE_REASONS = {
     "No search results",
@@ -743,7 +743,7 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
         emit_progress(1, i, len(plex_movies), plex_title, "scanning")
 
         if row is None:
-            status = ST_DOWNLOADED if has_theme else ST_PENDING
+            status = ST_AVAILABLE if has_theme else ST_MISSING
             ledger_upsert(
                 ledger, key, plex_title, plex_title, plex_year, folder, status,
                 notes="Theme already present" if has_theme else "New — added to queue",
@@ -767,30 +767,30 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
         ledger[key] = row
         current = row["status"]
 
-        if current in (ST_REJECTED, ST_IGNORED):
+        if current == ST_UNMONITORED:
             stats["skipped"] += 1
             continue
 
         if current == ST_REMOVED:
-            row["status"]       = ST_DOWNLOADED if has_theme else ST_PENDING
+            row["status"]       = ST_AVAILABLE if has_theme else ST_MISSING
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             row["notes"]        = "Re-appeared in Plex"
             log.info(f"[RETURNED] {plex_title} ({plex_year})")
-        elif has_theme and current != ST_DOWNLOADED:
-            row["status"]       = ST_DOWNLOADED
+        elif has_theme and current != ST_AVAILABLE:
+            row["status"]       = ST_AVAILABLE
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             row["notes"]        = "Theme detected on disk — auto-promoted"
             log.info(f"[PROMOTED] {plex_title} ({plex_year})")
-        elif not has_theme and current == ST_DOWNLOADED:
-            row["status"]       = ST_PENDING
+        elif not has_theme and current == ST_AVAILABLE:
+            row["status"]       = ST_MISSING
             row["url"]          = ""
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             row["notes"]        = "Theme file missing — re-queued"
             log.info(f"[RESET]    {plex_title} ({plex_year})")
 
         current = ledger[key]["status"]
-        if current == ST_DOWNLOADED:   stats["has_theme"] += 1
-        elif current == ST_PENDING:    stats["pending"]   += 1; pending.append(movie)
+        if current == ST_AVAILABLE:   stats["has_theme"] += 1
+        elif current == ST_MISSING:    stats["pending"]   += 1; pending.append(movie)
         elif current == ST_STAGED:     stats["staged"]    += 1
         elif current == ST_APPROVED:   stats["approved"]  += 1
 
@@ -800,7 +800,7 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
 # ─── Pass 2: Resolve source URLs ──────────────────────────────────────────────
 
 def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
-    """Find source URLs for pending movies. Sets status → STAGED or FAILED."""
+    """Find source URLs for missing movies. Sets status → STAGED or FAILED."""
     tmdb_api_key  = cfg.get("tmdb_api_key", "")
     resolve_retry_limit = max(0, int(cfg.get("resolve_retry_limit", 3) or 0))
     cookies_file  = cfg.get("cookies_file", "") or None
@@ -950,9 +950,9 @@ def pass2_resolve(ledger: dict, pending_movies: list, cfg: dict) -> dict:
                     f"Resolve retry {current_attempt}/{limit_label} queued — "
                     f"{last_reason}. Will retry automatically on next resolve pass"
                 )
-                log.info(f"  Retryable resolve miss — keeping PENDING ({retry_note})")
+                log.info(f"  Retryable resolve miss — keeping MISSING ({retry_note})")
                 ledger_upsert(
-                    ledger, key, plex_title, title, year, folder, ST_PENDING,
+                    ledger, key, plex_title, title, year, folder, ST_MISSING,
                     notes=retry_note, tmdb_id=tmdb_id,
                 )
             else:
@@ -1015,10 +1015,10 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
         emit_progress(3, i, len(approved), title, "downloading")
 
         if not url:
-            log.warning(f"[APPROVED] {title} ({year}) — no URL, resetting to PENDING")
-            row["status"]       = ST_PENDING
+            log.warning(f"[APPROVED] {title} ({year}) — no URL, resetting to MISSING")
+            row["status"]       = ST_MISSING
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            row["notes"]        = "APPROVED but no URL — reset to PENDING"
+            row["notes"]        = "APPROVED but no URL — reset to MISSING"
             continue
 
         if need_delay and delay_secs > 0:
@@ -1038,7 +1038,7 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
 
         if success:
             log.info(f"[OK]       {title} ({year}) — {message}")
-            row["status"]       = ST_DOWNLOADED
+            row["status"]       = ST_AVAILABLE
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             row["notes"]        = message
             row, _              = sync_theme_cache(row, theme_filename, probe_duration=True)
@@ -1075,7 +1075,7 @@ def pending_from_ledger(ledger: dict, retry_limit: Optional[int] = None) -> list
     """Reconstruct pending_movies list from ledger rows (for FORCE_PASS=2)."""
     pending = []
     for r in ledger.values():
-        if r["status"] != ST_PENDING:
+        if r["status"] != ST_MISSING:
             continue
 
         attempt = _resolve_retry_attempt_from_notes(r.get("notes", ""))
@@ -1120,12 +1120,12 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
         ledger  = load_ledger(log_file_path)
         pending = pending_from_ledger(ledger, retry_limit=int(cfg.get("resolve_retry_limit", 3) or 0))
         if not pending:
-            log.info(f"'{library_name}' — no PENDING movies to resolve")
+            log.info(f"'{library_name}' — no MISSING movies to resolve")
             return
         if test_limit > 0:
             log.info(f"RESOLVE BATCH SIZE {test_limit} applied")
             pending = pending[:test_limit]
-        log.info(f"─── Pass 2: resolving URLs for {len(pending)} pending movies ───")
+        log.info(f"─── Pass 2: resolving URLs for {len(pending)} missing movies ───")
         t0    = time.time()
         stats = pass2_resolve(ledger, pending, cfg)
         save_ledger(log_file_path, ledger)
@@ -1174,7 +1174,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
         log.info(
             f"Scan — Total: {idx_stats['total']}  "
             f"Have theme: {idx_stats['has_theme']}  "
-            f"Pending: {idx_stats['pending']}  "
+            f"Missing: {idx_stats['pending']}  "
             f"Staged: {idx_stats['staged']}  "
             f"Approved: {idx_stats['approved']}  "
             f"New: {idx_stats['new']}  "
@@ -1195,7 +1195,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
         to_resolve = pending[:schedule_test_limit] if schedule_test_limit > 0 else pending
         if schedule_test_limit > 0:
             log.info(f"RESOLVE BATCH SIZE {schedule_test_limit} (scheduled) — resolving {len(to_resolve)} of {len(pending)}")
-        log.info(f"─── Pass 2: resolving URLs for {len(to_resolve)} pending movies ───")
+        log.info(f"─── Pass 2: resolving URLs for {len(to_resolve)} missing movies ───")
         t0    = time.time()
         stats = pass2_resolve(ledger, to_resolve, cfg)
         save_ledger(log_file_path, ledger)

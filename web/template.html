@@ -161,26 +161,28 @@ body.nav-collapsed main{margin-left:48px}
 /* ─── Status badges ─── */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
 .badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.s-PENDING{background:var(--gray-soft);color:var(--text2)} .d-PENDING{background:var(--text2)}
+.s-UNMONITORED{background:var(--gray-soft);color:var(--text3)} .d-UNMONITORED{background:var(--text3)}
+.s-MISSING{background:var(--gray-soft);color:var(--text2)} .d-MISSING{background:var(--text2)}
 .s-STAGED{background:var(--purple-soft);color:var(--purple)} .d-STAGED{background:var(--purple)}
 .s-APPROVED{background:var(--yellow-soft);color:var(--yellow)} .d-APPROVED{background:var(--yellow)}
-.s-DOWNLOADED{background:var(--green-soft);color:var(--green)} .d-DOWNLOADED{background:var(--green)}
+.s-AVAILABLE{background:var(--green-soft);color:var(--green)} .d-AVAILABLE{background:var(--green)}
 .s-FAILED{background:var(--red-soft);color:var(--red)} .d-FAILED{background:var(--red)}
 .s-NO_PLAYLIST{background:var(--blue-soft);color:var(--blue)} .d-NO_PLAYLIST{background:var(--blue)}
-.s-REJECTED{background:var(--red-soft);color:var(--red)} .d-REJECTED{background:var(--red)}
+
 .s-REMOVED{background:var(--gray-soft);color:var(--text3)} .d-REMOVED{background:var(--text3)}
-.s-IGNORED{background:var(--gray-soft);color:var(--text3)} .d-IGNORED{background:var(--text3)}
+
 
 .si::before{margin-right:3px}
-.s-DOWNLOADED .si::before{content:'✓'}
+.s-AVAILABLE .si::before{content:'✓'}
 .s-APPROVED .si::before{content:'→'}
 .s-STAGED .si::before{content:'◎'}
 .s-FAILED .si::before{content:'✗'}
 .s-NO_PLAYLIST .si::before{content:'∅'}
-.s-PENDING .si::before{content:'·'}
-.s-REJECTED .si::before{content:'—'}
+.s-UNMONITORED .si::before{content:'⊘'}
+.s-MISSING .si::before{content:'·'}
+
 .s-REMOVED .si::before{content:'⊘'}
-.s-IGNORED .si::before{content:'⊸'}
+
 
 /* ─── Toast ─── */
 #toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;font-family:var(--mono);max-width:320px;border:1px solid}
@@ -1010,10 +1012,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
         </div>
         <div class="settings-subcard" style="margin-bottom:16px">
-          <div class="subcard-title">Pending titles per run</div>
-          <div class="subcard-intro">Control how many Pending items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
+          <div class="subcard-title">Missing titles per run</div>
+          <div class="subcard-intro">Control how many Missing items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
           <div class="field">
-            <label>Pending Titles Per Run</label>
+            <label>Missing Titles Per Run</label>
             <input type="number" id="cfg-test_limit" min="0">
           </div>
         </div>
@@ -1080,12 +1082,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="pipe-action scan">
         <div class="pipe-action-step scan">Step 1 · Action</div>
         <div class="pipe-action-name scan">⟳ Scan Library</div>
-        <div class="pipe-action-desc">Connects to Plex, indexes all media, marks items without a theme.mp3 as Pending</div>
+        <div class="pipe-action-desc">Connects to Plex, indexes all media, marks items without a theme.mp3 as Missing</div>
       </div>
       <div class="pipe-action find">
         <div class="pipe-action-step find">Step 2 · Action</div>
         <div class="pipe-action-name find">⚡ Find Sources</div>
-        <div class="pipe-action-desc">Uses TMDB title/year metadata to build a source lookup for each Pending item, then saves valid matches as Staged</div>
+        <div class="pipe-action-desc">Uses TMDB title/year metadata to build a source lookup for each Missing item, then saves valid matches as Staged</div>
       </div>
       <div class="pipe-action dl">
         <div class="pipe-action-step dl">Step 3 · Action</div>
@@ -1110,10 +1112,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <input class="search" type="text" placeholder="Search titles, years, URLs, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search database" style="min-width:260px">
       <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
         <option value="">All statuses</option>
-        <option value="PENDING">Pending</option><option value="STAGED">Staged</option>
-        <option value="APPROVED">Approved</option><option value="DOWNLOADED">Available</option>
+        <option value="UNMONITORED">Unmonitored</option><option value="MISSING">Missing</option><option value="STAGED">Staged</option>
+        <option value="APPROVED">Approved</option><option value="AVAILABLE">Available</option>
         <option value="FAILED">Failed</option>
-        <option value="REJECTED">Rejected</option><option value="IGNORED">Ignored</option>
       </select>
       <div class="db-toolbar-actions">
         <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve All Staged</button>
@@ -1125,8 +1126,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <button class="btn btn-ghost btn-xs" onclick="selectAllVisible()">Select all on page</button>
       <span class="bulk-spacer"></span>
       <div class="bulk-actions">
-        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Approve</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('PENDING')" data-ui="actions.bulk.set_pending">↺ Set Pending</button>
+        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Approve Selected</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('MISSING')" data-ui="actions.bulk.mark_missing">↺ Mark Missing</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('UNMONITORED')" data-ui="actions.bulk.mark_unmonitored">⊘ Mark Unmonitored</button>
         <button class="btn btn-ghost btn-sm" id="db-clear-sel" onclick="clearSourcesSelected()">🧹 Clear Sources</button>
         <button class="btn btn-red btn-sm" onclick="clearSelection()">✕ Clear</button>
       </div>
@@ -1213,7 +1215,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)">Step 1</span>
               <span style="font-size:15px;font-weight:700">Scan Libraries</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5">Connects to Plex, indexes all media, checks which folders already have a theme file. Media without a theme is set to PENDING. Media with a theme is set to AVAILABLE. <span style="color:var(--red);font-weight:600">Uses: Plex. No YouTube or TMDB calls. Fast.</span></div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5">Connects to Plex, indexes all media, checks which folders already have a theme file. Media without a theme is set to MISSING. Media with a theme is set to AVAILABLE. <span style="color:var(--red);font-weight:600">Uses: Plex. No YouTube or TMDB calls. Fast.</span></div>
           </div>
           <button class="btn btn-blue btn-sm" id="btn-pass1" onclick="startPass(1)">⟳ Run Now</button>
         </div>
@@ -1229,7 +1231,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple)">Step 2</span>
               <span style="font-size:15px;font-weight:700">Find Theme Sources</span>
             </div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Searches sources for a theme based on the configured search logic for each PENDING media item. Saves the URL and moves status to STAGED. <span style="color:var(--purple);font-weight:600">Uses: TMDB + YouTube or Golden Source if configured.</span></div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Searches sources for a theme based on the configured search logic for each MISSING media item. Saves the URL and moves status to STAGED. <span style="color:var(--purple);font-weight:600">Uses: TMDB + YouTube or Golden Source if configured.</span></div>
             <div class="schedule-step2-options">
               <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;height:100%">
                 <label class="toggle" style="transform:scale(.85)">
@@ -1243,8 +1245,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </div>
               <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
                 <div>
-                  <span style="font-size:12px;font-weight:600;color:var(--text)">Pending Titles Per Run</span>
-                  <div style="font-size:11px;color:var(--text3)">Limits how many PENDING titles are processed per scheduled Step 2 run. 0 = unlimited.</div>
+                  <span style="font-size:12px;font-weight:600;color:var(--text)">Missing Titles Per Run</span>
+                  <div style="font-size:11px;color:var(--text3)">Limits how many MISSING titles are processed per scheduled Step 2 run. 0 = unlimited.</div>
                 </div>
                 <input id="run-schedule-limit" type="number" min="0" onblur="saveRunSchedule()" style="width:86px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-family:var(--mono)">
               </div>
@@ -1790,7 +1792,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="modal-overlay" id="delete-modal">
   <div class="modal" style="max-width:420px;position:relative">
     <div class="modal-title">Delete Theme</div>
-    <div style="font-size:13px;color:var(--text2);margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--amber)">PENDING</b> status.</div>
+    <div style="font-size:13px;color:var(--text2);margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--amber)">MISSING</b> status.</div>
     <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px" id="delete-modal-name"></div>
     <div style="font-size:11px;font-family:var(--mono);color:var(--text3);margin-bottom:16px;word-break:break-all" id="delete-modal-path"></div>
     <div class="modal-actions">
@@ -2151,15 +2153,14 @@ function testBadge(elId, ok, msg){
 // ── Configuration ─────────────────────────────────────────────────────────────────
 let _libs=[], _maxDur=45;
 let _uiTerminology={};
-const _defaultStatusDisplay={'PENDING':'Pending','STAGED':'Staged','APPROVED':'Approved','DOWNLOADED':'Available','FAILED':'Failed','REJECTED':'Rejected','IGNORED':'Ignored'};
+const _defaultStatusDisplay={'UNMONITORED':'Unmonitored','MISSING':'Missing','STAGED':'Staged','APPROVED':'Approved','AVAILABLE':'Available','FAILED':'Failed'};
 const _defaultStatusDesc={
-  PENDING:'Queued for source discovery',
+  UNMONITORED:'Excluded from automation until re-enabled',
+  MISSING:'No local theme file is available yet',
   STAGED:'Source found, waiting for approval',
   APPROVED:'Ready to download',
-  DOWNLOADED:'Theme saved to disk',
-  FAILED:'Download failed',
-  IGNORED:'Skipped intentionally',
-  REJECTED:'Source rejected'
+  AVAILABLE:'Theme saved to disk',
+  FAILED:'Resolve or download needs attention'
 };
 
 function uiTerm(path, fallback=''){
@@ -2420,8 +2421,8 @@ let _selectedKeys=new Set();
 let _lastDbCheckIndex=null;
 const PAGE=80;
 // === STATE / STATUS MAPPING ===
-const SC={'PENDING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','DOWNLOADED':'#2dd4a0','FAILED':'#f05252','REJECTED':'#555570','IGNORED':'#f97316'};
-const STATUSES=['PENDING','STAGED','APPROVED','DOWNLOADED','FAILED','REJECTED','IGNORED'];
+const SC={'UNMONITORED':'#94a3b8','MISSING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','AVAILABLE':'#2dd4a0','FAILED':'#f05252'};
+const STATUSES=['UNMONITORED','MISSING','STAGED','APPROVED','AVAILABLE','FAILED'];
 function statusDesc(status){
   return uiTerm(`statuses.${status}.description`, _defaultStatusDesc[status] || '');
 }
@@ -2444,11 +2445,22 @@ function _statusValidation(row, attemptedStatus){
   if(attempted==='STAGED' && !_hasSourceUrl(row)){
     return {ok:false, reason:'Add a source URL before staging this item.'};
   }
-  if((attempted==='DOWNLOADED' || attempted==='AVAILABLE') && !_hasLocalTheme(row)){
+  const transitions={
+    UNMONITORED:['MISSING'],
+    MISSING:['UNMONITORED','STAGED','FAILED'],
+    STAGED:['UNMONITORED','MISSING','APPROVED','FAILED'],
+    APPROVED:['UNMONITORED','MISSING','STAGED','AVAILABLE','FAILED'],
+    AVAILABLE:['UNMONITORED','MISSING'],
+    FAILED:['UNMONITORED','MISSING','STAGED']
+  };
+  if(attempted==='AVAILABLE' && !_hasLocalTheme(row)){
     return {ok:false, reason:'Local theme file is missing. Download it first.'};
   }
-  if(attempted==='APPROVED' && !['STAGED','APPROVED'].includes(current)){
+  if(attempted==='APPROVED' && current!=='STAGED'){
     return {ok:false, reason:'Only staged items can be approved.'};
+  }
+  if(transitions[current] && !transitions[current].includes(attempted)){
+    return {ok:false, reason:`Cannot move ${displayStatus(current)} to ${displayStatus(attempted)}.`};
   }
   return {ok:true};
 }
@@ -2468,8 +2480,8 @@ function renderStatusKey(){
   const el=document.getElementById('status-key');
   if(!el) return;
   const groups=[
-    ['PENDING','STAGED','APPROVED','DOWNLOADED'],
-    ['FAILED','IGNORED','REJECTED']
+    ['UNMONITORED','MISSING','STAGED'],
+    ['APPROVED','AVAILABLE','FAILED']
   ];
   el.innerHTML=groups.map((grp,gi)=>{
     const items=grp.map(s=>`<span class="status-key-item"><span class="badge s-${s}" style="font-size:10px;padding:2px 7px"><span class="si"></span>${displayStatus(s)}</span><span class="status-key-desc">${statusDesc(s)}</span></span>`).join('');
@@ -2535,7 +2547,7 @@ function updateDbSummary(counts){ return; }
 function updateDbGuide(counts){ return; }
 
 function updateDbActionHints(counts){
-  const pending=counts.PENDING||0;
+  const pending=counts.MISSING||0;
   const staged=counts.STAGED||0;
   const approved=counts.APPROVED||0;
   const btnResolve=document.getElementById('db-btn-resolve');
@@ -2543,7 +2555,7 @@ function updateDbActionHints(counts){
   const btnApproveAll=document.getElementById('db-approve-all');
   if(btnResolve){
     btnResolve.disabled=pending===0;
-    btnResolve.title=pending?`Find sources for ${pending} pending items`:'No pending items to resolve';
+    btnResolve.title=pending?`Find sources for ${pending} missing items`:'No missing items to resolve';
   }
   if(btnDownload){
     btnDownload.disabled=approved===0;
@@ -2568,7 +2580,7 @@ function _sortVal(row,col){
     return [url?1:0,url];
   }
   if(col==='source_origin') return (row.source_origin||'').toString().toLowerCase();
-  if(col==='current_theme') return ((row.status==='DOWNLOADED'||row.status==='AVAILABLE')?1:0);
+  if(col==='current_theme') return (row.status==='AVAILABLE'?1:0);
   return (row[col]||'').toString().toLowerCase();
 }
 
@@ -2619,7 +2631,7 @@ function _recommendedAction(row){
 }
 
 function _rowSecondaryActions(row){
-  const hasTheme=(row.status==='DOWNLOADED'||row.status==='AVAILABLE');
+  const hasTheme=(row.status==='AVAILABLE');
   const hasSource=_hasSourceUrl(row);
   const actions=[];
   if(hasSource) actions.push({label:'Preview source', fn:'_previewSource'});
@@ -3128,7 +3140,7 @@ async function clearSourcesSelected(){
   if(!ok) return;
   await Promise.all(rows.map(r=>fetch('/api/ledger/'+r.rating_key+'?library='+encodeURIComponent(_activeLib),{
     method:'PATCH',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({url:'',status:'PENDING',notes:'Source cleared via Library'})
+    body:JSON.stringify({url:'',status:'MISSING',notes:'Source cleared via Library'})
   })));
   clearSelection(); loadDatabase(); 
 }
@@ -4046,7 +4058,7 @@ async function saveSourceEditor(skipClose=false){
   if(!url){ toast('Please enter a URL','info'); return; }
   const lib=_seLib||_searchLib||_activeLib||'';
   const row=_rows.find(r=>String(r.rating_key)===String(key));
-  const isAvailable=row && ['DOWNLOADED','AVAILABLE'].includes(String(row.status||'').toUpperCase());
+  const isAvailable=row && ['AVAILABLE'].includes(String(row.status||'').toUpperCase());
   const status=(isAvailable || !_autoApproveManual)?'STAGED':'APPROVED';
   const notes=status==='APPROVED'?'Manual source auto-approved':'URL set via manual search — staged for approval';
 
@@ -4407,7 +4419,7 @@ async function stopRun(scope='run'){
 // === TASK OPERATIONS & MAINTENANCE ACTIONS ===
 // ── Tasks / History ───────────────────────────────────────────────────────────
 function openRunResults(pass){
-  const map={1:'PENDING',2:'STAGED',3:'AVAILABLE'};
+  const map={1:'MISSING',2:'STAGED',3:'AVAILABLE'};
   const st=map[pass]||'';
   showPage('database');
   setTimeout(()=>{
@@ -4422,7 +4434,7 @@ const TASK_CARD_CONFIG={
   runPipeline:[
     {
       title:'Run Scan Now',
-      description:'Step 1 scans Plex for selected libraries, checks each media folder for an existing theme file, then sets statuses (PENDING when missing, AVAILABLE when found).',
+      description:'Step 1 scans Plex for selected libraries, checks each media folder for an existing theme file, then sets statuses (MISSING when absent, AVAILABLE when found).',
       controlType:'button',
       buttonLabel:'Run Step 1',
       buttonClass:'btn btn-blue btn-sm',
@@ -4430,7 +4442,7 @@ const TASK_CARD_CONFIG={
     },
     {
       title:'Run Find Sources Now',
-      description:'Step 2 builds source searches for PENDING titles using TMDB metadata, applies Golden Source rules when enabled, and stages valid matches for review.',
+      description:'Step 2 builds source searches for MISSING titles using TMDB metadata, applies Golden Source rules when enabled, and stages valid matches for review.',
       controlType:'button',
       buttonLabel:'Run Step 2',
       buttonClass:'btn btn-purple btn-sm',
@@ -4743,7 +4755,7 @@ function toggleNav(){
 let _themeModalContext={};
 function _themeHasLocal(row){
   if(!row) return false;
-  return ['DOWNLOADED','AVAILABLE'].includes(String(row.status||'').toUpperCase()) || String(row.theme_exists||'')==='1';
+  return String(row.status||'').toUpperCase()==='AVAILABLE' || String(row.theme_exists||'')==='1';
 }
 function _themeOriginLabel(origin){
   const v=String(origin||'').toLowerCase();
