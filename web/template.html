@@ -4449,7 +4449,7 @@ const TASK_CARD_CONFIG={
       handler:'taskRunPass(2)'
     },
     {
-      title:'Run Download Approved Now',
+      title:'Run Download Themes Now',
       description:'Step 3 downloads Approved titles, writes theme files to the media folders, and marks completed titles as Available.',
       controlType:'button',
       buttonLabel:'Run Download',
@@ -4564,9 +4564,9 @@ async function loadTasksPage(){
     const [cls,...parts]=bc.split(' ');
     const dur=run.duration_seconds?`${Math.round(run.duration_seconds)}s`:'';
     const s1=run.stats?.pass1, s2=run.stats?.pass2, s3=run.stats?.pass3;
-    const statsLine = s1 ? `Pass1: ${s1.total} total · ${s1.pending} missing · ${s1.staged} staged · ${s1.approved} approved`
-      : s2 ? `Pass2: ${s2.staged} staged · ${s2.no_playlist} no source`
-      : s3 ? `Pass3: ${s3.downloaded} downloaded · ${s3.failed} failed · ${s3.skipped} skipped` : '';
+    const statsLine = s1 ? `Pass1: ${s1.total} total · ${s1.missing} Missing · ${s1.staged} Staged · ${s1.approved} Approved`
+      : s2 ? `Pass2: ${s2.staged} Staged · ${s2.missing} Missing · ${s2.failed} Failed`
+      : s3 ? `Pass3: ${s3.available} Available · ${s3.failed} Failed · ${s3.skipped} skipped` : '';
     return `<div class="hcard">
       <div class="hcard-head" onclick="document.getElementById('hd-${i}').classList.toggle('open')">
         <div>

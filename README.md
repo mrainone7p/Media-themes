@@ -92,6 +92,25 @@ User-facing labels are centralized in `web/ui_terminology.yaml`.
 - Status labels: `Unmonitored`, `Missing`, `Staged`, `Approved`, `Available`, `Failed`
 - Shared action/toast wording is also defined there so bulk actions, button labels, and success messages stay consistent with page copy.
 
+## Status key and pipeline semantics
+
+The pipeline uses a single status model everywhere in the worker logs, schedule page, library table, and task history.
+
+- `Unmonitored`: title is excluded from automation until you re-enable it.
+- `Missing`: no local theme file is available yet, so the title is queued for source discovery.
+- `Staged`: a source URL has been saved and is waiting for approval.
+- `Approved`: the staged source is approved for the next download run.
+- `Available`: a local `theme.mp3` file exists and the title is complete.
+- `Failed`: source discovery or download hit an error and needs review before retrying.
+
+The three pipeline steps follow that same vocabulary:
+
+1. **Scan Libraries** updates titles to `Missing` or `Available` based on what already exists on disk.
+2. **Find Theme Sources** searches only `Missing` titles and moves successful matches to `Staged`.
+3. **Download Themes** downloads `Approved` titles and marks successful results as `Available`.
+
+When Step 2 cannot find a usable source, the title stays `Missing`. When Step 2 or Step 3 encounters a non-retryable problem, the title can move to `Failed`.
+
 ## Mobile & responsive UI behavior
 
 The web UI now uses a single responsive layout tuned for phones and tablets (no separate mobile app/view to maintain):

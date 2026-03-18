@@ -1132,7 +1132,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
         save_ledger(log_file_path, ledger)
         log.info(
             f"Pass 2 complete — Staged: {stats['staged']}  "
-            f"Still missing: {stats['missing']}  Failed: {stats['failed']} ({time.time()-t0:.1f}s)"
+            f"Missing: {stats['missing']}  Failed: {stats['failed']} ({time.time()-t0:.1f}s)"
         )
         log.info("→ Review the Database tab, set STAGED rows to APPROVED, then run Download")
         return
@@ -1199,7 +1199,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
         save_ledger(log_file_path, ledger)
         log.info(
             f"Pass 2 complete — Staged: {stats['staged']}  "
-            f"Still missing: {stats['missing']}  Failed: {stats['failed']} ({time.time()-t0:.1f}s)"
+            f"Missing: {stats['missing']}  Failed: {stats['failed']} ({time.time()-t0:.1f}s)"
         )
     elif not step2_enabled:
         log.info("Step 2 (Find Sources) disabled in schedule — skipping")
