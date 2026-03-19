@@ -13,7 +13,6 @@ from flask import (Flask, Response, jsonify, render_template_string,
 
 app = Flask(__name__)
 
-CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/config/config.yaml")
 UI_TERMINOLOGY_PATH = os.environ.get("UI_TERMINOLOGY_PATH", "/app/web/ui_terminology.yaml")
 LOGS_DIR    = Path("/app/logs")
 RUNS_DIR    = LOGS_DIR / "runs"
@@ -28,6 +27,7 @@ _SHARED = "/app/shared"
 if _SHARED not in sys.path:
     sys.path.insert(0, _SHARED)
 from storage import (
+    CONFIG_PATH,
     LEDGER_HEADERS,
     ffprobe_duration,
     get_db_path,
@@ -35,11 +35,12 @@ from storage import (
     load_ledger_rows as load_ledger,
     MANUAL_STATUS_TRANSITIONS,
     normalize_golden_source_url,
+    now_str,
     read_golden_source_text,
     save_ledger_rows as save_ledger,
     STATUS_ORDER,
     status_after_clearing_source,
-    sync_theme_cache,       # FIX: now imported so download-now and trim update theme metadata
+    sync_theme_cache,
     validate_manual_status_transition,
 )
 
@@ -220,7 +221,7 @@ def _save_ledger_row_updates(row, updates, *, default_notes=None):
 
     if "url" in updates:
         row["source_origin"] = "manual" if str(updates.get("url") or "").strip() else "unknown"
-    row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    row["last_updated"] = now_str()
     if "notes" not in updates and default_notes is not None:
         row["notes"] = default_notes
     return row, None
@@ -291,7 +292,7 @@ def _parse_run_stats(lines):
 def _record_task(task_name, status="success", scope="", summary="", details=None, duration_seconds=None):
     normalized_status = str(status or "success")
     entry = {
-        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "time": now_str(),
         "task": str(task_name or "Task"),
         "status": normalized_status,
         "outcome": normalized_status,
@@ -735,9 +736,6 @@ def get_libraries(cfg):
     if libs and isinstance(libs, list): return libs
     return [{"name": cfg.get("plex_library_name","Movies"), "enabled": True}]
 
-def get_audio_duration(filepath):
-    return ffprobe_duration(filepath)
-
 def _boolish(v):
     if isinstance(v, bool): return v
     return str(v).strip().lower() in {"1","true","yes","on"}
@@ -779,8 +777,7 @@ def _fetch_golden_source_catalog(url, force_refresh=False, cache_ttl_sec=1800):
     return normalized, rows, fetch_ms, fetch_mode
 
 def import_csv_reader(text):
-    import csv as _csv
-    return _csv.DictReader(text.splitlines())
+    return csv.DictReader(text.splitlines())
 
 def _resolve_row_tmdb_id(row, cfg):
     tmdb_id = str(row.get("tmdb_id", "") or "").strip()
@@ -1189,7 +1186,7 @@ def api_health():
                               "next_run": None, "libraries": sched_libs_count}
     elif not sched_enabled:
         result["schedule"] = {"state": "off", "label": "Disabled", "cron": cron_expr,
-                              "next_run": next_run, "libraries": sched_libs_count}
+                              "next_run": None, "libraries": sched_libs_count}
     elif not scheduled:
         result["schedule"] = {"state": "warning", "label": "No libraries selected", "cron": cron_expr,
                               "next_run": next_run, "libraries": 0}
@@ -1263,7 +1260,7 @@ def bulk_ledger():
     data = request.json
     keys = set(data.get("keys",[]))
     status = str(data.get("status","") or "").upper()
-    rows = load_ledger(path); now = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); count=0; skipped=0
+    rows = load_ledger(path); now = now_str(); count=0; skipped=0
     for row in rows:
         if row.get("rating_key") in keys:
             cur = str(row.get("status","")).upper()
@@ -1287,7 +1284,7 @@ def clear_selected_sources():
     if not keys:
         return jsonify({"ok": False, "error": "No ledger rows selected"}), 400
     rows = load_ledger(path)
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = now_str()
     summary = _clear_source_urls_for_rows(
         rows,
         keys=keys,
@@ -1338,7 +1335,7 @@ def import_golden_source():
 
     path = ledger_path_for(lib)
     rows = load_ledger(path)
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = now_str()
     imported = skipped_existing = missing_tmdb = no_match = 0
     tmdb_cache = {}
     for row in rows:
@@ -1416,7 +1413,7 @@ def theme_info():
     if not is_allowed_folder(folder, roots): return jsonify({"error":"forbidden"}), 403
     path = Path(folder) / filename
     if not path.exists(): return jsonify({"error":"not found"}), 404
-    dur = get_audio_duration(path); size = path.stat().st_size
+    dur = ffprobe_duration(path); size = path.stat().st_size
     return jsonify({
         "duration": dur,
         "size": size,
@@ -1444,7 +1441,7 @@ def trim_theme():
     theme_path = Path(folder) / filename
     if not theme_path.exists(): return jsonify({"ok":False,"error":f"Theme file not on disk: {theme_path}"})
     try:
-        dur = get_audio_duration(theme_path)
+        dur = ffprobe_duration(theme_path)
         if dur <= 0: return jsonify({"ok":False,"error":"Could not read audio duration"})
         start = max(0,s_off); end = dur - max(0,e_off) if e_off > 0 else dur
         if max_dur > 0 and (end-start) > max_dur: end = start + max_dur
@@ -1452,7 +1449,7 @@ def trim_theme():
         if end <= start: return jsonify({"ok":False,"error":f"Nothing left after trimming"})
         if start <= 0 and end >= dur:
             row["start_offset"] = str(s_off); row["end_offset"] = str(e_off)
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            row["last_updated"] = now_str()
             row["notes"] = f"No trim needed ({dur:.1f}s)"
             save_ledger(path_ledger, rows)
             return jsonify({"ok":True,"message":f"No trim needed — {dur:.1f}s","duration":dur})
@@ -1462,9 +1459,9 @@ def trim_theme():
         if trim_result.returncode != 0:
             tmp.unlink(missing_ok=True)
             return jsonify({"ok":False,"error":f"ffmpeg error: {trim_result.stderr[:150]}"})
-        tmp.replace(theme_path); new_dur = get_audio_duration(theme_path)
+        tmp.replace(theme_path); new_dur = ffprobe_duration(theme_path)
         row["start_offset"] = str(s_off); row["end_offset"] = str(e_off)
-        row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row["last_updated"] = now_str()
         row["notes"] = f"Trimmed: {dur:.1f}s → {new_dur:.1f}s"
         row, _ = sync_theme_cache(row, filename, probe_duration=True)
         save_ledger(path_ledger, rows)
@@ -1537,7 +1534,7 @@ def delete_theme():
         r["theme_duration"] = 0.0
         r["theme_size"]     = 0
         r["theme_mtime"]    = 0.0
-        r["last_updated"]   = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        r["last_updated"]   = now_str()
 
     if not theme_path.exists():
         if row:
@@ -1615,7 +1612,7 @@ def download_now():
             return jsonify({"ok":False,"error":"yt-dlp succeeded but output file not found"})
         start_offset = int(row.get("start_offset",0) or 0)
         end_offset = int(row.get("end_offset",0) or 0)
-        dur = get_audio_duration(downloaded)
+        dur = ffprobe_duration(downloaded)
         if dur > 0 and (start_offset > 0 or end_offset > 0 or (max_dur > 0 and dur > max_dur)):
             start = max(0, start_offset)
             end = dur - max(0, end_offset) if end_offset > 0 else dur
@@ -1628,9 +1625,8 @@ def download_now():
                     downloaded.unlink(missing_ok=True); downloaded = tmp_trim
         downloaded.rename(theme_path)
         row["status"] = "AVAILABLE"
-        row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row["last_updated"] = now_str()
         row["notes"] = "Downloaded via manual download (replaced existing local theme)" if replaced_existing else "Downloaded via manual download"
-        # FIX: sync theme cache so theme_exists / duration / size / mtime are accurate
         row, _ = sync_theme_cache(row, filename, probe_duration=True)
         save_ledger(path_ledger, rows)
         msg = f"Downloaded and replaced existing {filename}" if replaced_existing else f"Downloaded and saved as {filename}"
@@ -1659,7 +1655,7 @@ def sync_library_themes():
     path = ledger_path_for(lib)
     rows = load_ledger(path)
     updated = found = missing = promoted = 0
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = now_str()
     for row in rows:
         new_row, changed = sync_theme_cache(row, filename, probe_duration=False)
         if changed:
@@ -1760,7 +1756,7 @@ def get_media():
         status = row.get("status","")
         theme_path = Path(row.get("folder","")) / filename
         has_theme = theme_path.exists()
-        dur = get_audio_duration(theme_path) if has_theme else 0
+        dur = ffprobe_duration(theme_path) if has_theme else 0
         if show == "with_theme" and not has_theme: continue
         if show == "without_theme" and has_theme: continue
         media.append({"rating_key":row.get("rating_key",""),"title":row.get("title",""),
@@ -1920,7 +1916,7 @@ def stop_run():
 
 def _do_run(force_pass=0, explicit_libraries=None, scope_label="", allow_schedule_disabled=False):
     global _run_active, _run_proc, _run_stop_requested, _run_started_at, _run_last_line, _run_pass, _run_scope_label, _run_libraries
-    run_log = []; timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); run_pass = force_pass or 0
+    run_log = []; timestamp = now_str(); run_pass = force_pass or 0
     proc = None
     return_code = None
     stop_requested = False
@@ -2042,7 +2038,7 @@ def export_golden_source_csv():
     if not target_libs:
         return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
     out_rows = []
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now = now_str()
     for target_lib in target_libs:
         rows = load_ledger(ledger_path_for(target_lib))
         for r in rows:
@@ -2167,7 +2163,7 @@ def clear_all_source_urls():
     target_libs = [lib] if lib else libs
     if not target_libs:
         return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    now = now_str()
     total_summary = {
         'requested': 0,
         'matched': 0,

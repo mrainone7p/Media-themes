@@ -1,3 +1,35 @@
+<!--
+  FRONTEND ARCHITECTURE ASSESSMENT
+  ═══════════════════════════════════════════════════════════════════════════════
+  Decision: Keep single-file layout (template.html) — do NOT split into
+  separate CSS / JS files at this time.
+
+  RATIONALE
+  ─────────
+  • Flask serves this file as raw bytes via _load_template() → no Jinja2
+    variable injection occurs, so config/state is fetched purely via REST API.
+    This means splitting IS technically feasible at any time.
+  • However, there is no build tooling (no npm, webpack, rollup, etc.) and no
+    Flask static-file route for /static/. Adding one is straightforward but
+    changes the Dockerfile COPY list and deployment surface.
+  • The single-file model keeps deployment atomic: one COPY in the Dockerfile,
+    no cache-busting concerns, no broken-reference risk during iterative dev.
+  • Browser caching: since all content is fetched as one response, there is no
+    per-resource cache benefit. Splitting CSS/JS would allow browsers to cache
+    styles and scripts independently — a minor benefit for a localhost app.
+  • At ~6,500 lines the file is large but navigable with editor code folding
+    and the clear section comments (/* ── Section ── */).
+
+  FUTURE MILESTONE (when complexity justifies it)
+  ────────────────────────────────────────────────
+  When a build step is introduced (e.g. for TypeScript, minification, or
+  asset fingerprinting), split into:
+    web/static/css/app.css
+    web/static/js/app.js
+    web/template.html  (skeleton only, referencing the above)
+  Flask's built-in static serving handles /static/ with no extra routes.
+  ═══════════════════════════════════════════════════════════════════════════════
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1561,6 +1593,21 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <span id="run-status" class="db-cell-subtle">Idle — run the configured automated schedule when ready</span>
     </div>
 
+    <!-- Automated Schedule toggle is outside sched-config-wrap so pointer-events:none
+         on the disabled wrapper never blocks the user from re-enabling the scheduler. -->
+    <div class="card">
+      <div class="schedule-master" style="margin-bottom:0;padding:0;background:transparent;border:none">
+        <div class="schedule-master-copy">
+          <div class="schedule-master-title" data-ui="schedule.master.title">Automated Schedule</div>
+          <div class="schedule-master-desc" data-ui="schedule.master.description">Turn automated scheduling on or off. You can still run the saved Scheduler configuration on demand.</div>
+        </div>
+        <label class="toggle" style="margin-top:2px">
+          <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+    </div>
+
     <div id="sched-config-wrap" class="sched-config-wrap">
       <div class="card" id="scheduler-config-section">
         <div class="card-title">RUN CURRENT SCHEDULER</div>
@@ -1572,17 +1619,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
 
       <div class="card">
-        <div class="schedule-master" style="margin-bottom:0;padding:0;background:transparent;border:none">
-          <div class="schedule-master-copy">
-            <div class="schedule-master-title" data-ui="schedule.master.title">Automated Schedule</div>
-            <div class="schedule-master-desc" data-ui="schedule.master.description">Turn automated scheduling on or off. You can still run the saved Scheduler configuration on demand.</div>
-          </div>
-          <label class="toggle" style="margin-top:2px">
-            <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
-            <span class="toggle-track"></span>
-          </label>
-        </div>
-        <div class="field" style="max-width:340px;margin-top:16px">
+        <div class="field" style="max-width:340px">
           <label>Cron Schedule</label>
           <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
           <div class="field-hint">Defines when the automated pipeline runs.</div>

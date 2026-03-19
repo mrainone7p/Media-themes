@@ -172,6 +172,8 @@ def should_persist_status(status: str | None) -> bool:
 def _now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+now_str = _now_str  # public alias used by app.py and media_tracks.py
+
 
 def load_config() -> dict:
     try:
