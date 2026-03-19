@@ -160,7 +160,11 @@ body.nav-collapsed main{margin-left:48px}
 .dash-lib-tab{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;white-space:nowrap;font-family:var(--ui)}
 .dash-lib-tab:hover{border-color:var(--text3);color:var(--text)}
 .dash-lib-tab.active{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.dash-overview-head,.dash-history-toolbar{position:relative;z-index:3}
+.dash-chart-area{position:relative;z-index:1}
+#dash-processing-chart,#dash-pie-chart{position:relative;z-index:1}
 .dash-chart-svg{overflow:visible}
+.dash-pie-slice-label{fill:#fff;font-size:11px;font-weight:700;font-family:var(--mono);text-anchor:middle;dominant-baseline:middle;pointer-events:none}
 
 /* ─── Test badges ─── */
 .test-result{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:5px;font-size:12px;font-weight:600;font-family:var(--mono);margin-left:8px}
@@ -1314,7 +1318,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Row 3: Library Overview + Processing History (moved above Needs Attention) -->
     <div class="card dashboard-card" style="margin-bottom:16px">
       <!-- Header row -->
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div class="dash-overview-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div class="card-title" style="margin-bottom:0">Theme Library Overview</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
@@ -1323,7 +1327,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
       <!-- Processing History -->
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+        <div class="dash-history-toolbar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
           <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Processing History</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
@@ -3328,7 +3332,7 @@ function renderDashLibTabs(enabledLibs){
   const el=document.getElementById('dash-lib-tabs');
   if(!el) return;
   const tabs=[{name:'all',label:'All'},...(enabledLibs||[]).map(l=>({name:l.name||l,label:l.name||l}))];
-  el.innerHTML=tabs.map(t=>`<button class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
+  el.innerHTML=tabs.map(t=>`<button type="button" class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
 }
 
 function renderHistStatusFilters(){
@@ -3343,7 +3347,7 @@ function renderHistStatusFilters(){
   ];
   el.innerHTML=filters.map(f=>{
     const active=f.k===_dashHistStatusFilter;
-    return `<button class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter(${JSON.stringify(f.k)})">${f.label}</button>`;
+    return `<button type="button" class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter(${JSON.stringify(f.k)})">${f.label}</button>`;
   }).join('');
 }
 
@@ -3370,7 +3374,7 @@ function renderDashLibKpi(){
     {label:'Failed',sub:'Needs review',status:'FAILED',value:counts.FAILED,color:'var(--red)'},
   ];
   el.innerHTML=items.map(item=>`
-    <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
+    <button type="button" class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
       <span class="dashboard-stat-label status-label status-tone-${item.status}" style="color:${item.color}">${displayStatus(item.status)}</span>
       <span class="dashboard-stat-sub">${item.sub}</span>
@@ -3543,10 +3547,18 @@ function renderPieChart(){
     const largeArc=angle>Math.PI?1:0;
     const x1=cx+r*Math.cos(startAngle), y1=cy+r*Math.sin(startAngle);
     const x2=cx+r*Math.cos(endAngle), y2=cy+r*Math.sin(endAngle);
+    const midAngle=startAngle+(angle/2);
+    const labelRadius=pct>=0.999 ? 0 : r*0.58;
+    const labelX=cx+labelRadius*Math.cos(midAngle);
+    const labelY=cy+labelRadius*Math.sin(midAngle);
     if(pct>=0.999){
       slices+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS[st]}" opacity="0.85" data-pie-st="${st}" style="cursor:pointer"/>`;
+      slices+=`<text x="${cx}" y="${cy}" class="dash-pie-slice-label">${counts[st]}</text>`;
     } else {
       slices+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${COLORS[st]}" opacity="0.85" data-pie-st="${st}" style="cursor:pointer"/>`;
+      if(angle >= 0.38){
+        slices+=`<text x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" class="dash-pie-slice-label">${counts[st]}</text>`;
+      }
     }
     startAngle=endAngle;
     legendItems.push(`<div class="dash-pie-legend-item"><span class="dash-pie-legend-dot" style="background:${COLORS[st]}"></span>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]}</div>`);
@@ -3559,7 +3571,7 @@ function renderPieChart(){
       const count=_pieCounts[st]||0;
       const pct=Math.round(count/_pieTotal*100);
       const label=st[0]+st.slice(1).toLowerCase();
-      const html=`<div class="dash-chart-tooltip-title">Composition</div><div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_pieColors[st]}"></span>${label}<span class="dash-chart-tooltip-val">${count}</span></div><div class="dash-chart-tooltip-row" style="color:var(--text3)">${pct}% of ${_pieTotal} total</div>`;
+      const html=`<div class="dash-chart-tooltip-title">${label}</div><div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_pieColors[st]}"></span>Count<span class="dash-chart-tooltip-val">${count}</span></div><div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_pieColors[st]};opacity:.35"></span>Share<span class="dash-chart-tooltip-val">${pct}%</span></div><div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:3px;padding-top:3px;font-weight:700;color:var(--text)">Total<span class="dash-chart-tooltip-val">${_pieTotal}</span></div>`;
       _showDashTooltip(html,e);
     });
     shape.addEventListener('mouseleave',_hideDashTooltip);
