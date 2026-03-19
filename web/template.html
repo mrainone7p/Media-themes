@@ -162,10 +162,10 @@ body.nav-collapsed main{margin-left:48px}
 .test-pending{background:var(--blue-soft);color:var(--blue)}
 
 /* ─── Library manager ─── */
-.lib-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
-.lib-row{display:flex;align-items:center;gap:10px;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:8px 12px}
+.lib-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.lib-row{display:flex;align-items:center;gap:10px;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;transition:border-color .15s,background .15s}
 .lib-row:focus-within{border-color:var(--amber)}
-.lib-row input[type=text]{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:12px;outline:none}
+.lib-row input[type=text]{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--ui);font-size:13px;outline:none}
 .lib-csv{font-size:9px;color:var(--text3);font-family:var(--mono);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
 .toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .toggle-card{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;min-width:0}
@@ -204,7 +204,7 @@ body.nav-collapsed main{margin-left:48px}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
 .badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .s-UNMONITORED{background:var(--gray-soft);color:var(--text3)} .d-UNMONITORED{background:var(--text3)}
-.s-MISSING{background:var(--gray-soft);color:var(--text2)} .d-MISSING{background:var(--text2)}
+.s-MISSING{background:var(--red-soft);color:var(--red)} .d-MISSING{background:var(--red)}
 .s-STAGED{background:var(--purple-soft);color:var(--purple)} .d-STAGED{background:var(--purple)}
 .s-APPROVED{background:var(--yellow-soft);color:var(--yellow)} .d-APPROVED{background:var(--yellow)}
 .s-AVAILABLE{background:var(--green-soft);color:var(--green)} .d-AVAILABLE{background:var(--green)}
@@ -876,15 +876,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .kicker-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .kicker-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
 .library-actions,.test-inline-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.lib-row{align-items:center;padding:10px 12px;border-radius:14px}
-.lib-meta{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
-.lib-top{display:flex;align-items:center;gap:10px;min-width:0}
-.lib-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
-.lib-top input[type=text]{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--ui);font-size:13px;font-weight:600;outline:none;padding:0}
+/* .lib-meta/.lib-top/.lib-bottom removed — libs now single-row */
 .lib-state{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em}
 .lib-state.on{background:var(--green-soft);color:var(--green)}
 .lib-state.off{background:var(--gray-soft);color:var(--text3)}
 .type-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:var(--amber-soft);color:var(--amber);font-size:10px;font-weight:700;letter-spacing:.04em;flex-shrink:0}
+.type-pill.tv{background:var(--blue-soft);color:var(--blue)}
+.drag-handle{display:flex;align-items:center;cursor:grab;color:var(--text3);padding:0 4px;flex-shrink:0;user-select:none;font-size:14px;line-height:1}
+.drag-handle:active{cursor:grabbing}
+.lib-row.dragging{opacity:.4}
+.lib-row.drag-over{border-color:var(--amber);background:var(--amber-soft)}
 .lib-inline-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text2);font-size:11px}
 .lib-inline-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
 .lib-inline-value{font-size:11px;color:var(--text2)}
@@ -1081,21 +1082,21 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="dash-pipeline-step-num" style="color:var(--blue)">Step 1</div>
             <div>
               <div style="font-size:12px;font-weight:700;margin-bottom:2px">⟳ Scan Libraries</div>
-              <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <strong style="color:var(--text2)">MISSING</strong> or <strong style="color:var(--green)">AVAILABLE</strong>.</div>
+              <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <span style="color:var(--red)">Missing</span> or <span style="color:var(--green)">Available</span>.</div>
             </div>
           </div>
           <div class="dash-pipeline-step">
             <div class="dash-pipeline-step-num" style="color:var(--purple)">Step 2</div>
             <div>
               <div style="font-size:12px;font-weight:700;margin-bottom:2px">⚡ Find Sources</div>
-              <div class="dash-pipeline-step-desc">Searches for sources for <strong style="color:var(--text2)">MISSING</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong style="color:var(--purple)">STAGED</strong> for manual review and approval.</div>
+              <div class="dash-pipeline-step-desc">Searches for sources for <span style="color:var(--red)">Missing</span> items via TMDB, YouTube, or Golden Source. Matches move to <span style="color:var(--purple)">Staged</span> for manual review and Approval.</div>
             </div>
           </div>
           <div class="dash-pipeline-step">
             <div class="dash-pipeline-step-num" style="color:var(--green)">Step 3</div>
             <div>
               <div style="font-size:12px;font-weight:700;margin-bottom:2px">↓ Download Approved</div>
-              <div class="dash-pipeline-step-desc">Downloads theme files for <strong style="color:var(--yellow)">APPROVED</strong> items using yt-dlp and ffmpeg, then marks them <strong style="color:var(--green)">AVAILABLE</strong>.</div>
+              <div class="dash-pipeline-step-desc">Downloads theme files for <span style="color:var(--yellow)">Approved</span> items using yt-dlp and ffmpeg, then marks them <span style="color:var(--green)">Available</span>.</div>
             </div>
           </div>
         </div>
@@ -1107,6 +1108,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <span class="badge s-MISSING"><span class="si"></span>Missing</span>
             <span class="dash-status-key-def">No local theme file found; needs source discovery</span>
           </div>
+
           <div class="dash-status-key-row">
             <span class="badge s-STAGED"><span class="si"></span>Staged</span>
             <span class="dash-status-key-def">Source match found, awaiting review or action</span>
@@ -1614,6 +1616,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="section-intro" style="margin-bottom:14px">Run your saved Scheduler setup right now using the currently included libraries and enabled steps below.</div>
         <div class="dashboard-actions">
           <button class="btn btn-amber" id="btn-schedule-run" onclick="startScheduledRun()">▶ Run Automated Schedule Now</button>
+          <button class="btn btn-red" id="btn-schedule-stop" onclick="stopRun('run')" style="display:none">■ Stop Run</button>
         </div>
         <div class="field-hint" id="run-schedule-summary" style="margin-top:10px">Uses your current Scheduler library selection and enabled steps.</div>
       </div>
@@ -1623,6 +1626,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <label>Cron Schedule</label>
           <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
           <div class="field-hint">Defines when the automated pipeline runs.</div>
+        </div>
+        <div id="sched-cron-next" style="margin-top:14px;display:none">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Next Scheduled Run</div>
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+            <span id="sched-cron-next-abs" style="font-size:13px;color:var(--text2);font-family:var(--mono)"></span>
+            <span id="sched-cron-countdown" style="font-size:13px;font-weight:700;color:var(--amber);font-family:var(--mono)"></span>
+          </div>
         </div>
       </div>
 
@@ -1657,7 +1667,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span class="pipeline-step-index scan">Step 1</span>
               <span class="pipeline-step-title">Scan Libraries</span>
             </div>
-            <div class="status-copy body-copy" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
+            <div class="status-copy body-copy" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked <span style="color:var(--red)">Missing</span>. Items with a theme are marked <span style="color:var(--green)">Available</span>. Uses Plex only. Fast.</div>
           </div>
         </div>
 
@@ -1672,7 +1682,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span class="pipeline-step-index find">Step 2</span>
               <span class="pipeline-step-title">Find Theme Sources</span>
             </div>
-            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <strong>MISSING</strong> item using the configured search logic. When a source is found, the item moves to <strong>STAGED</strong> for manual review and approval. Items marked <strong>UNMONITORED</strong> or <strong>FAILED</strong> are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
+            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <span style="color:var(--red)">Missing</span> item using the configured search logic. When a source is found, the item moves to <span style="color:var(--purple)">Staged</span> for manual review and Approval. Items marked <span style="color:var(--text3)">Unmonitored</span> or <span style="color:var(--red)">Failed</span> are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
             <div class="schedule-step2-options">
               <div class="pipeline-step-option golden">
                 <label class="toggle" style="transform:scale(.85)">
@@ -1687,7 +1697,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <div class="pipeline-step-option">
                 <div>
                   <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step2.limit.title">Missing Titles Per Run</span>
-                  <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many Missing items are processed per run. 0 = unlimited.</div>
+                  <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many <span style="color:var(--red)">Missing</span> items are processed per run. 0 = unlimited.</div>
                 </div>
                 <input id="run-schedule-limit" class="pipeline-step-input" type="number" min="0" onblur="saveRunSchedule()">
               </div>
@@ -1706,7 +1716,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span class="pipeline-step-index download">Step 3</span>
               <span class="pipeline-step-title">Download Themes</span>
             </div>
-            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.</div>
+            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each <span style="color:var(--yellow)">Approved</span> item, saves the theme file into the media folder, and moves the item to <span style="color:var(--green)">Available</span>. Items marked <span style="color:var(--text3)">Unmonitored</span> or <span style="color:var(--red)">Failed</span> are ignored. Uses yt-dlp and ffmpeg.</div>
             <div class="pipeline-step-option">
               <label class="toggle" style="transform:scale(.85)">
                 <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
@@ -1714,7 +1724,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </label>
               <div>
                 <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve STAGED Items</span>
-                <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move Staged items to Approved before downloading for a fully hands-off pipeline.</div>
+                <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move <span style="color:var(--purple)">Staged</span> items to <span style="color:var(--yellow)">Approved</span> before downloading for a fully hands-off pipeline.</div>
               </div>
             </div>
           </div>
@@ -2658,25 +2668,63 @@ function formatDashboardTime(value){
   if(Number.isNaN(dt.getTime())) return value;
   return dt.toLocaleString();
 }
+function _fmtCountdown(ms){
+  if(ms<=0) return 'Now';
+  const totalSec=Math.floor(ms/1000);
+  const h=Math.floor(totalSec/3600);
+  const m=Math.floor((totalSec%3600)/60);
+  const s=totalSec%60;
+  const pad=n=>String(n).padStart(2,'0');
+  if(h>0) return `${h}h ${pad(m)}m ${pad(s)}s`;
+  if(m>0) return `${pad(m)}m ${pad(s)}s`;
+  return `${pad(s)}s`;
+}
 function formatNextRun(isoStr){
   if(!isoStr) return null;
   const dt=new Date(isoStr);
   if(Number.isNaN(dt.getTime())) return isoStr;
-  const now=new Date();
-  const diffMs=dt-now;
-  const diffH=Math.round(diffMs/3600000);
-  if(diffH<1) return 'Soon';
-  if(diffH<24) return `In ${diffH}h`;
-  const diffD=Math.floor(diffH/24);
-  return `In ${diffD}d`;
+  return _fmtCountdown(dt-new Date());
 }
 function formatNextRunFull(isoStr){
   if(!isoStr) return null;
   const dt=new Date(isoStr);
   if(Number.isNaN(dt.getTime())) return null;
-  const rel=formatNextRun(isoStr)||'Soon';
+  const rel=formatNextRun(isoStr)||'Now';
   const abs=dt.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
-  return {rel,abs};
+  return {rel,abs,dt};
+}
+// Live countdown wiring
+let _countdownInterval=null;
+let _countdownTargetDt=null;
+function _startCountdowns(isoStr){
+  if(_countdownInterval) clearInterval(_countdownInterval);
+  if(!isoStr){_countdownTargetDt=null;_stopCountdownDisplay();return;}
+  const dt=new Date(isoStr);
+  if(Number.isNaN(dt.getTime())){_stopCountdownDisplay();return;}
+  _countdownTargetDt=dt;
+  _tickCountdowns();
+  _countdownInterval=setInterval(_tickCountdowns,1000);
+}
+function _tickCountdowns(){
+  if(!_countdownTargetDt) return;
+  const ms=_countdownTargetDt-new Date();
+  const label=ms>0?_fmtCountdown(ms):'Now';
+  const absStr=_countdownTargetDt.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
+  // Dashboard action station countdown
+  const dashRel=document.getElementById('dash-next-run-rel');
+  if(dashRel) dashRel.textContent=label;
+  // Scheduler cron countdown
+  const schedCd=document.getElementById('sched-cron-countdown');
+  if(schedCd) schedCd.textContent='— '+label;
+  const schedAbs=document.getElementById('sched-cron-next-abs');
+  if(schedAbs) schedAbs.textContent=absStr;
+  const schedWrap=document.getElementById('sched-cron-next');
+  if(schedWrap) schedWrap.style.display='';
+}
+function _stopCountdownDisplay(){
+  const schedWrap=document.getElementById('sched-cron-next');
+  if(schedWrap) schedWrap.style.display='none';
+  if(_countdownInterval){clearInterval(_countdownInterval);_countdownInterval=null;}
 }
 function openThemeManagerFiltered(status=''){
   showPage('theme-manager');
@@ -2726,7 +2774,7 @@ function dashboardShowPipelineHelp(){
 }
 function renderDashboardPipelineOverview(counts){
   const items=[
-    {label:'Missing', sub:'Needs source', status:'MISSING', value:counts.MISSING||0, color:'var(--text2)'},
+    {label:'Missing', sub:'Needs source', status:'MISSING', value:counts.MISSING||0, color:'var(--red)'},
     {label:'Staged', sub:'Review queue', status:'STAGED', value:counts.STAGED||0, color:'var(--purple)'},
     {label:'Approved', sub:'Ready to download', status:'APPROVED', value:counts.APPROVED||0, color:'var(--yellow)'},
     {label:'Available', sub:'Already local', status:'AVAILABLE', value:counts.AVAILABLE||0, color:'var(--green)'},
@@ -2813,10 +2861,11 @@ function renderDashboardActionStation(health){
   // Next run block
   let nextRunHtml='';
   const nrFull=formatNextRunFull(s.next_run);
+  _startCountdowns(s.next_run||null);
   if(nrFull){
     nextRunHtml=`<div class="dash-station-next-run">
       <div class="dash-station-next-label">Next Scheduled Run</div>
-      <div class="dash-station-next-rel">${nrFull.rel}</div>
+      <div class="dash-station-next-rel"><span id="dash-next-run-rel">${nrFull.rel}</span></div>
       <div class="dash-station-next-abs">${nrFull.abs}</div>
     </div>`;
   } else if(scheduleActive){
@@ -3263,34 +3312,44 @@ function updateCookieIndicator() {
 function slugify(s){ return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'library'; }
 
 function renderLibs(){
-  document.getElementById('lib-list').innerHTML=_libs.map((lib,i)=>{
+  const container=document.getElementById('lib-list');
+  container.innerHTML=_libs.map((lib,i)=>{
     const typeLabel=lib.type==='movie'?'Movie':lib.type==='show'?'TV':'';
-    const typeBadge=typeLabel?`<span class="type-pill">${typeLabel}</span>`:'';
+    const typePillClass=lib.type==='show'?'type-pill tv':'type-pill';
+    const typeBadge=typeLabel?`<span class="${typePillClass}">${typeLabel}</span>`:'';
     const stateBadge=`<span class="lib-state ${lib.enabled?'on':'off'}">${lib.enabled?'Enabled':'Disabled'}</span>`;
-    return `<div class="lib-row">
+    return `<div class="lib-row" draggable="true" data-lib-index="${i}"
+        ondragstart="_libDragStart(event,${i})"
+        ondragover="_libDragOver(event)"
+        ondrop="_libDrop(event,${i})"
+        ondragend="_libDragEnd(event)">
+      <span class="drag-handle" title="Drag to reorder">⠿</span>
       <label class="toggle">
         <input type="checkbox" ${lib.enabled?'checked':''} onchange="_libs[${i}].enabled=this.checked;renderLibs()">
         <span class="toggle-track"></span>
       </label>
-      <div class="lib-meta">
-        <div class="lib-top">
-          <input type="text" value="${lib.name||''}" placeholder="Library name (exact match in Plex)"
-            oninput="_libs[${i}].name=this.value">
-        </div>
-        <div class="lib-inline-meta">
-          ${typeBadge}
-          <span class="lib-inline-label">Media type</span>
-          <span class="lib-inline-value">${typeLabel||'Not set'}</span>
-        </div>
-        <div class="lib-bottom lib-inline-meta">
-          <span class="lib-inline-label">Enabled</span>
-          ${stateBadge}
-        </div>
-      </div>
-      <button class="btn btn-ghost btn-xs" onclick="_libs.splice(${i},1);renderLibs()" style="flex-shrink:0">✕</button>
+      <input type="text" value="${lib.name||''}" placeholder="Library name (exact match in Plex)"
+        oninput="_libs[${i}].name=this.value" style="flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--ui);font-size:13px;font-weight:600;outline:none;padding:0">
+      ${typeBadge}
+      ${stateBadge}
+      <button class="btn btn-ghost btn-xs" onclick="_libs.splice(${i},1);renderLibs()" style="flex-shrink:0;margin-left:4px">✕</button>
     </div>`;
   }).join('');
 }
+let _libDragSrc=null;
+function _libDragStart(e,i){_libDragSrc=i;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function _libDragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.classList.add('drag-over');}
+function _libDrop(e,i){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(_libDragSrc===null||_libDragSrc===i) return;
+  const moved=_libs.splice(_libDragSrc,1)[0];
+  _libs.splice(i,0,moved);
+  _libDragSrc=null;
+  renderLibs();
+  rememberConfigPatch({libraries:_libs.filter(l=>String(l.name||'').trim())});
+}
+function _libDragEnd(e){e.currentTarget.classList.remove('dragging');document.querySelectorAll('.lib-row').forEach(r=>r.classList.remove('drag-over'));_libDragSrc=null;}
 
 function addLibrary(){ _libs.push({name:'',enabled:false}); renderLibs(); }
 
@@ -3398,7 +3457,7 @@ let _selectedKeys=new Set();
 let _lastDbCheckIndex=null;
 const PAGE=80;
 // === STATE / STATUS MAPPING ===
-const SC={'UNMONITORED':'#94a3b8','MISSING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','AVAILABLE':'#2dd4a0','FAILED':'#f05252'};
+const SC={'UNMONITORED':'#94a3b8','MISSING':'#f26d78','STAGED':'#b06aff','APPROVED':'#f5a623','AVAILABLE':'#2dd4a0','FAILED':'#f05252'};
 function statusDesc(status){
   return uiTerm(`statuses.${status}.description`, _defaultStatusDesc[status] || '');
 }
@@ -4318,8 +4377,10 @@ function _refreshScopedRunLabels(){
 }
 
 function _setRunUiActive(pass){
-  const btns=[document.getElementById('btn-schedule-run')];
-  btns.forEach(b=>{ if(b) b.disabled=true; });
+  const runBtn=document.getElementById('btn-schedule-run');
+  const stopBtn=document.getElementById('btn-schedule-stop');
+  if(runBtn){runBtn.disabled=true;runBtn.style.display='none';}
+  if(stopBtn) stopBtn.style.display='';
   const dot=document.getElementById('run-dot');
   const status=document.getElementById('run-status');
   if(dot) dot.className='run-dot active';
@@ -4327,8 +4388,10 @@ function _setRunUiActive(pass){
 }
 
 function _setRunUiIdle(text='Idle — run the configured automated schedule when ready',done=false){
-  const btns=[document.getElementById('btn-schedule-run')];
-  btns.forEach(b=>{ if(b) b.disabled=false; });
+  const runBtn=document.getElementById('btn-schedule-run');
+  const stopBtn=document.getElementById('btn-schedule-stop');
+  if(runBtn){runBtn.disabled=false;runBtn.style.display='';}
+  if(stopBtn) stopBtn.style.display='none';
   const dot=document.getElementById('run-dot');
   const status=document.getElementById('run-status');
   if(dot) dot.className=done?'run-dot done':'run-dot';
@@ -5697,6 +5760,12 @@ async function ytModalSave(){
 async function loadRunPage(){
   const cfg=await loadConfig();
   document.getElementById('run-cron').value=cfg.cron_schedule||'0 3 * * *';
+  // Wire up live countdown for scheduler page
+  try{
+    const {data:health}=await requestJson('/api/health');
+    const nextRun=(health&&health.schedule&&health.schedule.next_run)||null;
+    _startCountdowns(nextRun);
+  }catch(e){}
   document.getElementById('run-schedule-limit').value=cfg.schedule_test_limit ?? cfg.test_limit ?? 0;
   document.getElementById('sched-enabled').checked = cfg.schedule_enabled !== false;
   const enabledLibs=(cfg.libraries||[]).filter(l=>l.enabled!==false && (!l.type||l.type==='movie'||l.type==='show'));
@@ -5720,7 +5789,7 @@ function applyScheduleEnabledState(){
   wrap.classList.toggle('is-disabled', !enabled);
   wrap.querySelectorAll('input, select, textarea, button').forEach(el=>{
     // Always keep the enable toggle and run button interactive
-    if(el.id && ['btn-schedule-run','sched-enabled'].includes(el.id)) return;
+    if(el.id && ['btn-schedule-run','btn-schedule-stop','sched-enabled'].includes(el.id)) return;
     el.disabled = !enabled;
   });
 }
