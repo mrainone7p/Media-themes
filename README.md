@@ -103,13 +103,15 @@ The pipeline uses a single status model everywhere in the worker logs, schedule 
 - `Available`: a local `theme.mp3` file exists and the title is complete.
 - `Failed`: source discovery or download hit an error and needs review before retrying.
 
+There is **no persisted `REMOVED` status**. If a title disappears from Plex, the next scan removes that row from the library ledger instead of keeping a hidden terminal state.
+
 The three pipeline steps follow that same vocabulary:
 
 1. **Scan Libraries** updates titles to `Missing` or `Available` based on what already exists on disk.
 2. **Find Theme Sources** searches only `Missing` titles and moves successful matches to `Staged`.
 3. **Download Themes** downloads `Approved` titles and marks successful results as `Available`.
 
-When Step 2 cannot find a usable source, the title stays `Missing`. When Step 2 or Step 3 encounters a non-retryable problem, the title can move to `Failed`.
+When Step 2 cannot find a usable source, the title stays `Missing`. When Step 2 or Step 3 encounters a non-retryable problem, the title can move to `Failed`. Clearing a saved source URL moves the title back to `Missing`, except `Unmonitored` and `Failed` items keep those states, and titles with a local theme remain `Available`.
 
 ## Mobile & responsive UI behavior
 

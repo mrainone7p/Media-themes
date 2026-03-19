@@ -28,17 +28,20 @@ _SHARED = "/app/shared"
 if _SHARED not in sys.path:
     sys.path.insert(0, _SHARED)
 from storage import (
-    load_ledger_rows as load_ledger,
-    save_ledger_rows as save_ledger,
-    ledger_path_for,
     LEDGER_HEADERS,
-    sync_theme_cache,       # FIX: now imported so download-now and trim update theme metadata
     ffprobe_duration,
     get_db_path,
+    ledger_path_for,
+    load_ledger_rows as load_ledger,
+    MANUAL_STATUS_TRANSITIONS,
+    save_ledger_rows as save_ledger,
+    STATUS_ORDER,
+    status_after_clearing_source,
+    sync_theme_cache,       # FIX: now imported so download-now and trim update theme metadata
+    validate_manual_status_transition,
 )
 
 EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
-VALID_STATUSES = {"UNMONITORED", "MISSING", "STAGED", "APPROVED", "AVAILABLE", "FAILED"}
 
 
 def _row_has_theme(row):
@@ -46,16 +49,10 @@ def _row_has_theme(row):
 
 
 def _status_after_clearing_source(row):
-    current = str(row.get("status", "") or "").upper()
-    if _row_has_theme(row):
-        return "AVAILABLE", "preserved_available"
-    if current in {"STAGED", "APPROVED", "AVAILABLE", ""}:
-        return "MISSING", "reset_missing"
-    if current == "UNMONITORED":
-        return "UNMONITORED", "preserved_unmonitored"
-    if current == "FAILED":
-        return "FAILED", "preserved_failed"
-    return "MISSING", "reset_missing"
+    return status_after_clearing_source(
+        row.get("status", ""),
+        has_theme=_row_has_theme(row),
+    )
 
 
 def _clear_source_urls_for_rows(rows, *, keys=None, note, now):
@@ -95,76 +92,12 @@ def _clear_source_urls_for_rows(rows, *, keys=None, note, now):
 
 
 def _status_validation_error(row, attempted_status):
-    attempted = str(attempted_status or "").upper()
-    current = str(row.get("status", "") or "").upper()
-    if not attempted or attempted not in VALID_STATUSES:
-        return {
-            "error": "Invalid target status",
-            "reason_code": "INVALID_STATUS",
-            "current_status": current,
-            "attempted_status": attempted,
-        }
-    if attempted == current:
-        return None
-
-    has_url = bool(str(row.get("url", "") or "").strip())
-    has_theme = str(row.get("theme_exists", "") or "") == "1"
-    allowed_transitions = {
-        "UNMONITORED": {"MISSING"},
-        "MISSING": {"STAGED", "FAILED"},
-        "STAGED": {"APPROVED", "MISSING", "FAILED"},
-        "APPROVED": {"AVAILABLE", "MISSING", "FAILED"},
-        "AVAILABLE": {"MISSING"},
-        "FAILED": {"MISSING", "STAGED"},
-    }
-
-    def _manual_targets_for(status):
-        status = str(status or "").upper()
-        base = set(allowed_transitions.get(status, set()))
-        base.add("UNMONITORED")
-        return sorted(base)
-
-    supported_targets = _manual_targets_for(current)
-
-    if attempted == "UNMONITORED":
-        return None
-
-    if attempted == "STAGED" and not has_url:
-        return {
-            "error": "Cannot set status to STAGED without a source URL",
-            "reason_code": "MISSING_URL",
-            "current_status": current,
-            "attempted_status": attempted,
-            "supported_targets": supported_targets,
-        }
-    if attempted == "AVAILABLE" and not has_theme:
-        return {
-            "error": "Cannot set status to AVAILABLE when the local theme is missing",
-            "reason_code": "MISSING_LOCAL_THEME",
-            "current_status": current,
-            "attempted_status": attempted,
-            "supported_targets": supported_targets,
-        }
-    if attempted == "APPROVED" and current != "STAGED":
-        return {
-            "error": "Only STAGED items can be approved",
-            "reason_code": "APPROVAL_REQUIRES_STAGED",
-            "current_status": current,
-            "attempted_status": attempted,
-            "supported_targets": supported_targets,
-        }
-    if current in allowed_transitions and attempted not in allowed_transitions[current]:
-        return {
-            "error": (
-                f"Unsupported manual status transition: {current} -> {attempted}. "
-                f"Allowed manual targets from {current}: {', '.join(supported_targets)}"
-            ),
-            "reason_code": "INVALID_STATUS_TRANSITION",
-            "current_status": current,
-            "attempted_status": attempted,
-            "supported_targets": supported_targets,
-        }
-    return None
+    return validate_manual_status_transition(
+        row.get("status", ""),
+        attempted_status,
+        has_url=bool(str(row.get("url", "") or "").strip()),
+        has_theme=_row_has_theme(row),
+    )
 
 
 def _ledger_row_response(row):
@@ -582,6 +515,20 @@ def post_config():
 @app.route("/api/ui-terminology", methods=["GET"])
 def get_ui_terminology():
     return jsonify(load_ui_terminology())
+
+
+@app.route("/api/status-model", methods=["GET"])
+def get_status_model():
+    return jsonify(
+        {
+            "statuses": list(STATUS_ORDER),
+            "manual_transitions": {
+                status: list(MANUAL_STATUS_TRANSITIONS.get(status, ()))
+                for status in STATUS_ORDER
+            },
+            "manual_any": ["UNMONITORED"],
+        }
+    )
 
 @app.route("/api/test/plex", methods=["POST"])
 def test_plex():
@@ -1254,7 +1201,6 @@ def get_media():
     rows = load_ledger(path); media = []
     for row in rows:
         status = row.get("status","")
-        if status in ("REMOVED",): continue
         theme_path = Path(row.get("folder","")) / filename
         has_theme = theme_path.exists()
         dur = get_audio_duration(theme_path) if has_theme else 0

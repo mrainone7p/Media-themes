@@ -167,9 +167,6 @@ body.nav-collapsed main{margin-left:48px}
 .s-APPROVED{background:var(--yellow-soft);color:var(--yellow)} .d-APPROVED{background:var(--yellow)}
 .s-AVAILABLE{background:var(--green-soft);color:var(--green)} .d-AVAILABLE{background:var(--green)}
 .s-FAILED{background:var(--red-soft);color:var(--red)} .d-FAILED{background:var(--red)}
-.s-NO_PLAYLIST{background:var(--blue-soft);color:var(--blue)} .d-NO_PLAYLIST{background:var(--blue)}
-
-.s-REMOVED{background:var(--gray-soft);color:var(--text3)} .d-REMOVED{background:var(--text3)}
 
 
 .si::before{margin-right:3px}
@@ -177,11 +174,8 @@ body.nav-collapsed main{margin-left:48px}
 .s-APPROVED .si::before{content:'→'}
 .s-STAGED .si::before{content:'◎'}
 .s-FAILED .si::before{content:'✗'}
-.s-NO_PLAYLIST .si::before{content:'∅'}
 .s-UNMONITORED .si::before{content:'⊘'}
 .s-MISSING .si::before{content:'·'}
-
-.s-REMOVED .si::before{content:'⊘'}
 
 
 /* ─── Toast ─── */
@@ -2270,6 +2264,7 @@ function initSidebarNav(){
 try{
   document.addEventListener('DOMContentLoaded', async ()=>{
     await loadUiTerminology();
+    await loadStatusModel();
     initSidebarNav();
     initSharedProgress();
     removeItemDetailsPanel();
@@ -2312,6 +2307,16 @@ const _defaultStatusDesc={
   AVAILABLE:'Theme file is present locally and ready to use.',
   FAILED:'Source discovery or download needs attention before retrying.'
 };
+let STATUSES=['UNMONITORED','MISSING','STAGED','APPROVED','AVAILABLE','FAILED'];
+let STATUS_TRANSITIONS={
+  UNMONITORED:['MISSING'],
+  MISSING:['STAGED','FAILED'],
+  STAGED:['APPROVED','MISSING','FAILED'],
+  APPROVED:['AVAILABLE','MISSING','FAILED'],
+  AVAILABLE:['MISSING'],
+  FAILED:['MISSING','STAGED']
+};
+let STATUS_MANUAL_ANY=['UNMONITORED'];
 
 function uiTerm(path, fallback=''){
   const parts=String(path||'').split('.');
@@ -2343,8 +2348,30 @@ async function loadUiTerminology(){
   applyUiTerminology();
 }
 
+async function loadStatusModel(){
+  try{
+    const r=await fetch('/api/status-model');
+    const data=await r.json();
+    if(Array.isArray(data?.statuses) && data.statuses.length){
+      STATUSES=data.statuses.map(s=>String(s||'').toUpperCase()).filter(Boolean);
+    }
+    if(data?.manual_transitions && typeof data.manual_transitions==='object'){
+      const next={};
+      Object.entries(data.manual_transitions).forEach(([status, targets])=>{
+        next[String(status||'').toUpperCase()]=Array.isArray(targets)
+          ? targets.map(t=>String(t||'').toUpperCase()).filter(Boolean)
+          : [];
+      });
+      STATUS_TRANSITIONS=next;
+    }
+    if(Array.isArray(data?.manual_any)){
+      STATUS_MANUAL_ANY=data.manual_any.map(s=>String(s||'').toUpperCase()).filter(Boolean);
+    }
+  }catch(e){}
+}
+
 function emphasizeStatusCopy(){
-  const terms=['UNMONITORED','MISSING','STAGED','APPROVED','AVAILABLE','FAILED'];
+  const terms=STATUSES.slice();
   const rx=new RegExp(`\\b(${terms.join('|')})\\b`,'gi');
   document.querySelectorAll('.status-copy').forEach(el=>{
     const src=el.textContent||'';
@@ -2581,7 +2608,6 @@ let _lastDbCheckIndex=null;
 const PAGE=80;
 // === STATE / STATUS MAPPING ===
 const SC={'UNMONITORED':'#94a3b8','MISSING':'#555570','STAGED':'#b06aff','APPROVED':'#f5a623','AVAILABLE':'#2dd4a0','FAILED':'#f05252'};
-const STATUSES=['UNMONITORED','MISSING','STAGED','APPROVED','AVAILABLE','FAILED'];
 function statusDesc(status){
   return uiTerm(`statuses.${status}.description`, _defaultStatusDesc[status] || '');
 }
@@ -2604,15 +2630,7 @@ function _statusValidation(row, attemptedStatus){
     return {ok:false, reason:'That status is no longer available.'};
   }
   if(current===attempted) return {ok:true};
-  const transitions={
-    UNMONITORED:['MISSING'],
-    MISSING:['STAGED','FAILED'],
-    STAGED:['APPROVED','MISSING','FAILED'],
-    APPROVED:['AVAILABLE','MISSING','FAILED'],
-    AVAILABLE:['MISSING'],
-    FAILED:['MISSING','STAGED']
-  };
-  if(attempted==='UNMONITORED') return {ok:true};
+  if(STATUS_MANUAL_ANY.includes(attempted)) return {ok:true};
   if(attempted==='STAGED' && !_hasSourceUrl(row)){
     return {ok:false, reason:'Add a source URL before moving this item to Staged.'};
   }
@@ -2622,7 +2640,7 @@ function _statusValidation(row, attemptedStatus){
   if(attempted==='APPROVED' && current!=='STAGED'){
     return {ok:false, reason:'Only Staged items can be approved.'};
   }
-  if(!transitions[current] || !transitions[current].includes(attempted)){
+  if(!STATUS_TRANSITIONS[current] || !STATUS_TRANSITIONS[current].includes(attempted)){
     return {ok:false, reason:`Cannot move ${displayStatus(current)} to ${displayStatus(attempted)}.`};
   }
   return {ok:true};
