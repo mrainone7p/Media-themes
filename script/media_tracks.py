@@ -897,6 +897,7 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
                     ledger, key, plex_title, title, year, folder, ST_MISSING,
                     notes=retry_note, tmdb_id=tmdb_id,
                 )
+                stats["missing"] += 1
             else:
                 failure_note = f"No valid source found — {last_reason}"
                 if retryable and resolve_retry_limit > 0:
@@ -907,8 +908,6 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
                     notes=failure_note, tmdb_id=tmdb_id,
                 )
                 stats["failed"] += 1
-            else:
-                stats["missing"] += 1
             continue
 
         log.info(f"  Found via {method_used}: {url}")

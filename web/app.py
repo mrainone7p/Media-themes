@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import signal
 import subprocess
 import sys
@@ -32,6 +33,7 @@ from storage import (
 app = Flask(__name__)
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
 REQUEST_LOG = logging.getLogger("media_tracks.web")
+WEB_PORT = int(os.environ.get("WEB_PORT", "8182"))
 
 if not REQUEST_LOG.handlers:
     handler = logging.StreamHandler(sys.stdout)
@@ -40,17 +42,24 @@ if not REQUEST_LOG.handlers:
 REQUEST_LOG.setLevel(logging.INFO)
 REQUEST_LOG.propagate = False
 
-_QUIET_PATH_PREFIXES = (
-    "/api/run/status",
-    "/api/health",
-    "/api/tasks/history",
-    "/api/ledger",
-    "/api/cookies",
-    "/api/youtube/search",
-    "/api/preview",
-    "/api/movie/bio",
-    "/api/poster",
-)
+_QUIET_REQUEST_RULES = {
+    "/api/run/status": {"success_ms": None, "label": "Run status poll"},
+    "/api/health": {"success_ms": None, "label": "Health check"},
+    "/api/tasks/history": {"success_ms": None, "label": "Task history refresh"},
+    "/api/ledger": {"success_ms": None, "label": "Ledger refresh"},
+    "/api/cookies": {"success_ms": None, "label": "Cookie inventory"},
+    "/api/movie/bio": {"success_ms": None, "label": "Movie bio lookup"},
+    "/api/poster": {"success_ms": None, "label": "Poster fetch"},
+    "/api/youtube/search": {"success_ms": 15000, "label": "YouTube search"},
+    "/api/preview": {"success_ms": 15000, "label": "Preview extraction"},
+}
+
+
+def _request_log_rule(path: str) -> dict | None:
+    for prefix, rule in _QUIET_REQUEST_RULES.items():
+        if path == prefix or path.startswith(f"{prefix}/"):
+            return rule
+    return None
 
 
 @app.before_request
@@ -65,12 +74,29 @@ def _log_request(response: Response):
     started_at = getattr(g, "_request_started_at", None)
     elapsed_ms = (time.perf_counter() - started_at) * 1000 if started_at is not None else 0.0
     path = request.path or "/"
-    is_quiet_path = any(path == prefix or path.startswith(f"{prefix}/") for prefix in _QUIET_PATH_PREFIXES)
+    rule = _request_log_rule(path)
     is_mutating = request.method not in {"GET", "HEAD", "OPTIONS"}
-    should_log = response.status_code >= 400 or elapsed_ms >= 750 or (is_mutating and not is_quiet_path)
+    if response.status_code >= 400:
+        should_log = True
+    elif rule is not None:
+        success_ms = rule.get("success_ms")
+        should_log = bool(success_ms is not None and elapsed_ms >= success_ms)
+    else:
+        should_log = elapsed_ms >= 2000 or is_mutating
     if should_log:
         level = logging.WARNING if response.status_code >= 400 else logging.INFO
-        REQUEST_LOG.log(level, "%s %s -> %s in %.0fms", request.method, path, response.status_code, elapsed_ms)
+        if rule is not None and rule.get("label"):
+            REQUEST_LOG.log(
+                level,
+                "%s -> %s in %.1fs [%s %s]",
+                rule["label"],
+                response.status_code,
+                elapsed_ms / 1000.0,
+                request.method,
+                path,
+            )
+        else:
+            REQUEST_LOG.log(level, "%s %s -> %s in %.0fms", request.method, path, response.status_code, elapsed_ms)
     return response
 
 
@@ -561,4 +587,7 @@ def _sig_handler(sig, frame):
 signal.signal(signal.SIGTERM, _sig_handler)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, threaded=True)
+    REQUEST_LOG.info(
+        "HTTP logging tuned for signal over noise: chatty status, preview, and search endpoints now log only on failure or unusually slow responses."
+    )
+    app.run(host="0.0.0.0", port=WEB_PORT, threaded=True)
