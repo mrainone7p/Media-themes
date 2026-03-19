@@ -2223,7 +2223,7 @@ async function updateGlobalRunStatus(){
       bar.classList.remove('hidden');
       dot.className='run-dot active';
       text.textContent='Running';
-      sub.textContent=d.last_line||'Working…';
+      sub.textContent=d.scope ? `${d.scope} · ${d.last_line||'Working…'}` : (d.last_line||'Working…');
       if(dbPill){ dbPill.classList.add('active'); dbPill.innerHTML='<span class="run-dot active"></span><span>Running</span>'; }
       _wasRunning=true;
       return;
@@ -2374,6 +2374,7 @@ async function loadConfiguration(){
   _libs=(cfg.libraries||[{name:cfg.plex_library_name||'Movies',enabled:true}]).map(l=>({...l}));
   renderLibs();
   _fillTaskLibSelects();
+  _refreshScopedRunLabels();
   removeItemDetailsPanel();
 
   // Max duration toggle
@@ -2655,6 +2656,7 @@ async function loadDatabase(syncPeer=true){
     document.getElementById('db-tbody').innerHTML='';
     document.getElementById('db-empty').style.display='block';
     document.getElementById('db-empty').textContent='No enabled libraries.';
+    _refreshScopedRunLabels();
     return;
   }
   if(!_activeLib || !libs.some(l=>l.name===_activeLib)) _activeLib=libs[0].name;
@@ -2665,12 +2667,14 @@ async function loadDatabase(syncPeer=true){
       ${lib.name}
     </div>`).join('');
   if(!_activeLib) _activeLib=libs[0]?.name;
+  _refreshScopedRunLabels();
   await loadLibRows(_activeLib);
 }
 
 async function switchLib(name){
   _activeLib=name;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.textContent.trim().replace(' (off)','')===name));
+  _refreshScopedRunLabels();
   await loadLibRows(name);
 }
 
@@ -3415,8 +3419,60 @@ let _lastRunRequest={db:null,run:null,tasks:null};
 
 function _dbStopPoll(){ clearInterval(_dbPollTimer); _dbPollTimer=null; }
 
-function _statusCopy(pass){
-  return {1:'running (pass 1/3)',2:'running (pass 2/3)',3:'running (pass 3/3)'}[pass]||'running';
+function _passLabel(pass){
+  return {1:'Scan',2:'Find Sources',3:'Download'}[pass]||'Run';
+}
+
+function _shortScopeLabel(scopeLabel=''){
+  const text=String(scopeLabel||'').trim();
+  return text.length>56 ? text.slice(0,53)+'…' : text;
+}
+
+function _statusCopy(pass, scopeLabel=''){
+  const base={1:'Running pass 1/3',2:'Running pass 2/3',3:'Running pass 3/3'}[pass]||'Running';
+  const suffix=_shortScopeLabel(scopeLabel);
+  return suffix ? `${base} · ${suffix}` : base;
+}
+
+function _formatScopeLabel(libraries=[], fallback='scheduled libraries'){
+  const libs=(libraries||[]).map(v=>String(v||'').trim()).filter(Boolean);
+  if(!libs.length) return fallback;
+  if(libs.length===1) return `library "${libs[0]}"`;
+  if(libs.length===2) return `libraries "${libs[0]}" and "${libs[1]}"`;
+  if(libs.length===3) return `libraries "${libs[0]}", "${libs[1]}", and "${libs[2]}"`;
+  return `${libs.length} libraries selected`;
+}
+
+function _selectedRunLibraries(){
+  return (_runLibs||[]).filter(l=>l.scheduled).map(l=>l.name);
+}
+
+function _refreshScopedRunLabels(){
+  const activeLabel=_activeLib?`"${_activeLib}"`:'selected library';
+  const dbLabels={
+    'db-btn-scan':`⟳ Scan ${activeLabel}`,
+    'db-btn-resolve':`⚡ Find Sources in ${activeLabel}`,
+    'db-btn-download':`↓ Download APPROVED in ${activeLabel}`
+  };
+  Object.entries(dbLabels).forEach(([id,label])=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=label;
+  });
+
+  const scheduledLibs=_selectedRunLibraries();
+  const scheduleScope=_formatScopeLabel(scheduledLibs, 'scheduled libraries');
+  const runLabels={
+    'btn-pass1':`⟳ Run ${scheduleScope}`,
+    'btn-pass2':`⚡ Run ${scheduleScope}`,
+    'btn-pass3':`↓ Run ${scheduleScope}`
+  };
+  Object.entries(runLabels).forEach(([id,label])=>{
+    const el=document.getElementById(id);
+    if(el){
+      el.textContent=label;
+      el.title=`Run ${_passLabel(id==='btn-pass1'?1:id==='btn-pass2'?2:3)} for ${scheduleScope}`;
+    }
+  });
 }
 
 function _setRunUiActive(pass){
@@ -3425,7 +3481,7 @@ function _setRunUiActive(pass){
   const dot=document.getElementById('run-dot');
   const status=document.getElementById('run-status');
   if(dot) dot.className='run-dot active';
-  if(status) status.textContent=_statusCopy(pass);
+  if(status) status.textContent=_statusCopy(pass, _activeRunContext?.scopeLabel||_formatScopeLabel(_selectedRunLibraries(),'scheduled libraries'));
 }
 
 function _setRunUiIdle(text='Idle — select a step above to run manually',done=false){
@@ -3442,15 +3498,17 @@ function _setDbButtons(disabled){
 }
 
 function _applyContextStart(ctx){
-  const copy=_statusCopy(ctx.pass);
-  setProgressState(ctx.scope,'running',{copy,pct:0,showStop:true,showRetry:false,meta:'Connecting to runner…'});
+  const copy=_statusCopy(ctx.pass, ctx.scopeLabel);
+  const meta=ctx.scopeLabel ? `Connecting to runner for ${ctx.scopeLabel}…` : 'Connecting to runner…';
+  setProgressState(ctx.scope,'running',{copy,pct:0,showStop:true,showRetry:false,meta});
   if(ctx.scope==='db') _setDbButtons(true);
   if(ctx.scope==='run') _setRunUiActive(ctx.pass);
-  if(ctx.scope==='tasks') setProgressState('tasks','running',{copy,pct:0,showStop:true,meta:'Running selected libraries…'});
+  if(ctx.scope==='tasks') setProgressState('tasks','running',{copy,pct:0,showStop:true,meta:ctx.scopeLabel?`Running ${ctx.scopeLabel}…`:'Running selected libraries…'});
 }
 
 function _applyContextFinish(ctx,state,meta,pct=100){
-  const copy=state==='success'?'success':state==='stopped'?'stopped':'error';
+  const statusLabel=state==='success'?'Success':state==='stopped'?'Stopped':'Error';
+  const copy=ctx.scopeLabel ? `${statusLabel} · ${_shortScopeLabel(ctx.scopeLabel)}` : statusLabel;
   setProgressState(ctx.scope,state,{copy,pct,showRetry:true,meta,showStop:false});
   if(ctx.scope==='db') _setDbButtons(false);
   if(ctx.scope==='run') _setRunUiIdle(state==='success'?'Done · '+new Date().toLocaleTimeString():(state==='stopped'?'Stopped':'Error'), state==='success');
@@ -3459,8 +3517,9 @@ function _applyContextFinish(ctx,state,meta,pct=100){
 
 function _handleProgressData(ctx,p){
   const pct=p.total>0?Math.round(p.current/p.total*100):0;
-  const copy=`running (pass ${ctx.pass}/3)`;
-  const meta=p.action==='error'?(p.message||'Error'):`${p.current}/${p.total} ${p.action} "${p.title}"`;
+  const copy=_statusCopy(ctx.pass, ctx.scopeLabel);
+  const detail=p.action==='error'?(p.message||'Error'):`${p.current}/${p.total} ${p.action} "${p.title}"`;
+  const meta=ctx.scopeLabel ? `${ctx.scopeLabel} · ${detail}` : detail;
   const state=p.action==='error'?'error':'running';
   setProgressState(ctx.scope,state,{copy,meta,pct,showStop:state==='running',showRetry:state!=='running'});
   if(ctx.scope==='run') _setRunUiActive(ctx.pass);
@@ -3483,7 +3542,8 @@ function _connectRunStream(ctx){
       try{ _handleProgressData(_activeRunContext,JSON.parse(e.data.slice(12))); }catch(ex){}
       return;
     }
-    setProgressState(_activeRunContext.scope,'running',{copy:_statusCopy(_activeRunContext.pass),meta:e.data.slice(0,140),pct:Math.min(98,parseInt(_progressEls(_activeRunContext.scope).fill?.style.width||'0',10)||0),showStop:true});
+    const fallbackMeta=_activeRunContext.scopeLabel ? `${_activeRunContext.scopeLabel} · ${e.data.slice(0,140)}` : e.data.slice(0,140);
+    setProgressState(_activeRunContext.scope,'running',{copy:_statusCopy(_activeRunContext.pass,_activeRunContext.scopeLabel),meta:fallbackMeta,pct:Math.min(98,parseInt(_progressEls(_activeRunContext.scope).fill?.style.width||'0',10)||0),showStop:true});
   };
   _dbEvtSrc.onerror=()=>{ if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; } };
 }
@@ -3494,6 +3554,7 @@ function _dbStartPoll(){
     try{
       const d=await(await fetch('/api/run/status')).json();
       if(!_activeRunContext) return;
+      if(d.scope) _activeRunContext.scopeLabel=d.scope;
       if(!d.active){
         _dbStopPoll();
         if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
@@ -3504,19 +3565,25 @@ function _dbStartPoll(){
         return;
       }
       if(d.last_line && Date.now()-_dbLastProgress > 2500){
-        setProgressState(_activeRunContext.scope,'running',{copy:_statusCopy(_activeRunContext.pass),meta:d.last_line.slice(0,140),showStop:true,pct:Math.min(98,parseInt(_progressEls(_activeRunContext.scope).fill?.style.width||'0',10)||10)});
+        const meta=_activeRunContext.scopeLabel ? `${_activeRunContext.scopeLabel} · ${d.last_line.slice(0,140)}` : d.last_line.slice(0,140);
+        setProgressState(_activeRunContext.scope,'running',{copy:_statusCopy(_activeRunContext.pass,_activeRunContext.scopeLabel),meta,showStop:true,pct:Math.min(98,parseInt(_progressEls(_activeRunContext.scope).fill?.style.width||'0',10)||10)});
       }
     }catch(e){}
   }, 2000);
 }
 
-async function startPipelineRun(passNum,scope='db'){
-  _lastRunRequest[scope]=passNum;
-  const ctx={scope,pass:passNum,stoppedByUser:false};
+async function startPipelineRun(passNum,scope='db',options={}){
+  const libraries=(options.libraries||[]).map(v=>String(v||'').trim()).filter(Boolean);
+  const scopeLabel=String(options.scopeLabel||'').trim() || _formatScopeLabel(libraries, scope==='db'?'selected library':'scheduled libraries');
+  _lastRunRequest[scope]={pass:passNum,libraries:[...libraries],scopeLabel};
+  const ctx={scope,pass:passNum,stoppedByUser:false,libraries,scopeLabel};
   _activeRunContext=ctx;
   _dbLastProgress=Date.now();
   _applyContextStart(ctx);
-  const r=await fetch('/api/run/pass/'+passNum,{method:'POST'});
+  const body={scope_label:scopeLabel};
+  if(libraries.length===1) body.library=libraries[0];
+  else if(libraries.length>1) body.libraries=libraries;
+  const r=await fetch('/api/run/pass/'+passNum,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!r.ok){
     const d=await r.json().catch(()=>({}));
     _applyContextFinish(ctx,'error',d.error||'Unable to start run.');
@@ -3527,16 +3594,21 @@ async function startPipelineRun(passNum,scope='db'){
   _dbStartPoll();
 }
 
-function dbRunPass(passNum){ return startPipelineRun(passNum,'db'); }
+function dbRunPass(passNum){
+  if(!_activeLib){ toast('Select a library first','info'); return; }
+  return startPipelineRun(passNum,'db',{libraries:[_activeLib],scopeLabel:`library "${_activeLib}"`});
+}
 function startPass(passNum){
   const terminal=document.getElementById('terminal');
   if(terminal) terminal.innerHTML='';
-  return startPipelineRun(passNum,'run');
+  const libraries=_selectedRunLibraries();
+  if(!libraries.length){ toast('Select at least one scheduled library','err'); return; }
+  return startPipelineRun(passNum,'run',{libraries,scopeLabel:_formatScopeLabel(libraries,'scheduled libraries')});
 }
 
 function retryRun(scope){
-  const pass=_lastRunRequest[scope]||1;
-  return startPipelineRun(pass,scope);
+  const last=_lastRunRequest[scope]||{pass:1,libraries:[],scopeLabel:''};
+  return startPipelineRun(last.pass||1,scope,{libraries:last.libraries||[],scopeLabel:last.scopeLabel||''});
 }
 let _mediaEvtSrc=null;
 function mediaRunPass(passNum){
@@ -4613,7 +4685,7 @@ async function mediaDownloadApproved(){
   const btn=document.getElementById('media-dl-btn');
   btn.innerHTML='<span class="spinner"></span>Downloading…'; btn.disabled=true;
   toast(`Downloading ${approved} approved items from ${lib}…`,'info');
-  await fetch('/api/run/pass/3',{method:'POST'});
+  await startPipelineRun(3,'db',{libraries:lib?[lib]:[],scopeLabel:lib?`library "${lib}"`:'selected library'});
   // Re-enable after a delay (the actual process runs async)
   setTimeout(()=>{btn.textContent='↓ Download APPROVED Items';btn.disabled=false;},3000);
 }
@@ -4729,6 +4801,7 @@ function renderRunLibs(){
       </label>
       <span style="font-size:12px;font-family:var(--mono);color:${lib.scheduled?'var(--text)':'var(--text3)'}">${lib.name}</span>
     </div>`).join('');
+  _refreshScopedRunLabels();
 }
 
 let _schedDebounce=null;
@@ -4768,7 +4841,8 @@ async function stopRun(scope='run'){
   if(_activeRunContext) _activeRunContext.stoppedByUser=true;
   await fetch('/api/run/stop',{method:'POST'});
   const activeScope=_activeRunContext?.scope||scope;
-  setProgressState(activeScope,'stopped',{copy:'Stopped',meta:'Stop requested. Waiting for process shutdown…',showRetry:true,pct:Math.min(99,parseInt(_progressEls(activeScope).fill?.style.width||'0',10)||0)});
+  const stopCopy=_activeRunContext?.scopeLabel ? `Stopped · ${_shortScopeLabel(_activeRunContext.scopeLabel)}` : 'Stopped';
+  setProgressState(activeScope,'stopped',{copy:stopCopy,meta:'Stop requested. Waiting for process shutdown…',showRetry:true,pct:Math.min(99,parseInt(_progressEls(activeScope).fill?.style.width||'0',10)||0)});
   if(activeScope==='run') _setRunUiIdle('Stopping…',false);
 }
 
@@ -4792,7 +4866,7 @@ const TASK_CARD_CONFIG={
       title:'Run Scan Now',
       description:'Step 1 connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.',
       controlType:'button',
-      buttonLabel:'Run Scan',
+      buttonLabel:'Run Scan for Selected Libraries',
       buttonClass:'btn btn-blue btn-sm',
       handler:'taskRunPass(1)'
     },
@@ -4800,7 +4874,7 @@ const TASK_CARD_CONFIG={
       title:'Run Find Sources Now',
       description:'Step 2 searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.',
       controlType:'button',
-      buttonLabel:'Run Source Match',
+      buttonLabel:'Run Find Sources for Selected Libraries',
       buttonClass:'btn btn-purple btn-sm',
       handler:'taskRunPass(2)'
     },
@@ -4808,7 +4882,7 @@ const TASK_CARD_CONFIG={
       title:'Run Download Themes Now',
       description:'Step 3 downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.',
       controlType:'button',
-      buttonLabel:'Run Download',
+      buttonLabel:'Run Download for Selected Libraries',
       buttonClass:'btn btn-green btn-sm',
       handler:'taskRunPass(3)'
     }
@@ -4923,6 +4997,7 @@ async function loadTasksPage(){
   el.innerHTML=runs.reverse().map((run,i)=>{
     const outcome=(run.outcome||run.status||'success').toLowerCase();
     const passLabel=PASS_LABELS[run.pass]||'PIPELINE RUN';
+    const scopeLine=String(run.scope||'').trim();
     const bc=OUTCOME_BADGES[outcome] || 'pb-e ERROR';
     const [cls,...parts]=bc.split(' ');
     const dur=run.duration_seconds?`${Math.round(run.duration_seconds)}s`:'';
@@ -4935,6 +5010,7 @@ async function loadTasksPage(){
         <div>
           <div class="hcard-time">${run.time}</div>
           <div class="hcard-sum">${passLabel} · ${(run.summary||'').replace(/</g,'&lt;')}${dur?` · ${dur}`:''}</div>
+          ${scopeLine?`<div class="hcard-sum">Scope: ${scopeLine.replace(/</g,'&lt;')}</div>`:''}
           ${statsLine?`<div class="hcard-sum">${statsLine}</div>`:''}
           <div style="margin-top:7px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openRunResults(${run.pass||0})">Open filtered rows</button></div>
         </div>
@@ -4996,11 +5072,7 @@ function taskSelectAllLibs(v){
 async function taskRunPass(passNum){
   const libs=[..._taskLibSelection];
   if(!libs.length) return toast('Select at least one library','err');
-  const cfg=await (await fetch('/api/config')).json();
-  cfg.schedule_libraries=libs;
-  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
-  _activeLib=libs[0];
-  await startPipelineRun(passNum,'tasks');
+  await startPipelineRun(passNum,'tasks',{libraries:libs,scopeLabel:_formatScopeLabel(libs,'selected libraries')});
   setTimeout(loadTasksPage,1200);
 }
 async function runTaskAction({
