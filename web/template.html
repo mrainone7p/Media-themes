@@ -54,9 +54,9 @@ nav.collapsed .nav-footer{padding:8px;justify-content:center}
 .collapse-btn{background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text2);cursor:pointer;font-size:11px;padding:4px 6px;transition:all .2s;font-family:var(--mono)}
 .collapse-btn:hover{border-color:var(--amber);color:var(--amber)}
 nav.collapsed .collapse-btn{transform:rotate(180deg);padding:4px}
-.logo{padding:0 16px;min-height:96px;border-bottom:1px solid var(--border)}
-.logo-title{font-size:13px;font-weight:700;color:var(--amber);letter-spacing:.03em;line-height:1.3}
-.logo-sub{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
+.logo{padding:0 16px;min-height:74px;height:74px;border-bottom:1px solid var(--border);display:flex;align-items:center}
+.logo-title{font-size:15px;font-weight:700;color:var(--amber);letter-spacing:.02em;line-height:1.25}
+.logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
 .nav-section{padding:10px 0;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text2);cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;border-left:2px solid transparent;user-select:none}
 main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .2s ease}
@@ -70,9 +70,9 @@ body.nav-collapsed main{margin-left:48px}
 /* ─── Main ─── */
 .page{display:none;flex-direction:column;flex:1}
 .page.active{display:flex}
-.page-head{padding:24px 34px 18px;min-height:96px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;background:var(--surface)}
-.page-title{font-size:28px;font-weight:700;letter-spacing:-.025em;line-height:1.1}
-.page-desc{font-size:14px;color:var(--text2);margin-top:8px;max-width:820px;line-height:1.5}
+.page-head{padding:16px 34px 14px;min-height:74px;height:74px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--surface)}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.page-desc{font-size:13px;color:var(--text2);margin-top:5px;max-width:820px;line-height:1.5}
 .page-body{padding:24px 34px 28px;flex:1;overflow-y:auto}
 .content{max-width:var(--max-w);width:100%}
 #page-configuration .content,#page-scheduler .content{max-width:var(--max-w)}
@@ -289,8 +289,12 @@ body.nav-collapsed main{margin-left:48px}
 .dash-status-key-row .badge{min-width:90px;justify-content:flex-start;flex-shrink:0}
 .dash-status-key-def{font-size:11px;color:var(--text2);line-height:1.4}
 /* Action Station */
-.dash-action-buttons{display:flex;flex-direction:column;gap:8px}
-.dash-station-context{font-size:12px;color:var(--text3);padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px}
+.dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
+.dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
+.dash-station-next-run{padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:10px}
+.dash-station-next-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.dash-station-next-rel{font-size:16px;font-weight:700;color:var(--amber);line-height:1.1}
+.dash-station-next-abs{font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:2px}
 /* Attention expand toggle */
 .dash-attention-toggle{margin-top:6px;color:var(--text3);font-size:11px;width:100%;justify-content:center}
 .dash-attention-toggle:hover{color:var(--text2)}
@@ -1045,21 +1049,21 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="dash-pipeline-step-num" style="color:var(--blue)">Step 1</div>
             <div>
               <div style="font-size:12px;font-weight:700;margin-bottom:2px">⟳ Scan Libraries</div>
-              <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items Missing or Available.</div>
+              <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <strong style="color:var(--text2)">MISSING</strong> or <strong style="color:var(--green)">AVAILABLE</strong>.</div>
             </div>
           </div>
           <div class="dash-pipeline-step">
             <div class="dash-pipeline-step-num" style="color:var(--purple)">Step 2</div>
             <div>
               <div style="font-size:12px;font-weight:700;margin-bottom:2px">⚡ Find Sources</div>
-              <div class="dash-pipeline-step-desc">Searches for theme sources for Missing items using TMDB, YouTube, or Golden Source. Matches move to Staged.</div>
+              <div class="dash-pipeline-step-desc">Searches for sources for <strong style="color:var(--text2)">MISSING</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong style="color:var(--purple)">STAGED</strong> for manual review and approval.</div>
             </div>
           </div>
           <div class="dash-pipeline-step">
             <div class="dash-pipeline-step-num" style="color:var(--green)">Step 3</div>
             <div>
               <div style="font-size:12px;font-weight:700;margin-bottom:2px">↓ Download Approved</div>
-              <div class="dash-pipeline-step-desc">Downloads theme files for Approved items using yt-dlp and ffmpeg, then marks them Available.</div>
+              <div class="dash-pipeline-step-desc">Downloads theme files for <strong style="color:var(--yellow)">APPROVED</strong> items using yt-dlp and ffmpeg, then marks them <strong style="color:var(--green)">AVAILABLE</strong>.</div>
             </div>
           </div>
         </div>
@@ -1581,7 +1585,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="field" style="max-width:340px;margin-top:16px">
           <label>Cron Schedule</label>
           <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
-          <div class="field-hint">Defines when the automated pipeline runs. Restart the container to apply changes.</div>
+          <div class="field-hint">Defines when the automated pipeline runs.</div>
         </div>
       </div>
 
@@ -1631,7 +1635,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span class="pipeline-step-index find">Step 2</span>
               <span class="pipeline-step-title">Find Theme Sources</span>
             </div>
-            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
+            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <strong>MISSING</strong> item using the configured search logic. When a source is found, the item moves to <strong>STAGED</strong> for manual review and approval. Items marked <strong>UNMONITORED</strong> or <strong>FAILED</strong> are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
             <div class="schedule-step2-options">
               <div class="pipeline-step-option golden">
                 <label class="toggle" style="transform:scale(.85)">
@@ -2627,7 +2631,15 @@ function formatNextRun(isoStr){
   if(diffH<1) return 'Soon';
   if(diffH<24) return `In ${diffH}h`;
   const diffD=Math.floor(diffH/24);
-  return `In ${diffD}d (${dt.toLocaleString([], {weekday:'short',hour:'2-digit',minute:'2-digit'})})`;
+  return `In ${diffD}d`;
+}
+function formatNextRunFull(isoStr){
+  if(!isoStr) return null;
+  const dt=new Date(isoStr);
+  if(Number.isNaN(dt.getTime())) return null;
+  const rel=formatNextRun(isoStr)||'Soon';
+  const abs=dt.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
+  return {rel,abs};
 }
 function openThemeManagerFiltered(status=''){
   showPage('theme-manager');
@@ -2761,25 +2773,25 @@ function renderDashboardActionStation(health){
   if(!el) return;
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   const scheduleActive=s.state==='ok'||s.state==='warning'||s.state==='warn';
-  const configBad=['plex','tmdb'].some(k=>{const h=health[k]||{}; return h.state==='fail'||h.state==='off';});
-  let ctx='';
-  if(scheduleActive && s.next_run){
-    const nr=formatNextRun(s.next_run);
-    if(nr) ctx=`<div class="dash-station-context">Next run: <strong>${nr}</strong></div>`;
+  // Next run block
+  let nextRunHtml='';
+  const nrFull=formatNextRunFull(s.next_run);
+  if(nrFull){
+    nextRunHtml=`<div class="dash-station-next-run">
+      <div class="dash-station-next-label">Next Scheduled Run</div>
+      <div class="dash-station-next-rel">${nrFull.rel}</div>
+      <div class="dash-station-next-abs">${nrFull.abs}</div>
+    </div>`;
   } else if(scheduleActive){
-    ctx=`<div class="dash-station-context">Automation: ${dashboardStatusBadge(s.label,s.state)}</div>`;
+    nextRunHtml=`<div class="dash-station-next-run">
+      <div class="dash-station-next-label">Automation</div>
+      <div style="margin-top:3px">${dashboardStatusBadge(s.label,s.state)}</div>
+    </div>`;
   }
-  const schedulerBtn=scheduleActive
-    ?`<button class="btn btn-ghost btn-sm" onclick="showPage('scheduler')" style="justify-content:flex-start">Open Scheduler</button>`
-    :`<button class="btn btn-ghost btn-sm" onclick="navigateTo('scheduler','scheduler-config-section')" style="justify-content:flex-start">Setup Scheduler</button>`;
-  const configBtn=configBad
-    ?`<button class="btn btn-ghost btn-sm" onclick="showPage('configuration')" style="justify-content:flex-start">Open Configuration</button>`
-    :'';
-  el.innerHTML=(ctx?ctx+'<div style="height:10px"></div>':'')+`<div class="dash-action-buttons">
-    ${schedulerBtn}
-    <button class="btn btn-ghost btn-sm" onclick="showPage('theme-manager')" style="justify-content:flex-start">Open Theme Manager</button>
-    ${configBtn}
-  </div>`;
+  const setupBtn=`<button class="btn btn-ghost btn-sm" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
+  const runBtn=`<button class="btn btn-ghost btn-sm" onclick="startScheduledRun()">Run Schedule</button>`;
+  const themesBtn=`<button class="btn btn-ghost btn-sm" onclick="showPage('theme-manager')">Manage Themes</button>`;
+  el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runBtn}${themesBtn}</div>`;
 }
 function dashboardLatestTask(entries, matcher){
   return (entries||[]).find(entry=>matcher((entry.task||''), entry)) || null;
@@ -2859,7 +2871,7 @@ function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
     el.innerHTML='<div class="dashboard-empty">No libraries configured. Add libraries in Configuration to get started.</div>';
     return;
   }
-  el.innerHTML=`<div style="display:grid;gap:6px">`+allLibs.map(lib=>{
+  el.innerHTML=`<div class="card-title" style="margin-bottom:8px;margin-top:4px">Media Libraries</div><div style="display:grid;gap:6px">`+allLibs.map(lib=>{
     const scheduled=scheduledLibs.some(n=>n===lib.name);
     const type=lib.type==='show'?'TV':'Movie';
     const disabled=lib.enabled===false;
@@ -5670,7 +5682,8 @@ function applyScheduleEnabledState(){
   if(!wrap) return;
   wrap.classList.toggle('is-disabled', !enabled);
   wrap.querySelectorAll('input, select, textarea, button').forEach(el=>{
-    if(el.id && ['btn-schedule-run'].includes(el.id)) return;
+    // Always keep the enable toggle and run button interactive
+    if(el.id && ['btn-schedule-run','sched-enabled'].includes(el.id)) return;
     el.disabled = !enabled;
   });
 }
