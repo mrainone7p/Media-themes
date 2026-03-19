@@ -1221,8 +1221,8 @@ def main():
         return
 
     if not cfg.get("plex_token"):
-        log.error("plex_token not set in config.yaml — aborting")
-        sys.exit(1)
+        log.warning("plex_token not set in config.yaml — skipping run")
+        return
 
     force_pass = int(os.environ.get("FORCE_PASS", "0"))
     if force_pass:
@@ -1240,7 +1240,7 @@ def main():
     libraries = get_libraries(cfg, explicit_names=explicit_run_libraries or None)
     if not libraries:
         log.error("No libraries configured or all disabled — check config.yaml")
-        sys.exit(1)
+        return
 
     log.info("Media Tracks starting up")
     log.info(f"Libraries: {[l['name'] for l in libraries]}")
