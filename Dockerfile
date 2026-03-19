@@ -35,6 +35,6 @@ RUN chmod +x /app/script/entrypoint.sh
 
 ENV CONFIG_PATH=/app/config/config.yaml
 
-EXPOSE 8080
+EXPOSE 8182
 
 ENTRYPOINT ["/app/script/entrypoint.sh"]

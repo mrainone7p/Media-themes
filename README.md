@@ -59,7 +59,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "8182:8080"
+      - "8182:8182"
 
     environment:
       CONFIG_PATH: /app/config/config.yaml
@@ -80,6 +80,8 @@ docker compose up -d
 ```
 
 Open `http://your-host:8182` in a browser.
+
+If you need a different internal listen port, set `WEB_PORT` in the container environment and match the right-hand side of the port mapping to that same value.
 
 ---
 

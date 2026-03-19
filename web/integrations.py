@@ -41,8 +41,11 @@ _BIO_TTL = 86400
 # ── Preview stream cache ─────────────────────────────────────────────────────
 
 _stream_cache: dict[str, tuple[float, str]] = {}
+_preview_url_cache: dict[str, tuple[float, str]] = {}
 _STREAM_TTL = 600
 _STREAM_MAX = 200
+_PREVIEW_URL_TTL = 600
+_PREVIEW_URL_MAX = 200
 
 _youtube_search_cache: dict[str, tuple[float, list[dict]]] = {}
 _YOUTUBE_SEARCH_TTL = 300
@@ -250,7 +253,30 @@ def youtube_search(query: str, cookies_file: str | None = None) -> list[dict]:
     return rows
 
 
+def _preview_cache_key(url: str, cookies_file: str | None = None) -> str:
+    return f"{str(url or '').strip()}|{str(cookies_file or '').strip()}"
+
+
+def prune_preview_url_cache(now: float | None = None):
+    now = now or time.time()
+    expired = [key for key, (ts, _) in _preview_url_cache.items() if now - ts > _PREVIEW_URL_TTL]
+    for key in expired:
+        _preview_url_cache.pop(key, None)
+    if len(_preview_url_cache) > _PREVIEW_URL_MAX:
+        oldest = sorted(_preview_url_cache.items(), key=lambda kv: kv[1][0])
+        for key, _ in oldest[: len(_preview_url_cache) - _PREVIEW_URL_MAX]:
+            _preview_url_cache.pop(key, None)
+
+
 def preview_stream_url(url: str, cookies_file: str | None = None) -> str:
+    cache_key = _preview_cache_key(url, cookies_file)
+    now = time.time()
+    with _cache_lock:
+        prune_preview_url_cache(now)
+        cached = _preview_url_cache.get(cache_key)
+        if cached and now - cached[0] < _PREVIEW_URL_TTL:
+            return cached[1]
+
     result = run_command(
         _yt_dlp_base_flags(cookies_file) + [
             "--format",
@@ -268,6 +294,8 @@ def preview_stream_url(url: str, cookies_file: str | None = None) -> str:
     stream_url = result.stdout.strip().splitlines()[0] if result.stdout.strip() else ""
     if not stream_url:
         raise RuntimeError("Could not extract stream URL")
+    with _cache_lock:
+        _preview_url_cache[cache_key] = (now, stream_url)
     return stream_url
 
 
