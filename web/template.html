@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Media Tracks</title>
+<title>Media Tracks theme downloader</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -44,7 +44,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--ui);min-height:100
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
 /* ─── Sidebar ─── */
-nav{width:180px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:width .2s ease}
+nav{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:width .2s ease}
 nav.collapsed{width:48px}
 nav.collapsed .logo-title,nav.collapsed .logo-sub,nav.collapsed .nav-item span,nav.collapsed .nav-footer span{display:none}
 nav.collapsed .logo{padding:12px 8px}
@@ -55,11 +55,11 @@ nav.collapsed .nav-footer{padding:8px;justify-content:center}
 .collapse-btn:hover{border-color:var(--amber);color:var(--amber)}
 nav.collapsed .collapse-btn{transform:rotate(180deg);padding:4px}
 .logo{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
-.logo-title{font-size:14px;font-weight:700;color:var(--amber);letter-spacing:.04em}
+.logo-title{font-size:13px;font-weight:700;color:var(--amber);letter-spacing:.03em;line-height:1.3}
 .logo-sub{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
 .nav-section{padding:10px 0;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text2);cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;border-left:2px solid transparent;user-select:none}
-main{margin-left:180px;flex:1;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .2s ease}
+main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .2s ease}
 body.nav-collapsed main{margin-left:48px}
 .nav-item:hover{color:var(--text);background:var(--gray-soft)}
 .nav-item.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-soft)}
@@ -149,7 +149,9 @@ body.nav-collapsed main{margin-left:48px}
 .run-lib-pill{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;min-width:0}
 .run-lib-pill span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width: 980px){
-  .field-grid-2,.lib-list,.toggle-grid,.run-lib-grid{grid-template-columns:1fr}
+  .field-grid-2,.lib-list,.toggle-grid,.run-lib-grid,.workflow-grid{grid-template-columns:1fr}
+  .dashboard-grid{grid-template-columns:1fr}
+  .span-12,.span-8,.span-7,.span-6,.span-5,.span-4{grid-column:span 1}
 }
 .offset-input{width:110px;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;text-align:center}
 .offset-input:focus{border-color:var(--purple)}
@@ -213,6 +215,42 @@ body.nav-collapsed main{margin-left:48px}
 .chip-head{display:flex;align-items:center;gap:8px;color:var(--text);font-weight:700;font-size:22px;line-height:1}
 .chip-body{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ─── Dashboard ─── */
+.dashboard-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.dashboard-card{margin-bottom:0}
+.span-12{grid-column:span 12}
+.span-8{grid-column:span 8}
+.span-7{grid-column:span 7}
+.span-6{grid-column:span 6}
+.span-5{grid-column:span 5}
+.span-4{grid-column:span 4}
+.dashboard-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px}
+.dashboard-stat{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 13px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s}
+.dashboard-stat:hover{border-color:color-mix(in srgb,var(--amber) 34%,var(--border));transform:translateY(-1px)}
+.dashboard-stat.is-static{cursor:default}
+.dashboard-stat.is-static:hover{transform:none;border-color:var(--border)}
+.dashboard-stat-count{font-size:24px;font-weight:700;line-height:1}
+.dashboard-stat-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text2)}
+.dashboard-actions{display:flex;flex-wrap:wrap;gap:10px}
+.dashboard-health-list,.dashboard-activity-list,.dashboard-attention-list,.dashboard-library-list{display:grid;gap:10px}
+.dashboard-health-item,.dashboard-activity-item,.dashboard-attention-item,.dashboard-library-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
+.dashboard-health-copy,.dashboard-activity-copy,.dashboard-attention-copy,.dashboard-library-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dashboard-kicker{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.dashboard-main-copy{font-size:13px;font-weight:600;color:var(--text)}
+.dashboard-sub-copy{font-size:12px;color:var(--text2);line-height:1.45}
+.dashboard-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.dashboard-badge.ok{background:var(--green-soft);color:var(--green)}
+.dashboard-badge.warn{background:var(--amber-soft);color:var(--amber)}
+.dashboard-badge.off{background:var(--gray-soft);color:var(--text3)}
+.dashboard-badge.fail{background:var(--red-soft);color:var(--red)}
+.dashboard-empty{padding:14px;border:1px dashed var(--border);border-radius:12px;color:var(--text3);font-size:12px;background:var(--surface2)}
+.workflow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.workflow-step{padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);display:flex;flex-direction:column;gap:8px}
+.workflow-step .pipe-action-step{margin-bottom:0}
+.workflow-step .pipe-action-name{font-size:16px}
+.workflow-step .pipe-action-desc{margin-bottom:0}
+.dashboard-footer-actions{display:flex;justify-content:flex-end;margin-top:12px}
 
 /* ─── Table ─── */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
@@ -717,6 +755,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .subcard-intro{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px}
 .accent-link{color:var(--amber);font-weight:700;text-decoration:none}
 .accent-link:hover{text-decoration:underline}
+.accent-link.subtle{color:var(--text3);font-weight:500}
+.accent-link.subtle:hover{color:var(--amber)}
 .field-help{font-size:12px;color:var(--text2);line-height:1.5}
 .field-help.compact{font-size:11px;color:var(--text3)}
 .settings-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -737,15 +777,20 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .kicker-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .kicker-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
 .library-actions,.test-inline-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.lib-row{align-items:flex-start;padding:12px 14px;border-radius:18px}
-.lib-meta{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
-.lib-top{display:flex;align-items:center;gap:8px;min-width:0}
-.lib-bottom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.lib-row{align-items:center;padding:10px 12px;border-radius:14px}
+.lib-meta{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.lib-top{display:flex;align-items:center;gap:10px;min-width:0}
+.lib-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
 .lib-top input[type=text]{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--ui);font-size:13px;font-weight:600;outline:none;padding:0}
 .lib-state{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.04em}
 .lib-state.on{background:var(--green-soft);color:var(--green)}
 .lib-state.off{background:var(--gray-soft);color:var(--text3)}
 .type-pill{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:var(--amber-soft);color:var(--amber);font-size:10px;font-weight:700;letter-spacing:.04em;flex-shrink:0}
+.lib-inline-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--text2);font-size:11px}
+.lib-inline-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.lib-inline-value{font-size:11px;color:var(--text2)}
+.field-help-list{display:grid;gap:4px}
+.field-help-line{font-size:11px;color:var(--text3);font-family:var(--mono);line-height:1.45}
 .status-term{font-weight:700;text-transform:uppercase}
 .settings-test-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .dual-inline{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px;align-items:start}
@@ -878,23 +923,26 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <nav>
   <div class="logo inline-wrap spread">
     <div>
-      <div class="logo-title">Media Tracks</div>
-      <div class="logo-sub">theme downloader</div>
+      <div class="logo-title">Media Tracks theme downloader</div>
     </div>
     <button class="collapse-btn" onclick="toggleNav()" title="Collapse sidebar" id="nav-collapse-btn">«</button>
   </div>
   <div class="nav-section">
-    <div class="nav-item active" data-page="configuration" id="nav-configuration">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-      <span data-ui="nav.configuration">Configuration</span>
+    <div class="nav-item active" data-page="dashboard" id="nav-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg>
+      <span data-ui="nav.dashboard">Dashboard</span>
     </div>
     <div class="nav-item" data-page="database" id="nav-database">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-      <span data-ui="nav.database">Library</span>
+      <span data-ui="nav.database">Theme Manager</span>
     </div>
     <div class="nav-item" data-page="schedule" id="nav-schedule">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span data-ui="nav.schedule">Schedule</span>
+      <span data-ui="nav.schedule">Scheduler</span>
+    </div>
+    <div class="nav-item" data-page="configuration" id="nav-configuration">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      <span data-ui="nav.configuration">Configuration</span>
     </div>
     <div class="nav-item" data-page="tasks" id="nav-tasks">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 16 14"/></svg>
@@ -914,8 +962,84 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="global-run-sub" id="global-run-sub"></div>
   </div>
 
+<!-- ══════════════════════════════════════ DASHBOARD ═══════════════════════════ -->
+<div class="page active" id="page-dashboard">
+  <div class="page-head">
+    <div>
+      <div class="page-title" data-ui="pages.dashboard.title">Dashboard</div>
+      <div class="page-desc" data-ui="pages.dashboard.description">Review pipeline health, recent activity, and the next actions that need attention.</div>
+    </div>
+  </div>
+  <div class="page-body"><div class="content">
+    <div class="dashboard-grid">
+      <div class="card dashboard-card span-8">
+        <div class="card-title">Pipeline Overview</div>
+        <div class="dashboard-stat-grid" id="dashboard-pipeline-overview"></div>
+      </div>
+      <div class="card dashboard-card span-4">
+        <div class="card-title">Quick Actions</div>
+        <div class="dashboard-actions">
+          <button class="btn btn-blue btn-sm" onclick="dashboardRunQuick(1)">⟳ Scan Libraries</button>
+          <button class="btn btn-purple btn-sm" onclick="dashboardRunQuick(2)">⚡ Find Sources</button>
+          <button class="btn btn-green btn-sm" onclick="dashboardRunQuick(3)">↓ Download Approved</button>
+          <button class="btn btn-ghost btn-sm golden-btn" onclick="dashboardImportGoldenSource()">★ Import Golden Source</button>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">Open Tasks</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card dashboard-card span-5">
+        <div class="card-title">System Health</div>
+        <div class="dashboard-health-list" id="dashboard-system-health"></div>
+      </div>
+      <div class="card dashboard-card span-7">
+        <div class="card-title">Needs Attention</div>
+        <div class="dashboard-attention-list" id="dashboard-needs-attention"></div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card dashboard-card span-7">
+        <div class="card-title">Workflow Overview</div>
+        <div class="workflow-grid">
+          <div class="workflow-step">
+            <div class="pipe-action-step scan" data-ui="schedule.summary.step1.label">STATUS KEY · Step 1</div>
+            <div class="pipe-action-name scan" data-ui="schedule.summary.step1.title">⟳ Scan Libraries</div>
+            <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
+          </div>
+          <div class="workflow-step">
+            <div class="pipe-action-step find" data-ui="schedule.summary.step2.label">AUTO SCHEDULE · Step 2</div>
+            <div class="pipe-action-name find" data-ui="schedule.summary.step2.title">⚡ Find Theme Sources</div>
+            <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step2.description">Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
+          </div>
+          <div class="workflow-step">
+            <div class="pipe-action-step dl" data-ui="schedule.summary.step3.label">PIPELINE STEPS · Step 3</div>
+            <div class="pipe-action-name dl" data-ui="schedule.summary.step3.title">↓ Download Themes</div>
+            <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step3.description">Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card dashboard-card span-5">
+        <div class="card-title">Recent Activity</div>
+        <div class="dashboard-activity-list" id="dashboard-recent-activity"></div>
+        <div class="dashboard-footer-actions">
+          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">Open Full Tasks History</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card dashboard-card span-12">
+        <div class="card-title">Library Overview</div>
+        <div class="dashboard-library-list" id="dashboard-library-overview"></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
 <!-- ══════════════════════════════════════ CONFIGURATION ═══════════════════════════ -->
-<div class="page active" id="page-configuration">
+<div class="page" id="page-configuration">
   <div class="page-head">
     <div>
       <div class="page-title" data-ui="pages.configuration.title">Configuration</div>
@@ -956,9 +1080,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
           <div class="settings-subcard">
             <div class="subcard-title">TMDB</div>
-            <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and provide TMDB links. Free key at <a class="accent-link" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">themoviedb.org/settings/api</a>.</div>
+            <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and provide TMDB links.</div>
             <div class="field" style="max-width:520px">
-              <label>TMDB API Key</label>
+              <label>TMDB API Key <a class="accent-link subtle" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">themoviedb.org/settings/api</a></label>
               <input id="cfg-tmdb_api_key" placeholder="your-tmdb-key">
             </div>
             <div class="settings-actions">
@@ -1010,7 +1134,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <option value="playlist">Playlist — find soundtrack playlists, then take track 1</option>
                 <option value="direct">Direct — search movie &quot;theme&quot; song</option>
               </select>
-              <div class="field-help compact">Playlist mode looks for soundtrack playlists. Direct mode looks for a single theme or song result.</div>
+              <div class="field-help compact field-help-list">
+                <div class="field-help-line"><strong>Playlist Mode</strong> looks for soundtrack playlists.</div>
+                <div class="field-help-line"><strong>Direct Mode</strong> looks for a single theme or song result.</div>
+              </div>
             </div>
             <div class="field">
               <label>Matching Mode</label>
@@ -1018,7 +1145,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <option value="strict">Strict matching</option>
                 <option value="fuzzy">Fuzzy matching</option>
               </select>
-              <div class="field-help compact" id="search-matching-help">Strict matching checks that the source includes the full query. Fuzzy matching uses the query and accepts the first result.</div>
+              <div class="field-help compact field-help-list" id="search-matching-help">
+                <div class="field-help-line"><strong>Strict Matching</strong> checks that the source includes the full query.</div>
+                <div class="field-help-line"><strong>Fuzzy Matching</strong> uses the query and accepts the first result.</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1088,7 +1218,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span id="golden-test-result"></span>
             </div>
           </div>
-          <div class="settings-subcard golden-emphasis">
+          <div class="settings-subcard golden-emphasis" style="background:color-mix(in srgb, var(--amber-soft) 28%, var(--surface2)); border-color:rgba(245,166,35,.28)">
             <div class="subcard-title">Golden Source mode</div>
             <div class="subcard-intro">Use only the curated list when you want faster, more controlled matching.</div>
             <div class="toggle-card golden toggle-compact" style="margin-top:8px">
@@ -1098,17 +1228,17 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </label>
               <div>
                 <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
-                <div class="toggle-note golden">Disable YouTube source discovery and only match against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
+                <div class="toggle-note golden">Disables YouTube source discovery and only matches against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
               </div>
             </div>
-            <div class="toggle-card toggle-compact" style="margin-top:10px">
+            <div class="toggle-card golden toggle-compact" style="margin-top:10px;background:color-mix(in srgb, var(--amber-soft) 24%, var(--surface2));border-color:rgba(245,166,35,.24)">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-refresh_golden_source_each_run">
                 <span class="toggle-track"></span>
               </label>
               <div>
-                <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
-                <div class="toggle-note">Refresh the Golden Source list before each source-matching run.</div>
+                <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
+                <div class="toggle-note golden">Refreshes the Golden Source list before each source-matching run.</div>
               </div>
             </div>
           </div>
@@ -1165,6 +1295,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="field">
             <label><span class="status-term">MISSING</span> Titles Per Run</label>
             <input type="number" id="cfg-test_limit" min="0">
+            <div class="field-help compact">Recommended for testing, or for gradually processing larger libraries over time.</div>
           </div>
         </div>
         <div class="performance-grid" style="margin-bottom:16px">
@@ -1209,7 +1340,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <!-- ══════════════════════════════════════ DATABASE ═══════════════════════════ -->
 <div class="page" id="page-database">
   <div class="page-head">
-    <div><div class="page-title" data-ui="pages.database.title">Library</div><div class="page-desc" data-ui="pages.database.description">Browse, review, preview, fine-tune, and manage themes in one place.</div></div>
+    <div><div class="page-title" data-ui="pages.database.title">Theme Manager</div><div class="page-desc" data-ui="pages.database.description">Browse, filter, review, and manage theme items in one place.</div></div>
   </div>
   <div class="page-body">
     <!-- Progress bar -->
@@ -1224,24 +1355,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
       <div class="progress-bar"><div class="progress-fill" id="db-progress-fill"></div></div>
       <div class="progress-meta" id="db-progress-meta"></div>
-    </div>
-
-    <div class="pipe-actions">
-      <div class="pipe-action scan">
-        <div class="pipe-action-step scan" data-ui="schedule.summary.step1.label">STATUS KEY · Step 1</div>
-        <div class="pipe-action-name scan" data-ui="schedule.summary.step1.title">⟳ Scan Libraries</div>
-        <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
-      </div>
-      <div class="pipe-action find">
-        <div class="pipe-action-step find" data-ui="schedule.summary.step2.label">AUTO SCHEDULE · Step 2</div>
-        <div class="pipe-action-name find" data-ui="schedule.summary.step2.title">⚡ Find Theme Sources</div>
-        <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step2.description">Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
-      </div>
-      <div class="pipe-action dl">
-        <div class="pipe-action-step dl" data-ui="schedule.summary.step3.label">PIPELINE STEPS · Step 3</div>
-        <div class="pipe-action-name dl" data-ui="schedule.summary.step3.title">↓ Download Themes</div>
-        <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step3.description">Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.</div>
-      </div>
     </div>
 
     <div class="tabs" id="lib-tabs"></div>
@@ -1334,18 +1447,18 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
 <div class="page" id="page-schedule">
-  <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Schedule</div><div class="page-desc" data-ui="pages.schedule.description">Set the automated schedule, choose which pipeline steps run automatically, and launch manual runs for the selected libraries.</div></div></div>
+  <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Scheduler</div><div class="page-desc" data-ui="pages.schedule.description">Set what the automated schedule does, choose included libraries, and run the configured automation on demand.</div></div></div>
   <div class="page-body"><div class="content">
 
     <div class="run-bar">
       <div class="run-dot" id="run-dot"></div>
-      <span id="run-status" class="db-cell-subtle">Idle — select a step above to run manually</span>
+      <span id="run-status" class="db-cell-subtle">Idle — run the configured automated schedule when ready</span>
     </div>
 
     <div class="schedule-master">
       <div class="schedule-master-copy">
         <div class="schedule-master-title" data-ui="schedule.master.title">Automated Schedule</div>
-        <div class="schedule-master-desc" data-ui="schedule.master.description">Turn scheduled runs on or off. Manual Run Now actions still work even when the automated schedule is disabled.</div>
+        <div class="schedule-master-desc" data-ui="schedule.master.description">Turn automated scheduling on or off. You can still run the saved Scheduler configuration on demand.</div>
       </div>
       <label class="toggle" style="margin-top:2px">
         <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
@@ -1378,7 +1491,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <span data-ui="schedule.cards.pipeline_steps.title">PIPELINE STEPS</span>
         </div>
-        <div class="field-hint" style="margin-bottom:16px" data-ui="schedule.cards.pipeline_steps.description">Choose which parts of the automated pipeline should run. Manual "Run Now" buttons work regardless of these settings.</div>
+        <div class="field-hint" style="margin-bottom:16px" data-ui="schedule.cards.pipeline_steps.description">Choose which parts of the automated pipeline should run when the Scheduler configuration is triggered.</div>
 
         <!-- Step 1 -->
         <div class="pipeline-step">
@@ -1393,7 +1506,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </div>
             <div class="status-copy body-copy" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
           </div>
-          <button class="btn btn-blue btn-sm" id="btn-pass1" onclick="startPass(1)">⟳ Run Now</button>
         </div>
 
         <!-- Step 2 -->
@@ -1428,7 +1540,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </div>
             </div>
           </div>
-          <button class="btn btn-purple btn-sm" id="btn-pass2" onclick="startPass(2)">⚡ Run Now</button>
         </div>
 
         <!-- Step 3 -->
@@ -1454,8 +1565,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </div>
             </div>
           </div>
-          <button class="btn btn-green btn-sm" id="btn-pass3" onclick="startPass(3)">↓ Run Now</button>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">RUN CURRENT SCHEDULER</div>
+        <div class="section-intro" style="margin-bottom:14px">Trigger the currently configured automated workflow now using the selected libraries and enabled pipeline steps above.</div>
+        <div class="dashboard-actions">
+          <button class="btn btn-amber" id="btn-schedule-run" onclick="startScheduledRun()">▶ Run Automated Schedule Now</button>
+        </div>
+        <div class="field-hint" id="run-schedule-summary" style="margin-top:10px">Uses your current Scheduler library selection and enabled steps.</div>
       </div>
     </div>
 
@@ -2339,6 +2458,198 @@ function rememberConfigPatch(patch={}){
   _configCache={...(_configCache||{}), ...patch};
   return _configCache;
 }
+let _dashboardLibraries={enabled:[],scheduled:[]};
+function dashboardQuickLibraries(){
+  const scheduled=(_dashboardLibraries.scheduled||[]).filter(Boolean);
+  const enabled=(_dashboardLibraries.enabled||[]).filter(Boolean);
+  return scheduled.length ? scheduled : enabled;
+}
+function dashboardBadgeClass(state){
+  return {ok:'ok',warning:'warn',off:'off',fail:'fail'}[state] || 'off';
+}
+function dashboardStatusBadge(label,state='off'){
+  return `<span class="dashboard-badge ${dashboardBadgeClass(state)}">${label}</span>`;
+}
+function formatDashboardTime(value){
+  if(!value) return 'No activity yet';
+  const safe=String(value).replace(' ','T');
+  const dt=new Date(safe);
+  if(Number.isNaN(dt.getTime())) return value;
+  return dt.toLocaleString();
+}
+function openThemeManagerFiltered(status=''){
+  showPage('database');
+  setTimeout(()=>{
+    clearDbFilter();
+    if(status) filterByStatus(status);
+  }, 300);
+}
+function dashboardOpenTarget(target={}){
+  if(target.page==='configuration') return showPage('configuration');
+  if(target.page==='tasks') return showPage('tasks');
+  if(target.page==='schedule') return showPage('schedule');
+  if(target.page==='database') return openThemeManagerFiltered(target.filter||'');
+  return showPage('dashboard');
+}
+async function dashboardImportGoldenSource(){
+  showPage('database');
+  setTimeout(async()=>{
+    if(!_activeLib) await loadDatabase();
+    importGoldenSource();
+  }, 350);
+}
+async function dashboardRunQuick(passNum){
+  const libraries=dashboardQuickLibraries();
+  if(!libraries.length) return toast('Enable at least one library first','err');
+  return startPipelineRun(passNum,'run',{libraries,scopeLabel:_formatScopeLabel(libraries,'enabled libraries')});
+}
+function renderDashboardPipelineOverview(counts){
+  const items=[
+    {label:'Missing', status:'MISSING', value:counts.MISSING||0, color:'var(--text2)'},
+    {label:'Staged', status:'STAGED', value:counts.STAGED||0, color:'var(--purple)'},
+    {label:'Approved', status:'APPROVED', value:counts.APPROVED||0, color:'var(--yellow)'},
+    {label:'Available', status:'AVAILABLE', value:counts.AVAILABLE||0, color:'var(--green)'},
+    {label:'Failed', status:'FAILED', value:counts.FAILED||0, color:'var(--red)'},
+  ];
+  const el=document.getElementById('dashboard-pipeline-overview');
+  if(!el) return;
+  el.innerHTML=items.map(item=>`
+    <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
+      <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
+      <span class="dashboard-stat-label">${item.label}</span>
+    </button>`).join('');
+}
+function renderDashboardSystemHealth(cfg, enabledLibs, scheduledLibs){
+  const plexReady=!!((cfg.plex_url||'').trim() && (cfg.plex_token||'').trim());
+  const tmdbReady=!!(cfg.tmdb_api_key||'').trim();
+  const goldenReady=!!(cfg.golden_source_url||'').trim();
+  const schedulerEnabled=cfg.schedule_enabled !== false;
+  const items=[
+    {label:'Plex connection', value:plexReady?'Configured':'Not configured', state:plexReady?'ok':'warning'},
+    {label:'TMDB API key', value:tmdbReady?'Configured':'Not configured', state:tmdbReady?'ok':'warning'},
+    {label:'Golden Source', value:goldenReady?'Configured':'Not configured', state:goldenReady?'ok':'off'},
+    {label:'Scheduler', value:schedulerEnabled?'Enabled':'Disabled', state:schedulerEnabled?'ok':'off'},
+    {label:'Enabled libraries', value:`${enabledLibs.length} enabled${scheduledLibs.length?` · ${scheduledLibs.length} scheduled`:''}`, state:enabledLibs.length?'ok':'warning'},
+  ];
+  const el=document.getElementById('dashboard-system-health');
+  if(!el) return;
+  el.innerHTML=items.map(item=>`
+    <div class="dashboard-health-item">
+      <div class="dashboard-health-copy">
+        <div class="dashboard-kicker">${item.label}</div>
+        <div class="dashboard-main-copy">${item.value}</div>
+      </div>
+      ${dashboardStatusBadge(item.value, item.state)}
+    </div>`).join('');
+}
+function renderDashboardNeedsAttention(cfg, counts, enabledLibs){
+  const items=[];
+  if((counts.MISSING||0)>0) items.push({title:`${counts.MISSING} missing title${counts.MISSING===1?'':'s'} need source discovery`, detail:'Open Theme Manager filtered to Missing and start finding sources.', target:{page:'database',filter:'MISSING'}});
+  if((counts.STAGED||0)>0) items.push({title:`${counts.STAGED} staged title${counts.STAGED===1?'':'s'} waiting for approval`, detail:'Review staged items and approve the ones ready for download.', target:{page:'database',filter:'STAGED'}});
+  if((counts.FAILED||0)>0) items.push({title:`${counts.FAILED} failed title${counts.FAILED===1?'':'s'} need review`, detail:'Inspect failures, update sources if needed, then retry.', target:{page:'database',filter:'FAILED'}});
+  if(!(cfg.golden_source_url||'').trim()) items.push({title:'Golden Source is not configured', detail:'Add a curated source list if you want tighter and faster source discovery.', target:{page:'configuration'}});
+  if(!((cfg.plex_url||'').trim() && (cfg.plex_token||'').trim()) || !(cfg.tmdb_api_key||'').trim()) items.push({title:'Connections still need setup', detail:'Finish Plex and TMDB configuration so scanning and matching can run cleanly.', target:{page:'configuration'}});
+  if(!enabledLibs.length) items.push({title:'No enabled libraries selected', detail:'Enable at least one movie or TV library to start processing themes.', target:{page:'configuration'}});
+  const el=document.getElementById('dashboard-needs-attention');
+  if(!el) return;
+  if(!items.length){
+    el.innerHTML='<div class="dashboard-empty">Nothing urgent right now. Your next actions will appear here as the pipeline changes.</div>';
+    return;
+  }
+  el.innerHTML=items.slice(0,5).map(item=>`
+    <div class="dashboard-attention-item">
+      <div class="dashboard-attention-copy">
+        <div class="dashboard-main-copy">${item.title}</div>
+        <div class="dashboard-sub-copy">${item.detail}</div>
+      </div>
+      <button class="btn btn-ghost btn-xs" onclick='dashboardOpenTarget(${JSON.stringify(item.target)})'>Open</button>
+    </div>`).join('');
+}
+function dashboardLatestTask(entries, matcher){
+  return (entries||[]).find(entry=>matcher((entry.task||''), entry)) || null;
+}
+function renderDashboardRecentActivity(entries){
+  const recent={
+    scan: dashboardLatestTask(entries, (task, entry)=>/scan/i.test(task) || entry?.details?.pass===1),
+    discover: dashboardLatestTask(entries, (task, entry)=>/find sources|find theme sources/i.test(task) || entry?.details?.pass===2),
+    download: dashboardLatestTask(entries, (task, entry)=>/download/i.test(task) || entry?.details?.pass===3),
+    task: dashboardLatestTask(entries, ()=>true),
+  };
+  const items=[
+    {label:'Last scan', entry:recent.scan},
+    {label:'Last source discovery run', entry:recent.discover},
+    {label:'Last download run', entry:recent.download},
+    {label:'Last task run', entry:recent.task},
+  ];
+  const el=document.getElementById('dashboard-recent-activity');
+  if(!el) return;
+  el.innerHTML=items.map(item=>{
+    const entry=item.entry;
+    const badge=entry ? dashboardStatusBadge((entry.status||'success').toUpperCase(), entry.status==='success'?'ok':entry.status==='stopped'?'off':'warning') : dashboardStatusBadge('No runs', 'off');
+    return `<div class="dashboard-activity-item">
+      <div class="dashboard-activity-copy">
+        <div class="dashboard-kicker">${item.label}</div>
+        <div class="dashboard-main-copy">${entry ? formatDashboardTime(entry.time) : 'No activity yet'}</div>
+        <div class="dashboard-sub-copy">${entry ? (entry.summary || entry.task || 'Completed') : 'Run this workflow from the Dashboard, Scheduler, or Tasks page.'}</div>
+      </div>
+      ${badge}
+    </div>`;
+  }).join('');
+}
+function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
+  const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
+  const disabledLibs=allLibs.filter(lib=>lib.enabled===false);
+  const el=document.getElementById('dashboard-library-overview');
+  if(!el) return;
+  if(!allLibs.length){
+    el.innerHTML='<div class="dashboard-empty">No libraries configured yet. Add libraries in Configuration to get started.</div>';
+    return;
+  }
+  el.innerHTML=`
+    <div class="dashboard-library-item">
+      <div class="dashboard-library-copy">
+        <div class="dashboard-kicker">Library summary</div>
+        <div class="dashboard-main-copy">${enabledLibs.length} enabled · ${disabledLibs.length} disabled</div>
+        <div class="dashboard-sub-copy">${scheduledLibs.length} included in the current Scheduler selection.</div>
+      </div>
+      ${dashboardStatusBadge(enabledLibs.length ? 'Ready' : 'Needs setup', enabledLibs.length ? 'ok' : 'warning')}
+    </div>
+    ${allLibs.map(lib=>{
+      const scheduled=scheduledLibs.some(name=>name===lib.name);
+      const type=lib.type==='show'?'TV':'Movie';
+      return `<div class="dashboard-library-item">
+        <div class="dashboard-library-copy">
+          <div class="dashboard-main-copy">${lib.name}</div>
+          <div class="dashboard-sub-copy">${type} · ${lib.enabled===false?'Disabled':'Enabled'}${scheduled?' · In Scheduler':''}</div>
+        </div>
+        ${dashboardStatusBadge(lib.enabled===false?'Disabled':(scheduled?'Scheduled':'Enabled'), lib.enabled===false?'off':(scheduled?'ok':'warn'))}
+      </div>`;
+    }).join('')}`;
+}
+async function loadDashboard(force=false){
+  const cfg=await loadConfig(force);
+  const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
+  const enabledLibs=allLibs.filter(lib=>lib.enabled!==false);
+  const selectedNames=new Set((cfg.schedule_libraries&&cfg.schedule_libraries.length)?cfg.schedule_libraries:enabledLibs.map(lib=>lib.name));
+  const scheduledLibs=enabledLibs.filter(lib=>selectedNames.has(lib.name)).map(lib=>lib.name);
+  _dashboardLibraries={enabled:enabledLibs.map(lib=>lib.name), scheduled:scheduledLibs};
+  const ledgers=await Promise.all(enabledLibs.map(async lib=>{
+    const {data}=await requestJson('/api/ledger?library='+encodeURIComponent(lib.name));
+    return Array.isArray(data)?data:[];
+  }));
+  const counts={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};
+  ledgers.flat().forEach(row=>{
+    const status=String(row.status||'').toUpperCase();
+    if(status in counts) counts[status]+=1;
+  });
+  const {data:historyData}=await requestJson('/api/tasks/history?limit=100');
+  const history=Array.isArray(historyData)?historyData:[];
+  renderDashboardPipelineOverview(counts);
+  renderDashboardSystemHealth(cfg, enabledLibs, scheduledLibs);
+  renderDashboardNeedsAttention(cfg, counts, enabledLibs);
+  renderDashboardRecentActivity(history);
+  renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs);
+}
 function setPendingTestBadge(elId, label='Working…'){
   const el=document.getElementById(elId);
   if(el) el.innerHTML=`<span class="test-result test-pending">${label}</span>`;
@@ -2376,6 +2687,7 @@ function showPage(name) {
   pageEl.classList.add('active');
   navEl.classList.add('active');
   if(history && history.replaceState){ history.replaceState(null,'','#'+name); }
+  if(name==='dashboard') loadDashboard();
   if(name==='database'){ loadDatabase(); setTimeout(()=>{if(!_dbColsInit){initResizableCols('#page-database table');_dbColsInit=true;}},500); }
   if(name==='tasks') loadTasksPage();
   if(name==='configuration') loadConfiguration();
@@ -2419,7 +2731,7 @@ async function updateGlobalRunStatus(){
     if(dbPill){ dbPill.classList.remove('active'); dbPill.innerHTML='<span class="run-dot"></span><span>Idle</span>'; }
     if(_wasRunning){
       _wasRunning=false;
-      loadDatabase(); loadTasksPage();
+      loadDashboard(); loadDatabase(); loadTasksPage();
     }
   }catch(e){}
 }
@@ -2596,9 +2908,9 @@ function syncMatchingModeSelect(){
   const fbLabel=document.getElementById('lbl-search-fallback');
   if(fbLabel) fbLabel.style.opacity = fuzzy ? '.45' : '1';
   if(help){
-    help.textContent = fuzzy
-      ? 'Fuzzy matching uses the query and accepts the first result. It turns off fallback search.'
-      : 'Strict matching checks that the source includes the full query. Fuzzy matching uses the query and accepts the first result.';
+    help.innerHTML = fuzzy
+      ? '<div class="field-help-line"><strong>Strict Matching</strong> checks that the source includes the full query.</div><div class="field-help-line"><strong>Fuzzy Matching</strong> uses the query and accepts the first result. It also turns off fallback search.</div>'
+      : '<div class="field-help-line"><strong>Strict Matching</strong> checks that the source includes the full query.</div><div class="field-help-line"><strong>Fuzzy Matching</strong> uses the query and accepts the first result.</div>';
   }
 }
 
@@ -2653,13 +2965,17 @@ function renderLibs(){
       </label>
       <div class="lib-meta">
         <div class="lib-top">
-          ${typeBadge}
           <input type="text" value="${lib.name||''}" placeholder="Library name (exact match in Plex)"
             oninput="_libs[${i}].name=this.value">
         </div>
-        <div class="lib-bottom">
+        <div class="lib-inline-meta">
+          ${typeBadge}
+          <span class="lib-inline-label">Media type</span>
+          <span class="lib-inline-value">${typeLabel||'Not set'}</span>
+        </div>
+        <div class="lib-bottom lib-inline-meta">
+          <span class="lib-inline-label">Enabled</span>
           ${stateBadge}
-          <span class="lib-csv">tracks_${slugify(lib.name||'')}.csv</span>
         </div>
       </div>
       <button class="btn btn-ghost btn-xs" onclick="_libs.splice(${i},1);renderLibs()" style="flex-shrink:0">✕</button>
@@ -3639,7 +3955,7 @@ let _lastRunRequest={db:null,run:null,tasks:null};
 function _dbStopPoll(){ clearInterval(_dbPollTimer); _dbPollTimer=null; }
 
 function _passLabel(pass){
-  return {1:'Scan',2:'Find Sources',3:'Download'}[pass]||'Run';
+  return {0:'Automated Schedule',1:'Scan',2:'Find Sources',3:'Download'}[pass]||'Run';
 }
 
 function _shortScopeLabel(scopeLabel=''){
@@ -3648,7 +3964,7 @@ function _shortScopeLabel(scopeLabel=''){
 }
 
 function _statusCopy(pass, scopeLabel=''){
-  const base={1:'Running pass 1/3',2:'Running pass 2/3',3:'Running pass 3/3'}[pass]||'Running';
+  const base={0:'Running automated schedule',1:'Running pass 1/3',2:'Running pass 2/3',3:'Running pass 3/3'}[pass]||'Running';
   const suffix=_shortScopeLabel(scopeLabel);
   return suffix ? `${base} · ${suffix}` : base;
 }
@@ -3680,22 +3996,20 @@ function _refreshScopedRunLabels(){
 
   const scheduledLibs=_selectedRunLibraries();
   const scheduleScope=_formatScopeLabel(scheduledLibs, 'scheduled libraries');
-  const runLabels={
-    'btn-pass1':`⟳ Run ${scheduleScope}`,
-    'btn-pass2':`⚡ Run ${scheduleScope}`,
-    'btn-pass3':`↓ Run ${scheduleScope}`
-  };
-  Object.entries(runLabels).forEach(([id,label])=>{
-    const el=document.getElementById(id);
-    if(el){
-      el.textContent=label;
-      el.title=`Run ${_passLabel(id==='btn-pass1'?1:id==='btn-pass2'?2:3)} for ${scheduleScope}`;
-    }
-  });
+  const summaryEl=document.getElementById('run-schedule-summary');
+  if(summaryEl){
+    const steps=[];
+    if(document.getElementById('sched-step1')?.checked) steps.push('Scan Libraries');
+    if(document.getElementById('sched-step2')?.checked) steps.push('Find Theme Sources');
+    if(document.getElementById('sched-step3')?.checked) steps.push('Download Themes');
+    summaryEl.textContent=`Uses ${scheduleScope} · Steps: ${steps.length?steps.join(', '):'none enabled'}`;
+  }
+  const runBtn=document.getElementById('btn-schedule-run');
+  if(runBtn) runBtn.title=`Run the configured automated schedule for ${scheduleScope}`;
 }
 
 function _setRunUiActive(pass){
-  const btns=[1,2,3].map(i=>document.getElementById('btn-pass'+i));
+  const btns=[document.getElementById('btn-schedule-run')];
   btns.forEach(b=>{ if(b) b.disabled=true; });
   const dot=document.getElementById('run-dot');
   const status=document.getElementById('run-status');
@@ -3703,8 +4017,8 @@ function _setRunUiActive(pass){
   if(status) status.textContent=_statusCopy(pass, _activeRunContext?.scopeLabel||_formatScopeLabel(_selectedRunLibraries(),'scheduled libraries'));
 }
 
-function _setRunUiIdle(text='Idle — select a step above to run manually',done=false){
-  const btns=[1,2,3].map(i=>document.getElementById('btn-pass'+i));
+function _setRunUiIdle(text='Idle — run the configured automated schedule when ready',done=false){
+  const btns=[document.getElementById('btn-schedule-run')];
   btns.forEach(b=>{ if(b) b.disabled=false; });
   const dot=document.getElementById('run-dot');
   const status=document.getElementById('run-status');
@@ -3794,7 +4108,7 @@ function _dbStartPoll(){
 async function startPipelineRun(passNum,scope='db',options={}){
   const libraries=(options.libraries||[]).map(v=>String(v||'').trim()).filter(Boolean);
   const scopeLabel=String(options.scopeLabel||'').trim() || _formatScopeLabel(libraries, scope==='db'?'selected library':'scheduled libraries');
-  _lastRunRequest[scope]={pass:passNum,libraries:[...libraries],scopeLabel};
+  _lastRunRequest[scope]={mode:'pass',pass:passNum,libraries:[...libraries],scopeLabel};
   const ctx={scope,pass:passNum,stoppedByUser:false,libraries,scopeLabel};
   _activeRunContext=ctx;
   _dbLastProgress=Date.now();
@@ -3817,16 +4131,31 @@ function dbRunPass(passNum){
   if(!_activeLib){ toast('Select a library first','info'); return; }
   return startPipelineRun(passNum,'db',{libraries:[_activeLib],scopeLabel:`library "${_activeLib}"`});
 }
-function startPass(passNum){
+async function startScheduledRun(){
   const terminal=document.getElementById('terminal');
   if(terminal) terminal.innerHTML='';
   const libraries=_selectedRunLibraries();
   if(!libraries.length){ toast('Select at least one scheduled library','err'); return; }
-  return startPipelineRun(passNum,'run',{libraries,scopeLabel:_formatScopeLabel(libraries,'scheduled libraries')});
+  const scopeLabel=_formatScopeLabel(libraries,'scheduled libraries');
+  _lastRunRequest.run={mode:'schedule',pass:0,libraries:[...libraries],scopeLabel};
+  const ctx={scope:'run',pass:0,stoppedByUser:false,libraries,scopeLabel};
+  _activeRunContext=ctx;
+  _dbLastProgress=Date.now();
+  _applyContextStart(ctx);
+  const r=await fetch('/api/run/schedule-now',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scope_label:scopeLabel})});
+  if(!r.ok){
+    const d=await r.json().catch(()=>({}));
+    _applyContextFinish(ctx,'error',d.error||'Unable to start scheduled run.');
+    _activeRunContext=null;
+    return;
+  }
+  _connectRunStream(ctx);
+  _dbStartPoll();
 }
 
 function retryRun(scope){
-  const last=_lastRunRequest[scope]||{pass:1,libraries:[],scopeLabel:''};
+  const last=_lastRunRequest[scope]||{mode:'pass',pass:1,libraries:[],scopeLabel:''};
+  if(last.mode==='schedule') return startScheduledRun();
   return startPipelineRun(last.pass||1,scope,{libraries:last.libraries||[],scopeLabel:last.scopeLabel||''});
 }
 let _mediaEvtSrc=null;
@@ -5071,6 +5400,7 @@ async function loadRunPage(){
   document.getElementById('sched-autoapprove').checked = !!cfg.auto_approve;
   document.getElementById('sched-only-golden').checked = !!cfg.search_only_golden;
   applyScheduleEnabledState();
+  _refreshScopedRunLabels();
 }
 
 function applyScheduleEnabledState(){
@@ -5079,7 +5409,7 @@ function applyScheduleEnabledState(){
   if(!wrap) return;
   wrap.classList.toggle('is-disabled', !enabled);
   wrap.querySelectorAll('input, select, textarea, button').forEach(el=>{
-    if(el.id && ['btn-pass1','btn-pass2','btn-pass3'].includes(el.id)) return;
+    if(el.id && ['btn-schedule-run'].includes(el.id)) return;
     el.disabled = !enabled;
   });
 }
@@ -5115,7 +5445,7 @@ async function saveRunSchedule(){
     cfg.search_only_golden=document.getElementById('sched-only-golden').checked;
     await postJson('/api/config',cfg);
     rememberConfigPatch(cfg);
-    toast(enabled ? 'Schedule saved' : 'Automation disabled','ok');
+    toast(enabled ? 'Scheduler saved' : 'Automation disabled','ok');
     renderRunLibs();
     applyScheduleEnabledState();
   },500);
@@ -5874,7 +6204,7 @@ try{
     setInterval(updateGlobalRunStatus, 4000);
     setInterval(removeItemDetailsPanel, 2000);
     const initial=((location.hash||'').replace(/^#/,'').trim());
-    if(['configuration','database','schedule','tasks'].includes(initial)){
+    if(['dashboard','configuration','database','schedule','tasks'].includes(initial)){
       showPage(initial);
     }
   });
@@ -5890,7 +6220,7 @@ registerModalLifecycle('theme-modal',{requestClose:closeThemeModal});
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 renderTaskCards();
-loadConfiguration();
+loadDashboard();
 bindOffsetWheel();
 </script>
 </body>

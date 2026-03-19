@@ -1067,7 +1067,7 @@ def clear_selected_sources():
     summary = _clear_source_urls_for_rows(
         rows,
         keys=keys,
-        note="Source URL cleared via Library",
+        note="Source URL cleared via Theme Manager",
         now=now,
     )
     missing_keys = sorted(set(keys) - {str(row.get("rating_key", "") or "") for row in rows})
@@ -1629,6 +1629,43 @@ def trigger_pass(pass_num):
     threading.Thread(target=_do_run, args=(pass_num, explicit_libraries, scope_label), daemon=True).start()
     return jsonify({"ok":True})
 
+@app.route("/api/run/schedule-now", methods=["POST"])
+def trigger_schedule_now():
+    global _run_active
+    data = request.get_json(silent=True) or {}
+    cfg = load_config()
+    enabled_libraries = [
+        str(lib.get("name") or "").strip()
+        for lib in cfg.get("libraries", [])
+        if str(lib.get("name") or "").strip() and lib.get("enabled", True)
+    ]
+    configured = [
+        str(name).strip()
+        for name in (cfg.get("schedule_libraries") or [])
+        if str(name).strip()
+    ]
+    explicit_libraries = [name for name in configured if name in enabled_libraries] or enabled_libraries
+    scope_label = str(data.get("scope_label") or "").strip() or (
+        explicit_libraries[0] if len(explicit_libraries) == 1
+        else f"{len(explicit_libraries)} scheduled libraries" if explicit_libraries
+        else "scheduled libraries"
+    )
+    with _run_lock:
+        if _run_active:
+            return jsonify({"error":"run in progress"}), 409
+        _run_active = True
+    threading.Thread(
+        target=_do_run,
+        kwargs={
+            "force_pass": 0,
+            "explicit_libraries": explicit_libraries,
+            "scope_label": scope_label,
+            "allow_schedule_disabled": True,
+        },
+        daemon=True,
+    ).start()
+    return jsonify({"ok":True, "libraries": explicit_libraries})
+
 @app.route("/api/run/scan", methods=["POST"])
 def trigger_scan():
     global _run_active
@@ -1657,7 +1694,7 @@ def stop_run():
         return jsonify({"ok":True})
     return jsonify({"ok":False,"error":"No run in progress"})
 
-def _do_run(force_pass=0, explicit_libraries=None, scope_label=""):
+def _do_run(force_pass=0, explicit_libraries=None, scope_label="", allow_schedule_disabled=False):
     global _run_active, _run_proc, _run_stop_requested, _run_started_at, _run_last_line, _run_pass, _run_scope_label, _run_libraries
     run_log = []; timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); run_pass = force_pass or 0
     proc = None
@@ -1677,6 +1714,10 @@ def _do_run(force_pass=0, explicit_libraries=None, scope_label=""):
         env = {**os.environ, "CONFIG_PATH": CONFIG_PATH}
         if force_pass: env["FORCE_PASS"] = str(force_pass)
         else: env.pop("FORCE_PASS", None)
+        if allow_schedule_disabled:
+            env["RUN_SCHEDULE_NOW"] = "1"
+        else:
+            env.pop("RUN_SCHEDULE_NOW", None)
         if explicit_libraries:
             env["RUN_LIBRARIES"] = json.dumps(explicit_libraries)
         else:

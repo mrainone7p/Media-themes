@@ -1102,7 +1102,7 @@ def scan_library(cfg: dict, library_name: str, log_file_path: str, force_pass: i
             f"Pass 2 complete — Staged: {stats['staged']}  "
             f"Missing: {stats['missing']}  Failed: {stats['failed']} ({time.time()-t0:.1f}s)"
         )
-        log.info("→ Review the Database tab, set STAGED rows to APPROVED, then run Download")
+        log.info("→ Review Theme Manager, set STAGED rows to APPROVED, then run Download")
         return
 
     # ── Pass 3 only ───────────────────────────────────────────────────────────
@@ -1234,7 +1234,8 @@ def main():
         log.info(f"RUN_LIBRARIES override active — limiting this run to: {explicit_run_libraries}")
 
     schedule_enabled = cfg.get("schedule_enabled", True)
-    if force_pass == 0 and not schedule_enabled:
+    manual_schedule_now = (os.environ.get("RUN_SCHEDULE_NOW", "").strip().lower() in {"1", "true", "yes", "on"})
+    if force_pass == 0 and not schedule_enabled and not manual_schedule_now:
         log.info("Automated schedule is disabled — exiting without running pipeline")
         return
 
