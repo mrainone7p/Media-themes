@@ -118,7 +118,7 @@ body.nav-collapsed main{margin-left:48px}
 .settings-section > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
 .settings-section > summary::-webkit-details-marker{display:none}
 .settings-section[open] > summary{border-bottom:1px solid var(--border)}
-.settings-section .card-body{padding:18px 20px}
+.settings-section .card-body{padding:16px 20px 18px}
 .settings-chev{font-size:12px;color:var(--text3);transition:transform .2s}
 .settings-section[open] .settings-chev{transform:rotate(180deg)}
 
@@ -169,8 +169,8 @@ body.nav-collapsed main{margin-left:48px}
 .test-pending{background:var(--blue-soft);color:var(--blue)}
 
 /* ─── Library manager ─── */
-.lib-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.lib-row{display:flex;align-items:center;gap:10px;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;transition:border-color .15s,background .15s}
+.lib-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.lib-row{display:flex;align-items:center;gap:10px;min-width:0;background:color-mix(in srgb,var(--surface2) 78%, transparent);border:1px solid color-mix(in srgb,var(--border) 82%, transparent);border-radius:10px;padding:9px 12px;transition:border-color .15s,background .15s}
 .lib-row:focus-within{border-color:var(--amber)}
 .lib-row input[type=text]{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--ui);font-size:13px;outline:none}
 .lib-csv{font-size:9px;color:var(--text3);font-family:var(--mono);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
@@ -930,6 +930,20 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .settings-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .settings-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .settings-subcard{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;min-width:0;height:100%}
+.settings-panel{background:color-mix(in srgb,var(--surface2) 72%, transparent);border:1px solid color-mix(in srgb,var(--border) 84%, transparent);border-radius:12px;padding:14px 16px;min-width:0}
+.settings-panel.flat{background:transparent;border:none;border-radius:0;padding:0}
+.settings-panel.flat + .settings-panel.flat{border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent);padding-top:14px;margin-top:2px}
+.settings-subhead{display:grid;gap:4px;margin-bottom:12px}
+.settings-row-grid{display:grid;gap:12px}
+.settings-row-grid.settings-row-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.settings-toggle-list{display:grid;gap:0}
+.settings-toggle-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:12px 0;border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent)}
+.settings-toggle-row:first-child{padding-top:0;border-top:none}
+.settings-toggle-row:last-child{padding-bottom:0}
+.settings-toggle-content{min-width:0}
+.settings-inline-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,360px);gap:18px;align-items:start}
+.settings-inline-copy{display:grid;gap:4px}
+.settings-inline-control{display:grid;gap:8px;align-items:start}
 .subcard-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
 .subcard-intro{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px}
 .accent-link{color:var(--amber);font-weight:700;text-decoration:none}
@@ -977,6 +991,25 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .dual-inline .toggle-card{height:100%}
 .label-stack{display:flex;flex-direction:column;gap:4px}
 .performance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#page-configuration .content{max-width:1120px}
+#page-configuration .section-intro{margin-bottom:14px}
+#page-configuration .settings-grid-2,
+#page-configuration .performance-grid{gap:16px}
+#page-configuration .settings-subcard{padding:0}
+#page-configuration .settings-subcard.settings-panel{padding:14px 16px}
+#page-configuration .subcard-intro:last-child{margin-bottom:0}
+#page-configuration .settings-actions{margin-top:10px}
+#page-configuration .library-actions{margin-top:10px}
+#page-configuration .inline-details{margin-top:12px;background:transparent;border-color:color-mix(in srgb,var(--border) 86%, transparent);border-radius:10px}
+#page-configuration .inline-details > summary{padding:10px 0;color:var(--text2)}
+#page-configuration .inline-details-body{padding:12px 0 0}
+#page-configuration .dur-toggle{background:var(--surface2)}
+#page-configuration .dur-opt{padding:8px 14px}
+#page-configuration .cookie-indicator{padding:4px 9px}
+#page-configuration .golden-panel{background:color-mix(in srgb, var(--amber-soft) 10%, transparent);border-color:rgba(245,166,35,.2)}
+#page-configuration .golden-panel::before{margin-bottom:8px}
+#page-configuration .settings-toggle-list-golden .settings-toggle-row{border-top-color:rgba(245,166,35,.16)}
+#page-configuration .settings-toggle-list-golden .settings-toggle-row:first-child{border-top:none}
 .schedule-step2-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
 .search-method-grid{display:grid;gap:10px}
 .search-method-group{display:grid;gap:8px}
@@ -1046,7 +1079,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .settings-section .field input[id="cfg-max_retries"],
 .settings-section .field input[id="cfg-download_delay_seconds"]{font-family:var(--mono)}
 @media (max-width: 980px){
-  .settings-grid-2,.settings-grid-3,.dual-inline,.performance-grid{grid-template-columns:1fr}
+  .settings-grid-2,.settings-grid-3,.dual-inline,.performance-grid,.settings-row-grid.settings-row-grid-2,.settings-inline-row{grid-template-columns:1fr}
   .schedule-step2-options{grid-template-columns:1fr}
   .sm-card-actions{width:100%;max-width:none}
   .search-method-card{grid-template-columns:1fr}
@@ -1310,7 +1343,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="card-body">
         <div class="section-intro">Connect <strong>Plex</strong> and <strong>TMDB</strong> to enable library discovery, metadata matching, and scans.</div>
         <div class="settings-grid-2">
-          <div class="settings-subcard">
+          <div class="settings-subcard settings-panel">
             <div class="subcard-title">Plex</div>
             <div class="subcard-intro">Used for library discovery, scan and indexing, and local media metadata such as file paths.</div>
             <div class="field-grid field-grid-2">
@@ -1334,7 +1367,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span id="plex-test-result"></span>
             </div>
           </div>
-          <div class="settings-subcard">
+          <div class="settings-subcard settings-panel">
             <div class="subcard-title">TMDB</div>
             <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and provide TMDB links.</div>
             <div class="field" style="max-width:520px">
@@ -1385,9 +1418,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </summary>
       <div class="card-body">
         <div class="section-intro">These settings control how sources are found for each <span class="status-term status-tone-MISSING">Missing</span> theme.</div>
-        <div class="settings-subcard">
-          <div class="subcard-title">Search setup</div>
-          <div class="subcard-intro">Choose how source discovery searches for and validates theme sources.</div>
+        <div class="settings-panel flat">
+          <div class="settings-subhead">
+            <div class="subcard-title">Search setup</div>
+            <div class="subcard-intro">Choose how source discovery searches for and validates theme sources.</div>
+          </div>
           <div class="field-grid field-grid-2">
             <div class="field">
               <label>Primary Search Mode</label>
@@ -1413,25 +1448,27 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </div>
           </div>
         </div>
-        <div class="toggle-grid" style="margin-top:14px">
-          <div class="toggle-card">
+        <div class="settings-panel flat">
+          <div class="settings-toggle-list">
+            <div class="settings-toggle-row">
             <label class="toggle">
               <input type="checkbox" id="cfg-search_fallback" checked onchange="syncMatchingModeSelect()">
               <span class="toggle-track"></span>
             </label>
-            <div>
+            <div class="settings-toggle-content">
               <label class="toggle-title" id="lbl-search-fallback" style="cursor:pointer" onclick="document.getElementById('cfg-search_fallback').click()">Fallback Search</label>
               <div class="toggle-note">If the primary search mode finds no valid strict match, try the other mode once.</div>
             </div>
-          </div>
-          <div class="toggle-card">
+            </div>
+            <div class="settings-toggle-row">
             <label class="toggle">
               <input type="checkbox" id="cfg-auto_approve_manual">
               <span class="toggle-track"></span>
             </label>
-            <div>
+            <div class="settings-toggle-content">
               <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
               <div class="toggle-note">Manual search selections skip <span class="status-term status-tone-STAGED">Staged</span> and go straight to <span class="status-term status-tone-APPROVED">Approved</span>.</div>
+            </div>
             </div>
           </div>
         </div>
@@ -1466,7 +1503,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="card-body">
         <div class="section-intro">A curated list of trusted theme matches. It can speed up matching and improve result quality for supported titles, though some gaps may remain depending on your library.</div>
         <div class="field-grid field-grid-2">
-          <div class="settings-subcard golden-panel">
+          <div class="settings-subcard settings-panel golden-panel">
             <div class="subcard-title">Golden Source</div>
             <div class="subcard-intro">Point to a trusted source CSV, then test it before using it for source matching.</div>
             <div class="field">
@@ -1479,27 +1516,29 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span id="golden-test-result"></span>
             </div>
           </div>
-          <div class="settings-subcard golden-emphasis golden-panel">
+          <div class="settings-subcard settings-panel golden-emphasis golden-panel">
             <div class="subcard-title">Golden Source mode</div>
             <div class="subcard-intro">Use only the curated list when you want quality themes with faster, more controlled matching however coverage may be limited.</div>
-            <div class="toggle-card golden toggle-compact" style="margin-top:8px">
+            <div class="settings-toggle-list settings-toggle-list-golden">
+              <div class="settings-toggle-row golden-row">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-search_only_golden">
                 <span class="toggle-track"></span>
               </label>
-              <div>
+              <div class="settings-toggle-content">
                 <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
                 <div class="toggle-note golden">Disables YouTube source discovery and only matches against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
               </div>
-            </div>
-            <div class="toggle-card golden toggle-compact" style="margin-top:10px">
+              </div>
+              <div class="settings-toggle-row golden-row">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-refresh_golden_source_each_run">
                 <span class="toggle-track"></span>
               </label>
-              <div>
+              <div class="settings-toggle-content">
                 <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
                 <div class="toggle-note golden">Refreshes the Golden Source list before each source-matching run.</div>
+              </div>
               </div>
             </div>
           </div>
@@ -1517,49 +1556,71 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </summary>
       <div class="card-body">
         <div class="section-intro">These settings control what gets downloaded and how source matching behaves.</div>
-        <div class="settings-subcard compact" style="margin-bottom:16px">
-          <div class="subcard-title">Theme filename &amp; length</div>
-          <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is, while longer downloads are trimmed.</div>
-          <div class="field" style="margin-bottom:10px">
-            <label>Theme Filename</label>
-            <input id="cfg-theme_filename" placeholder="theme.mp3">
+        <div class="settings-panel flat">
+          <div class="settings-subhead">
+            <div class="subcard-title">Theme filename &amp; length</div>
+            <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is, while longer downloads are trimmed.</div>
           </div>
-          <div class="modal-field-row">
-            <div class="dur-toggle" id="dur-toggle">
-              <div class="dur-opt" data-val="30" onclick="setDuration(30)">30s</div>
-              <div class="dur-opt" data-val="45" onclick="setDuration(45)">45s</div>
-              <div class="dur-opt" data-val="60" onclick="setDuration(60)">60s</div>
-              <div class="dur-opt" data-val="0" onclick="setDuration(0)">No limit</div>
+          <div class="settings-row-grid settings-row-grid-2">
+            <div class="field">
+              <label>Theme Filename</label>
+              <input id="cfg-theme_filename" placeholder="theme.mp3">
             </div>
-            <div class="inline-wrap tight">
-              <input type="number" id="cfg-custom-dur" min="1" max="600" placeholder="Custom" style="width:98px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" onchange="setDuration(parseInt(this.value)||0)">
-              <span class="control-note">seconds</span>
+            <div class="field">
+              <label>Maximum Theme Length</label>
+              <div class="settings-inline-control">
+                <div class="dur-toggle" id="dur-toggle">
+                  <div class="dur-opt" data-val="30" onclick="setDuration(30)">30s</div>
+                  <div class="dur-opt" data-val="45" onclick="setDuration(45)">45s</div>
+                  <div class="dur-opt" data-val="60" onclick="setDuration(60)">60s</div>
+                  <div class="dur-opt" data-val="0" onclick="setDuration(0)">No limit</div>
+                </div>
+                <div class="inline-wrap tight">
+                  <input type="number" id="cfg-custom-dur" min="1" max="600" placeholder="Custom" style="width:98px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" onchange="setDuration(parseInt(this.value)||0)">
+                  <span class="control-note">seconds</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="settings-subcard compact" style="margin-bottom:16px">
-          <div class="subcard-title">Cookies</div>
-          <div class="subcard-intro">Optional yt-dlp helper for improved reliability and performance when YouTube is harder to fetch.</div>
-          <div class="field">
-            <label>Cookies File</label>
-            <select id="cfg-cookies_file" onchange="updateCookieIndicator()">
-              <option value="">No cookies file</option>
-            </select>
-          </div>
-          <div class="settings-actions">
-            <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
-          </div>
-        </div>
-        <div class="settings-subcard compact" style="margin-bottom:16px">
-          <div class="subcard-title"><span class="status-term status-tone-MISSING">Missing</span> titles per run</div>
-          <div class="subcard-intro">Control how many <span class="status-term status-tone-MISSING">Missing</span> items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
-          <div class="field">
-            <label><span class="status-term status-tone-MISSING">Missing</span> Titles Per Run</label>
-            <input type="number" id="cfg-test_limit" min="0">
-            <div class="field-help compact">Recommended for testing, or for gradually processing larger libraries over time.</div>
+        <div class="settings-panel flat">
+          <div class="settings-inline-row">
+            <div class="settings-inline-copy">
+              <div class="subcard-title">Cookies</div>
+              <div class="subcard-intro">Optional yt-dlp helper for improved reliability and performance when YouTube is harder to fetch.</div>
+            </div>
+            <div class="settings-inline-control">
+              <div class="field" style="width:100%">
+                <label>Cookies File</label>
+                <select id="cfg-cookies_file" onchange="updateCookieIndicator()">
+                  <option value="">No cookies file</option>
+                </select>
+              </div>
+              <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
+            </div>
           </div>
         </div>
-        <div class="performance-grid" style="margin-bottom:16px">
+        <div class="settings-panel flat">
+          <div class="settings-inline-row">
+            <div class="settings-inline-copy">
+              <div class="subcard-title"><span class="status-term status-tone-MISSING">Missing</span> titles per run</div>
+              <div class="subcard-intro">Control how many <span class="status-term status-tone-MISSING">Missing</span> items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
+            </div>
+            <div class="settings-inline-control">
+              <div class="field" style="width:100%">
+                <label><span class="status-term status-tone-MISSING">Missing</span> Titles Per Run</label>
+                <input type="number" id="cfg-test_limit" min="0">
+                <div class="field-help compact">Recommended for testing, or for gradually processing larger libraries over time.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="settings-panel flat">
+          <div class="settings-subhead">
+            <div class="subcard-title">Performance</div>
+            <div class="subcard-intro">Fine-tune output quality, retry behavior, and download pacing.</div>
+          </div>
+          <div class="performance-grid">
           <div class="field">
             <label>Audio Format</label>
             <select id="cfg-audio_format">
@@ -1586,6 +1647,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <label>Delay Between Downloads (s)</label>
             <input type="number" id="cfg-download_delay_seconds" step="0.5" min="0">
             <div class="field-help compact">Pause between downloads to reduce API bursts, CPU spikes, and overlapping ffmpeg work.</div>
+          </div>
           </div>
         </div>
       </div>
