@@ -14,9 +14,15 @@ import shutil
 import subprocess
 import time
 import urllib.parse
+import sys
 from pathlib import Path
 
 import requests as http_requests
+
+WEB_DIR = Path(__file__).resolve().parent
+SHARED_DIR = WEB_DIR.parent / "shared"
+if str(SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(SHARED_DIR))
 
 from storage import TMDB_GUID_RE as _TMDB_GUID_RE
 

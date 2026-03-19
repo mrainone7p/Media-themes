@@ -8,6 +8,11 @@ import subprocess
 import sys
 from pathlib import Path
 
+WEB_DIR = Path(__file__).resolve().parent
+SHARED_DIR = WEB_DIR.parent / "shared"
+if str(SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(SHARED_DIR))
+
 from flask import Flask, Response, abort, jsonify, request, send_file, stream_with_context
 
 import integrations
