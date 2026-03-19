@@ -1248,7 +1248,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
 <div class="page" id="page-schedule">
-  <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Schedule</div><div class="page-desc" data-ui="pages.schedule.description">Set the automated schedule, choose which pipeline steps run automatically, and launch manual runs for the selected libraries.</div></div></div>
+  <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Schedule</div><div class="page-desc" data-ui="pages.schedule.description">Set the automated schedule, choose which pipeline steps run automatically, and decide which libraries scheduled runs should process.</div></div></div>
   <div class="page-body"><div class="content">
 
     <div class="run-bar" style="margin-bottom:14px">
@@ -1259,7 +1259,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="schedule-master">
       <div class="schedule-master-copy">
         <div class="schedule-master-title" data-ui="schedule.master.title">Automated Schedule</div>
-        <div class="schedule-master-desc" data-ui="schedule.master.description">Turn scheduled runs on or off. Manual Run Now actions still work even when the automated schedule is disabled.</div>
+        <div class="schedule-master-desc" data-ui="schedule.master.description">Turn scheduled runs on or off. Manual Run Now actions still work even when the automated schedule is disabled, and one-off library overrides can be launched from the Tasks page.</div>
       </div>
       <label class="toggle" style="margin-top:2px">
         <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
@@ -1282,7 +1282,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Libraries Included</label>
           <div id="run-lib-toggles" class="run-lib-grid"></div>
-          <div class="field-hint" style="margin-top:8px">Only libraries enabled on the Configuration page are available here.</div>
+          <div class="field-hint" style="margin-top:8px">Only libraries enabled on the Configuration page are available here. This saved list is used by automated schedule runs and the Schedule page's Run Now buttons.</div>
         </div>
       </div>
 
@@ -1397,7 +1397,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   <div class="page-body"><div class="content">
     <div class="card">
       <div class="card-title">Run Pipeline Tasks</div>
-      <div class="task-desc" style="margin-bottom:10px">Select one or more libraries for pipeline runs.</div>
+      <div class="task-desc" style="margin-bottom:10px">Select one or more libraries for a one-time manual run. This temporary scope does not change the scheduled library list above.</div>
       <div class="task-row" style="margin-bottom:8px">
         <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(true)">Select all</button>
         <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(false)">Clear</button>
@@ -3510,13 +3510,18 @@ function _dbStartPoll(){
   }, 2000);
 }
 
-async function startPipelineRun(passNum,scope='db'){
+async function startPipelineRun(passNum,scope='db',payload={}){
   _lastRunRequest[scope]=passNum;
   const ctx={scope,pass:passNum,stoppedByUser:false};
   _activeRunContext=ctx;
   _dbLastProgress=Date.now();
   _applyContextStart(ctx);
-  const r=await fetch('/api/run/pass/'+passNum,{method:'POST'});
+  const requestInit={method:'POST'};
+  if(payload && Object.keys(payload).length){
+    requestInit.headers={'Content-Type':'application/json'};
+    requestInit.body=JSON.stringify(payload);
+  }
+  const r=await fetch('/api/run/pass/'+passNum,requestInit);
   if(!r.ok){
     const d=await r.json().catch(()=>({}));
     _applyContextFinish(ctx,'error',d.error||'Unable to start run.');
@@ -4996,11 +5001,8 @@ function taskSelectAllLibs(v){
 async function taskRunPass(passNum){
   const libs=[..._taskLibSelection];
   if(!libs.length) return toast('Select at least one library','err');
-  const cfg=await (await fetch('/api/config')).json();
-  cfg.schedule_libraries=libs;
-  await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
   _activeLib=libs[0];
-  await startPipelineRun(passNum,'tasks');
+  await startPipelineRun(passNum,'tasks',{libraries:libs});
   setTimeout(loadTasksPage,1200);
 }
 async function runTaskAction({

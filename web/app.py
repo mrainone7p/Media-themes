@@ -1330,13 +1330,35 @@ def proxy_preview(key):
     except Exception as e:
         return jsonify({"error":str(e)[:150]}), 500
 
+def _normalize_run_library_scope(payload):
+    if not isinstance(payload, dict):
+        return []
+    raw = payload.get("libraries")
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list):
+        return []
+    seen = set()
+    libraries = []
+    for item in raw:
+        name = str(item or "").strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        libraries.append(name)
+    return libraries
+
+
 @app.route("/api/run/pass/<int:pass_num>", methods=["POST"])
 def trigger_pass(pass_num):
     global _run_active
     with _run_lock:
         if _run_active: return jsonify({"error":"run in progress"}), 409
         _run_active = True
-    threading.Thread(target=_do_run, args=(pass_num,), daemon=True).start()
+    libraries = _normalize_run_library_scope(request.get_json(silent=True) or {})
+    threading.Thread(target=_do_run, args=(pass_num, libraries), daemon=True).start()
     return jsonify({"ok":True})
 
 @app.route("/api/run/scan", methods=["POST"])
@@ -1345,7 +1367,8 @@ def trigger_scan():
     with _run_lock:
         if _run_active: return jsonify({"error":"run in progress"}), 409
         _run_active = True
-    threading.Thread(target=_do_run, args=(1,), daemon=True).start()
+    libraries = _normalize_run_library_scope(request.get_json(silent=True) or {})
+    threading.Thread(target=_do_run, args=(1, libraries), daemon=True).start()
     return jsonify({"ok":True})
 
 @app.route("/api/run/stop", methods=["POST"])
@@ -1358,7 +1381,7 @@ def stop_run():
         return jsonify({"ok":True})
     return jsonify({"ok":False,"error":"No run in progress"})
 
-def _do_run(force_pass=0):
+def _do_run(force_pass=0, libraries=None):
     global _run_active, _run_proc, _run_stop_requested, _run_started_at, _run_last_line, _run_pass
     run_log = []; timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); run_pass = force_pass or 0
     proc = None
@@ -1370,6 +1393,10 @@ def _do_run(force_pass=0):
         env = {**os.environ, "CONFIG_PATH": CONFIG_PATH}
         if force_pass: env["FORCE_PASS"] = str(force_pass)
         else: env.pop("FORCE_PASS", None)
+        if libraries:
+            env["RUN_LIBRARIES"] = json.dumps(libraries)
+        else:
+            env.pop("RUN_LIBRARIES", None)
         proc = subprocess.Popen([sys.executable, SCRIPT_PATH],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
         _run_proc = proc

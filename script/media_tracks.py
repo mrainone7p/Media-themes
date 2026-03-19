@@ -1057,11 +1057,23 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
 # ─── Library helpers ──────────────────────────────────────────────────────────
 
 def get_libraries(cfg: dict) -> list:
-    """Return libraries selected for scheduled/manual batch runs."""
+    """Return libraries selected for the current run scope."""
     libs = cfg.get("libraries")
+    runtime_scope = []
+    raw_scope = os.environ.get("RUN_LIBRARIES", "").strip()
+    if raw_scope:
+        try:
+            parsed_scope = json.loads(raw_scope)
+            if isinstance(parsed_scope, str):
+                parsed_scope = [parsed_scope]
+            if isinstance(parsed_scope, list):
+                runtime_scope = [str(name or "").strip() for name in parsed_scope if str(name or "").strip()]
+        except json.JSONDecodeError:
+            runtime_scope = [part.strip() for part in raw_scope.split(",") if part.strip()]
+
     if libs and isinstance(libs, list):
-        available      = [l for l in libs if l.get("enabled", True)]
-        selected_names = set(cfg.get("schedule_libraries") or [])
+        available = [l for l in libs if l.get("enabled", True)]
+        selected_names = set(runtime_scope or (cfg.get("schedule_libraries") or []))
         if selected_names:
             chosen = [l for l in available if l.get("name") in selected_names]
             if chosen:
