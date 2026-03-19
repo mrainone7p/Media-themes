@@ -155,6 +155,13 @@ body.nav-collapsed main{margin-left:48px}
 .btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
 .btn:focus-visible,.field input:focus-visible,.field select:focus-visible,.search:focus-visible,.filter-sel:focus-visible,.st-sel:focus-visible,.inline-ed:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22)}
 
+/* ─── Dashboard lib tabs / processing history ─── */
+.dash-lib-tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.dash-lib-tab{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;white-space:nowrap;font-family:var(--ui)}
+.dash-lib-tab:hover{border-color:var(--text3);color:var(--text)}
+.dash-lib-tab.active{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.dash-chart-svg{overflow:visible}
+
 /* ─── Test badges ─── */
 .test-result{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:5px;font-size:12px;font-weight:600;font-family:var(--mono);margin-left:8px}
 .test-ok{background:var(--green-soft);color:var(--green)}
@@ -1073,65 +1080,72 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   </div>
   <div class="page-body"><div class="content">
 
-    <!-- Row 1: How the Pipeline Works + Status Key -->
-    <div class="dashboard-grid" style="margin-bottom:16px">
-      <div class="card dashboard-card span-7">
-        <div class="card-title">How the Pipeline Works</div>
-        <div class="dash-pipeline-steps">
-          <div class="dash-pipeline-step">
-            <div class="dash-pipeline-step-num" style="color:var(--blue)">Step 1</div>
-            <div>
-              <div style="font-size:12px;font-weight:700;margin-bottom:2px">⟳ Scan Libraries</div>
-              <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <span style="color:var(--red)">Missing</span> or <span style="color:var(--green)">Available</span>.</div>
+    <!-- Row 1: How the Pipeline Works + Status Key (collapsible, state saved in localStorage) -->
+    <details id="dash-pipeline-help" class="card dashboard-card" style="margin-bottom:16px" ontoggle="_savePipelineHelpState(this.open)">
+      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;padding:0;margin-bottom:0">
+        <div class="card-title" style="margin-bottom:0">How the Pipeline Works &amp; Status Key</div>
+        <span class="settings-chev" id="dash-pipeline-help-chev">∧</span>
+      </summary>
+      <div style="margin-top:14px">
+        <div class="dashboard-grid">
+          <div class="span-7">
+            <div class="card-title" style="margin-bottom:10px">How the Pipeline Works</div>
+            <div class="dash-pipeline-steps">
+              <div class="dash-pipeline-step">
+                <div class="dash-pipeline-step-num" style="color:var(--blue)">Step 1</div>
+                <div>
+                  <div style="font-size:12px;font-weight:700;margin-bottom:2px">⟳ Scan Libraries</div>
+                  <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <strong style="color:var(--red)">Missing</strong> or <strong style="color:var(--green)">Available</strong>.</div>
+                </div>
+              </div>
+              <div class="dash-pipeline-step">
+                <div class="dash-pipeline-step-num" style="color:var(--purple)">Step 2</div>
+                <div>
+                  <div style="font-size:12px;font-weight:700;margin-bottom:2px">⚡ Find Sources</div>
+                  <div class="dash-pipeline-step-desc">Searches for sources for <strong style="color:var(--red)">Missing</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong style="color:var(--purple)">Staged</strong> for manual review and <strong style="color:var(--yellow)">Approval</strong>.</div>
+                </div>
+              </div>
+              <div class="dash-pipeline-step">
+                <div class="dash-pipeline-step-num" style="color:var(--green)">Step 3</div>
+                <div>
+                  <div style="font-size:12px;font-weight:700;margin-bottom:2px">↓ Download Approved</div>
+                  <div class="dash-pipeline-step-desc">Downloads theme files for <strong style="color:var(--yellow)">Approved</strong> items using yt-dlp and ffmpeg, then marks them <strong style="color:var(--green)">Available</strong>.</div>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="dash-pipeline-step">
-            <div class="dash-pipeline-step-num" style="color:var(--purple)">Step 2</div>
-            <div>
-              <div style="font-size:12px;font-weight:700;margin-bottom:2px">⚡ Find Sources</div>
-              <div class="dash-pipeline-step-desc">Searches for sources for <span style="color:var(--red)">Missing</span> items via TMDB, YouTube, or Golden Source. Matches move to <span style="color:var(--purple)">Staged</span> for manual review and Approval.</div>
-            </div>
-          </div>
-          <div class="dash-pipeline-step">
-            <div class="dash-pipeline-step-num" style="color:var(--green)">Step 3</div>
-            <div>
-              <div style="font-size:12px;font-weight:700;margin-bottom:2px">↓ Download Approved</div>
-              <div class="dash-pipeline-step-desc">Downloads theme files for <span style="color:var(--yellow)">Approved</span> items using yt-dlp and ffmpeg, then marks them <span style="color:var(--green)">Available</span>.</div>
+          <div class="span-5">
+            <div class="card-title" style="margin-bottom:10px">Status Key</div>
+            <div class="dash-status-key">
+              <div class="dash-status-key-row">
+                <span class="badge s-MISSING"><span class="si"></span>Missing</span>
+                <span class="dash-status-key-def">No local theme file found; needs source discovery</span>
+              </div>
+              <div class="dash-status-key-row">
+                <span class="badge s-STAGED"><span class="si"></span>Staged</span>
+                <span class="dash-status-key-def">Source match found, awaiting review or action</span>
+              </div>
+              <div class="dash-status-key-row">
+                <span class="badge s-APPROVED"><span class="si"></span>Approved</span>
+                <span class="dash-status-key-def">Approved and ready to download</span>
+              </div>
+              <div class="dash-status-key-row">
+                <span class="badge s-AVAILABLE"><span class="si"></span>Available</span>
+                <span class="dash-status-key-def">Local theme file already exists</span>
+              </div>
+              <div class="dash-status-key-row">
+                <span class="badge s-FAILED"><span class="si"></span>Failed</span>
+                <span class="dash-status-key-def">Something went wrong; needs manual review</span>
+              </div>
+              <div class="dash-status-key-row">
+                <span class="badge s-UNMONITORED"><span class="si"></span>Unmonitored</span>
+                <span class="dash-status-key-def">Excluded from automated processing</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="card dashboard-card span-5">
-        <div class="card-title">Status Key</div>
-        <div class="dash-status-key">
-          <div class="dash-status-key-row">
-            <span class="badge s-MISSING"><span class="si"></span>Missing</span>
-            <span class="dash-status-key-def">No local theme file found; needs source discovery</span>
-          </div>
-
-          <div class="dash-status-key-row">
-            <span class="badge s-STAGED"><span class="si"></span>Staged</span>
-            <span class="dash-status-key-def">Source match found, awaiting review or action</span>
-          </div>
-          <div class="dash-status-key-row">
-            <span class="badge s-APPROVED"><span class="si"></span>Approved</span>
-            <span class="dash-status-key-def">Approved and ready to download</span>
-          </div>
-          <div class="dash-status-key-row">
-            <span class="badge s-AVAILABLE"><span class="si"></span>Available</span>
-            <span class="dash-status-key-def">Local theme file already exists</span>
-          </div>
-          <div class="dash-status-key-row">
-            <span class="badge s-FAILED"><span class="si"></span>Failed</span>
-            <span class="dash-status-key-def">Something went wrong; needs manual review</span>
-          </div>
-          <div class="dash-status-key-row">
-            <span class="badge s-UNMONITORED"><span class="si"></span>Unmonitored</span>
-            <span class="dash-status-key-def">Excluded from automated processing</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    </details>
 
     <!-- Row 2: KPI Cards -->
     <div class="card dashboard-card" style="margin-bottom:16px">
@@ -1165,14 +1179,36 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div id="dashboard-recent-activity"></div>
     </div>
 
-    <!-- Row 6: Libraries -->
+    <!-- Row 6: Library Overview + Processing History -->
     <div class="card dashboard-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="card-title" style="margin-bottom:0">Libraries</div>
-        <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage Libraries</button>
+      <!-- Header row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">Library Overview</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
+          <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
+        </div>
       </div>
-      <div class="dash-schedule-row" id="dash-library-summary" style="margin-bottom:8px"></div>
-      <div id="dashboard-library-overview"></div>
+      <!-- Per-library KPI stats -->
+      <div id="dash-lib-kpi" class="dashboard-stat-grid" style="margin-bottom:18px"></div>
+      <!-- Processing History -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Processing History</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
+            <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">Group
+              <select id="dash-hist-group" onchange="renderProcessingHistory()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:3px 7px;outline:none;cursor:pointer">
+                <option value="day">Day</option><option value="week">Week</option><option value="month" selected>Month</option><option value="year">Year</option>
+              </select>
+            </label>
+            <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">Show last
+              <input id="dash-hist-count" type="number" value="12" min="1" max="60" onchange="renderProcessingHistory()" style="width:50px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:3px 6px;outline:none;font-family:var(--mono);text-align:center">
+            </label>
+          </div>
+        </div>
+        <div id="dash-processing-chart" style="min-height:140px"></div>
+      </div>
     </div>
 
   </div></div>
@@ -1622,16 +1658,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
 
       <div class="card">
-        <div class="field" style="max-width:340px">
-          <label>Cron Schedule</label>
-          <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
-          <div class="field-hint">Defines when the automated pipeline runs.</div>
-        </div>
-        <div id="sched-cron-next" style="margin-top:14px;display:none">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Next Scheduled Run</div>
-          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-            <span id="sched-cron-next-abs" style="font-size:13px;color:var(--text2);font-family:var(--mono)"></span>
-            <span id="sched-cron-countdown" style="font-size:13px;font-weight:700;color:var(--amber);font-family:var(--mono)"></span>
+        <div style="display:flex;align-items:flex-start;gap:28px;flex-wrap:wrap">
+          <div class="field" style="min-width:180px">
+            <label>Cron Schedule</label>
+            <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
+            <div class="field-hint">Defines when the automated pipeline runs.</div>
+          </div>
+          <div id="sched-cron-next" style="display:none;flex:1;min-width:200px;padding-top:20px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Next Scheduled Run</div>
+            <div id="sched-cron-next-abs" style="font-size:13px;color:var(--text2);font-family:var(--mono);margin-bottom:3px"></div>
+            <div id="sched-cron-countdown" style="font-size:16px;font-weight:700;color:var(--amber);font-family:var(--mono)"></div>
           </div>
         </div>
       </div>
@@ -1667,7 +1703,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span class="pipeline-step-index scan">Step 1</span>
               <span class="pipeline-step-title">Scan Libraries</span>
             </div>
-            <div class="status-copy body-copy" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked <span style="color:var(--red)">Missing</span>. Items with a theme are marked <span style="color:var(--green)">Available</span>. Uses Plex only. Fast.</div>
+            <div class="status-copy body-copy" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked <strong style="color:var(--red)">Missing</strong>. Items with a theme are marked <strong style="color:var(--green)">Available</strong>. Uses Plex only. Fast.</div>
           </div>
         </div>
 
@@ -1682,7 +1718,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span class="pipeline-step-index find">Step 2</span>
               <span class="pipeline-step-title">Find Theme Sources</span>
             </div>
-            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <span style="color:var(--red)">Missing</span> item using the configured search logic. When a source is found, the item moves to <span style="color:var(--purple)">Staged</span> for manual review and Approval. Items marked <span style="color:var(--text3)">Unmonitored</span> or <span style="color:var(--red)">Failed</span> are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
+            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <strong style="color:var(--red)">Missing</strong> item using the configured search logic. When a source is found, the item moves to <strong style="color:var(--purple)">Staged</strong> for manual review and <strong style="color:var(--yellow)">Approval</strong>. Items marked <strong style="color:var(--text3)">Unmonitored</strong> or <strong style="color:var(--red)">Failed</strong> are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
             <div class="schedule-step2-options">
               <div class="pipeline-step-option golden">
                 <label class="toggle" style="transform:scale(.85)">
@@ -1697,7 +1733,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <div class="pipeline-step-option">
                 <div>
                   <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step2.limit.title">Missing Titles Per Run</span>
-                  <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many <span style="color:var(--red)">Missing</span> items are processed per run. 0 = unlimited.</div>
+                  <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many <strong style="color:var(--red)">Missing</strong> items are processed per run. 0 = unlimited.</div>
                 </div>
                 <input id="run-schedule-limit" class="pipeline-step-input" type="number" min="0" onblur="saveRunSchedule()">
               </div>
@@ -1716,7 +1752,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span class="pipeline-step-index download">Step 3</span>
               <span class="pipeline-step-title">Download Themes</span>
             </div>
-            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each <span style="color:var(--yellow)">Approved</span> item, saves the theme file into the media folder, and moves the item to <span style="color:var(--green)">Available</span>. Items marked <span style="color:var(--text3)">Unmonitored</span> or <span style="color:var(--red)">Failed</span> are ignored. Uses yt-dlp and ffmpeg.</div>
+            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each <strong style="color:var(--yellow)">Approved</strong> item, saves the theme file into the media folder, and moves the item to <strong style="color:var(--green)">Available</strong>. Items marked <strong style="color:var(--text3)">Unmonitored</strong> or <strong style="color:var(--red)">Failed</strong> are ignored. Uses yt-dlp and ffmpeg.</div>
             <div class="pipeline-step-option">
               <label class="toggle" style="transform:scale(.85)">
                 <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
@@ -1724,7 +1760,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </label>
               <div>
                 <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve STAGED Items</span>
-                <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move <span style="color:var(--purple)">Staged</span> items to <span style="color:var(--yellow)">Approved</span> before downloading for a fully hands-off pipeline.</div>
+                <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move <strong style="color:var(--purple)">Staged</strong> items to <strong style="color:var(--yellow)">Approved</strong> before downloading for a fully hands-off pipeline.</div>
               </div>
             </div>
           </div>
@@ -2715,7 +2751,7 @@ function _tickCountdowns(){
   if(dashRel) dashRel.textContent=label;
   // Scheduler cron countdown
   const schedCd=document.getElementById('sched-cron-countdown');
-  if(schedCd) schedCd.textContent='— '+label;
+  if(schedCd) schedCd.textContent=label;
   const schedAbs=document.getElementById('sched-cron-next-abs');
   if(schedAbs) schedAbs.textContent=absStr;
   const schedWrap=document.getElementById('sched-cron-next');
@@ -2939,6 +2975,164 @@ function renderDashboardRecentActivity(entries){
     </div>`;
   }).join('')+`</div>`;
 }
+// ── Dashboard library section + processing history ────────────────────────────
+let _dashLedgerByLib={};
+let _dashLedgerAll=[];
+let _dashSelectedLib='all';
+let _dashHistStatusFilter='all';
+
+function _getHistRows(){return _dashSelectedLib==='all'?_dashLedgerAll:(_dashLedgerByLib[_dashSelectedLib]||[]);}
+
+function _savePipelineHelpState(open){try{localStorage.setItem('mt-pipeline-help-open',open?'1':'0');}catch(e){}}
+function _restorePipelineHelpState(){
+  const el=document.getElementById('dash-pipeline-help');
+  if(!el) return;
+  try{const saved=localStorage.getItem('mt-pipeline-help-open'); el.open=saved===null?true:saved==='1';}
+  catch(e){el.open=true;}
+}
+
+function renderDashLibTabs(enabledLibs){
+  const el=document.getElementById('dash-lib-tabs');
+  if(!el) return;
+  const tabs=[{name:'all',label:'All'},...(enabledLibs||[]).map(l=>({name:l.name||l,label:l.name||l}))];
+  el.innerHTML=tabs.map(t=>`<button class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
+}
+
+function renderHistStatusFilters(){
+  const el=document.getElementById('dash-hist-status-filters');
+  if(!el) return;
+  const filters=[
+    {k:'all',label:'All',c:'var(--text2)'},
+    {k:'AVAILABLE',label:'Available',c:'var(--green)'},
+    {k:'MISSING',label:'Missing',c:'var(--red)'},
+    {k:'STAGED',label:'Staged',c:'var(--purple)'},
+    {k:'APPROVED',label:'Approved',c:'var(--yellow)'},
+    {k:'FAILED',label:'Failed',c:'var(--red)'},
+  ];
+  el.innerHTML=filters.map(f=>{
+    const active=f.k===_dashHistStatusFilter;
+    return `<button class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter(${JSON.stringify(f.k)})">${f.label}</button>`;
+  }).join('');
+}
+
+function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();renderProcessingHistory();}
+
+function switchDashLib(name){
+  _dashSelectedLib=name;
+  renderDashLibTabs(Object.keys(_dashLedgerByLib).map(n=>({name:n})));
+  renderDashLibKpi();
+  renderProcessingHistory();
+}
+
+function renderDashLibKpi(){
+  const el=document.getElementById('dash-lib-kpi');
+  if(!el) return;
+  const rows=_getHistRows();
+  const counts={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};
+  rows.forEach(row=>{const st=String(row.status||'').toUpperCase();if(st in counts) counts[st]++;});
+  const items=[
+    {label:'Missing',sub:'Needs source',status:'MISSING',value:counts.MISSING,color:'var(--red)'},
+    {label:'Staged',sub:'Review queue',status:'STAGED',value:counts.STAGED,color:'var(--purple)'},
+    {label:'Approved',sub:'Ready to download',status:'APPROVED',value:counts.APPROVED,color:'var(--yellow)'},
+    {label:'Available',sub:'Already local',status:'AVAILABLE',value:counts.AVAILABLE,color:'var(--green)'},
+    {label:'Failed',sub:'Needs review',status:'FAILED',value:counts.FAILED,color:'var(--red)'},
+  ];
+  el.innerHTML=items.map(item=>`
+    <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
+      <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
+      <span class="dashboard-stat-label">${item.label}</span>
+      <span class="dashboard-stat-sub">${item.sub}</span>
+    </button>`).join('');
+}
+
+function _periodKey(isoStr, group){
+  if(!isoStr) return null;
+  const dt=new Date(String(isoStr).replace(' ','T'));
+  if(isNaN(dt)) return null;
+  if(group==='day') return dt.toISOString().slice(0,10);
+  if(group==='week'){const d=new Date(dt);d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return d.toISOString().slice(0,10);}
+  if(group==='year') return String(dt.getFullYear());
+  return dt.toISOString().slice(0,7);
+}
+function _periodLabel(key, group){
+  if(!key) return '';
+  if(group==='year') return key;
+  if(group==='month'){const [y,m]=key.split('-');return new Date(+y,+m-1,1).toLocaleString([],{month:'short',year:'2-digit'});}
+  try{return new Date(key+'T00:00:00').toLocaleString([],{month:'short',day:'numeric'});}catch(e){return key;}
+}
+
+function renderProcessingHistory(){
+  const group=document.getElementById('dash-hist-group')?.value||'month';
+  const showN=Math.max(1,parseInt(document.getElementById('dash-hist-count')?.value||'12',10)||12);
+  const rows=_getHistRows();
+  const el=document.getElementById('dash-processing-chart');
+  if(!el) return;
+
+  // Build period buckets from last_updated
+  const STATUSES=['AVAILABLE','APPROVED','STAGED','MISSING','FAILED'];
+  const COLORS={MISSING:'#f26d78',STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252'};
+  const buckets={};
+  rows.forEach(row=>{
+    const key=_periodKey(row.last_updated||'', group);
+    if(!key) return;
+    if(!buckets[key]){buckets[key]={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};}
+    const st=String(row.status||'').toUpperCase();
+    if(st in buckets[key]) buckets[key][st]++;
+  });
+
+  const keys=Object.keys(buckets).sort();
+  const shown=keys.slice(-showN);
+  const displaySt=_dashHistStatusFilter==='all'?STATUSES:[_dashHistStatusFilter.toUpperCase()];
+
+  if(!shown.length){
+    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;font-family:var(--mono)">No history data yet — items will appear here once processed</div>';
+    return;
+  }
+
+  const maxVal=Math.max(1,...shown.map(k=>displaySt.reduce((s,st)=>s+(buckets[k]?.[st]||0),0)));
+  const chartH=140;
+  const labelH=22;
+  const barW=Math.max(16,Math.min(52,Math.floor(560/shown.length)));
+  const gap=Math.max(3,Math.floor(barW*0.22));
+  const totalW=shown.length*(barW+gap)+gap;
+  const leftPad=34;
+
+  let bars='';
+  shown.forEach((key,i)=>{
+    const x=leftPad+gap+i*(barW+gap);
+    let yOff=0;
+    displaySt.forEach(st=>{
+      const count=buckets[key]?.[st]||0;
+      if(!count) return;
+      const h=Math.max(2,Math.round((count/maxVal)*(chartH-6)));
+      const y=chartH-yOff-h;
+      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[st]||'#888'}" opacity="0.82" rx="2"><title>${_periodLabel(key,group)}\n${st}: ${count}</title></rect>`;
+      if(count>0&&h>12) bars+=`<text x="${x+barW/2}" y="${y+h/2+4}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" opacity="0.9">${count}</text>`;
+      yOff+=h;
+    });
+    const lbl=_periodLabel(key,group);
+    bars+=`<text x="${x+barW/2}" y="${chartH+labelH-2}" text-anchor="middle" font-size="9" fill="var(--text3)">${lbl}</text>`;
+  });
+
+  let guides='';
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const y=Math.round(chartH*(1-f));
+    const v=Math.round(maxVal*f);
+    guides+=`<line x1="${leftPad}" y1="${y}" x2="${leftPad+totalW+gap}" y2="${y}" stroke="var(--border)" stroke-dasharray="3,3"/>`;
+    guides+=`<text x="${leftPad-5}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${v}</text>`;
+  });
+
+  // Legend
+  let legend='';
+  const legendStatuses=displaySt.filter(st=>shown.some(k=>(buckets[k]?.[st]||0)>0));
+  legendStatuses.forEach((st,i)=>{
+    legend+=`<g transform="translate(${leftPad+i*80},${chartH+labelH+10})"><rect width="10" height="10" rx="2" fill="${COLORS[st]||'#888'}" opacity="0.82"/><text x="14" y="9" font-size="9" fill="var(--text2)">${st[0]+st.slice(1).toLowerCase()}</text></g>`;
+  });
+
+  const svgH=chartH+labelH+(legendStatuses.length?26:4)+14;
+  el.innerHTML=`<div style="overflow-x:auto"><svg class="dash-chart-svg" viewBox="0 -8 ${leftPad+totalW+gap+16} ${svgH}" style="width:100%;min-width:${Math.min(leftPad+totalW+gap+16,340)}px;height:${svgH+8}px;display:block">${guides}${bars}${legend}</svg></div>`;
+}
+
 function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
   const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
   const disabledLibs=allLibs.filter(lib=>lib.enabled===false);
@@ -2983,12 +3177,19 @@ async function loadDashboard(force=false){
   const [ledgerResults, historyResult] = await Promise.all([
     Promise.all(enabledLibs.map(async lib=>{
       const {data}=await requestJson('/api/ledger?library='+encodeURIComponent(lib.name));
-      return Array.isArray(data)?data:[];
+      return {name:lib.name, rows:Array.isArray(data)?data:[]};
     })),
     requestJson('/api/tasks/history?limit=100'),
   ]);
+  // Store per-lib rows for the library section
+  _dashLedgerByLib={};
+  ledgerResults.forEach(r=>{ _dashLedgerByLib[r.name]=r.rows; });
+  _dashLedgerAll=ledgerResults.flatMap(r=>r.rows);
+  // Reset selected lib if it no longer exists
+  if(_dashSelectedLib!=='all' && !_dashLedgerByLib[_dashSelectedLib]) _dashSelectedLib='all';
+
   const counts={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};
-  ledgerResults.flat().forEach(row=>{
+  _dashLedgerAll.forEach(row=>{
     const status=String(row.status||'').toUpperCase();
     if(status in counts) counts[status]+=1;
   });
@@ -2997,7 +3198,11 @@ async function loadDashboard(force=false){
   renderDashboardPipelineOverview(counts);
   renderDashboardNeedsAttention(cfg, counts, enabledLibs);
   renderDashboardRecentActivity(history);
-  renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs);
+  renderDashLibTabs(enabledLibs);
+  renderDashLibKpi();
+  renderHistStatusFilters();
+  renderProcessingHistory();
+  _restorePipelineHelpState();
 
   // Async: real health validation (may be slower)
   const {data:health}=await requestJson('/api/health');
