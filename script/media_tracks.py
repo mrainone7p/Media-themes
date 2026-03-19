@@ -71,6 +71,7 @@ if str(SHARED_DIR) not in sys.path:
 from storage import (
     CONFIG_PATH,
     LEDGER_HEADERS,
+    TMDB_GUID_RE,
     ffprobe_duration,
     ledger_path_for,
     load_ledger_map as load_ledger,
@@ -207,15 +208,12 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
 
 # ─── Plex API ─────────────────────────────────────────────────────────────────
 
-_TMDB_GUID_RE = re.compile(r"(?:themoviedb://|tmdb://)(\d+)", re.IGNORECASE)
-
-
 def _extract_tmdb_id(item: dict) -> Optional[str]:
     for g in item.get("Guid", []):
-        m = _TMDB_GUID_RE.search(g.get("id", ""))
+        m = TMDB_GUID_RE.search(g.get("id", ""))
         if m:
             return m.group(1)
-    m = _TMDB_GUID_RE.search(item.get("guid", ""))
+    m = TMDB_GUID_RE.search(item.get("guid", ""))
     return m.group(1) if m else None
 
 
@@ -249,11 +247,7 @@ def get_plex_movies(plex_url: str, token: str, library_name: str) -> list:
         try:
             resp = requests.get(
                 f"{base}/library/sections/{section_id}/all",
-                headers={
-                    **headers,
-                    "X-Plex-Container-Start": str(start),
-                    "X-Plex-Container-Size": str(page_size),
-                },
+                headers=headers,
                 params={
                     "X-Plex-Container-Start": start,
                     "X-Plex-Container-Size": page_size,
@@ -913,8 +907,8 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
                     notes=failure_note, tmdb_id=tmdb_id,
                 )
                 stats["failed"] += 1
-
-            stats["missing"] += 1
+            else:
+                stats["missing"] += 1
             continue
 
         log.info(f"  Found via {method_used}: {url}")

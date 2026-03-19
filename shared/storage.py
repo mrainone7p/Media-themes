@@ -22,6 +22,8 @@ from typing import Iterable, Tuple
 import requests
 import yaml
 
+TMDB_GUID_RE = re.compile(r"(?:themoviedb://|tmdb://)(\d+)", re.IGNORECASE)
+
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/config/config.yaml")
 LOGS_DIR = Path("/app/logs")
 DB_DEFAULT_PATH = str(LOGS_DIR / "media_tracks.db")
