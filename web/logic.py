@@ -18,6 +18,7 @@ import signal
 import sqlite3
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
@@ -63,6 +64,9 @@ GOLDEN_CACHE_DIR = LOGS_DIR / "golden_source_cache"
 TEMPLATE_PATH = Path("/app/web/template.html")
 _HEALTH_CACHE_TTL = 30
 _health_cache: dict[str, object] = {"ts": 0.0, "key": None, "payload": None}
+CRON_FILE_PATH = Path(os.environ.get("MEDIA_TRACKS_CRON_FILE", "/etc/cron.d/media-tracks"))
+CRON_COMMAND = "python3 /app/script/media_tracks.py >> /proc/1/fd/1 2>> /proc/1/fd/2"
+SCHEDULER_AUTHORITY = os.environ.get("MEDIA_TRACKS_SCHEDULER_AUTHORITY", "cron").strip().lower() or "cron"
 
 for path in (RUNS_DIR, EXPORTS_DIR, GOLDEN_CACHE_DIR):
     path.mkdir(parents=True, exist_ok=True)
@@ -154,6 +158,7 @@ LIBRARY_TYPE_ALIASES = {
 
 _CRON_FIELD_RE = re.compile(r"^[^\s]+$")
 _FILENAME_INVALID_CHARS_RE = re.compile(r"[\\/]")
+_CRON_ENTRY_RE = re.compile(r"^(?P<cron>\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+(?P<command>.+)$")
 
 
 # ── Config and UI helpers ────────────────────────────────────────────────────
@@ -371,6 +376,126 @@ def save_config(data: dict) -> dict:
         yaml.dump(normalized, fh, default_flow_style=False, allow_unicode=True, sort_keys=False)
     _health_cache = {"ts": 0.0, "key": None, "payload": None}
     return normalized
+
+
+def scheduler_managed_via_cron() -> bool:
+    return SCHEDULER_AUTHORITY == "cron"
+
+
+def _render_cron_file(schedule_enabled: bool, cron_schedule: str) -> str:
+    lines = [
+        "# Managed by Media Tracks. Manual edits will be overwritten.",
+        "SHELL=/bin/sh",
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    ]
+    if schedule_enabled:
+        lines.append(f"{cron_schedule} {CRON_COMMAND}")
+    else:
+        lines.append("# Scheduler disabled in config.yaml")
+    return "\n".join(lines) + "\n"
+
+
+def _extract_cron_schedule_from_text(text: str) -> str | None:
+    for raw_line in str(text or "").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        match = _CRON_ENTRY_RE.match(line)
+        if not match:
+            continue
+        command = match.group("command").strip()
+        if command == CRON_COMMAND:
+            return " ".join(match.group("cron").split())
+    return None
+
+
+def active_scheduler_source() -> dict:
+    configured_cron = (load_config().get("cron_schedule") or CONFIG_DEFAULTS["cron_schedule"]).strip()
+    details = {
+        "authority": SCHEDULER_AUTHORITY,
+        "configured_cron": configured_cron,
+        "cron_file": str(CRON_FILE_PATH),
+        "active_cron": None,
+        "schedule_enabled": False,
+        "detail": "",
+        "error": None,
+    }
+    if not scheduler_managed_via_cron():
+        details["detail"] = "Schedule is managed inside the Flask process."
+        return details
+    if not CRON_FILE_PATH.exists():
+        details["detail"] = f"Cron file missing at {CRON_FILE_PATH}."
+        return details
+    try:
+        cron_text = CRON_FILE_PATH.read_text(encoding="utf-8")
+    except Exception as exc:
+        details["detail"] = f"Unable to read cron file at {CRON_FILE_PATH}."
+        details["error"] = str(exc)
+        return details
+    active_cron = _extract_cron_schedule_from_text(cron_text)
+    details["active_cron"] = active_cron
+    details["schedule_enabled"] = bool(active_cron)
+    if active_cron:
+        details["detail"] = f"Active schedule comes from {CRON_FILE_PATH}."
+    else:
+        details["detail"] = f"No active Media Tracks cron entry is installed in {CRON_FILE_PATH}."
+    return details
+
+
+def refresh_scheduler(config: dict | None = None) -> dict:
+    global _health_cache
+    cfg = config if isinstance(config, dict) else load_config()
+    cron_schedule = _normalize_cron_schedule(cfg.get("cron_schedule", CONFIG_DEFAULTS["cron_schedule"]), [])
+    schedule_enabled = bool(cfg.get("schedule_enabled", False))
+    details = {
+        "ok": True,
+        "authority": SCHEDULER_AUTHORITY,
+        "configured_cron": cron_schedule,
+        "schedule_enabled": schedule_enabled,
+        "cron_file": str(CRON_FILE_PATH),
+        "active_cron": None,
+        "detail": "",
+        "error": None,
+    }
+    if not scheduler_managed_via_cron():
+        details["detail"] = "Scheduler is managed inside the Flask process; no cron refresh needed."
+        _health_cache = {"ts": 0.0, "key": None, "payload": None}
+        return details
+    contents = _render_cron_file(schedule_enabled, cron_schedule)
+    try:
+        CRON_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=str(CRON_FILE_PATH.parent), delete=False) as tmp:
+            tmp.write(contents)
+            temp_path = Path(tmp.name)
+        os.chmod(temp_path, 0o644)
+        os.replace(temp_path, CRON_FILE_PATH)
+        completed = subprocess.run(["crontab", str(CRON_FILE_PATH)], check=True, capture_output=True, text=True)
+        active = active_scheduler_source()
+        details["active_cron"] = active.get("active_cron")
+        details["schedule_enabled"] = bool(active.get("schedule_enabled"))
+        details["detail"] = active.get("detail") or ("Cron schedule reloaded." if schedule_enabled else "Cron schedule cleared.")
+        stderr = (completed.stderr or "").strip()
+        if stderr:
+            details["detail"] = f"{details['detail']} ({stderr})"
+        _health_cache = {"ts": 0.0, "key": None, "payload": None}
+        return details
+    except subprocess.CalledProcessError as exc:
+        details["ok"] = False
+        details["error"] = (exc.stderr or exc.stdout or str(exc)).strip() or str(exc)
+        details["detail"] = "Failed to reload cron schedule."
+    except Exception as exc:
+        details["ok"] = False
+        details["error"] = str(exc)
+        details["detail"] = "Failed to rewrite cron schedule."
+    finally:
+        temp_candidate = locals().get("temp_path")
+        if isinstance(temp_candidate, Path) and temp_candidate.exists():
+            try:
+                temp_candidate.unlink()
+            except OSError:
+                pass
+        _health_cache = {"ts": 0.0, "key": None, "payload": None}
+    return details
 
 
 def get_ui_token() -> str:
@@ -1165,6 +1290,7 @@ def next_cron_run(cron_expr: str) -> str | None:
 
 def api_health_payload() -> dict:
     cfg = load_config()
+    scheduler_source = active_scheduler_source()
     cache_key = json.dumps(
         {
             "plex_url": (cfg.get("plex_url") or "").strip(),
@@ -1183,6 +1309,7 @@ def api_health_payload() -> dict:
             "schedule_enabled": bool(cfg.get("schedule_enabled", False)),
             "schedule_libraries": list(cfg.get("schedule_libraries") or []),
             "cron_schedule": (cfg.get("cron_schedule") or "0 3 * * *").strip(),
+            "scheduler_source": scheduler_source,
         },
         sort_keys=True,
     )
@@ -1261,17 +1388,55 @@ def api_health_payload() -> dict:
     else:
         result["libraries"] = {"state": "ok", "label": f"{len(enabled)} enabled", "detail": f"{len(scheduled)} in scheduler", "enabled": len(enabled), "scheduled": len(scheduled)}
 
-    cron_expr = (cfg.get("cron_schedule") or "0 3 * * *").strip()
+    cron_expr = str(scheduler_source.get("active_cron") or cfg.get("cron_schedule") or "0 3 * * *").strip()
     cron_valid = len(cron_expr.split()) == 5
     next_run = next_cron_run(cron_expr) if cron_valid else None
-    if not cron_valid:
-        result["schedule"] = {"state": "error", "label": "Invalid cron", "cron": cron_expr, "next_run": None, "libraries": len(scheduled)}
-    elif not cfg.get("schedule_enabled", False):
-        result["schedule"] = {"state": "off", "label": "Disabled", "cron": cron_expr, "next_run": None, "libraries": len(scheduled)}
+    schedule_enabled = bool(scheduler_source.get("schedule_enabled")) if scheduler_managed_via_cron() else bool(cfg.get("schedule_enabled", False))
+    detail_suffix = scheduler_source.get("detail") or ""
+    if not cron_valid and schedule_enabled:
+        result["schedule"] = {
+            "state": "error",
+            "label": "Invalid cron",
+            "cron": cron_expr,
+            "configured_cron": (cfg.get("cron_schedule") or "0 3 * * *").strip(),
+            "next_run": None,
+            "libraries": len(scheduled),
+            "source": scheduler_source,
+            "detail": detail_suffix,
+        }
+    elif not schedule_enabled:
+        result["schedule"] = {
+            "state": "off",
+            "label": "Disabled",
+            "cron": cron_expr,
+            "configured_cron": (cfg.get("cron_schedule") or "0 3 * * *").strip(),
+            "next_run": None,
+            "libraries": len(scheduled),
+            "source": scheduler_source,
+            "detail": detail_suffix,
+        }
     elif not scheduled:
-        result["schedule"] = {"state": "warning", "label": "No libraries selected", "cron": cron_expr, "next_run": next_run, "libraries": 0}
+        result["schedule"] = {
+            "state": "warning",
+            "label": "No libraries selected",
+            "cron": cron_expr,
+            "configured_cron": (cfg.get("cron_schedule") or "0 3 * * *").strip(),
+            "next_run": next_run,
+            "libraries": 0,
+            "source": scheduler_source,
+            "detail": detail_suffix,
+        }
     else:
-        result["schedule"] = {"state": "ok", "label": "Enabled", "cron": cron_expr, "next_run": next_run, "libraries": len(scheduled)}
+        result["schedule"] = {
+            "state": "ok",
+            "label": "Enabled",
+            "cron": cron_expr,
+            "configured_cron": (cfg.get("cron_schedule") or "0 3 * * *").strip(),
+            "next_run": next_run,
+            "libraries": len(scheduled),
+            "source": scheduler_source,
+            "detail": detail_suffix,
+        }
 
     _health_cache["ts"] = now
     _health_cache["key"] = cache_key
