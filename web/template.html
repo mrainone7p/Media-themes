@@ -4004,6 +4004,8 @@ let _activeQuickPickBtn=null;
 let _activeQuickPickUrl='';
 let _selectedSourceTitle='';
 let _sePreviewLoadSeq=0;
+let _step3EntryMode='';
+let _searchDefaultMethod='playlist';
 
 function _searchStateKey(key){
   return key==null ? null : String(key);
@@ -4047,6 +4049,7 @@ function _resetSourceEditorDraft(){
   _renderSelectedSourceSummary('','');
   if(loadBtn){ loadBtn.textContent='↺ Refresh'; loadBtn.disabled=false; }
   _sourceEditorAudio.cleanup();
+  _step3EntryMode='';
   const trimWindow=document.getElementById('se-trim-window');
   const startLabel=document.getElementById('se-trim-start-label');
   const endLabel=document.getElementById('se-trim-end-label');
@@ -4259,6 +4262,7 @@ async function openSearchModal(rk,title,year,lib){
   const cfg=await(await fetch('/api/config')).json();
   _autoApproveManual = !!cfg.auto_approve_manual;
   const defaultMethod=(cfg.search_mode||'playlist')==='playlist'?'playlist':'direct';
+  _searchDefaultMethod=defaultMethod;
   if(!sameItem) _searchMethod=hasGolden?'golden_source':(_lastSearchMethod||defaultMethod);
   if(!_searchCustomQuery) _searchCustomQuery=buildSearchQuery('direct',title,year);
   // Header
@@ -4303,7 +4307,7 @@ async function openSearchModal(rk,title,year,lib){
   if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
   if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item.':'No curated source is available for this item yet.';
   if(goldenOffset) goldenOffset.textContent=hasGolden?`Offset ${goldenOffsetValue}`:'Offset —';
-  if(goldenMeta) goldenMeta.textContent=hasGolden?'Curated match':'Manual search fallback';
+  if(goldenMeta) goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'Manual search fallback';
   _setSearchMethodOrder(hasGolden);
   _initMethodQuickPicks(existingRow);
   if(_searchMethod==='golden_source' && !hasGolden){
@@ -4377,9 +4381,36 @@ async function doSearch(){
     const golden=_goldenSourceMeta();
     const url=golden.url;
     if(!url) return toast('Golden Source URL not currently available for this item','info');
-    return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL',startOffset:golden.offset});
+    return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL',startOffset:golden.offset,entryMode:'golden_fast_path'});
   }
   await _searchByMethod(_searchMethod, true);
+}
+
+
+function _renderSearchResultsState(message, tone='info'){
+  const el=document.getElementById('search-results');
+  if(!el) return;
+  el.innerHTML=`<div class="search-results-state ${tone==='error'?'error':''}">${message}</div>`;
+}
+
+async function _fallbackFromGoldenValidation(errorMessage){
+  const notice=errorMessage||'Golden Source preview could not be loaded.';
+  const fallbackMethod=_searchDefaultMethod||'playlist';
+  _searchMethod=fallbackMethod;
+  toast(`${notice} Showing ${fallbackMethod==='direct'?'Direct':'Playlist'} results instead.`, 'info');
+  goToSearchStep(2);
+  _renderSearchResultsState('Curated source could not be previewed. Searching for reviewable matches…');
+  const results=await _searchByMethod(fallbackMethod, true);
+  if(results && results.length){
+    const el=document.getElementById('search-results');
+    if(el){
+      el.insertAdjacentHTML('afterbegin', `<div class="search-results-state" style="margin-bottom:10px">Curated source could not be previewed (${notice}). Review the fallback matches below, or go back and paste a replacement URL.</div>`);
+    }
+    return;
+  }
+  _renderSearchResultsState(`Curated source could not be previewed (${notice}). Go back to choose another method, or paste a replacement URL in Step 1.`,'error');
+  const countEl=document.getElementById('sm-results-count');
+  if(countEl) countEl.textContent='';
 }
 
 function _renderResults(results){
@@ -4428,7 +4459,8 @@ function _renderMethodQuickPick(method, result, opts={}){
   const openMarkup=showOpen
     ? `<a class="btn btn-ghost btn-xs" href="${safeHref}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Open</a>`
     : '';
-  return `<span class="sm-quickpick-label">${label}</span>${titleMarkup}${offsetMarkup}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${safeMethod}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${safeMethod}','${safeUrl}','${safeTitleJs}','${safeOffset}')">Pick</button>${openMarkup}</div>`;
+  const selectLabel=opts.selectLabel || 'Pick';
+  return `<span class="sm-quickpick-label">${label}</span>${titleMarkup}${offsetMarkup}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${safeMethod}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${safeMethod}','${safeUrl}','${safeTitleJs}','${safeOffset}')">${selectLabel}</button>${openMarkup}</div>`;
 }
 
 function _setMethodQuickPick(method, result){
@@ -4436,7 +4468,7 @@ function _setMethodQuickPick(method, result){
   if(!el) return;
   if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
   const quickPickOpts=method==='golden_source'
-    ? {label:'Curated match', title:'Curated Golden Source URL', showOpen:true, linkTitle:false}
+    ? {label:'Curated match', title:'Curated Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Select'}
     : {label:'First match'};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
 }
@@ -4482,7 +4514,7 @@ async function quickPickSelect(method,url,title='',startOffset='0:00'){
   _searchMethod=method||_searchMethod;
   if(_searchMethod!=='golden_source') await _searchByMethod(_searchMethod,false);
   if(_lastSearchResults.length) _renderResults(_lastSearchResults);
-  goToStep3(url,{skipPreview:false,sourceTitle:title,startOffset});
+  goToStep3(url,{skipPreview:false,sourceTitle:title,startOffset,entryMode:method==='golden_source'?'golden_manual_select':'search_result'});
 }
 
 async function _prefetchMethodFirstResult(method){
@@ -4551,6 +4583,7 @@ async function searchModalDownloadNow(){
 }
 
 function goToStep3(url, opts={}){
+  _step3EntryMode=opts.entryMode||'';
   stopAllAudio();
   if(_lastSearchResults.length) _renderResults(_lastSearchResults);
   document.getElementById('se-url').value=url||'';
@@ -4577,14 +4610,14 @@ function goToStep3(url, opts={}){
 function goToStep3FromPaste(){
   const url=(document.getElementById('search-paste-url').value||'').trim();
   if(!url){ toast('Paste a URL first','info'); return; }
-  goToStep3(url,{skipPreview:false,sourceTitle:_sourceTitleFromUrl(url)});
+  goToStep3(url,{skipPreview:false,sourceTitle:_sourceTitleFromUrl(url),entryMode:'paste'});
 }
 
 // ── Source editor (Step 3) functions ────────────────────────────────────────
 function openSourceEditor(url, previewOnly){
   if(!url){ toast('No URL provided','info'); return; }
   _seKey=_searchKey; _seLib=_searchLib||_activeLib||'';
-  goToStep3(url,{skipPreview:false,sourceTitle:_sourceTitleFromUrl(url)});
+  goToStep3(url,{skipPreview:false,sourceTitle:_sourceTitleFromUrl(url),entryMode:'existing'});
 }
 
 function closeSourceEditor(){
@@ -4638,7 +4671,14 @@ async function seLoadPreview(){
     }
     if(loadSeq!==_sePreviewLoadSeq) return;
     if(btn){ btn.textContent='↺ Refresh'; btn.disabled=false; }
-    if(!data.ok){ document.getElementById('se-info').textContent='Error: '+(data.error||'Failed'); return; }
+    if(!data.ok){
+      const previewError=data.error||'Failed';
+      document.getElementById('se-info').textContent='Error: '+previewError;
+      if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
+        await _fallbackFromGoldenValidation(previewError);
+      }
+      return;
+    }
     const audio=_sourceEditorAudio.audio;
     stopAllAudio('se-audio');
     audio.src=apiUrl(data.audio_url);
@@ -4655,11 +4695,24 @@ async function seLoadPreview(){
       onerror:()=>{
         if(loadSeq!==_sePreviewLoadSeq) return;
         if(Date.now()-startedAt<700) return;
-        document.getElementById('se-info').textContent='Playback error — click Refresh to retry';
+        const playbackError='Playback error — click Refresh to retry';
+        document.getElementById('se-info').textContent=playbackError;
+        if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
+          void _fallbackFromGoldenValidation('Playback error');
+        }
       }
     });
     audio.load();
-  }catch(e){ if(btn){ btn.textContent='↺ Refresh'; btn.disabled=false; } toast('Error: '+e,'err'); }
+  }catch(e){
+    if(btn){ btn.textContent='↺ Refresh'; btn.disabled=false; }
+    const previewError=String(e&&e.message?e.message:e||'Preview failed');
+    if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
+      document.getElementById('se-info').textContent='Error: '+previewError;
+      await _fallbackFromGoldenValidation(previewError);
+      return;
+    }
+    toast('Error: '+previewError,'err');
+  }
 }
 
 function seToggle(){
