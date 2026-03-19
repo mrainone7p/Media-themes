@@ -1,11 +1,10 @@
 #!/bin/sh
 # entrypoint.sh — Media Tracks
-# Starts the Flask web UI and the cron daemon, then runs an initial scan.
+# Starts the Flask web UI and the cron daemon without kicking off a startup scan.
 
 set -e
 
 CONFIG_FILE="${CONFIG_PATH:-/app/config/config.yaml}"
-WEB_PORT="${WEB_PORT:-8182}"
 
 # Read cron schedule from config
 CRON_SCHEDULE=$(python3 -c "
@@ -23,7 +22,7 @@ echo "  Media Tracks"
 echo "============================================="
 echo "  Config   : $CONFIG_FILE"
 echo "  Schedule : $CRON_SCHEDULE"
-echo "  Web UI   : http://localhost:$WEB_PORT"
+echo "  Web UI   : http://localhost:8080"
 echo "============================================="
 
 # RUN_ONCE mode — used for one-shot Docker runs / testing
@@ -34,14 +33,8 @@ if [ "${RUN_ONCE}" = "true" ]; then
 fi
 
 # Start Flask web UI in background (log to container stdout)
-echo "[INFO] Starting web UI on port $WEB_PORT..."
+echo "[INFO] Starting web UI on port 8080..."
 python3 /app/web/app.py >> /proc/1/fd/1 2>> /proc/1/fd/2 &
-WEB_PID=$!
-sleep 1
-if ! kill -0 "$WEB_PID" 2>/dev/null; then
-    echo "[ERROR] Web UI failed to start — check Python import/runtime errors above"
-    exit 1
-fi
 
 # Register cron job
 CRON_JOB="$CRON_SCHEDULE python3 /app/script/media_tracks.py >> /proc/1/fd/1 2>> /proc/1/fd/2"
@@ -50,10 +43,7 @@ chmod 0644 /etc/cron.d/media-tracks
 crontab /etc/cron.d/media-tracks
 echo "[INFO] Cron job registered: $CRON_SCHEDULE"
 
-# Initial scan on startup (|| true prevents set -e from killing the daemon
-# if the scan exits non-zero, e.g. plex_token not yet configured)
-echo "[INFO] Running initial scan..."
-python3 /app/script/media_tracks.py || true
+echo "[INFO] Startup scan disabled — waiting for scheduled or manual runs..."
 
 echo "[INFO] Entering cron daemon mode..."
 cron -f
