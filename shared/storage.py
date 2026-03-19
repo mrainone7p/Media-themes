@@ -8,15 +8,18 @@ Shared by both the web app (app.py) and worker (media_tracks.py).
 from __future__ import annotations
 
 import csv
+import hashlib
 import os
 import re
 import sqlite3
 import subprocess
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Tuple
 
+import requests
 import yaml
 
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/config/config.yaml")
@@ -186,6 +189,66 @@ def get_db_path() -> str:
 def ledger_path_for(name: str, logs_dir: str | Path = LOGS_DIR) -> str:
     safe = re.sub(r"[^a-z0-9]+", "_", str(name).lower().strip()).strip("_") or "default"
     return str(Path(logs_dir) / f"tracks_{safe}.csv")
+
+
+def normalize_golden_source_url(url: str) -> str:
+    url = (url or "").strip()
+    if not url:
+        return ""
+    match = re.match(r"https?://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)", url)
+    if match:
+        owner, repo, branch, path = match.groups()
+        return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
+    return url
+
+
+def read_golden_source_text(
+    url: str,
+    *,
+    cache_dir: str | Path,
+    force_refresh: bool = False,
+    cache_ttl_sec: int = 1800,
+    allow_local_file: bool = False,
+    cache_prefix: str = "",
+) -> tuple[str, str, float, str]:
+    """Return (normalized_url, csv_text, fetch_ms, fetch_mode)."""
+    normalized = normalize_golden_source_url(url)
+    if not normalized:
+        raise ValueError("Golden Source URL is not configured")
+
+    cache_root = Path(cache_dir)
+    cache_root.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(normalized.encode("utf-8", errors="ignore")).hexdigest()[:16]
+    cache_path = cache_root / f"{cache_prefix}{digest}.csv"
+
+    if allow_local_file:
+        local_path = Path(normalized)
+        if local_path.exists() and local_path.is_file():
+            return (
+                normalized,
+                local_path.read_text(encoding="utf-8-sig", errors="replace"),
+                0.0,
+                "local-file",
+            )
+
+    now = time.time()
+    if not force_refresh and cache_path.exists():
+        age = now - cache_path.stat().st_mtime
+        if age <= max(0, int(cache_ttl_sec or 0)):
+            return (
+                normalized,
+                cache_path.read_text(encoding="utf-8-sig", errors="replace"),
+                0.0,
+                "local-cache",
+            )
+
+    started_at = time.perf_counter()
+    response = requests.get(normalized, timeout=20)
+    response.raise_for_status()
+    text = response.content.decode("utf-8-sig", errors="replace")
+    cache_path.write_text(text, encoding="utf-8")
+    fetch_ms = round((time.perf_counter() - started_at) * 1000, 1)
+    return normalized, text, fetch_ms, "remote-fetch"
 
 
 def _slug_from_path(path: str) -> str:
