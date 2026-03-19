@@ -76,7 +76,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--ui);min-height:100
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 
 /* ─── Sidebar ─── */
-nav{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:width .2s ease}
+nav{width:208px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:width .2s ease}
 nav.collapsed{width:48px}
 nav.collapsed .logo-title,nav.collapsed .logo-sub,nav.collapsed .nav-item span,nav.collapsed .nav-footer span{display:none}
 nav.collapsed .logo{padding:0 8px}
@@ -91,7 +91,7 @@ nav.collapsed .collapse-btn{transform:rotate(180deg);padding:4px}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
 .nav-section{padding:12px 0 10px;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text2);cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;border-left:2px solid transparent;user-select:none}
-main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .2s ease}
+main{margin-left:208px;flex:1;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .2s ease}
 body.nav-collapsed main{margin-left:48px}
 .nav-item:hover{color:var(--text);background:var(--gray-soft)}
 .nav-item.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-soft);border-left-width:3px}
@@ -118,7 +118,7 @@ body.nav-collapsed main{margin-left:48px}
 .settings-section > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
 .settings-section > summary::-webkit-details-marker{display:none}
 .settings-section[open] > summary{border-bottom:1px solid var(--border)}
-.settings-section .card-body{padding:18px 20px}
+.settings-section .card-body{padding:16px 20px 18px}
 .settings-chev{font-size:12px;color:var(--text3);transition:transform .2s}
 .settings-section[open] .settings-chev{transform:rotate(180deg)}
 
@@ -169,8 +169,8 @@ body.nav-collapsed main{margin-left:48px}
 .test-pending{background:var(--blue-soft);color:var(--blue)}
 
 /* ─── Library manager ─── */
-.lib-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.lib-row{display:flex;align-items:center;gap:10px;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;transition:border-color .15s,background .15s}
+.lib-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.lib-row{display:flex;align-items:center;gap:10px;min-width:0;background:color-mix(in srgb,var(--surface2) 78%, transparent);border:1px solid color-mix(in srgb,var(--border) 82%, transparent);border-radius:10px;padding:9px 12px;transition:border-color .15s,background .15s}
 .lib-row:focus-within{border-color:var(--amber)}
 .lib-row input[type=text]{flex:1;min-width:0;background:transparent;border:none;color:var(--text);font-family:var(--ui);font-size:13px;outline:none}
 .lib-csv{font-size:9px;color:var(--text3);font-family:var(--mono);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
@@ -208,8 +208,15 @@ body.nav-collapsed main{margin-left:48px}
 .toggle input:checked+.toggle-track:before{transform:translateX(14px);background:#000}
 
 /* ─── Status badges ─── */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.01em;white-space:nowrap}
 .badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-label{font-weight:700}
+.status-tone-UNMONITORED{color:var(--text3)}
+.status-tone-MISSING{color:var(--red)}
+.status-tone-STAGED{color:var(--purple)}
+.status-tone-APPROVED{color:var(--yellow)}
+.status-tone-AVAILABLE{color:var(--green)}
+.status-tone-FAILED{color:var(--red)}
 .s-UNMONITORED{background:var(--gray-soft);color:var(--text3)} .d-UNMONITORED{background:var(--text3)}
 .s-MISSING{background:var(--red-soft);color:var(--red)} .d-MISSING{background:var(--red)}
 .s-STAGED{background:var(--purple-soft);color:var(--purple)} .d-STAGED{background:var(--purple)}
@@ -255,7 +262,7 @@ body.nav-collapsed main{margin-left:48px}
 .chip:hover{border-color:color-mix(in srgb,var(--amber) 38%,var(--border));transform:translateY(-1px)}
 .chip.active{border-color:var(--amber);background:var(--amber-soft);box-shadow:inset 0 0 0 1px rgba(245,166,35,.16)}
 .chip-head{display:flex;align-items:center;gap:8px;color:var(--text);font-weight:700;font-size:22px;line-height:1}
-.chip-body{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.chip-body{display:flex;align-items:center;gap:8px;color:var(--text2);font-size:11px;font-weight:700;letter-spacing:.02em;text-transform:none}
 .chip-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 /* ─── Dashboard ─── */
@@ -286,7 +293,7 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-kicker{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
 .dashboard-main-copy{font-size:13px;font-weight:600;color:var(--text)}
 .dashboard-sub-copy{font-size:12px;color:var(--text2);line-height:1.4}
-.dashboard-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap;flex-shrink:0}
+.dashboard-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.01em;white-space:nowrap;flex-shrink:0}
 .dashboard-badge.ok{background:var(--green-soft);color:var(--green)}
 .dashboard-badge.warn{background:var(--amber-soft);color:var(--amber)}
 .dashboard-badge.off{background:var(--gray-soft);color:var(--text3)}
@@ -923,11 +930,25 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .settings-grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .settings-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .settings-subcard{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;min-width:0;height:100%}
+.settings-panel{background:color-mix(in srgb,var(--surface2) 72%, transparent);border:1px solid color-mix(in srgb,var(--border) 84%, transparent);border-radius:12px;padding:14px 16px;min-width:0}
+.settings-panel.flat{background:transparent;border:none;border-radius:0;padding:0}
+.settings-panel.flat + .settings-panel.flat{border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent);padding-top:14px;margin-top:2px}
+.settings-subhead{display:grid;gap:4px;margin-bottom:12px}
+.settings-row-grid{display:grid;gap:12px}
+.settings-row-grid.settings-row-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.settings-toggle-list{display:grid;gap:0}
+.settings-toggle-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;padding:12px 0;border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent)}
+.settings-toggle-row:first-child{padding-top:0;border-top:none}
+.settings-toggle-row:last-child{padding-bottom:0}
+.settings-toggle-content{min-width:0}
+.settings-inline-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,360px);gap:18px;align-items:start}
+.settings-inline-copy{display:grid;gap:4px}
+.settings-inline-control{display:grid;gap:8px;align-items:start}
 .subcard-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
 .subcard-intro{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px}
 .accent-link{color:var(--amber);font-weight:700;text-decoration:none}
 .accent-link:hover{text-decoration:underline}
-.accent-link.subtle{color:color-mix(in srgb, var(--amber) 72%, var(--text2));font-weight:600}
+.accent-link.subtle{color:var(--text2);font-weight:400}
 .accent-link.subtle:hover{color:var(--amber)}
 .field-help{font-size:12px;color:var(--text2);line-height:1.5}
 .field-help.compact{font-size:11px;color:var(--text3)}
@@ -964,12 +985,31 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .lib-inline-value{font-size:11px;color:var(--text2)}
 .field-help-list{display:grid;gap:4px}
 .field-help-line{font-size:11px;color:var(--text3);font-family:var(--mono);line-height:1.45}
-.status-term{font-weight:700;text-transform:uppercase}
+.status-term{font-weight:700;text-transform:none}
 .settings-test-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .dual-inline{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:14px;align-items:start}
 .dual-inline .toggle-card{height:100%}
 .label-stack{display:flex;flex-direction:column;gap:4px}
 .performance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#page-configuration .content{max-width:1120px}
+#page-configuration .section-intro{margin-bottom:14px}
+#page-configuration .settings-grid-2,
+#page-configuration .performance-grid{gap:16px}
+#page-configuration .settings-subcard{padding:0}
+#page-configuration .settings-subcard.settings-panel{padding:14px 16px}
+#page-configuration .subcard-intro:last-child{margin-bottom:0}
+#page-configuration .settings-actions{margin-top:10px}
+#page-configuration .library-actions{margin-top:10px}
+#page-configuration .inline-details{margin-top:12px;background:transparent;border-color:color-mix(in srgb,var(--border) 86%, transparent);border-radius:10px}
+#page-configuration .inline-details > summary{padding:10px 0;color:var(--text2)}
+#page-configuration .inline-details-body{padding:12px 0 0}
+#page-configuration .dur-toggle{background:var(--surface2)}
+#page-configuration .dur-opt{padding:8px 14px}
+#page-configuration .cookie-indicator{padding:4px 9px}
+#page-configuration .golden-panel{background:color-mix(in srgb, var(--amber-soft) 10%, transparent);border-color:rgba(245,166,35,.2)}
+#page-configuration .golden-panel::before{margin-bottom:8px}
+#page-configuration .settings-toggle-list-golden .settings-toggle-row{border-top-color:rgba(245,166,35,.16)}
+#page-configuration .settings-toggle-list-golden .settings-toggle-row:first-child{border-top:none}
 .schedule-step2-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
 .search-method-grid{display:grid;gap:10px}
 .search-method-group{display:grid;gap:8px}
@@ -1039,7 +1079,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .settings-section .field input[id="cfg-max_retries"],
 .settings-section .field input[id="cfg-download_delay_seconds"]{font-family:var(--mono)}
 @media (max-width: 980px){
-  .settings-grid-2,.settings-grid-3,.dual-inline,.performance-grid{grid-template-columns:1fr}
+  .settings-grid-2,.settings-grid-3,.dual-inline,.performance-grid,.settings-row-grid.settings-row-grid-2,.settings-inline-row{grid-template-columns:1fr}
   .schedule-step2-options{grid-template-columns:1fr}
   .sm-card-actions{width:100%;max-width:none}
   .search-method-card{grid-template-columns:1fr}
@@ -1292,8 +1332,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     </div>
   </div>
   <div class="page-body"><div class="content">
-    <div class="settings-lead" style="margin-bottom:16px">Configure this page top to bottom for the cleanest setup: connect <strong>Plex</strong> and <strong>TMDB</strong>, choose your libraries, define source discovery behavior, then set download preferences.</div>
-
     <details class="card settings-section" open id="config-section-connections">
       <summary>
         <div class="card-title" style="margin-bottom:0">
@@ -1305,7 +1343,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="card-body">
         <div class="section-intro">Connect <strong>Plex</strong> and <strong>TMDB</strong> to enable library discovery, metadata matching, and scans.</div>
         <div class="settings-grid-2">
-          <div class="settings-subcard">
+          <div class="settings-subcard settings-panel">
             <div class="subcard-title">Plex</div>
             <div class="subcard-intro">Used for library discovery, scan and indexing, and local media metadata such as file paths.</div>
             <div class="field-grid field-grid-2">
@@ -1329,7 +1367,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span id="plex-test-result"></span>
             </div>
           </div>
-          <div class="settings-subcard">
+          <div class="settings-subcard settings-panel">
             <div class="subcard-title">TMDB</div>
             <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and provide TMDB links.</div>
             <div class="field" style="max-width:520px">
@@ -1363,11 +1401,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="section-intro">Choose which movie and TV libraries should be managed. Libraries start disabled so you can opt in only to the ones you want.</div>
         <div class="lib-list" id="lib-list"></div>
         <div class="library-actions section-actions">
-          <button class="btn btn-ghost btn-sm" onclick="addLibrary()">+ Add Library</button>
+          <button class="btn btn-ghost btn-sm" onclick="addLibrary()">+ Add Library Manually</button>
           <button class="btn btn-amber btn-sm" onclick="importLibraries()">↓ Import from Plex</button>
           <span id="lib-import-result"></span>
         </div>
-        <div class="field-help compact" style="margin-top:10px">Library names must match Plex exactly. Only movie and TV libraries are accepted.</div>
       </div>
     </details>
 
@@ -1380,10 +1417,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="settings-chev">˅</div>
       </summary>
       <div class="card-body">
-        <div class="section-intro">These settings control how sources are found for each <span class="status-term">MISSING</span> theme.</div>
-        <div class="settings-subcard">
-          <div class="subcard-title">Search setup</div>
-          <div class="subcard-intro">Choose how source discovery searches for and validates theme sources.</div>
+        <div class="section-intro">These settings control how sources are found for each <span class="status-term status-tone-MISSING">Missing</span> theme.</div>
+        <div class="settings-panel flat">
+          <div class="settings-subhead">
+            <div class="subcard-title">Search setup</div>
+            <div class="subcard-intro">Choose how source discovery searches for and validates theme sources.</div>
+          </div>
           <div class="field-grid field-grid-2">
             <div class="field">
               <label>Primary Search Mode</label>
@@ -1409,25 +1448,27 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </div>
           </div>
         </div>
-        <div class="toggle-grid" style="margin-top:14px">
-          <div class="toggle-card">
+        <div class="settings-panel flat">
+          <div class="settings-toggle-list">
+            <div class="settings-toggle-row">
             <label class="toggle">
               <input type="checkbox" id="cfg-search_fallback" checked onchange="syncMatchingModeSelect()">
               <span class="toggle-track"></span>
             </label>
-            <div>
+            <div class="settings-toggle-content">
               <label class="toggle-title" id="lbl-search-fallback" style="cursor:pointer" onclick="document.getElementById('cfg-search_fallback').click()">Fallback Search</label>
               <div class="toggle-note">If the primary search mode finds no valid strict match, try the other mode once.</div>
             </div>
-          </div>
-          <div class="toggle-card">
+            </div>
+            <div class="settings-toggle-row">
             <label class="toggle">
               <input type="checkbox" id="cfg-auto_approve_manual">
               <span class="toggle-track"></span>
             </label>
-            <div>
+            <div class="settings-toggle-content">
               <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
-              <div class="toggle-note">Manual search selections skip <span class="status-term">STAGED</span> and go straight to <span class="status-term">APPROVED</span>.</div>
+              <div class="toggle-note">Manual search selections skip <span class="status-term status-tone-STAGED">Staged</span> and go straight to <span class="status-term status-tone-APPROVED">Approved</span>.</div>
+            </div>
             </div>
           </div>
         </div>
@@ -1462,7 +1503,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="card-body">
         <div class="section-intro">A curated list of trusted theme matches. It can speed up matching and improve result quality for supported titles, though some gaps may remain depending on your library.</div>
         <div class="field-grid field-grid-2">
-          <div class="settings-subcard golden-panel">
+          <div class="settings-subcard settings-panel golden-panel">
             <div class="subcard-title">Golden Source</div>
             <div class="subcard-intro">Point to a trusted source CSV, then test it before using it for source matching.</div>
             <div class="field">
@@ -1475,27 +1516,29 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span id="golden-test-result"></span>
             </div>
           </div>
-          <div class="settings-subcard golden-emphasis golden-panel">
+          <div class="settings-subcard settings-panel golden-emphasis golden-panel">
             <div class="subcard-title">Golden Source mode</div>
-            <div class="subcard-intro">Use only the curated list when you want faster, more controlled matching.</div>
-            <div class="toggle-card golden toggle-compact" style="margin-top:8px">
+            <div class="subcard-intro">Use only the curated list when you want quality themes with faster, more controlled matching however coverage may be limited.</div>
+            <div class="settings-toggle-list settings-toggle-list-golden">
+              <div class="settings-toggle-row golden-row">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-search_only_golden">
                 <span class="toggle-track"></span>
               </label>
-              <div>
+              <div class="settings-toggle-content">
                 <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
                 <div class="toggle-note golden">Disables YouTube source discovery and only matches against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
               </div>
-            </div>
-            <div class="toggle-card golden toggle-compact" style="margin-top:10px">
+              </div>
+              <div class="settings-toggle-row golden-row">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-refresh_golden_source_each_run">
                 <span class="toggle-track"></span>
               </label>
-              <div>
+              <div class="settings-toggle-content">
                 <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
                 <div class="toggle-note golden">Refreshes the Golden Source list before each source-matching run.</div>
+              </div>
               </div>
             </div>
           </div>
@@ -1513,49 +1556,71 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </summary>
       <div class="card-body">
         <div class="section-intro">These settings control what gets downloaded and how source matching behaves.</div>
-        <div class="settings-subcard compact" style="margin-bottom:16px">
-          <div class="subcard-title">Theme filename &amp; length</div>
-          <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is, while longer downloads are trimmed.</div>
-          <div class="field" style="margin-bottom:10px">
-            <label>Theme Filename</label>
-            <input id="cfg-theme_filename" placeholder="theme.mp3">
+        <div class="settings-panel flat">
+          <div class="settings-subhead">
+            <div class="subcard-title">Theme filename &amp; length</div>
+            <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is, while longer downloads are trimmed.</div>
           </div>
-          <div class="modal-field-row">
-            <div class="dur-toggle" id="dur-toggle">
-              <div class="dur-opt" data-val="30" onclick="setDuration(30)">30s</div>
-              <div class="dur-opt" data-val="45" onclick="setDuration(45)">45s</div>
-              <div class="dur-opt" data-val="60" onclick="setDuration(60)">60s</div>
-              <div class="dur-opt" data-val="0" onclick="setDuration(0)">No limit</div>
+          <div class="settings-row-grid settings-row-grid-2">
+            <div class="field">
+              <label>Theme Filename</label>
+              <input id="cfg-theme_filename" placeholder="theme.mp3">
             </div>
-            <div class="inline-wrap tight">
-              <input type="number" id="cfg-custom-dur" min="1" max="600" placeholder="Custom" style="width:98px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" onchange="setDuration(parseInt(this.value)||0)">
-              <span class="control-note">seconds</span>
+            <div class="field">
+              <label>Maximum Theme Length</label>
+              <div class="settings-inline-control">
+                <div class="dur-toggle" id="dur-toggle">
+                  <div class="dur-opt" data-val="30" onclick="setDuration(30)">30s</div>
+                  <div class="dur-opt" data-val="45" onclick="setDuration(45)">45s</div>
+                  <div class="dur-opt" data-val="60" onclick="setDuration(60)">60s</div>
+                  <div class="dur-opt" data-val="0" onclick="setDuration(0)">No limit</div>
+                </div>
+                <div class="inline-wrap tight">
+                  <input type="number" id="cfg-custom-dur" min="1" max="600" placeholder="Custom" style="width:98px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" onchange="setDuration(parseInt(this.value)||0)">
+                  <span class="control-note">seconds</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="settings-subcard compact" style="margin-bottom:16px">
-          <div class="subcard-title">Cookies</div>
-          <div class="subcard-intro">Optional yt-dlp helper for improved reliability and performance when YouTube is harder to fetch.</div>
-          <div class="field">
-            <label>Cookies File</label>
-            <select id="cfg-cookies_file" onchange="updateCookieIndicator()">
-              <option value="">No cookies file</option>
-            </select>
-          </div>
-          <div class="settings-actions">
-            <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
-          </div>
-        </div>
-        <div class="settings-subcard compact" style="margin-bottom:16px">
-          <div class="subcard-title"><span class="status-term">MISSING</span> titles per run</div>
-          <div class="subcard-intro">Control how many <span class="status-term">MISSING</span> items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
-          <div class="field">
-            <label><span class="status-term">MISSING</span> Titles Per Run</label>
-            <input type="number" id="cfg-test_limit" min="0">
-            <div class="field-help compact">Recommended for testing, or for gradually processing larger libraries over time.</div>
+        <div class="settings-panel flat">
+          <div class="settings-inline-row">
+            <div class="settings-inline-copy">
+              <div class="subcard-title">Cookies</div>
+              <div class="subcard-intro">Optional yt-dlp helper for improved reliability and performance when YouTube is harder to fetch.</div>
+            </div>
+            <div class="settings-inline-control">
+              <div class="field" style="width:100%">
+                <label>Cookies File</label>
+                <select id="cfg-cookies_file" onchange="updateCookieIndicator()">
+                  <option value="">No cookies file</option>
+                </select>
+              </div>
+              <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
+            </div>
           </div>
         </div>
-        <div class="performance-grid" style="margin-bottom:16px">
+        <div class="settings-panel flat">
+          <div class="settings-inline-row">
+            <div class="settings-inline-copy">
+              <div class="subcard-title"><span class="status-term status-tone-MISSING">Missing</span> titles per run</div>
+              <div class="subcard-intro">Control how many <span class="status-term status-tone-MISSING">Missing</span> items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
+            </div>
+            <div class="settings-inline-control">
+              <div class="field" style="width:100%">
+                <label><span class="status-term status-tone-MISSING">Missing</span> Titles Per Run</label>
+                <input type="number" id="cfg-test_limit" min="0">
+                <div class="field-help compact">Recommended for testing, or for gradually processing larger libraries over time.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="settings-panel flat">
+          <div class="settings-subhead">
+            <div class="subcard-title">Performance</div>
+            <div class="subcard-intro">Fine-tune output quality, retry behavior, and download pacing.</div>
+          </div>
+          <div class="performance-grid">
           <div class="field">
             <label>Audio Format</label>
             <select id="cfg-audio_format">
@@ -1576,12 +1641,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="field">
             <label>Max Retries</label>
             <input type="number" id="cfg-max_retries" min="1">
-            <div class="field-help compact">How many times yt-dlp retries a failed download before the item is marked as <span class="status-term">FAILED</span>.</div>
+            <div class="field-help compact">How many times yt-dlp retries a failed download before the item is marked as <span class="status-term status-tone-FAILED">Failed</span>.</div>
           </div>
           <div class="field">
             <label>Delay Between Downloads (s)</label>
             <input type="number" id="cfg-download_delay_seconds" step="0.5" min="0">
             <div class="field-help compact">Pause between downloads to reduce API bursts, CPU spikes, and overlapping ffmpeg work.</div>
+          </div>
           </div>
         </div>
       </div>
@@ -1621,7 +1687,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan Library</button>
         <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
         <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
-        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download APPROVED Items</button>
+        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download Approved Items</button>
         <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
       </div>
     </div>
@@ -1633,12 +1699,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <span class="filter-label">Status</span>
           <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
             <option value="">All statuses</option>
-            <option value="UNMONITORED">UNMONITORED</option>
-            <option value="MISSING">MISSING</option>
-            <option value="STAGED">STAGED</option>
-            <option value="APPROVED">APPROVED</option>
-            <option value="AVAILABLE">AVAILABLE</option>
-            <option value="FAILED">FAILED</option>
+            <option value="UNMONITORED">Unmonitored</option>
+            <option value="MISSING">Missing</option>
+            <option value="STAGED">Staged</option>
+            <option value="APPROVED">Approved</option>
+            <option value="AVAILABLE">Available</option>
+            <option value="FAILED">Failed</option>
           </select>
         </div>
         <div class="filter-stack">
@@ -1663,7 +1729,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
       </div>
       <div class="db-toolbar-actions">
-        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve STAGED Items</button>
+        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve Staged Items</button>
       </div>
     </div>
     <div class="bulk-bar" id="db-bulk-bar">
@@ -1672,9 +1738,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <button class="btn btn-ghost btn-xs" onclick="selectAllVisible()">Select all on page</button>
       <span class="bulk-spacer"></span>
       <div class="bulk-actions">
-        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Set APPROVED</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('MISSING')" data-ui="actions.bulk.mark_missing">↺ Set MISSING</button>
-        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('UNMONITORED')" data-ui="actions.bulk.mark_unmonitored">⊘ Set UNMONITORED</button>
+        <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Set Approved</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('MISSING')" data-ui="actions.bulk.mark_missing">↺ Set Missing</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSetStatus2('UNMONITORED')" data-ui="actions.bulk.mark_unmonitored">⊘ Set Unmonitored</button>
         <button class="btn btn-ghost btn-sm" id="db-clear-sel" onclick="clearSourcesSelected()">🧹 Clear Sources</button>
         <button class="btn btn-red btn-sm" onclick="clearSelection()">✕ Clear</button>
       </div>
@@ -1840,7 +1906,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <span class="toggle-track"></span>
               </label>
               <div>
-                <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve STAGED Items</span>
+                <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve Staged Items</span>
                 <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move <strong style="color:var(--purple)">Staged</strong> items to <strong style="color:var(--yellow)">Approved</strong> before downloading for a fully hands-off pipeline.</div>
               </div>
             </div>
@@ -2033,7 +2099,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </label>
           <div>
             <div class="toggle-title">Auto-approve imported matches</div>
-            <div class="toggle-note">Import as APPROVED (ready to download). Off = import as STAGED for manual review.</div>
+            <div class="toggle-note">Import as Approved (ready to download). Off = import as Staged for manual review.</div>
           </div>
         </div>
       </div>
@@ -2549,7 +2615,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="modal-overlay" id="delete-modal">
   <div class="modal" style="max-width:420px;position:relative">
     <div class="modal-title">Delete Theme</div>
-    <div class="modal-copy" style="margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--amber)">MISSING</b> status.</div>
+    <div class="modal-copy" style="margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--red)">Missing</b> status.</div>
     <div class="task-title" style="margin-bottom:4px" id="delete-modal-name"></div>
     <div class="db-cell-mono" style="margin-bottom:16px;word-break:break-all" id="delete-modal-path"></div>
     <div class="modal-actions">
@@ -2806,7 +2872,7 @@ function dashboardBadgeClass(state){
   return {ok:'ok',warning:'warn',warn:'warn',off:'off',error:'fail',fail:'fail',unknown:'unknown'}[state] || 'off';
 }
 function dashboardStatusBadge(label,state='off'){
-  return `<span class="dashboard-badge ${dashboardBadgeClass(state)}">${label}</span>`;
+  return `<span class="dashboard-badge ${dashboardBadgeClass(state)}"><span class="status-label">${formatStatusLabel(label)}</span></span>`;
 }
 function formatDashboardTime(value){
   if(!value) return null;
@@ -2932,7 +2998,7 @@ function renderDashboardPipelineOverview(counts){
   el.innerHTML=items.map(item=>`
     <button class="dashboard-stat" style="border-top-color:${item.color}" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
-      <span class="dashboard-stat-label">${item.label}</span>
+      <span class="dashboard-stat-label status-label status-tone-${item.status}" style="color:${item.color}">${displayStatus(item.status)}</span>
       <span class="dashboard-stat-sub">${item.sub}</span>
     </button>`).join('');
 }
@@ -3096,7 +3162,7 @@ function renderDashboardRecentActivity(entries){
   el.innerHTML=`<div style="display:grid;gap:6px">`+items.map(item=>{
     const entry=item.entry;
     const statusState=entry?(entry.status==='success'?'ok':entry.status==='stopped'?'off':'fail'):'off';
-    const statusLabel=entry?(entry.status||'success').toUpperCase():'NONE';
+    const statusLabel=entry?formatStatusLabel(entry.status||'success'):'None';
     const badge=dashboardStatusBadge(statusLabel, statusState);
     const timeStr=entry?formatDashboardTime(entry.time):null;
     const summary=formatRunSummary(entry);
@@ -3258,7 +3324,7 @@ function renderDashLibKpi(){
   el.innerHTML=items.map(item=>`
     <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
-      <span class="dashboard-stat-label">${item.label}</span>
+      <span class="dashboard-stat-label status-label status-tone-${item.status}" style="color:${item.color}">${displayStatus(item.status)}</span>
       <span class="dashboard-stat-sub">${item.sub}</span>
     </button>`).join('');
 }
@@ -3663,7 +3729,7 @@ function testBadge(elId, ok, msg){
 
 let _libs=[], _maxDur=45;
 let _uiTerminology={};
-const _defaultStatusDisplay={'UNMONITORED':'UNMONITORED','MISSING':'MISSING','STAGED':'STAGED','APPROVED':'APPROVED','AVAILABLE':'AVAILABLE','FAILED':'FAILED'};
+const _defaultStatusDisplay={'UNMONITORED':'Unmonitored','MISSING':'Missing','STAGED':'Staged','APPROVED':'Approved','AVAILABLE':'Available','FAILED':'Failed'};
 const _defaultStatusDesc={
   UNMONITORED:'Hidden from automation until you re-enable this title.',
   MISSING:'Needs a source because no local theme file is available yet.',
@@ -3740,7 +3806,10 @@ function emphasizeStatusCopy(){
   const rx=new RegExp(`\\b(${terms.join('|')})\\b`,'gi');
   document.querySelectorAll('.status-copy').forEach(el=>{
     const src=el.textContent||'';
-    el.innerHTML=src.replace(rx,(_,term)=>`<strong class="status-term">${String(term).toUpperCase()}</strong>`);
+    el.innerHTML=src.replace(rx,(_,term)=>{
+      const normalized=String(term||'').toUpperCase();
+      return `<strong class="status-term status-tone-${normalized}">${displayStatus(normalized)}</strong>`;
+    });
   });
 }
 
@@ -3988,8 +4057,16 @@ const SC={'UNMONITORED':'#94a3b8','MISSING':'#f26d78','STAGED':'#b06aff','APPROV
 function statusDesc(status){
   return uiTerm(`statuses.${status}.description`, _defaultStatusDesc[status] || '');
 }
+function formatStatusLabel(value){
+  return String(value||'')
+    .replace(/[_-]+/g,' ')
+    .toLowerCase()
+    .replace(/\b\w/g, chr=>chr.toUpperCase())
+    .trim() || 'Unknown';
+}
 function displayStatus(status){
-  return uiTerm(`statuses.${status}.label`, _defaultStatusDisplay[status] || status);
+  const normalized=String(status||'').toUpperCase();
+  return formatStatusLabel(uiTerm(`statuses.${normalized}.label`, _defaultStatusDisplay[normalized] || normalized));
 }
 
 function _hasLocalTheme(row){
@@ -4032,7 +4109,7 @@ function renderStatusCell(row){
   const rk=row.rating_key;
   const status=row.status;
   const opts=allowedStatuses(row).map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
-  return `<span class="badge s-${status}" title="${statusDesc(status)}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select>${displayStatus(status)}</span>`;
+  return `<span class="badge s-${status}" title="${statusDesc(status)}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select><span class="status-label">${displayStatus(status)}</span></span>`;
 }
 
 function renderStatusKey(){
@@ -4117,7 +4194,7 @@ function renderChips(){
   document.getElementById('db-chips').innerHTML=filters.map(f=>`
     <button type="button" class="chip ${f.active?'active':''}" onclick="${f.handler}">
       <span class="chip-head">${f.count}</span>
-      <span class="chip-body">${f.color?`<span class="chip-dot" style="background:${f.color}"></span>`:''}${f.label}</span>
+      <span class="chip-body">${f.color?`<span class="chip-dot" style="background:${f.color}"></span>`:''}<span class="status-label"${f.color?` style="color:${f.color}"`:''}>${formatStatusLabel(f.label)}</span></span>
     </button>`).join('');
   updateDbActionHints(counts);
 }
@@ -4275,8 +4352,8 @@ function _rowSecondaryActions(row){
   const hasSource=_hasSourceUrl(row);
   const actions=[];
   if(hasSource) actions.push({label:'Preview source', fn:'_previewSource'});
-  if(row.status!=='STAGED' && hasSource) actions.push({label:'Set STAGED', fn:'_stageRow'});
-  if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve to APPROVED', fn:'_approveRow'});
+  if(row.status!=='STAGED' && hasSource) actions.push({label:'Set Staged', fn:'_stageRow'});
+  if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve to Approved', fn:'_approveRow'});
   if(row.rating_key) actions.push({label:'Open manage', fn:'_playTheme'});
   if(hasTheme && row.rating_key) actions.push({label:'Delete theme', fn:'_deleteTheme'});
   actions.push({label:'Manual search', fn:'_manualSearch'});
@@ -4882,7 +4959,7 @@ function _refreshScopedRunLabels(){
   const dbLabels={
     'db-btn-scan':`⟳ Scan ${activeLabel}`,
     'db-btn-resolve':`⚡ Find Sources in ${activeLabel}`,
-    'db-btn-download':`↓ Download APPROVED in ${activeLabel}`
+    'db-btn-download':`↓ Download Approved in ${activeLabel}`
   };
   Object.entries(dbLabels).forEach(([id,label])=>{
     const el=document.getElementById(id);
@@ -6207,7 +6284,7 @@ async function mediaDownloadApproved(){
   toast(`Downloading ${approved} approved items from ${lib}…`,'info');
   await startPipelineRun(3,'db',{libraries:lib?[lib]:[],scopeLabel:lib?`library "${lib}"`:'selected library'});
   // Re-enable after a delay (the actual process runs async)
-  setTimeout(()=>{btn.textContent='↓ Download APPROVED Items';btn.disabled=false;},3000);
+  setTimeout(()=>{btn.textContent='↓ Download Approved Items';btn.disabled=false;},3000);
 }
 function openYtModal(rk,title,year,url,lib){
   stopAllAudio();
@@ -6429,10 +6506,10 @@ async function loadSchedulerHistory(){
     return;
   }
   const PASS_LABELS={0:'Automated Scheduler Run',1:'Step 1 — Scan Libraries',2:'Step 2 — Find Theme Sources',3:'Step 3 — Download Themes'};
-  const OUTCOME_BADGES={success:'pb-3 SUCCESS',error:'pb-e ERROR',stopped:'pb-2 STOPPED'};
+  const OUTCOME_BADGES={success:'pb-3 Success',error:'pb-e Error',stopped:'pb-2 Stopped'};
   el.innerHTML=runs.reverse().map((run,i)=>{
     const outcome=(run.outcome||run.status||'success').toLowerCase();
-    const bc=OUTCOME_BADGES[outcome] || 'pb-e ERROR';
+    const bc=OUTCOME_BADGES[outcome] || 'pb-e Error';
     const [cls,...parts]=bc.split(' ');
     const passLabel=PASS_LABELS[run.pass]||'Pipeline Run';
     const summary=(run.summary||'No summary recorded.').replace(/</g,'&lt;');
@@ -6451,7 +6528,7 @@ async function loadSchedulerHistory(){
           ${meta?`<div class="hcard-meta">${meta}</div>`:''}
           <div style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openRunResults(${run.pass||0})">Open filtered rows</button></div>
         </div>
-        <span class="pass-badge ${cls}">${parts.join(' ')}</span>
+        <span class="pass-badge ${cls}"><span class="status-label">${parts.join(' ')}</span></span>
       </div>
       <div class="hcard-body" id="scheduler-log-${i}">${(run.log||'').replace(/</g,'&lt;')}</div>
     </div>`;
@@ -6621,7 +6698,7 @@ async function loadTaskHistoryList(){
           <div class="task-activity-title">${(it.task||'Task').replace(/</g,'&lt;')}</div>
           <div class="task-activity-sub">${(it.time||'').replace(/</g,'&lt;')}${it.details?.pass?` · Step ${it.details.pass}`:''}</div>
         </div>
-        <span class="task-status ${statusClass(it.outcome||it.status)}">${String(it.outcome||it.status||'info').toUpperCase()}</span>
+        <span class="task-status ${statusClass(it.outcome||it.status)}"><span class="status-label">${formatStatusLabel(it.outcome||it.status||'info')}</span></span>
       </div>
       <div class="task-activity-summary">${(it.summary||'No summary recorded.').replace(/</g,'&lt;')}</div>
       ${chips?`<div class="task-activity-meta">${chips}</div>`:''}
