@@ -192,8 +192,6 @@ body.nav-collapsed main{margin-left:48px}
   .dashboard-grid{grid-template-columns:1fr}
   .span-12,.span-8,.span-7,.span-6,.span-5,.span-4{grid-column:span 1}
   .dashboard-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .dash-activity-row{grid-template-columns:70px 1fr}
-  .dash-activity-time,.dash-activity-summary{display:none}
 }
 .offset-input{width:110px;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;text-align:center}
 .offset-input:focus{border-color:var(--purple)}
@@ -294,13 +292,17 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-badge.unknown{background:var(--gray-soft);color:var(--text3)}
 .dashboard-empty{padding:12px 14px;border:1px dashed var(--border);border-radius:10px;color:var(--text3);font-size:12px;background:var(--surface2)}
 /* Health row — compact single-line style */
-.dash-health-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2)}
-.dash-health-label{font-size:12px;font-weight:600;color:var(--text);min-width:0;flex:1}
-.dash-health-detail{font-size:11px;color:var(--text3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;text-align:right;padding-right:10px}
+.dash-health-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dash-health-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2)}
+.dash-health-copy{min-width:0;display:flex;flex-direction:column;gap:4px}
+.dash-health-label{font-size:12px;font-weight:600;color:var(--text);min-width:0}
+.dash-health-detail{font-size:11px;color:var(--text3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-health-row .badge{align-self:start}
 /* Activity compact rows */
-.dash-activity-row{display:grid;grid-template-columns:80px 1fr auto auto;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);font-size:12px}
+.dash-activity-list{display:grid;gap:8px}
+.dash-activity-row{display:grid;grid-template-columns:auto minmax(140px,180px) minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);font-size:12px}
 .dash-activity-label{font-weight:600;color:var(--text)}
-.dash-activity-time{color:var(--text3);font-family:var(--mono);font-size:11px;white-space:nowrap}
+.dash-activity-time{color:var(--text3);font-family:var(--mono);font-size:11px;white-space:nowrap;justify-self:end}
 .dash-activity-summary{color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Schedule section */
 .dash-schedule-grid{display:grid;gap:6px}
@@ -328,12 +330,24 @@ body.nav-collapsed main{margin-left:48px}
 .dash-status-key-row .badge{min-width:78px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:2px 7px}
 .dash-status-key-def{font-size:10px;color:var(--text2);line-height:1.35}
 /* Action Station */
-.dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
-.dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
-.dash-station-next-run{padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
-.dash-station-next-label{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
-.dash-station-next-rel{font-size:14px;font-weight:700;color:var(--amber);line-height:1.1}
-.dash-station-next-abs{font-size:10px;color:var(--text2);font-family:var(--mono);margin-top:1px}
+.dash-action-station{display:flex;flex-direction:column;gap:12px}
+.dash-station-status{padding:12px 13px;background:linear-gradient(180deg,color-mix(in srgb,var(--surface-elev) 88%,transparent),var(--surface2));border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;gap:10px}
+.dash-station-status-off{border-style:dashed;background:linear-gradient(180deg,color-mix(in srgb,var(--surface-elev) 72%,transparent),var(--surface2))}
+.dash-station-status-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.dash-station-next-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.dash-station-next-rel{font-size:18px;font-weight:700;color:var(--amber);line-height:1.1}
+.dash-station-next-abs{font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:2px}
+.dash-station-helper{font-size:12px;color:var(--text2);line-height:1.5}
+.dash-station-helper.muted{color:var(--text3);font-size:11px}
+.dash-station-meta{display:flex;flex-wrap:wrap;gap:8px}
+.dash-station-meta-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:11px;color:var(--text2)}
+.dash-action-group{display:flex;flex-direction:column;gap:8px}
+.dash-action-group-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+.dash-action-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.dash-action-buttons.primary .btn{flex:1;min-width:150px;justify-content:center}
+.dash-action-buttons.secondary .btn{flex:0 1 auto;min-width:128px;justify-content:center}
+.dash-action-buttons.utility .btn{flex:0 1 auto;min-width:128px;justify-content:center}
+.dash-action-summary{font-size:11px;color:var(--text3)}
 /* Attention expand toggle */
 .dash-attention-toggle{margin-top:6px;color:var(--text3);font-size:11px;width:100%;justify-content:center}
 .dash-attention-toggle:hover{color:var(--text2)}
@@ -353,6 +367,8 @@ body.nav-collapsed main{margin-left:48px}
 .dash-action-buttons .btn-action-setup:hover{background:color-mix(in srgb,var(--blue) 22%,transparent);border-color:var(--blue);color:var(--blue)}
 .dash-action-buttons .btn-action-run{background:var(--green-soft);color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,var(--border))}
 .dash-action-buttons .btn-action-run:hover{background:color-mix(in srgb,var(--green) 22%,transparent);border-color:var(--green);color:var(--green)}
+.dash-action-buttons .btn-action-review{background:var(--amber-soft);color:var(--amber);border-color:color-mix(in srgb,var(--amber) 35%,var(--border))}
+.dash-action-buttons .btn-action-review:hover{background:color-mix(in srgb,var(--amber) 18%,transparent);border-color:var(--amber);color:var(--amber)}
 .dash-action-buttons .btn-action-themes{background:var(--purple-soft);color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,var(--border))}
 .dash-action-buttons .btn-action-themes:hover{background:color-mix(in srgb,var(--purple) 22%,transparent);border-color:var(--purple);color:var(--purple)}
 .dash-action-buttons .btn-action-stop{background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))}
@@ -363,10 +379,6 @@ body.nav-collapsed main{margin-left:48px}
 .dash-how-overlay.open{display:block}
 .dash-how-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35)}
 .dash-how-panel{position:relative;z-index:1}
-
-/* ─── Side-by-side Health + Activity ─── */
-.dash-split-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:980px){.dash-split-row{grid-template-columns:1fr}}
 
 /* ─── Clickable activity rows ─── */
 .dash-activity-row.clickable{cursor:pointer;transition:all .15s}
@@ -401,6 +413,7 @@ body.nav-collapsed main{margin-left:48px}
 .dash-pie-legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 .dash-pie-empty{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:30px 10px}
 @media(max-width:980px){.dash-chart-area{grid-template-columns:1fr}.dash-pie-wrap{flex-direction:row;gap:16px;min-height:auto}}
+@media(max-width:980px){.dash-health-grid{grid-template-columns:1fr}.dash-activity-row{grid-template-columns:auto minmax(0,1fr)}.dash-activity-time{justify-self:start}.dash-activity-summary{grid-column:1 / -1;white-space:normal}}
 
 /* ─── Table ─── */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
@@ -648,7 +661,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .task-title{font-size:14px;font-weight:700;margin-bottom:0}
 .task-desc{font-size:12px;color:var(--text2);margin-bottom:0;line-height:1.5}
 .task-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.task-row-wrap{align-items:stretch}
 .task-btn-group{display:flex;gap:6px;flex-wrap:wrap}
+.task-secondary-action{background:color-mix(in srgb,var(--purple) 18%,var(--surface));color:color-mix(in srgb,var(--purple) 72%,white 10%);border:1px solid color-mix(in srgb,var(--purple) 46%,var(--border))}
+.task-secondary-action:hover{background:color-mix(in srgb,var(--purple) 28%,var(--surface));border-color:var(--purple);color:white}
+.task-secondary-action:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(123,97,255,.2)}
 .submission-steps{display:flex;flex-direction:column;gap:10px}
 .submission-step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);line-height:1.4}
 .submission-step-num{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--purple-soft,var(--surface2));color:var(--purple);font-size:12px;font-weight:700;flex-shrink:0}
@@ -1265,19 +1282,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
     </div>
 
-    <!-- Row 5: System Health + Recent Activity (side by side) -->
-    <div class="dash-split-row" style="margin-bottom:16px">
-      <div class="card dashboard-card">
-        <div class="card-title" style="margin-bottom:10px">System Health</div>
-        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
+    <!-- Row 5: System Health -->
+    <div class="card dashboard-card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:10px">System Health</div>
+      <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
+    </div>
+
+    <!-- Row 6: Recent Activity -->
+    <div class="card dashboard-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">Recent Activity</div>
+        <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
       </div>
-      <div class="card dashboard-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="card-title" style="margin-bottom:0">Recent Activity</div>
-          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
-        </div>
-        <div id="dashboard-recent-activity"></div>
-      </div>
+      <div id="dashboard-recent-activity"></div>
     </div>
 
   </div></div>
@@ -1897,7 +1914,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="card">
       <div class="task-section-head">
         <div class="card-title">Help Build the Curated Catalog</div>
-        <div class="task-section-subtitle">Export a submission-ready CSV of community-found themes for review. This export only includes items not already in the official Golden Source list and only contains TMDB ID, source URL, and start offset.</div>
+        <div class="task-section-subtitle">Export a submission-ready CSV for community review. This export only includes items that are not already listed in the official Golden Source catalog and only includes rows with a TMDB ID and source URL.</div>
       </div>
       <div class="task-grid task-wide" id="task-grid-export"></div>
     </div>
@@ -2942,22 +2959,36 @@ function renderDashboardSystemHealth(health){
   const rows=[
     {label:'Plex', key:'plex'},
     {label:'TMDB API', key:'tmdb'},
+    {label:'Automation', key:'automation'},
     {label:'Golden Source', key:'golden_source'},
     {label:'Download Toolchain', key:'toolchain'},
     {label:'Storage', key:'storage'},
     {label:'Database', key:'database'},
     {label:'Libraries', key:'libraries'},
   ];
-  el.innerHTML=rows.map(row=>{
-    const h=health[row.key]||{state:'unknown',label:'Unknown'};
+  const schedule=health.schedule||{state:'unknown',label:'Unknown',next_run:null,libraries:0};
+  const automationDetail=(()=>{
+    const nextRun=formatNextRunFull(schedule.next_run);
+    if(schedule.state==='ok' && nextRun) return `${nextRun.abs} · ${schedule.libraries||0} librar${(schedule.libraries||0)===1?'y':'ies'}`;
+    if(schedule.state==='off') return 'Manual only';
+    return schedule.detail || ((schedule.libraries||0)>0?`${schedule.libraries} librar${schedule.libraries===1?'y':'ies'} selected`:'Awaiting schedule setup');
+  })();
+  const healthRows={
+    ...health,
+    automation:{state:schedule.state,label:schedule.label,detail:automationDetail}
+  };
+  el.innerHTML=`<div class="dash-health-grid">`+rows.map(row=>{
+    const h=healthRows[row.key]||{state:'unknown',label:'Unknown'};
     const badge=dashboardStatusBadge(h.label, h.state);
     const detail=h.detail||'';
     return `<div class="dash-health-row">
-      <span class="dash-health-label">${row.label}</span>
-      ${detail ? `<span class="dash-health-detail" title="${detail.replace(/"/g,'&quot;')}">${detail}</span>` : ''}
+      <div class="dash-health-copy">
+        <span class="dash-health-label">${row.label}</span>
+        ${detail ? `<span class="dash-health-detail" title="${detail.replace(/"/g,'&quot;')}">${detail}</span>` : ''}
+      </div>
       ${badge}
     </div>`;
-  }).join('');
+  }).join('')+`</div>`;
 }
 function renderDashboardSchedule(health){
   // Schedule section replaced by Action Station — delegate to it
@@ -3000,38 +3031,64 @@ function toggleDashboardAttention(btn,total){
   btn.dataset.expanded=expanded?'0':'1';
   btn.textContent=expanded?`View all ${total} issues`:'Show less';
 }
-function renderDashboardActionStation(health){
+function renderDashboardActionStation(health, cfg={}, counts={}, history=[]){
   const el=document.getElementById('dashboard-action-station');
   if(!el) return;
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   const scheduleActive=s.state==='ok'||s.state==='warning'||s.state==='warn';
-  // Next run block
-  let nextRunHtml='';
+  const scheduleExists=!!(cfg.schedule_enabled || (Array.isArray(cfg.schedule_libraries) && cfg.schedule_libraries.length) || ((cfg.cron_schedule||'').trim() && (cfg.cron_schedule||'').trim()!=='0 3 * * *'));
   const nrFull=formatNextRunFull(s.next_run);
   _startCountdowns(s.next_run||null);
-  if(nrFull){
-    nextRunHtml=`<div class="dash-station-next-run">
-      <div class="dash-station-next-label">Next Scheduled Run</div>
-      <div class="dash-station-next-rel"><span id="dash-next-run-rel">${nrFull.rel}</span></div>
-      <div class="dash-station-next-abs">${nrFull.abs}</div>
-    </div>`;
-  } else if(scheduleActive){
-    nextRunHtml=`<div class="dash-station-next-run">
-      <div class="dash-station-next-label">Automation</div>
-      <div style="margin-top:3px">${dashboardStatusBadge(s.label,s.state)}</div>
-    </div>`;
-  } else {
-    nextRunHtml=`<div class="dash-station-next-run" style="border-style:dashed">
-      <div class="dash-station-next-label">Automation</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px">No schedule configured</div>
-    </div>`;
-  }
-  const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
+  const lastRun=dashboardLatestTask(history, ()=>true);
+  const pendingBits=[];
+  if((counts.STAGED||0)>0) pendingBits.push(`${counts.STAGED} staged`);
+  if((counts.FAILED||0)>0) pendingBits.push(`${counts.FAILED} failed`);
+  const statusHeading=scheduleActive && nrFull ? 'Next Scheduled Run' : 'No automated schedule enabled';
+  const statusBody=scheduleActive && nrFull
+    ? `<div class="dash-station-next-rel"><span id="dash-next-run-rel">${nrFull.rel}</span></div>
+       <div class="dash-station-next-abs">${nrFull.abs}</div>`
+    : `<div class="dash-station-helper">Pipeline automation is currently off. Manual runs are still available.</div>
+       <div class="dash-station-helper muted">Set up a schedule to run scans, source discovery, and downloads automatically.</div>`;
+  const meta=[
+    `<span class="dash-station-meta-chip">${s.libraries||0} librar${(s.libraries||0)===1?'y':'ies'} included</span>`,
+    lastRun?`<span class="dash-station-meta-chip">Last run · ${formatDashboardTime(lastRun.time)||'Unknown'}</span>`:'',
+    pendingBits.length?`<span class="dash-station-meta-chip">${pendingBits.join(' · ')}</span>`:''
+  ].filter(Boolean).join('');
+  const schedulePanel=`<div class="dash-station-status${scheduleActive?'':' dash-station-status-off'}">
+    <div class="dash-station-status-head">
+      <div>
+        <div class="dash-station-next-label">${statusHeading}</div>
+        ${statusBody}
+      </div>
+      ${dashboardStatusBadge(s.label,s.state)}
+    </div>
+    <div class="dash-station-meta">${meta}</div>
+  </div>`;
+  const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">${scheduleExists?'Edit Schedule':'Setup Schedule'}</button>`;
   const runOrStopBtn=_dashRunActive
     ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')" style="background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))">Stop</button>`
-    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun()">Run Schedule</button>`;
+    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun()">Run Pipeline Now</button>`;
+  let contextualBtn='';
+  if((counts.FAILED||0)>0){
+    contextualBtn=`<button class="btn btn-ghost btn-sm btn-action-review" onclick='dashboardOpenTarget(${JSON.stringify({page:'theme-manager',filter:'FAILED'})})'>Review Failed</button>`;
+  } else if((counts.STAGED||0)>0){
+    contextualBtn=`<button class="btn btn-ghost btn-sm btn-action-review" onclick='dashboardOpenTarget(${JSON.stringify({page:'theme-manager',filter:'STAGED'})})'>Review Staged</button>`;
+  } else if((counts.MISSING||0)>0){
+    contextualBtn=`<button class="btn btn-ghost btn-sm btn-action-review" onclick='dashboardOpenTarget(${JSON.stringify({page:'theme-manager',filter:'MISSING'})})'>Open Missing</button>`;
+  }
   const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
-  el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`;
+  const secondaryActions=`<div class="dash-action-group">
+    <div class="dash-action-group-label">Review & Manage</div>
+    <div class="dash-action-buttons secondary">${contextualBtn||''}${themesBtn}</div>
+  </div>`;
+  el.innerHTML=`<div class="dash-action-station">
+    ${schedulePanel}
+    <div class="dash-action-group">
+      <div class="dash-action-group-label">Primary Actions</div>
+      <div class="dash-action-buttons primary">${setupBtn}${runOrStopBtn}</div>
+    </div>
+    ${secondaryActions}
+  </div>`;
 }
 function _updateDashRunButton(){
   const btn=document.getElementById('dash-run-btn');
@@ -3042,7 +3099,7 @@ function _updateDashRunButton(){
     btn.style.cssText='background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))';
     btn.onclick=function(){stopRun('run');};
   } else {
-    btn.textContent='Run Schedule';
+    btn.textContent='Run Pipeline Now';
     btn.className='btn btn-ghost btn-sm btn-action-run';
     btn.style.cssText='';
     btn.onclick=function(){startScheduledRun();};
@@ -3093,7 +3150,7 @@ function renderDashboardRecentActivity(entries){
   ];
   const el=document.getElementById('dashboard-recent-activity');
   if(!el) return;
-  el.innerHTML=`<div style="display:grid;gap:6px">`+items.map(item=>{
+  el.innerHTML=`<div class="dash-activity-list">`+items.map(item=>{
     const entry=item.entry;
     const statusState=entry?(entry.status==='success'?'ok':entry.status==='stopped'?'off':'fail'):'off';
     const statusLabel=entry?(entry.status||'success').toUpperCase():'NONE';
@@ -3104,8 +3161,8 @@ function renderDashboardRecentActivity(entries){
     return `<div class="dash-activity-row${hasEntry?' clickable':''}"${hasEntry?' tabindex="0" role="button" aria-label="View '+item.label+' details" onclick="navigateToActivity(\''+item.label+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();navigateToActivity(\''+item.label+'\')}"':''}>
       ${badge}
       <span class="dash-activity-label">${item.label}</span>
-      <span class="dash-activity-time">${timeStr||'—'}</span>
       <span class="dash-activity-summary">${summary}</span>
+      <span class="dash-activity-time">${timeStr||'—'}</span>
     </div>`;
   }).join('')+`</div>`;
 }
@@ -3527,7 +3584,7 @@ async function loadDashboard(force=false){
   const {data:health}=await requestJson('/api/health');
   if(health && typeof health==='object'){
     renderDashboardSystemHealth(health);
-    renderDashboardSchedule(health);
+    renderDashboardActionStation(health, cfg, counts, history);
   }
 }
 function setPendingTestBadge(elId, label='Working…'){
@@ -6487,34 +6544,21 @@ const TASK_CARD_CONFIG={
   ],
   exportData:[
     {
-      title:'★ Export Golden Source CSV',
-      description:'Exports rows with source URLs only in Golden Source format. Tooltips explain each field.',
-      controlType:'selectAndButton',
+      title:'★ Export Candidate CSV',
+      description:'Export a submission-ready CSV for community review. This export only includes items that are not already listed in the official Golden Source catalog and only includes rows with a TMDB ID and source URL.',
+      controlType:'selectAndTwoButtons',
       selectId:'task-lib-export',
       selectClass:'filter-sel',
-      selectTitle:'Library scope for this export',
-      buttonLabel:'Export',
+      selectTitle:'Library scope for this candidate export',
+      buttonLabel:'Export CSV',
       buttonClass:'btn btn-amber btn-sm',
-      buttonTitle:'Download a curated Golden Source-format CSV',
-      handler:'taskExportGoldenSource()',
-      cardClass:'golden-emphasis task-wide',
-      extraHtml:'<div class="field-help compact" title="tmdb_id,title,year,source_url,start_offset,updated_at,notes">Fields: tmdb_id · title · year · source_url · start_offset · updated_at · notes</div>'
-    },
-    {
-      title:'Community Candidate Export',
-      description:'Export themes not yet in the official Golden Source list for community submission.',
-      controlType:'selectAndTwoButtons',
-      selectId:'task-lib-candidate',
-      selectClass:'filter-sel',
-      selectTitle:'Library scope for candidate export',
-      buttonLabel:'Export Candidate CSV',
-      buttonClass:'btn btn-amber btn-sm',
+      buttonTitle:'Download a community candidate CSV',
       handler:'taskExportCandidateCSV()',
       secondButtonLabel:'Submit for Review',
-      secondButtonClass:'btn btn-purple btn-sm btn-outline',
+      secondButtonClass:'btn btn-sm task-secondary-action',
       secondHandler:'openModal(\'submission-modal\')',
-      cardClass:'task-wide',
-      extraHtml:'<div class="field-help compact" style="margin-top:6px">Community submissions are reviewed before they are added to the official curated catalog.</div><div class="field-help compact" style="margin-top:4px;color:var(--text3)">Includes: tmdb_id · source_url · start_offset</div>'
+      cardClass:'golden-emphasis task-wide',
+      extraHtml:'<div class="field-help compact" style="margin-top:6px">Fields: tmdb_id · title · year · source_url · start_offset · updated_at · notes</div><div class="field-help compact" style="margin-top:8px">Community submissions are reviewed before they are added to the official curated catalog.</div>'
     }
   ],
   cleanup:[
@@ -6584,7 +6628,7 @@ function renderTaskCards(){
     if(card.controlType==='inputAndButton') return `<input class="${card.inputClass||'filter-sel'}" id="${card.inputId}" value="${card.inputValue||''}"${card.inputStyle?` style="${card.inputStyle}"`:''}><button class="${card.buttonClass}" onclick="${card.handler}">${card.buttonLabel}</button>`;
     return '';
   };
-  const renderCards=(cards)=>cards.map(card=>`<div class="task-card${card.cardClass?` ${card.cardClass}`:''}"><div class="task-title"${card.titleStyle?` style="${card.titleStyle}"`:''}>${card.title}</div><div class="task-desc">${card.description}</div><div class="task-row">${renderRowControls(card)}</div>${card.extraHtml||''}</div>`).join('');
+  const renderCards=(cards)=>cards.map(card=>`<div class="task-card${card.cardClass?` ${card.cardClass}`:''}"><div class="task-title"${card.titleStyle?` style="${card.titleStyle}"`:''}>${card.title}</div><div class="task-desc">${card.description}</div><div class="task-row${card.controlType==='selectAndTwoButtons'?' task-row-wrap':''}">${renderRowControls(card)}</div>${card.extraHtml||''}</div>`).join('');
 
   const runGrid=document.getElementById('task-grid-run-pipeline');
   const exportGrid=document.getElementById('task-grid-export');
@@ -6636,7 +6680,6 @@ function _fillTaskLibSelects(){
   const libraryOpts = (_libs||[]).map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
   const scopedOpts = '<option value="__all__">All libraries</option>' + libraryOpts;
   const exportEl=document.getElementById('task-lib-export'); if(exportEl) exportEl.innerHTML=scopedOpts;
-  const candidateEl=document.getElementById('task-lib-candidate'); if(candidateEl) candidateEl.innerHTML=scopedOpts;
   const clearEl=document.getElementById('task-lib-clear-sources'); if(clearEl) clearEl.innerHTML=scopedOpts;
   const refreshEl=document.getElementById('task-lib-refresh'); if(refreshEl) refreshEl.innerHTML=libraryOpts;
   if(!_taskLibSelection.size){ (_libs||[]).forEach(l=>_taskLibSelection.add(l.name)); }
@@ -6715,7 +6758,7 @@ async function taskExportGoldenSource(){
   });
 }
 async function taskExportCandidateCSV(){
-  const lib=taskLibValue('task-lib-candidate');
+  const lib=taskLibValue('task-lib-export');
   if(!lib) return toast('Select a library first','err');
   await runTaskAction({
     url:'/api/tasks/export-candidate-csv',
