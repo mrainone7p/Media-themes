@@ -2683,6 +2683,17 @@ async function loadLibRows(name){
   renderChips(); filterTable();
 }
 
+function upsertLedgerRow(savedRow){
+  if(!savedRow || !savedRow.rating_key) return null;
+  const rk=String(savedRow.rating_key);
+  const existingIndex=_rows.findIndex(r=>String(r.rating_key)===rk);
+  const merged=existingIndex>=0 ? {..._rows[existingIndex], ...savedRow} : {...savedRow};
+  if(existingIndex>=0) _rows.splice(existingIndex,1,merged);
+  else _rows.push(merged);
+  _rowMap[rk]=merged;
+  return merged;
+}
+
 function renderChips(){
   const counts={};
   let golden=0, noGolden=0;
@@ -4400,40 +4411,41 @@ async function saveSourceEditor(skipClose=false){
   const offset=parseTrim(document.getElementById('se-offset').value||'0');
   if(!url){ toast('Please enter a URL','info'); return; }
   const lib=_seLib||_searchLib||_activeLib||'';
-  const row=_rows.find(r=>String(r.rating_key)===String(key));
+  const row=_rowMap[key]||_rows.find(r=>String(r.rating_key)===String(key));
   const isAvailable=row && ['AVAILABLE'].includes(String(row.status||'').toUpperCase());
   const status=(isAvailable || !_autoApproveManual)?'STAGED':'APPROVED';
   const notes=status==='APPROVED'?'Manual source auto-approved':'URL set via manual search — moved to Staged for approval';
 
-  const saveUrlResp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
-    method:'PATCH', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({url,start_offset:offset,notes})
+  const saveResp=await fetch('/api/ledger/manual-source',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      rating_key:key,
+      library:lib,
+      url,
+      start_offset:offset,
+      notes,
+      target_status:status
+    })
   });
-  const saveUrlPayload=await saveUrlResp.json().catch(()=>({}));
-  if(!saveUrlResp.ok || saveUrlPayload?.ok===false){
-    toast(saveUrlPayload.error||'Failed to save source URL on row','err');
-    throw new Error(saveUrlPayload.error||'save_url_failed');
+  const savePayload=await saveResp.json().catch(()=>({}));
+  if(!saveResp.ok || savePayload?.ok===false){
+    toast(savePayload.error||'Failed to save manual source','err');
+    throw new Error(savePayload.error||'save_manual_source_failed');
   }
 
-  const statusResp=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(lib),{
-    method:'PATCH', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({status,notes})
-  });
-  const statusPayload=await statusResp.json().catch(()=>({}));
-  if(!statusResp.ok || statusPayload?.ok===false){
-    toast(statusPayload.error||'Saved URL but failed to set status','err');
-    throw new Error(statusPayload.error||'save_status_failed');
+  const savedRow=upsertLedgerRow(savePayload.row);
+  if(savedRow){
+    renderChips();
+    filterTable();
   }
-
-  const localRow=_rows.find(r=>String(r.rating_key)===String(key));
-  if(localRow){ localRow.url=url; localRow.start_offset=String(offset); localRow.status=status; }
   if(!skipClose){
     closeSearchModal();
-    toast(status==='APPROVED'
+    const finalStatus=String(savedRow?.status||status).toUpperCase();
+    toast(finalStatus==='APPROVED'
       ?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved')
       :uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
   }
-  loadDatabase();
+  await loadDatabase(false);
   return true;
 }
 
