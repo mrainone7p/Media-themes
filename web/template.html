@@ -3679,14 +3679,84 @@ let _autoApproveManual=false;
 let _seKey=null,_seLib='';
 // Persistent state so Back works
 let _lastSearchResults=[];
+let _lastSearchResultsKey=null;
 let _lastSearchMethod='playlist';
 let _previewCache={};
 let _lastPreviewedUrl='';
 let _step3PreparedUrl='';
+let _searchModalStateKey=null;
 let _activeQuickPickBtn=null;
 let _activeQuickPickUrl='';
 let _selectedSourceTitle='';
 let _sePreviewLoadSeq=0;
+
+function _searchStateKey(key){
+  return key==null ? null : String(key);
+}
+
+function _searchStateMatches(key){
+  const normalized=_searchStateKey(key);
+  return normalized!==null && normalized===_searchModalStateKey;
+}
+
+function _setOwnedSearchResults(key, results){
+  _lastSearchResults=Array.isArray(results) ? results : [];
+  _lastSearchResultsKey=_lastSearchResults.length ? _searchStateKey(key) : null;
+}
+
+function _searchPreviewReset(){
+  resetActivePreviewBtn();
+  const audio=_searchPreviewAudio?.audio;
+  if(audio){
+    audio.pause();
+    audio.src='';
+    audio.load();
+  }
+  const slider=document.getElementById('sm-preview-slider');
+  const cur=document.getElementById('sm-preview-cur');
+  const dur=document.getElementById('sm-preview-dur');
+  if(slider) slider.value=0;
+  if(cur) cur.textContent='0:00';
+  if(dur) dur.textContent='—';
+}
+
+function _resetSourceEditorDraft(){
+  _sePreviewLoadSeq++;
+  _step3PreparedUrl='';
+  _selectedSourceTitle='';
+  const urlEl=document.getElementById('se-url');
+  const offsetEl=document.getElementById('se-offset');
+  const sourceEl=document.getElementById('se-source-title');
+  const loadBtn=document.getElementById('se-load-btn');
+  if(urlEl) urlEl.value='';
+  if(offsetEl) offsetEl.value='0:00';
+  if(sourceEl) sourceEl.textContent='—';
+  if(loadBtn){ loadBtn.textContent='↺ Refresh'; loadBtn.disabled=false; }
+  _sourceEditorAudio.cleanup();
+  const trimWindow=document.getElementById('se-trim-window');
+  const startLabel=document.getElementById('se-trim-start-label');
+  const endLabel=document.getElementById('se-trim-end-label');
+  if(trimWindow) trimWindow.style.display='none';
+  if(startLabel) startLabel.textContent='Start 0:00';
+  if(endLabel) endLabel.textContent='End —';
+  _setClipSummary('se-result-summary','se-result-main','se-result-sub','se-result-warning',0,'0:00',_maxDur,'preview');
+  const infoEl=document.getElementById('se-info');
+  if(infoEl) infoEl.textContent='Select a result or paste a URL to preview';
+}
+
+function _resetSearchModalState(){
+  _setOwnedSearchResults(null, []);
+  const resultsEl=document.getElementById('search-results');
+  const metaEl=document.getElementById('sm-results-meta');
+  const countEl=document.getElementById('sm-results-count');
+  const pasteEl=document.getElementById('search-paste-url');
+  if(resultsEl) resultsEl.innerHTML='';
+  if(metaEl) metaEl.textContent='';
+  if(countEl) countEl.textContent='';
+  if(pasteEl) pasteEl.value='';
+  _searchPreviewReset();
+  _resetSourceEditorDraft();
+}
 
 function _normalizedOffsetValue(val){
   return fmt(parseTrim(val||'0'));
@@ -3859,9 +3929,12 @@ function goToSearchStep(step){
 
 async function openSearchModal(rk,title,year,lib){
   stopAllAudio();
+  const sameItem=_searchStateMatches(rk);
+  if(!sameItem) _resetSearchModalState();
   _searchKey=rk; _searchTitle=title; _searchYear=year;
   _searchLib=lib?decodeURIComponent(lib):'';
   _seKey=rk; _seLib=_searchLib||_activeLib||'';
+  _searchModalStateKey=_searchStateKey(rk);
   const cfg=await(await fetch('/api/config')).json();
   _autoApproveManual = !!cfg.auto_approve_manual;
   const defaultMethod=(cfg.search_mode||'playlist')==='playlist'?'playlist':'direct';
@@ -3881,21 +3954,31 @@ async function openSearchModal(rk,title,year,lib){
     if(card) card.classList.toggle('active',m===_searchMethod);
   });
   _updateQueryDisplay();
-  document.getElementById('search-paste-url').value='';
   const existingRow=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
   const existingUrl=(existingRow?.url||'').trim();
   const existingOffset=fmt(parseTrim(existingRow?.start_offset||'0:00'));
-  document.getElementById('se-url').value=existingUrl;
-  document.getElementById('se-offset').value=existingOffset;
-  _step3PreparedUrl=existingUrl||'';
-  _selectedSourceTitle='';
+  const urlEl=document.getElementById('se-url');
+  const offsetEl=document.getElementById('se-offset');
   const sourceEl=document.getElementById('se-source-title');
-  if(sourceEl){
-    sourceEl.innerHTML=existingUrl
-      ? `<a class="source-editor-link" href="${existingUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${_sourceTitleFromUrl(existingUrl).replace(/</g,'&lt;')} <span>↗</span></a>`
-      : '—';
+  const pasteEl=document.getElementById('search-paste-url');
+  const infoEl=document.getElementById('se-info');
+  const hasSameItemDraft=sameItem && !!((urlEl?.value||'').trim() || _step3PreparedUrl || (pasteEl?.value||'').trim());
+  if(!hasSameItemDraft){
+    if(pasteEl) pasteEl.value='';
+    if(urlEl) urlEl.value=existingUrl;
+    if(offsetEl) offsetEl.value=existingOffset;
+    _step3PreparedUrl=existingUrl||'';
+    _selectedSourceTitle='';
+    if(sourceEl){
+      sourceEl.innerHTML=existingUrl
+        ? `<a class="source-editor-link" href="${existingUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${_sourceTitleFromUrl(existingUrl).replace(/</g,'&lt;')} <span>↗</span></a>`
+        : '—';
+    }
+    if(infoEl) infoEl.textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
+  } else {
+    _step3PreparedUrl=(urlEl?.value||'').trim()||_step3PreparedUrl||existingUrl||'';
+    if(sourceEl && (urlEl?.value||'').trim()) seUrlChanged();
   }
-  document.getElementById('se-info').textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
   const goldenCard=document.getElementById('sm-card-golden');
   const goldenDesc=document.getElementById('sm-golden-desc');
   const goldenOffset=document.getElementById('sm-golden-offset');
@@ -3915,12 +3998,16 @@ async function openSearchModal(rk,title,year,lib){
       if(card) card.classList.toggle('active',m===_searchMethod);
     });
   }
+  const hasOwnedResults=_lastSearchResults.length && _lastSearchResultsKey===_searchStateKey(rk);
+  const shouldRestoreStep3=sameItem && _searchCurrentStep===3 && hasSameItemDraft;
+  if(hasOwnedResults) _renderResults(_lastSearchResults);
   // Decide starting step
-  if(_lastSearchResults.length && _searchKey===rk){
+  if(shouldRestoreStep3){
+    goToSearchStep(3);
+  } else if(hasOwnedResults){
     goToSearchStep(2);
-    _renderResults(_lastSearchResults);
   } else {
-    _lastSearchResults=[];
+    _setOwnedSearchResults(null, []);
     goToSearchStep(1);
   }
   openModal('search-modal');
@@ -3961,7 +4048,7 @@ async function _searchByMethod(method, showStep=true){
     }
     return null;
   }
-  _lastSearchResults=data.results||[];
+  _setOwnedSearchResults(_searchKey, data.results||[]);
   if(showStep){
     _renderResults(_lastSearchResults);
     _setSearchFooter(2);
