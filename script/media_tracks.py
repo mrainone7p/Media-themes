@@ -32,7 +32,7 @@ sidecar file for every movie in your media library.
                                   FAILED        FAILED
   MISSING may remain MISSING when a retryable resolve miss should be retried later
   Any     → UNMONITORED (hidden from future automation until re-enabled)
-  Any     → REMOVED     (no longer in library)
+  Items that leave Plex are removed from the persisted ledger on the next scan
 
 ─── FORCE_PASS environment variable ─────────────────────────────────────────
 
@@ -146,7 +146,6 @@ ST_STAGED      = "STAGED"
 ST_APPROVED    = "APPROVED"
 ST_AVAILABLE   = "AVAILABLE"
 ST_FAILED      = "FAILED"
-ST_REMOVED     = "REMOVED"
 
 
 RETRYABLE_RESOLVE_REASONS = {
@@ -721,14 +720,12 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
         "staged": 0, "approved": 0, "removed": 0, "skipped": 0, "new": 0,
     }
 
-    # Mark removed
-    for key, row in ledger.items():
-        if key not in plex_keys and row["status"] != ST_REMOVED:
-            row["status"]       = ST_REMOVED
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            row["notes"]        = "No longer in Plex library"
-            stats["removed"]   += 1
-            log.info(f"[REMOVED]  {row.get('title') or row.get('plex_title')} ({row.get('year')})")
+    # Drop titles that are no longer in Plex. They are not part of the persisted workflow.
+    removed_keys = [key for key in list(ledger) if key not in plex_keys]
+    for key in removed_keys:
+        row = ledger.pop(key)
+        stats["removed"] += 1
+        log.info(f"[REMOVED]  {row.get('title') or row.get('plex_title')} ({row.get('year')})")
 
     missing_movies = []
 
@@ -772,12 +769,7 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
             stats["skipped"] += 1
             continue
 
-        if current == ST_REMOVED:
-            row["status"]       = ST_AVAILABLE if has_theme else ST_MISSING
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            row["notes"]        = "Re-appeared in Plex"
-            log.info(f"[RETURNED] {plex_title} ({plex_year})")
-        elif has_theme and current != ST_AVAILABLE:
+        if has_theme and current != ST_AVAILABLE:
             row["status"]       = ST_AVAILABLE
             row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             row["notes"]        = "Theme detected on disk — auto-promoted"

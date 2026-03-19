@@ -47,7 +47,123 @@ LEDGER_HEADERS = [
 
 _csv_lock = threading.Lock()
 _db_lock = threading.Lock()
-VALID_STATUSES = {"UNMONITORED", "MISSING", "STAGED", "APPROVED", "AVAILABLE", "FAILED"}
+
+STATUS_ORDER = ("UNMONITORED", "MISSING", "STAGED", "APPROVED", "AVAILABLE", "FAILED")
+VALID_STATUSES = frozenset(STATUS_ORDER)
+NON_PERSISTED_STATUSES = frozenset({"REMOVED"})
+LEGACY_STATUS_MAP = {
+    "PENDING": "MISSING",
+    "DOWNLOADED": "AVAILABLE",
+    "IGNORED": "UNMONITORED",
+    "REJECTED": "UNMONITORED",
+    "NO_PLAYLIST": "MISSING",
+}
+MANUAL_STATUS_TRANSITIONS = {
+    "UNMONITORED": frozenset({"MISSING"}),
+    "MISSING": frozenset({"STAGED", "FAILED"}),
+    "STAGED": frozenset({"APPROVED", "MISSING", "FAILED"}),
+    "APPROVED": frozenset({"AVAILABLE", "MISSING", "FAILED"}),
+    "AVAILABLE": frozenset({"MISSING"}),
+    "FAILED": frozenset({"MISSING", "STAGED"}),
+}
+
+
+def normalize_status(status: str | None, default: str = "MISSING") -> str:
+    normalized = str(status or "").strip().upper()
+    return normalized or default
+
+
+def migrate_legacy_status(status: str | None) -> tuple[str, str | None]:
+    normalized = normalize_status(status)
+    mapped = LEGACY_STATUS_MAP.get(normalized)
+    if mapped:
+        return mapped, f"[migrated from {normalized}]"
+    return normalized, None
+
+
+def valid_manual_targets(current_status: str | None) -> tuple[str, ...]:
+    current = normalize_status(current_status)
+    targets = set(MANUAL_STATUS_TRANSITIONS.get(current, frozenset()))
+    targets.add("UNMONITORED")
+    return tuple(status for status in STATUS_ORDER if status in targets)
+
+
+def validate_manual_status_transition(
+    current_status: str | None,
+    attempted_status: str | None,
+    *,
+    has_url: bool = False,
+    has_theme: bool = False,
+) -> dict | None:
+    attempted = normalize_status(attempted_status, default="")
+    current = normalize_status(current_status, default="")
+    if not attempted or attempted not in VALID_STATUSES:
+        return {
+            "error": "Invalid target status",
+            "reason_code": "INVALID_STATUS",
+            "current_status": current,
+            "attempted_status": attempted,
+        }
+    if attempted == current:
+        return None
+
+    supported_targets = list(valid_manual_targets(current))
+    if attempted == "UNMONITORED":
+        return None
+    if attempted == "STAGED" and not has_url:
+        return {
+            "error": "Cannot set status to STAGED without a source URL",
+            "reason_code": "MISSING_URL",
+            "current_status": current,
+            "attempted_status": attempted,
+            "supported_targets": supported_targets,
+        }
+    if attempted == "AVAILABLE" and not has_theme:
+        return {
+            "error": "Cannot set status to AVAILABLE when the local theme is missing",
+            "reason_code": "MISSING_LOCAL_THEME",
+            "current_status": current,
+            "attempted_status": attempted,
+            "supported_targets": supported_targets,
+        }
+    if attempted == "APPROVED" and current != "STAGED":
+        return {
+            "error": "Only STAGED items can be approved",
+            "reason_code": "APPROVAL_REQUIRES_STAGED",
+            "current_status": current,
+            "attempted_status": attempted,
+            "supported_targets": supported_targets,
+        }
+
+    allowed = MANUAL_STATUS_TRANSITIONS.get(current, frozenset())
+    if attempted not in allowed:
+        return {
+            "error": (
+                f"Unsupported manual status transition: {current} -> {attempted}. "
+                f"Allowed manual targets from {current}: {', '.join(supported_targets)}"
+            ),
+            "reason_code": "INVALID_STATUS_TRANSITION",
+            "current_status": current,
+            "attempted_status": attempted,
+            "supported_targets": supported_targets,
+        }
+    return None
+
+
+def status_after_clearing_source(current_status: str | None, *, has_theme: bool = False) -> tuple[str, str]:
+    current = normalize_status(current_status, default="")
+    if has_theme:
+        return "AVAILABLE", "preserved_available"
+    if current == "UNMONITORED":
+        return "UNMONITORED", "preserved_unmonitored"
+    if current == "FAILED":
+        return "FAILED", "preserved_failed"
+    return "MISSING", "reset_missing"
+
+
+def should_persist_status(status: str | None) -> bool:
+    normalized = normalize_status(status, default="")
+    return bool(normalized) and normalized not in NON_PERSISTED_STATUSES
 
 
 def _now_str() -> str:
@@ -92,27 +208,11 @@ def _normalize_row(row: dict) -> dict:
         v = row.get(k)
         out[k] = "" if v is None else v
 
-    out["status"] = str(out.get("status", "") or "MISSING").strip().upper()
-    # Compatibility choice: normalize legacy rows on read so existing databases
-    # keep working without a one-time migration step.
-    legacy_status_map = {
-        "PENDING": "MISSING",
-        "DOWNLOADED": "AVAILABLE",
-        "IGNORED": "UNMONITORED",
-        "REJECTED": "UNMONITORED",
-        "NO_PLAYLIST": "MISSING",
-    }
-    mapped = legacy_status_map.get(out["status"])
-    if mapped:
-        original = out["status"]
-        out["status"] = mapped
+    migrated_status, migration_note = migrate_legacy_status(out.get("status"))
+    out["status"] = migrated_status
+    if migration_note:
         notes = (out.get("notes", "") or "").strip()
-        out["notes"] = f"{notes} [migrated from {original}]".strip()
-    elif out["status"] not in VALID_STATUSES:
-        original = out["status"] or "UNKNOWN"
-        out["status"] = "MISSING"
-        notes = (out.get("notes", "") or "").strip()
-        out["notes"] = f"{notes} [normalized unsupported status {original} -> MISSING]".strip()
+        out["notes"] = f"{notes} {migration_note}".strip()
 
     # Guarantee rating_key is always a non-None string — critical for delete/patch lookups
     out["rating_key"] = str(out.get("rating_key") or "").strip()
@@ -151,7 +251,10 @@ def _csv_load_rows(path: str) -> list[dict]:
     with open(p, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             if row.get("rating_key"):
-                rows.append(_normalize_row(row))
+                normalized = _normalize_row(row)
+                if normalized["status"] in NON_PERSISTED_STATUSES:
+                    continue
+                rows.append(normalized)
     rows.sort(key=lambda r: (str(r.get("title", "")).lower(), str(r.get("rating_key", ""))))
     return rows
 
@@ -303,7 +406,13 @@ def _sqlite_load_rows(path: str) -> list[dict]:
                 (slug,),
             )
             rows = [dict(r) for r in cur.fetchall()]
-            return [_normalize_row(r) for r in rows]
+            normalized_rows = []
+            for row in rows:
+                normalized = _normalize_row(row)
+                if not should_persist_status(normalized["status"]):
+                    continue
+                normalized_rows.append(normalized)
+            return normalized_rows
         finally:
             conn.close()
 
@@ -311,7 +420,15 @@ def _sqlite_load_rows(path: str) -> list[dict]:
 def _sqlite_save_rows(path: str, rows: Iterable[dict]):
     slug = _slug_from_path(path)
     # Only save rows that have a non-empty rating_key
-    rows = [_normalize_row(r) for r in rows if (r.get("rating_key") or "").strip()]
+    normalized_rows = []
+    for row in rows:
+        if not (row.get("rating_key") or "").strip():
+            continue
+        normalized = _normalize_row(row)
+        if not should_persist_status(normalized["status"]):
+            continue
+        normalized_rows.append(normalized)
+    rows = normalized_rows
     now = _now_str()
     with _db_lock:
         conn = _connect()
