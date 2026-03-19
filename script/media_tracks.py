@@ -48,7 +48,6 @@ sidecar file for every movie in your media library.
 """
 
 import csv
-import hashlib
 import json
 import logging
 import os
@@ -73,9 +72,10 @@ if str(SHARED_DIR) not in sys.path:
 from storage import (
     LEDGER_HEADERS,
     ffprobe_duration,
-    ledger_path_for as shared_ledger_path_for,
-    load_ledger_map,
-    save_ledger_map,
+    ledger_path_for,
+    load_ledger_map as load_ledger,
+    read_golden_source_text,
+    save_ledger_map as save_ledger,
     sync_theme_cache,
 )
 
@@ -152,20 +152,6 @@ RETRYABLE_RESOLVE_REASONS = {
     "No search results",
     "No strict title match",
 }
-
-
-# ─── Ledger helpers ───────────────────────────────────────────────────────────
-
-def load_ledger(path: str) -> dict:
-    return load_ledger_map(path)
-
-
-def save_ledger(path: str, ledger: dict):
-    return save_ledger_map(path, ledger)
-
-
-def ledger_path_for(library_name: str) -> str:
-    return shared_ledger_path_for(library_name)
 
 
 _RETRY_NOTE_RE = re.compile(r"Resolve retry\s+(\d+)\s*/\s*(\d+)", re.IGNORECASE)
@@ -536,15 +522,6 @@ GOLDEN_SOURCE_EXPECTED_COLUMNS = [
 GOLDEN_SOURCE_REQUIRED_COLUMNS = ["tmdb_id", "source_url"]
 
 
-def _normalize_golden_source_url(url: str) -> str:
-    url = (url or "").strip()
-    m = re.match(r"https?://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)", url)
-    if m:
-        owner, repo, branch, path = m.groups()
-        return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
-    return url
-
-
 def _parse_golden_source_text(text: str) -> dict:
     reader = csv.DictReader(text.splitlines())
     if not reader.fieldnames:
@@ -577,37 +554,19 @@ def _parse_golden_source_text(text: str) -> dict:
 
 def _fetch_golden_source_catalog(url: str, force_refresh: bool = True, cache_ttl_sec: int = 1800) -> tuple:
     """Fetch Golden Source CSV. Returns (normalized_url, {tmdb_id: row_dict})."""
-    normalized = _normalize_golden_source_url(url)
-    if not normalized:
-        raise ValueError("Golden Source URL is not configured")
-
-    cache_key = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
-    cache_path = GOLDEN_CACHE_DIR / f"{cache_key}.csv"
-
-    if not force_refresh and cache_path.exists():
-        age = time.time() - cache_path.stat().st_mtime
-        if age <= max(0, int(cache_ttl_sec or 0)):
-            return normalized, _parse_golden_source_text(cache_path.read_text(encoding="utf-8"))
-
-    response = requests.get(normalized, timeout=20)
-    response.raise_for_status()
-    text = response.content.decode("utf-8-sig", errors="replace")
-    cache_path.write_text(text, encoding="utf-8")
+    normalized, text, _, _ = read_golden_source_text(
+        url,
+        cache_dir=GOLDEN_CACHE_DIR,
+        force_refresh=force_refresh,
+        cache_ttl_sec=cache_ttl_sec,
+    )
     return normalized, _parse_golden_source_text(text)
 
 
 # ─── Audio helpers ────────────────────────────────────────────────────────────
 
 def get_audio_duration(filepath: Path) -> float:
-    try:
-        result = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1", str(filepath)],
-            capture_output=True, text=True, timeout=15,
-        )
-        return float(result.stdout.strip())
-    except Exception:
-        return 0.0
+    return ffprobe_duration(filepath)
 
 
 def validate_audio_file(filepath: Path) -> tuple:

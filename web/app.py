@@ -34,6 +34,8 @@ from storage import (
     ledger_path_for,
     load_ledger_rows as load_ledger,
     MANUAL_STATUS_TRANSITIONS,
+    normalize_golden_source_url,
+    read_golden_source_text,
     save_ledger_rows as save_ledger,
     STATUS_ORDER,
     status_after_clearing_source,
@@ -577,7 +579,7 @@ def normalize_config(raw_cfg, *, for_save=False):
     if "search_query" in source and "search_query_playlist" not in source:
         normalized["search_query_playlist"] = str(source.get("search_query") or "").strip() or CONFIG_DEFAULTS["search_query_playlist"]
 
-    normalized["golden_source_url"] = _normalize_golden_source_url(normalized["golden_source_url"])
+    normalized["golden_source_url"] = normalize_golden_source_url(normalized["golden_source_url"])
     normalized["media_roots"] = _normalize_media_roots(source, errors)
     normalized["libraries"] = _normalize_libraries(source, errors)
     normalized["schedule_libraries"] = _normalize_schedule_libraries(source.get("schedule_libraries"), normalized, errors)
@@ -734,30 +736,11 @@ def get_libraries(cfg):
     return [{"name": cfg.get("plex_library_name","Movies"), "enabled": True}]
 
 def get_audio_duration(filepath):
-    try:
-        r = subprocess.run(["ffprobe","-v","error","-show_entries","format=duration",
-            "-of","default=noprint_wrappers=1:nokey=1",str(filepath)],
-            capture_output=True, text=True, timeout=15)
-        return float(r.stdout.strip())
-    except: return 0.0
+    return ffprobe_duration(filepath)
 
 def _boolish(v):
     if isinstance(v, bool): return v
     return str(v).strip().lower() in {"1","true","yes","on"}
-
-def _normalize_golden_source_url(url):
-    url = (url or "").strip()
-    if not url: return ""
-    m = re.match(r"https?://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)", url)
-    if m:
-        owner, repo, branch, path = m.groups()
-        return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}"
-    return url
-
-def _golden_cache_path(normalized_url):
-    digest = hashlib.sha256(normalized_url.encode("utf-8", errors="ignore")).hexdigest()[:16]
-    return _GOLDEN_CACHE_DIR / f"catalog_{digest}.csv"
-
 
 def _parse_golden_source_csv(text):
     reader = import_csv_reader(text)
@@ -784,34 +767,16 @@ def _parse_golden_source_csv(text):
 
 
 def _fetch_golden_source_catalog(url, force_refresh=False, cache_ttl_sec=1800):
-    normalized = _normalize_golden_source_url(url)
-    if not normalized:
-        raise ValueError("Golden Source URL is not configured")
-
-    # Allow local file path as source for truly local matching.
-    local_path = Path(normalized)
-    if local_path.exists() and local_path.is_file():
-        text = local_path.read_text(encoding="utf-8-sig", errors="replace")
-        rows = _parse_golden_source_csv(text)
-        return normalized, rows, 0.0, "local-file"
-
-    cache_path = _golden_cache_path(normalized)
-    now = _time.time()
-    if not force_refresh and cache_path.exists():
-        age = now - cache_path.stat().st_mtime
-        if age <= max(0, int(cache_ttl_sec or 0)):
-            text = cache_path.read_text(encoding="utf-8-sig", errors="replace")
-            rows = _parse_golden_source_csv(text)
-            return normalized, rows, 0.0, "local-cache"
-
-    t0 = _time.perf_counter()
-    r = http_requests.get(normalized, timeout=20)
-    r.raise_for_status()
-    fetch_ms = round((_time.perf_counter() - t0) * 1000, 1)
-    text = r.content.decode("utf-8-sig", errors="replace")
+    normalized, text, fetch_ms, fetch_mode = read_golden_source_text(
+        url,
+        cache_dir=_GOLDEN_CACHE_DIR,
+        force_refresh=force_refresh,
+        cache_ttl_sec=cache_ttl_sec,
+        allow_local_file=True,
+        cache_prefix="catalog_",
+    )
     rows = _parse_golden_source_csv(text)
-    cache_path.write_text(text, encoding="utf-8")
-    return normalized, rows, fetch_ms, "remote-fetch"
+    return normalized, rows, fetch_ms, fetch_mode
 
 def import_csv_reader(text):
     import csv as _csv
