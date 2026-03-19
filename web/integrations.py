@@ -18,6 +18,8 @@ from pathlib import Path
 
 import requests as http_requests
 
+from storage import TMDB_GUID_RE as _TMDB_GUID_RE
+
 # ── TMDB / Plex caches ───────────────────────────────────────────────────────
 
 _poster_cache: dict[str, tuple[bytes, str]] = {}
@@ -34,8 +36,6 @@ _BIO_TTL = 86400
 _stream_cache: dict[str, tuple[float, str]] = {}
 _STREAM_TTL = 600
 _STREAM_MAX = 200
-
-_TMDB_GUID_RE = re.compile(r"(?:themoviedb://|tmdb://)(\d+)", re.IGNORECASE)
 
 
 # ── Generic external helpers ─────────────────────────────────────────────────
@@ -274,7 +274,8 @@ def get_cached_preview_stream(key: str) -> str | None:
 
 
 def stream_remote_audio(url: str, range_header: str = ""):
-    return http_requests.get(url, stream=True, timeout=30, headers={"Range": range_header})
+    headers = {"Range": range_header} if range_header else {}
+    return http_requests.get(url, stream=True, timeout=30, headers=headers)
 
 
 def download_audio(url: str, folder: str | Path, slug: str, *, audio_format: str, quality_profile: str, cookies_file: str | None = None) -> Path:

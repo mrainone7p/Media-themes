@@ -121,7 +121,7 @@ CONFIG_BOOL_FIELDS = {
 
 CONFIG_ENUM_FIELDS = {
     "audio_format": {"mp3", "m4a", "flac", "opus"},
-    "quality_profile": {"low", "medium", "high"},
+    "quality_profile": {"high", "balanced", "small", "smallest"},
     "search_mode": {"playlist", "direct"},
     "mode": {"manual", "auto", "cron"},
 }
@@ -199,7 +199,7 @@ def _coerce_config_number(field, value, spec, errors):
 def _normalize_config_enum(field, value, errors):
     normalized = str(value or "").strip().lower()
     if field == "quality_profile":
-        normalized = {"best": "high", "hq": "high", "standard": "medium", "balanced": "medium", "lq": "low"}.get(normalized, normalized)
+        normalized = {"best": "high", "hq": "high", "standard": "balanced", "medium": "balanced", "low": "small", "lq": "smallest"}.get(normalized, normalized)
     elif field == "search_mode":
         normalized = {"youtube": "playlist", "soundtrack": "playlist", "song": "direct", "theme": "direct"}.get(normalized, normalized)
     elif field == "mode":
@@ -384,13 +384,19 @@ def is_authorized_api_request(path: str, headers: dict, args: dict) -> bool:
     return provided == token
 
 
+_template_cache: str | None = None
+
 def load_template() -> str:
+    global _template_cache
+    if _template_cache is not None:
+        return _template_cache
     if TEMPLATE_PATH.exists():
-        return TEMPLATE_PATH.read_text(encoding="utf-8")
-    local = WEB_DIR / "template.html"
-    if local.exists():
-        return local.read_text(encoding="utf-8")
-    return "<h1>Template not found</h1>"
+        _template_cache = TEMPLATE_PATH.read_text(encoding="utf-8")
+    elif (WEB_DIR / "template.html").exists():
+        _template_cache = (WEB_DIR / "template.html").read_text(encoding="utf-8")
+    else:
+        return "<h1>Template not found</h1>"
+    return _template_cache
 
 
 def load_ui_terminology() -> dict:
@@ -749,9 +755,8 @@ def media_payload(library: str, show: str, *, nocache: bool = False):
     rows = load_ledger(path)
     media = []
     for row in rows:
-        theme_path = Path(row.get("folder", "")) / filename
-        has_theme = theme_path.exists()
-        duration = ffprobe_duration(theme_path) if has_theme else 0
+        has_theme = int(row.get("theme_exists", 0) or 0) == 1
+        duration = float(row.get("theme_duration", 0) or 0)
         if show == "with_theme" and not has_theme:
             continue
         if show == "without_theme" and has_theme:
@@ -829,8 +834,11 @@ def theme_info_payload(folder: str):
 def trim_theme_payload(data: dict):
     library = data.get("library", "")
     rating_key = data.get("rating_key", "")
-    start_offset = int(data.get("start_offset", 0))
-    end_offset = int(data.get("end_offset", 0))
+    try:
+        start_offset = int(data.get("start_offset", 0))
+        end_offset = int(data.get("end_offset", 0))
+    except (ValueError, TypeError):
+        return {"ok": False, "error": "start_offset and end_offset must be numbers"}, 400
     cfg = load_config()
     roots = get_media_roots(cfg)
     filename = cfg.get("theme_filename", "theme.mp3")
@@ -1107,30 +1115,51 @@ def next_cron_run(cron_expr: str) -> str | None:
         return None
 
     candidate = datetime.now(timezone.utc).replace(second=0, microsecond=0) + timedelta(minutes=1)
-    for _ in range(366 * 24 * 60):
+    for _ in range(400):  # at most ~400 day-level iterations to cover a year
         if candidate.month not in months:
-            candidate += timedelta(minutes=1)
+            # skip to first day of next month
+            if candidate.month == 12:
+                candidate = candidate.replace(year=candidate.year + 1, month=1, day=1, hour=0, minute=0)
+            else:
+                candidate = candidate.replace(month=candidate.month + 1, day=1, hour=0, minute=0)
             continue
+
         weekday = candidate.weekday() % 7
-        if dom is not None and dow is not None and candidate.day not in dom and weekday not in dow:
-            candidate += timedelta(minutes=1)
+        day_ok = True
+        if dom is not None and dow is not None:
+            day_ok = candidate.day in dom or weekday in dow
+        elif dom is not None:
+            day_ok = candidate.day in dom
+        elif dow is not None:
+            day_ok = weekday in dow
+        if not day_ok:
+            candidate = (candidate + timedelta(days=1)).replace(hour=0, minute=0)
             continue
-        if dom is not None and dow is None and candidate.day not in dom:
-            candidate += timedelta(minutes=1)
+
+        if candidate.hour not in hours:
+            # skip to next valid hour today
+            later = [h for h in hours if h > candidate.hour]
+            if later:
+                candidate = candidate.replace(hour=later[0], minute=minutes[0])
+                continue
+            # no valid hour left today, move to next day
+            candidate = (candidate + timedelta(days=1)).replace(hour=0, minute=0)
             continue
-        if dow is not None and dom is None and weekday not in dow:
-            candidate += timedelta(minutes=1)
+
+        if candidate.minute not in minutes:
+            later = [m for m in minutes if m > candidate.minute]
+            if later:
+                candidate = candidate.replace(minute=later[0])
+                continue
+            # no valid minute left this hour, advance to next hour
+            candidate = (candidate + timedelta(hours=1)).replace(minute=0)
             continue
-        if candidate.hour not in hours or candidate.minute not in minutes:
-            candidate += timedelta(minutes=1)
-            continue
+
         return candidate.isoformat()
     return None
 
 
 def api_health_payload() -> dict:
-    import shutil
-
     cfg = load_config()
     result = {}
 
