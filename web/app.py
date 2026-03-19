@@ -2072,6 +2072,44 @@ def export_golden_source_csv():
                  {'library': lib or '', 'libraries_exported': len(target_libs), 'rows_exported': len(out_rows), 'file': fname}, _time.perf_counter()-t0)
     return jsonify({'ok': True, 'rows_exported': len(out_rows), 'file': fname, 'download_url': f'/api/tasks/download/{fname}'})
 
+@app.route('/api/tasks/export-candidate-csv', methods=['POST'])
+def export_candidate_csv():
+    t0 = _time.perf_counter()
+    data = request.json or {}
+    lib = (data.get('library', '') or '').strip()
+    cfg = load_config()
+    libs = [l.get('name','').strip() for l in cfg.get('libraries',[]) if l.get('name')]
+    target_libs = [lib] if lib else libs
+    if not target_libs:
+        return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
+    out_rows = []
+    for target_lib in target_libs:
+        rows = load_ledger(ledger_path_for(target_lib))
+        for r in rows:
+            url = str(r.get('url', '') or '').strip()
+            tmdb_id = str(r.get('tmdb_id', '') or '').strip()
+            if not url or not tmdb_id:
+                continue
+            gs_url = str(r.get('golden_source_url', '') or '').strip()
+            if gs_url:
+                continue
+            out_rows.append({
+                'tmdb_id': tmdb_id,
+                'source_url': url,
+                'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
+            })
+    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    scope_name = lib or 'all_libraries'
+    fname = f'candidate_export_{re.sub(r"[^a-z0-9]+", "_", scope_name.lower()).strip("_") or "library"}_{stamp}.csv'
+    fpath = EXPORTS_DIR / fname
+    with open(fpath, 'w', newline='', encoding='utf-8') as fh:
+        w = csv.DictWriter(fh, fieldnames=['tmdb_id','source_url','start_offset'])
+        w.writeheader()
+        w.writerows(out_rows)
+    _record_task('Export Candidate CSV', 'success', lib or 'all libraries', f'Exported {len(out_rows)} candidate rows',
+                 {'library': lib or '', 'libraries_exported': len(target_libs), 'rows_exported': len(out_rows), 'file': fname}, _time.perf_counter()-t0)
+    return jsonify({'ok': True, 'rows_exported': len(out_rows), 'file': fname, 'download_url': f'/api/tasks/download/{fname}'})
+
 @app.route('/api/tasks/download/<path:filename>')
 def download_task_file(filename):
     safe = Path(filename).name

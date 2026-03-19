@@ -635,6 +635,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .task-title{font-size:14px;font-weight:700;margin-bottom:0}
 .task-desc{font-size:12px;color:var(--text2);margin-bottom:0;line-height:1.5}
 .task-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.task-btn-group{display:flex;gap:6px;flex-wrap:wrap}
+.submission-steps{display:flex;flex-direction:column;gap:10px}
+.submission-step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2);line-height:1.4}
+.submission-step-num{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--purple-soft,var(--surface2));color:var(--purple);font-size:12px;font-weight:700;flex-shrink:0}
+.btn-outline{background:transparent;border:1px solid currentColor}
 .task-section-head{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .task-empty{padding:12px}
 .task-section-subtitle{font-size:12px;color:var(--text2);line-height:1.5}
@@ -1880,7 +1885,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     </div>
     <div class="card">
       <div class="task-section-head">
-        <div class="card-title">Export / Data Tasks</div>
+        <div class="card-title">Help Build the Curated Catalog</div>
+        <div class="task-section-subtitle">Export a submission-ready CSV of community-found themes for review. This export only includes items not already in the official Golden Source list and only contains TMDB ID, source URL, and start offset.</div>
       </div>
       <div class="task-grid task-wide" id="task-grid-export"></div>
     </div>
@@ -2026,6 +2032,35 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="modal-footer" style="justify-content:space-between">
       <button class="btn btn-ghost" onclick="closeGoldenSourceModal()">Cancel</button>
       <button class="btn btn-amber" id="gs-confirm-btn" onclick="confirmGoldenSourceImport()">★ Import Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ COMMUNITY SUBMISSION MODAL ══════════════ -->
+<div class="modal-overlay" id="submission-modal">
+  <div class="modal" style="max-width:520px;position:relative;padding:0">
+    <div class="modal-header compact">
+      <div class="icon-badge" style="background:var(--purple-soft,var(--surface2));color:var(--purple)">↑</div>
+      <div class="modal-movie-info">
+        <div class="modal-movie-title" style="font-size:16px">Submit Your CSV for Review</div>
+      </div>
+    </div>
+    <div class="modal-section-divider"></div>
+    <div class="modal-section" style="padding-top:16px;padding-bottom:0">
+      <div class="modal-copy" style="margin-bottom:16px">Share your exported candidate CSV with the community for possible inclusion in the official Golden Source catalog. Submissions are reviewed manually before being approved.</div>
+      <div class="submission-steps" style="margin-bottom:16px">
+        <div class="submission-step"><span class="submission-step-num">1</span> Export your candidate CSV from this page</div>
+        <div class="submission-step"><span class="submission-step-num">2</span> Open the community submission page</div>
+        <div class="submission-step"><span class="submission-step-num">3</span> Attach or upload your CSV</div>
+        <div class="submission-step"><span class="submission-step-num">4</span> Wait for review and consideration</div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <button class="btn btn-ghost" onclick="closeModal('submission-modal')">Close</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="window.open('https://github.com/mrainone7p/Media-themes/blob/beta/CONTRIBUTING.md','_blank')">View Contribution Guide</button>
+        <button class="btn btn-purple" onclick="window.open('https://github.com/mrainone7p/Media-themes/issues/new?template=community-submission.yml&title=%5BSubmission%5D+Community+theme+CSV','_blank')">Open GitHub Submission</button>
+      </div>
     </div>
   </div>
 </div>
@@ -6360,6 +6395,22 @@ const TASK_CARD_CONFIG={
       handler:'taskExportGoldenSource()',
       cardClass:'golden-emphasis task-wide',
       extraHtml:'<div class="field-help compact" title="tmdb_id,title,year,source_url,start_offset,updated_at,notes">Fields: tmdb_id · title · year · source_url · start_offset · updated_at · notes</div>'
+    },
+    {
+      title:'Community Candidate Export',
+      description:'Export themes not yet in the official Golden Source list for community submission.',
+      controlType:'selectAndTwoButtons',
+      selectId:'task-lib-candidate',
+      selectClass:'filter-sel',
+      selectTitle:'Library scope for candidate export',
+      buttonLabel:'Export Candidate CSV',
+      buttonClass:'btn btn-amber btn-sm',
+      handler:'taskExportCandidateCSV()',
+      secondButtonLabel:'Submit for Review',
+      secondButtonClass:'btn btn-purple btn-sm btn-outline',
+      secondHandler:'openModal(\'submission-modal\')',
+      cardClass:'task-wide',
+      extraHtml:'<div class="field-help compact" style="margin-top:6px">Community submissions are reviewed before they are added to the official curated catalog.</div><div class="field-help compact" style="margin-top:4px;color:var(--text3)">Includes: tmdb_id · source_url · start_offset</div>'
     }
   ],
   cleanup:[
@@ -6425,6 +6476,7 @@ function renderTaskCards(){
   const renderRowControls=(card)=>{
     if(card.controlType==='button') return `<button class="${card.buttonClass}" onclick="${card.handler}">${card.buttonLabel}</button>`;
     if(card.controlType==='selectAndButton') return `<select class="${card.selectClass||'filter-sel'}" id="${card.selectId}"${card.selectTitle?` title="${card.selectTitle}"`:''}></select><button class="${card.buttonClass}" onclick="${card.handler}"${card.buttonTitle?` title="${card.buttonTitle}"`:''}>${card.buttonLabel}</button>`;
+    if(card.controlType==='selectAndTwoButtons') return `<select class="${card.selectClass||'filter-sel'}" id="${card.selectId}"${card.selectTitle?` title="${card.selectTitle}"`:''}></select><div class="task-btn-group"><button class="${card.buttonClass}" onclick="${card.handler}">${card.buttonLabel}</button><button class="${card.secondButtonClass}" onclick="${card.secondHandler}">${card.secondButtonLabel}</button></div>`;
     if(card.controlType==='inputAndButton') return `<input class="${card.inputClass||'filter-sel'}" id="${card.inputId}" value="${card.inputValue||''}"${card.inputStyle?` style="${card.inputStyle}"`:''}><button class="${card.buttonClass}" onclick="${card.handler}">${card.buttonLabel}</button>`;
     return '';
   };
@@ -6480,6 +6532,7 @@ function _fillTaskLibSelects(){
   const libraryOpts = (_libs||[]).map(l=>`<option value="${l.name}">${l.name}</option>`).join('');
   const scopedOpts = '<option value="__all__">All libraries</option>' + libraryOpts;
   const exportEl=document.getElementById('task-lib-export'); if(exportEl) exportEl.innerHTML=scopedOpts;
+  const candidateEl=document.getElementById('task-lib-candidate'); if(candidateEl) candidateEl.innerHTML=scopedOpts;
   const clearEl=document.getElementById('task-lib-clear-sources'); if(clearEl) clearEl.innerHTML=scopedOpts;
   const refreshEl=document.getElementById('task-lib-refresh'); if(refreshEl) refreshEl.innerHTML=libraryOpts;
   if(!_taskLibSelection.size){ (_libs||[]).forEach(l=>_taskLibSelection.add(l.name)); }
@@ -6554,6 +6607,17 @@ async function taskExportGoldenSource(){
     body:{library:lib==='__all__'?'':lib},
     successMessage:(d)=>`Exported ${d.rows_exported} rows`,
     failureFallback:'Export failed',
+    onSuccess:(d)=>{ if(d.download_url) window.open(apiUrl(d.download_url),'_blank'); }
+  });
+}
+async function taskExportCandidateCSV(){
+  const lib=taskLibValue('task-lib-candidate');
+  if(!lib) return toast('Select a library first','err');
+  await runTaskAction({
+    url:'/api/tasks/export-candidate-csv',
+    body:{library:lib==='__all__'?'':lib},
+    successMessage:(d)=>`Exported ${d.rows_exported} candidate rows`,
+    failureFallback:'Candidate export failed',
     onSuccess:(d)=>{ if(d.download_url) window.open(apiUrl(d.download_url),'_blank'); }
   });
 }
