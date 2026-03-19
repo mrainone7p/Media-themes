@@ -1949,7 +1949,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <script>
 // ── Utils ────────────────────────────────────────────────────────────────────
 
-// === MODAL HANDLING ===
+// ── SECTION: MODAL / AUDIO HELPERS ───────────────────────────────────────────
 let _confirmResolver=null;
 const _modalLifecycles={};
 
@@ -1964,10 +1964,6 @@ function registerModalLifecycle(id, callbacks={}){
     else closeModal(id);
   });
   overlay.dataset.modalLifecycleBound='1';
-}
-
-function withModal(id, onOpen, onClose){
-  registerModalLifecycle(id, {onOpen, onClose});
 }
 
 function openModal(id){
@@ -2143,15 +2139,53 @@ function closeConfirmModal(){
   if(_confirmResolver){ const r=_confirmResolver; _confirmResolver=null; r(false); }
 }
 
-// === API HELPERS ===
+// ── SECTION: CONFIG / API HELPERS ─────────────────────────────────────────────
 const _rawFetch = window.fetch.bind(window);
 let _authPrompted = false;
+let _configCache=null;
+
 function getApiToken(){ return localStorage.getItem('mt-api-token') || ''; }
 function apiUrl(url){
   const token = getApiToken();
   if(!token || typeof url!=='string' || !url.startsWith('/api/')) return url;
   const sep = url.includes('?') ? '&' : '?';
   return url + sep + 'token=' + encodeURIComponent(token);
+}
+function jsonRequestOptions(method, body, init={}){
+  const headers=new Headers(init.headers||{});
+  if(body!==undefined && !headers.has('Content-Type')) headers.set('Content-Type','application/json');
+  return {
+    ...init,
+    method,
+    headers,
+    body: body===undefined ? init.body : JSON.stringify(body)
+  };
+}
+async function requestJson(url, init={}){
+  const response=await fetch(url, init);
+  let data={};
+  try{ data=await response.json(); }catch(_err){ data={}; }
+  return {ok:response.ok && data?.ok!==false, response, data};
+}
+async function postJson(url, body, init={}){
+  return requestJson(url, jsonRequestOptions('POST', body, init));
+}
+async function patchJson(url, body, init={}){
+  return requestJson(url, jsonRequestOptions('PATCH', body, init));
+}
+async function loadConfig(force=false){
+  if(!force && _configCache) return _configCache;
+  const {data}=await requestJson('/api/config');
+  _configCache=(data && typeof data==='object')?data:{};
+  return _configCache;
+}
+function rememberConfigPatch(patch={}){
+  _configCache={...(_configCache||{}), ...patch};
+  return _configCache;
+}
+function setPendingTestBadge(elId, label='Working…'){
+  const el=document.getElementById(elId);
+  if(el) el.innerHTML=`<span class="test-result test-pending">${label}</span>`;
 }
 window.fetch = function(input, init){
   const token = getApiToken();
@@ -2261,27 +2295,6 @@ function initSidebarNav(){
   });
 }
 
-try{
-  document.addEventListener('DOMContentLoaded', async ()=>{
-    await loadUiTerminology();
-    await loadStatusModel();
-    initSidebarNav();
-    initSharedProgress();
-    removeItemDetailsPanel();
-    updateGlobalRunStatus();
-    setInterval(updateGlobalRunStatus, 4000);
-    setInterval(removeItemDetailsPanel, 2000);
-    let initial=((location.hash||'').replace(/^#/,'').trim());
-    const legacyHashRedirect={settings:'configuration',run:'schedule',history:'tasks'};
-    if(legacyHashRedirect[initial]){
-      initial=legacyHashRedirect[initial];
-      if(history && history.replaceState){ history.replaceState(null,'','#'+initial); }
-    }
-    if(['configuration','database','schedule','tasks'].includes(initial)){
-      showPage(initial);
-    }
-  });
-}catch(e){}
 
 let _toastT;
 function toast(msg,type='info'){
@@ -2295,7 +2308,6 @@ function testBadge(elId, ok, msg){
   el.textContent=(ok?'✓ ':'✗ ')+msg;
 }
 
-// ── Configuration ─────────────────────────────────────────────────────────────────
 let _libs=[], _maxDur=45;
 let _uiTerminology={};
 const _defaultStatusDisplay={'UNMONITORED':'UNMONITORED','MISSING':'MISSING','STAGED':'STAGED','APPROVED':'APPROVED','AVAILABLE':'AVAILABLE','FAILED':'FAILED'};
@@ -2379,8 +2391,8 @@ function emphasizeStatusCopy(){
   });
 }
 
-async function loadConfiguration(){
-  const r=await fetch('/api/config'); const cfg=await r.json();
+async function loadConfiguration(force=false){
+  const cfg=await loadConfig(force);
   ['plex_url','plex_token','tmdb_api_key',
    'search_mode','search_query_playlist','search_query_direct','golden_source_url',
    'audio_format','quality_profile','theme_filename','max_retries','download_delay_seconds','test_limit']
@@ -2401,6 +2413,7 @@ async function loadConfiguration(){
   _libs=(cfg.libraries||[{name:cfg.plex_library_name||'Movies',enabled:true}]).map(l=>({...l}));
   renderLibs();
   _fillTaskLibSelects();
+  if(!_runLibs.length){ _runLibs=(cfg.libraries||[]).filter(l=>l.enabled!==false && (!l.type||l.type==='movie'||l.type==='show')).map(l=>({...l, scheduled:true})); }
   _refreshScopedRunLabels();
   removeItemDetailsPanel();
 
@@ -2445,8 +2458,7 @@ function setDuration(val, noSave){
 
 async function loadCookieOptions(current) {
   try {
-    const r = await fetch('/api/cookies');
-    const data = await r.json();
+    const {data}=await requestJson('/api/cookies');
     const sel = document.getElementById('cfg-cookies_file');
     sel.innerHTML = '<option value="">No cookies file</option>';
     (data.files || []).forEach(f => {
@@ -2504,36 +2516,33 @@ function addLibrary(){ _libs.push({name:'',enabled:false}); renderLibs(); }
 async function testPlex(){
   const url=document.getElementById('cfg-plex_url').value;
   const token=document.getElementById('cfg-plex_token').value;
-  document.getElementById('plex-test-result').innerHTML='<span class="test-result test-pending">Testing…</span>';
-  const r=await fetch('/api/test/plex',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,token})});
-  const d=await r.json();
-  testBadge('plex-test-result', d.ok, d.ok ? `Connected · ${d.libraries} libraries` : d.error);
+  setPendingTestBadge('plex-test-result','Testing…');
+  const {data}=await postJson('/api/test/plex',{url,token});
+  testBadge('plex-test-result', !!data.ok, data.ok ? `Connected · ${data.libraries} libraries` : data.error);
 }
 
 async function importLibraries(){
   const url=document.getElementById('cfg-plex_url').value;
   const token=document.getElementById('cfg-plex_token').value;
-  document.getElementById('lib-import-result').innerHTML='<span class="test-result test-pending">Fetching…</span>';
-  const r=await fetch('/api/plex/libraries',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url,token})});
-  const d=await r.json();
-  if(d.ok){
+  setPendingTestBadge('lib-import-result','Fetching…');
+  const {ok,data}=await postJson('/api/plex/libraries',{url,token});
+  if(ok){
     const existing=new Set(_libs.map(l=>l.name));
     let added=0;
-    // d.libraries is now [{name, type}] filtered to movie/show
-    d.libraries.forEach(lib=>{ if(!existing.has(lib.name)){ _libs.push({name:lib.name,type:lib.type,enabled:false}); added++; } });
+    (data.libraries||[]).forEach(lib=>{ if(!existing.has(lib.name)){ _libs.push({name:lib.name,type:lib.type,enabled:false}); added++; } });
     renderLibs();
-    document.getElementById('lib-import-result').innerHTML=`<span class="test-result test-ok">✓ ${added} added (${d.libraries.length} total · movie &amp; TV only)</span>`;
+    rememberConfigPatch({libraries:_libs.filter(l=>String(l.name||'').trim())});
+    document.getElementById('lib-import-result').innerHTML=`<span class="test-result test-ok">✓ ${added} added (${(data.libraries||[]).length} total · movie &amp; TV only)</span>`;
   } else {
-    testBadge('lib-import-result', false, d.error);
+    testBadge('lib-import-result', false, data.error);
   }
 }
 
 async function testTmdb(){
   const key=document.getElementById('cfg-tmdb_api_key').value;
-  document.getElementById('tmdb-test-result').innerHTML='<span class="test-result test-pending">Testing…</span>';
-  const r=await fetch('/api/test/tmdb',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key})});
-  const d=await r.json();
-  testBadge('tmdb-test-result', d.ok, d.ok ? 'API key valid' : d.error);
+  setPendingTestBadge('tmdb-test-result','Testing…');
+  const {data}=await postJson('/api/test/tmdb',{key});
+  testBadge('tmdb-test-result', !!data.ok, data.ok ? 'API key valid' : data.error);
 }
 
 async function testGoldenSource(){
@@ -2542,15 +2551,10 @@ async function testGoldenSource(){
   const btn=document.getElementById('golden-test-btn');
   if(!url){ testBadge('golden-test-result', false, 'Enter a Golden Source URL first'); return; }
   if(btn){ btn.disabled=true; btn.textContent='Testing…'; }
-  badge.innerHTML='<span class="test-result test-pending">Testing…</span>';
+  if(badge) badge.innerHTML='<span class="test-result test-pending">Testing…</span>';
   try{
-    const r=await fetch('/api/test/golden-source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
-    const d=await r.json();
-    if(d.ok){
-      testBadge('golden-test-result', true, `Ready · ${d.rows} rows · ${d.fetch_ms} ms`);
-    }else{
-      testBadge('golden-test-result', false, d.error||'Test failed');
-    }
+    const {ok,data}=await postJson('/api/test/golden-source',{url});
+    testBadge('golden-test-result', ok, ok ? `Ready · ${data.rows} rows · ${data.fetch_ms} ms` : (data.error||'Test failed'));
   }catch(e){
     testBadge('golden-test-result', false, 'Test failed');
   }finally{
@@ -2574,12 +2578,18 @@ async function saveConfiguration(){
   cfg.refresh_golden_source_each_run = document.getElementById('cfg-refresh_golden_source_each_run').checked;
   if(cfg.search_fuzzy) cfg.search_fallback = false;
   cfg.auto_approve_manual = document.getElementById('cfg-auto_approve_manual').checked;
-  const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
-  if(r.ok){ toast('Configuration saved','ok'); renderLibs(); } else toast('Save failed','err');
+  const {ok}=await postJson('/api/config',cfg);
+  if(ok){
+    rememberConfigPatch(cfg);
+    toast('Configuration saved','ok');
+    renderLibs();
+    _fillTaskLibSelects();
+    _refreshScopedRunLabels();
+  } else toast('Save failed','err');
 }
 
-// ── Database ─────────────────────────────────────────────────────────────────
-// Shared modal helpers
+// ── SECTION: STATUS / TABLE LOGIC ──────────────────────────────────────────────
+// Shared table helpers
 function _tmdbLink(title,year){ return 'https://www.themoviedb.org/search?query='+encodeURIComponent(((title||'')+' '+(year||'')).trim()); }
 const _tmdbLookupCache = {};
 async function openTmdb(title, year, evt){
@@ -2665,7 +2675,7 @@ function renderStatusKey(){
 }
 
 async function loadDatabase(syncPeer=true){
-  const cfg=(await (await fetch('/api/config')).json());
+  const cfg=await loadConfig();
   const allLibs=cfg.libraries||[{name:cfg.plex_library_name||'Movies',enabled:true}];
   const libs=allLibs.filter(l=>(!l.type||l.type==='movie'||l.type==='show') && l.enabled);
   const tabs=document.getElementById('lib-tabs');
@@ -2697,8 +2707,8 @@ async function switchLib(name){
 }
 
 async function loadLibRows(name){
-  const r=await fetch('/api/ledger?library='+encodeURIComponent(name));
-  _rows=await r.json();
+  const {data}=await requestJson('/api/ledger?library='+encodeURIComponent(name));
+  _rows=Array.isArray(data)?data:[];
   // Build map for safe data lookup from action buttons (avoids onclick escaping)
   _rowMap={};
   _rows.forEach(row=>{ if(row.rating_key) _rowMap[row.rating_key]=row; });
@@ -2742,14 +2752,9 @@ function renderChips(){
       <span class="chip-head">${f.count}</span>
       <span class="chip-body">${f.color?`<span class="chip-dot" style="background:${f.color}"></span>`:''}${f.label}</span>
     </button>`).join('');
-  updateDbSummary(counts);
-  updateDbGuide(counts);
   updateDbActionHints(counts);
 }
 
-function updateDbSummary(counts){ return; }
-
-function updateDbGuide(counts){ return; }
 
 function updateDbActionHints(counts){
   const pending=counts.MISSING||0;
@@ -3191,11 +3196,8 @@ async function updateRow(key,field,value,selEl){
     row[field]=value;
     if(_rowMap[key]) _rowMap[key][field]=value; // keep map in sync
   }
-  const r=await fetch('/api/ledger/'+key+'?library='+encodeURIComponent(_activeLib),{
-    method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:value})
-  });
-  const data=await r.json().catch(()=>({}));
-  if(r.ok){
+  const {ok,data}=await patchJson('/api/ledger/'+key+'?library='+encodeURIComponent(_activeLib),{[field]:value});
+  if(ok){
     toast('Saved','ok');
     renderChips();
     renderTable();
@@ -3212,8 +3214,8 @@ async function updateRow(key,field,value,selEl){
 
 async function updateRowAndRefresh(key,field,value){
   await updateRow(key,field,value);
-  // Re-render to show YouTube button if URL was added
-  loadDatabase();
+  renderChips();
+  filterTable();
 }
 
 async function saveOffsetInput(key, el){
@@ -3224,16 +3226,14 @@ async function saveOffsetInput(key, el){
 async function bulkApprove(){
   const staged=_rows.filter(r=>r.status==='STAGED');
   if(!staged.length){ toast('No Staged items','info'); return; }
-  const r=await fetch('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({keys:staged.map(r=>r.rating_key),status:'APPROVED'})
-  });
-  if(r.ok){
-    const d=await r.json();
-    const updated=d.updated ?? staged.length;
-    const skipped=d.skipped ?? 0;
+  const {ok,data}=await postJson('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{keys:staged.map(r=>r.rating_key),status:'APPROVED'});
+  if(ok){
+    staged.forEach(row=>{ row.status='APPROVED'; if(_rowMap[row.rating_key]) _rowMap[row.rating_key].status='APPROVED'; });
+    const updated=data.updated ?? staged.length;
+    const skipped=data.skipped ?? 0;
     toast(`Set ${updated} Staged item${updated===1?'':'s'} to Approved${skipped?` · ${skipped} skipped`:''}`,'ok');
-    loadDatabase();
+    renderChips();
+    filterTable();
   } else toast('Failed','err');
 }
 
@@ -3343,16 +3343,19 @@ function clearSelection(){ _selectedKeys.clear(); _lastDbCheckIndex=null; render
 async function bulkSetStatus2(status){
   if(!_selectedKeys.size){ toast('Nothing selected','info'); return; }
   const keys=[..._selectedKeys];
-  const r=await fetch('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({keys,status})
-  });
-  const d=await r.json().catch(()=>({}));
-  if(r.ok){
+  const {ok,data:d}=await postJson('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{keys,status});
+  if(ok){
+    keys.forEach(key=>{
+      const row=_rows.find(r=>r.rating_key===key);
+      if(row) row.status=status;
+      if(_rowMap[key]) _rowMap[key].status=status;
+    });
     const updated=d.updated ?? keys.length;
     const skipped=d.skipped ?? 0;
     toast(`${updated} items → ${displayStatus(status)}${skipped?` · ${skipped} skipped`:''}`,'ok');
-    clearSelection(); loadDatabase();
+    clearSelection();
+    renderChips();
+    filterTable();
   }
   else{
     const msg=[d.error,d.reason_code?`(${d.reason_code})`:'' ,d.current_status&&d.attempted_status?`[${displayStatus(d.current_status)} → ${displayStatus(d.attempted_status)}]`:'' ].filter(Boolean).join(' ').trim();
@@ -3365,20 +3368,24 @@ async function clearSourcesSelected(){
   const keys=[..._selectedKeys];
   const rows=_rows.filter(r=>keys.includes(r.rating_key));
   if(!rows.length){ toast('Nothing selected','info'); return; }
-  const ok=await openConfirmModal('Clear Source URLs', {
+  const confirmed=await openConfirmModal('Clear Source URLs', {
     text:`Clear source URLs for ${rows.length} selected items?`
   }, 'Clear URLs');
-  if(!ok) return;
-  const r=await fetch(apiUrl('/api/ledger/clear-sources?library='+encodeURIComponent(_activeLib||'')),{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({keys})
-  });
-  const d=await r.json().catch(()=>({}));
-  if(!r.ok || !d.ok){
+  if(!confirmed) return;
+  const {ok,data:d}=await postJson(apiUrl('/api/ledger/clear-sources?library='+encodeURIComponent(_activeLib||'')),{keys});
+  if(!ok){
     toast(d.error||'Failed to clear source URLs','err');
     await loadDatabase(false);
     return;
   }
+  rows.forEach(row=>{
+    row.url='';
+    if(String(row.status||'').toUpperCase()!=='AVAILABLE') row.status='MISSING';
+    if(_rowMap[row.rating_key]){
+      _rowMap[row.rating_key].url='';
+      if(String(_rowMap[row.rating_key].status||'').toUpperCase()!=='AVAILABLE') _rowMap[row.rating_key].status='MISSING';
+    }
+  });
   const s=d.summary||{};
   const parts=[`${s.cleared||0} URLs cleared`];
   if(s.preserved_available) parts.push(`${s.preserved_available} kept ${displayStatus('AVAILABLE')}`);
@@ -3386,7 +3393,8 @@ async function clearSourcesSelected(){
   if(s.skipped_without_url) parts.push(`${s.skipped_without_url} already empty`);
   toast(parts.join(' · '),'ok');
   clearSelection();
-  loadDatabase();
+  renderChips();
+  filterTable();
 }
 
 
@@ -4535,7 +4543,6 @@ async function saveSourceEditor(skipClose=false){
       ?uiTerm('actions.toasts.manual_saved_auto_approved','Saved — auto-approved')
       :uiTerm('actions.toasts.manual_saved_staged','Saved — staged for approval'),'ok');
   }
-  await loadDatabase(false);
   return true;
 }
 
@@ -4781,8 +4788,9 @@ async function ytModalSave(){
   if(document.getElementById('page-database').classList.contains('active')) loadDatabase();
 }
 
+// ── SECTION: RUN / SCHEDULE LOGIC ──────────────────────────────────────────────
 async function loadRunPage(){
-  const cfg=(await (await fetch('/api/config')).json());
+  const cfg=await loadConfig();
   document.getElementById('run-cron').value=cfg.cron_schedule||'0 3 * * *';
   document.getElementById('run-schedule-limit').value=cfg.schedule_test_limit ?? cfg.test_limit ?? 0;
   document.getElementById('sched-enabled').checked = cfg.schedule_enabled !== false;
@@ -4828,7 +4836,7 @@ async function saveRunSchedule(){
   _schedDebounce=setTimeout(async()=>{
     const cron=document.getElementById('run-cron').value;
     const enabled=document.getElementById('sched-enabled').checked;
-    const cfg=await(await fetch('/api/config')).json();
+    const cfg={...(await loadConfig())};
     cfg.schedule_enabled=enabled;
     cfg.cron_schedule=cron;
     cfg.schedule_libraries=_runLibs.filter(l=>l.scheduled).map(l=>l.name);
@@ -4838,7 +4846,8 @@ async function saveRunSchedule(){
     cfg.schedule_test_limit=parseInt(document.getElementById('run-schedule-limit').value||'0',10)||0;
     cfg.auto_approve=document.getElementById('sched-autoapprove').checked;
     cfg.search_only_golden=document.getElementById('sched-only-golden').checked;
-    await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
+    await postJson('/api/config',cfg);
+    rememberConfigPatch(cfg);
     toast(enabled ? 'Schedule saved' : 'Automation disabled','ok');
     renderRunLibs();
     applyScheduleEnabledState();
@@ -4864,8 +4873,7 @@ async function stopRun(scope='run'){
   if(activeScope==='run') _setRunUiIdle('Stopping…',false);
 }
 
-// === TASK OPERATIONS & MAINTENANCE ACTIONS ===
-// ── Tasks / History ───────────────────────────────────────────────────────────
+// ── SECTION: TASKS LOGIC ───────────────────────────────────────────────────────
 function openRunResults(pass){
   const map={1:'MISSING',2:'STAGED',3:'AVAILABLE'};
   const st=map[pass]||'';
@@ -5203,7 +5211,8 @@ async function taskClearAllSources(){
   });
 }
 
-// ── Sidebar collapse ─────────────────────────────────────────────────────────
+// ── SECTION: INIT ──────────────────────────────────────────────────────────────
+// Sidebar / UI chrome
 function toggleNav(){
   const nav=document.querySelector('nav');
   nav.classList.toggle('collapsed');
@@ -5453,15 +5462,13 @@ function themeModalRunNextStep(){
 async function themeModalDownloadApproved(){
   const row=_themeModalContext?.row||{};
   if(String(row?.status||'').toUpperCase()!=='APPROVED') return;
-  const resp=await fetch('/api/theme/download-now',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:_activeLib||'',rating_key:_themeModalContext?.rk||'',folder:_themeModalContext?.folder||'',tmdb_id:_themeModalContext?.row?.tmdb_id||''})});
-  const data=await resp.json().catch(()=>({ok:false,error:'Download failed'}));
-  if(!resp.ok || data.ok===false){
+  const {ok,data}=await postJson('/api/theme/download-now',{library:_activeLib||'',rating_key:_themeModalContext?.rk||'',folder:_themeModalContext?.folder||'',tmdb_id:_themeModalContext?.row?.tmdb_id||''});
+  if(!ok){
     toast(data.error||'Download failed','err');
     return;
   }
   toast('Download started','ok');
   closeThemeModal();
-  await loadDatabase(false);
 }
 
 function themeModalOpenSource(){
@@ -5501,9 +5508,8 @@ function themeModalEditTrim(){
 }
 async function themeModalSyncFromDisk(){
   if(!_activeLib) return toast('No active library selected','err');
-  const r=await fetch('/api/library/sync-themes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:_activeLib})});
-  const d=await r.json().catch(()=>({ok:false,error:'Sync failed'}));
-  if(!r.ok || d.ok===false) return toast(d.error||'Sync failed','err');
+  const {ok,data:d}=await postJson('/api/library/sync-themes',{library:_activeLib});
+  if(!ok) return toast(d.error||'Sync failed','err');
   toast(`Synced local theme metadata (${d.updated||0} updated)`,'ok');
   await loadDatabase();
 }
@@ -5562,6 +5568,23 @@ function toggleTheme(){
 }
 (function(){try{const t=localStorage.getItem('mt-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');setTimeout(()=>{const b=document.getElementById('theme-toggle-btn');if(b)b.textContent='☾';},0);}}catch(e){}})();
 
+
+try{
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    await loadUiTerminology();
+    await loadStatusModel();
+    initSidebarNav();
+    initSharedProgress();
+    removeItemDetailsPanel();
+    updateGlobalRunStatus();
+    setInterval(updateGlobalRunStatus, 4000);
+    setInterval(removeItemDetailsPanel, 2000);
+    const initial=((location.hash||'').replace(/^#/,'').trim());
+    if(['configuration','database','schedule','tasks'].includes(initial)){
+      showPage(initial);
+    }
+  });
+}catch(e){}
 
 registerModalLifecycle('confirm-modal',{requestClose:closeConfirmModal});
 registerModalLifecycle('delete-modal',{requestClose:closeDeleteModal});
