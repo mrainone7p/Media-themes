@@ -3071,6 +3071,7 @@ function renderDashboardActionStation(health){
   if(!el) return;
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   const scheduleActive=s.state==='ok'||s.state==='warning'||s.state==='warn';
+  const scheduleDetail=s.detail?`<div style="font-size:11px;color:var(--text3);margin-top:6px">${s.detail}</div>`:'';
   // Next run block
   let nextRunHtml='';
   const nrFull=formatNextRunFull(s.next_run);
@@ -3080,16 +3081,19 @@ function renderDashboardActionStation(health){
       <div class="dash-station-next-label">Next Scheduled Run</div>
       <div class="dash-station-next-rel"><span id="dash-next-run-rel">${nrFull.rel}</span></div>
       <div class="dash-station-next-abs">${nrFull.abs}</div>
+      ${scheduleDetail}
     </div>`;
   } else if(scheduleActive){
     nextRunHtml=`<div class="dash-station-next-run">
       <div class="dash-station-next-label">Automation</div>
       <div style="margin-top:3px">${dashboardStatusBadge(s.label,s.state)}</div>
+      ${scheduleDetail}
     </div>`;
   } else {
     nextRunHtml=`<div class="dash-station-next-run" style="border-style:dashed">
       <div class="dash-station-next-label">Automation</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">No schedule configured</div>
+      ${scheduleDetail}
     </div>`;
   }
   const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
@@ -4014,14 +4018,14 @@ async function saveConfiguration(){
   cfg.refresh_golden_source_each_run = document.getElementById('cfg-refresh_golden_source_each_run').checked;
   if(cfg.search_fuzzy) cfg.search_fallback = false;
   cfg.auto_approve_manual = document.getElementById('cfg-auto_approve_manual').checked;
-  const {ok}=await postJson('/api/config',cfg);
+  const {ok,data}=await postJson('/api/config',cfg);
   if(ok){
     rememberConfigPatch(cfg);
     toast('Configuration saved','ok');
     renderLibs();
     _fillTaskLibSelects();
     _refreshScopedRunLabels();
-  } else toast('Save failed','err');
+  } else toast(data?.message || data?.error || 'Save failed','err');
 }
 
 // ── SECTION: STATUS / TABLE LOGIC ──────────────────────────────────────────────
@@ -6427,11 +6431,15 @@ async function saveRunSchedule(){
     cfg.schedule_test_limit=parseInt(document.getElementById('run-schedule-limit').value||'0',10)||0;
     cfg.auto_approve=document.getElementById('sched-autoapprove').checked;
     cfg.search_only_golden=document.getElementById('sched-only-golden').checked;
-    await postJson('/api/config',cfg);
-    rememberConfigPatch(cfg);
-    toast(enabled ? 'Scheduler saved' : 'Automation disabled','ok');
-    renderRunLibs();
-    applyScheduleEnabledState();
+    const {ok,data}=await postJson('/api/config',cfg);
+    if(ok){
+      rememberConfigPatch(cfg);
+      toast(enabled ? 'Scheduler saved' : 'Automation disabled','ok');
+      renderRunLibs();
+      applyScheduleEnabledState();
+    }else{
+      toast(data?.message || data?.error || 'Scheduler save failed','err');
+    }
   },500);
 }
 

@@ -117,13 +117,41 @@ def post_config():
     incoming = request.get_json(silent=True)
     if not isinstance(incoming, dict):
         return jsonify({"ok": False, "error": "validation_failed", "errors": [logic.config_error("body", "invalid_type", "Expected a JSON object.")]}), 400
-    current = logic.load_raw_config()
-    current.update(incoming)
-    normalized, errors = logic.normalize_config(current, for_save=True)
+    existing = logic.load_config()
+    candidate = dict(existing)
+    candidate.update(incoming)
+    normalized, errors = logic.normalize_config(candidate, for_save=True)
     if errors:
         return jsonify({"ok": False, "error": "validation_failed", "errors": errors}), 400
     logic.save_config(normalized)
-    return jsonify({"ok": True, "config": {key: value for key, value in normalized.items() if key != "ui_token"}})
+    scheduler_fields = {
+        "cron_schedule",
+        "schedule_enabled",
+        "schedule_libraries",
+        "schedule_step1",
+        "schedule_step2",
+        "schedule_step3",
+        "schedule_test_limit",
+        "auto_approve",
+        "search_only_golden",
+    }
+    scheduler_result = None
+    if logic.scheduler_managed_via_cron() and any(existing.get(field) != normalized.get(field) for field in scheduler_fields):
+        scheduler_result = logic.refresh_scheduler(normalized)
+        if not scheduler_result.get("ok", False):
+            return jsonify({
+                "ok": False,
+                "error": "scheduler_refresh_failed",
+                "message": scheduler_result.get("error") or scheduler_result.get("detail") or "Failed to refresh scheduler.",
+                "config_saved": True,
+                "scheduler": scheduler_result,
+                "config": {key: value for key, value in normalized.items() if key != "ui_token"},
+            }), 500
+    return jsonify({
+        "ok": True,
+        "config": {key: value for key, value in normalized.items() if key != "ui_token"},
+        "scheduler": scheduler_result or logic.active_scheduler_source(),
+    })
 
 
 @app.route("/api/ui-terminology", methods=["GET"])

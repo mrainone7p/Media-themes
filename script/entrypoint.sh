@@ -6,16 +6,33 @@ set -e
 
 CONFIG_FILE="${CONFIG_PATH:-/app/config/config.yaml}"
 
-# Read cron schedule from config
-CRON_SCHEDULE=$(python3 -c "
-import yaml, sys
-try:
-    with open('$CONFIG_FILE') as f:
-        cfg = yaml.safe_load(f)
-    print(cfg.get('cron_schedule', '0 3 * * *'))
-except Exception:
-    print('0 3 * * *')
-")
+# RUN_ONCE mode — used for one-shot Docker runs / testing
+if [ "${RUN_ONCE}" = "true" ]; then
+    echo "[INFO] RUN_ONCE=true — running once then exiting"
+    python3 /app/script/media_tracks.py
+    exit 0
+fi
+
+SCHEDULER_BOOTSTRAP=$(PYTHONPATH="/app/web:/app/shared${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
+import json
+import logic
+
+cfg = logic.load_config()
+result = logic.refresh_scheduler(cfg)
+print(json.dumps({
+    "ok": bool(result.get("ok")),
+    "cron": result.get("active_cron") or result.get("configured_cron") or cfg.get("cron_schedule", "0 3 * * *"),
+    "detail": result.get("detail", ""),
+    "error": result.get("error", ""),
+    "authority": result.get("authority", "cron"),
+}))
+PY
+)
+
+CRON_SCHEDULE=$(printf '%s' "$SCHEDULER_BOOTSTRAP" | python3 -c "import json,sys; print((json.load(sys.stdin).get('cron') or '0 3 * * *'))")
+BOOTSTRAP_OK=$(printf '%s' "$SCHEDULER_BOOTSTRAP" | python3 -c "import json,sys; print('1' if json.load(sys.stdin).get('ok') else '0')")
+BOOTSTRAP_DETAIL=$(printf '%s' "$SCHEDULER_BOOTSTRAP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('detail',''))")
+BOOTSTRAP_ERROR=$(printf '%s' "$SCHEDULER_BOOTSTRAP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('error',''))")
 
 echo "============================================="
 echo "  Media Tracks"
@@ -25,25 +42,18 @@ echo "  Schedule : $CRON_SCHEDULE"
 echo "  Web UI   : http://localhost:8080"
 echo "============================================="
 
-# RUN_ONCE mode — used for one-shot Docker runs / testing
-if [ "${RUN_ONCE}" = "true" ]; then
-    echo "[INFO] RUN_ONCE=true — running once then exiting"
-    python3 /app/script/media_tracks.py
-    exit 0
-fi
-
 # Start Flask web UI in background (log to container stdout)
 echo "[INFO] Starting web UI on port 8080..."
 python3 /app/web/app.py >> /proc/1/fd/1 2>> /proc/1/fd/2 &
 
-# Register cron job
-CRON_JOB="$CRON_SCHEDULE python3 /app/script/media_tracks.py >> /proc/1/fd/1 2>> /proc/1/fd/2"
-echo "$CRON_JOB" > /etc/cron.d/media-tracks
-chmod 0644 /etc/cron.d/media-tracks
-crontab /etc/cron.d/media-tracks
-echo "[INFO] Cron job registered: $CRON_SCHEDULE"
+if [ "$BOOTSTRAP_OK" = "1" ]; then
+    echo "[INFO] Scheduler bootstrap complete: $BOOTSTRAP_DETAIL"
+else
+    echo "[ERROR] Scheduler bootstrap failed: $BOOTSTRAP_ERROR"
+    exit 1
+fi
 
-echo "[INFO] Startup scan disabled — waiting for scheduled or manual runs..."
+echo "[INFO] Startup scan disabled — schedule changes are applied by the web backend when configuration is saved."
 
 echo "[INFO] Entering cron daemon mode..."
 cron -f
