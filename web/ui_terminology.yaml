@@ -56,34 +56,34 @@ schedule:
       step3:
         description: Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.
         auto_approve:
-          title: Auto-Approve STAGED Items
+          title: Auto-Approve Staged Items
           description: Automatically move Staged items to Approved before downloading for a fully hands-off pipeline.
 statuses:
   UNMONITORED:
-    label: UNMONITORED
+    label: Unmonitored
     description: Hidden from automation until you re-enable this title.
   MISSING:
-    label: MISSING
+    label: Missing
     description: Needs a source because no local theme file is available yet.
   STAGED:
-    label: STAGED
+    label: Staged
     description: Source saved and waiting for approval before download.
   APPROVED:
-    label: APPROVED
+    label: Approved
     description: Approved for download on the next run.
   AVAILABLE:
-    label: AVAILABLE
+    label: Available
     description: Theme file is present locally and ready to use.
   FAILED:
-    label: FAILED
+    label: Failed
     description: Source discovery or download needs attention before retrying.
 actions:
-  approve_all_staged: Approve STAGED Items
-  download_all_approved: Download APPROVED Items
+  approve_all_staged: Approve Staged Items
+  download_all_approved: Download Approved Items
   bulk:
-    approve: Set APPROVED
-    mark_missing: Set MISSING
-    mark_unmonitored: Set UNMONITORED
+    approve: Set Approved
+    mark_missing: Set Missing
+    mark_unmonitored: Set Unmonitored
     stage: Stage Selected
   toasts:
     manual_saved_auto_approved: Saved — auto-approved
