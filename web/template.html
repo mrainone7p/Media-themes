@@ -89,12 +89,12 @@ nav.collapsed .collapse-btn{transform:rotate(180deg);padding:4px}
 .logo{padding:0 16px;min-height:74px;height:74px;border-bottom:1px solid var(--border);display:flex;align-items:center}
 .logo-title{font-size:15px;font-weight:700;color:var(--amber);letter-spacing:.02em;line-height:1.25}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
-.nav-section{padding:10px 0;flex:1}
+.nav-section{padding:12px 0 10px;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;color:var(--text2);cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;border-left:2px solid transparent;user-select:none}
 main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .2s ease}
 body.nav-collapsed main{margin-left:48px}
 .nav-item:hover{color:var(--text);background:var(--gray-soft)}
-.nav-item.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-soft)}
+.nav-item.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-soft);border-left-width:3px}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
 .nav-item.active svg{opacity:1}
 .nav-footer{padding:10px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;justify-content:space-between;gap:4px;flex-shrink:0;overflow:hidden}
@@ -269,19 +269,19 @@ body.nav-collapsed main{margin-left:48px}
 .span-4{grid-column:span 4}
 /* KPI stat cards */
 .dashboard-stat-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-.dashboard-stat{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px 15px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s;text-align:left;width:100%}
+.dashboard-stat{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:10px 13px;border-radius:10px;border:1px solid var(--border);border-top:3px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s;text-align:left;width:100%}
 .dashboard-stat:hover{border-color:color-mix(in srgb,var(--amber) 34%,var(--border));transform:translateY(-1px)}
 .dashboard-stat.is-static{cursor:default}
 .dashboard-stat.is-static:hover{transform:none;border-color:var(--border)}
-.dashboard-stat-count{font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
-.dashboard-stat-label{font-size:12px;font-weight:600;color:var(--text)}
-.dashboard-stat-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.dashboard-stat-count{font-size:22px;font-weight:700;line-height:1;margin-bottom:2px}
+.dashboard-stat-label{font-size:11px;font-weight:700;color:var(--text);letter-spacing:.02em}
+.dashboard-stat-sub{font-size:10px;color:var(--text3);margin-top:0}
 /* Quick actions */
 .dashboard-actions{display:flex;flex-direction:column;gap:8px}
 .dashboard-actions-group{display:flex;flex-wrap:wrap;gap:8px}
 /* Health + attention shared list styles */
 .dashboard-health-list,.dashboard-activity-list,.dashboard-attention-list,.dashboard-library-list{display:grid;gap:8px}
-.dashboard-health-item,.dashboard-activity-item,.dashboard-attention-item,.dashboard-library-item{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)}
+.dashboard-health-item,.dashboard-activity-item,.dashboard-attention-item,.dashboard-library-item{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:7px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)}
 .dashboard-health-copy,.dashboard-activity-copy,.dashboard-attention-copy,.dashboard-library-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
 .dashboard-kicker{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
 .dashboard-main-copy{font-size:13px;font-weight:600;color:var(--text)}
@@ -318,22 +318,22 @@ body.nav-collapsed main{margin-left:48px}
 @keyframes dash-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .dashboard-footer-actions{display:flex;justify-content:flex-end;margin-top:10px}
 /* Pipeline steps inline section */
-.dash-pipeline-steps{display:flex;flex-direction:column;gap:8px}
-.dash-pipeline-step{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)}
-.dash-pipeline-step-num{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;min-width:60px;padding-top:2px}
-.dash-pipeline-step-desc{font-size:12px;color:var(--text2);line-height:1.45}
+.dash-pipeline-steps{display:flex;flex-direction:column;gap:5px}
+.dash-pipeline-step{display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)}
+.dash-pipeline-step-num{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;min-width:auto;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,currentColor 12%,transparent);text-align:center}
+.dash-pipeline-step-desc{font-size:11px;color:var(--text2);line-height:1.4}
 /* Status Key */
-.dash-status-key{display:flex;flex-direction:column;gap:7px}
-.dash-status-key-row{display:flex;align-items:center;gap:9px}
-.dash-status-key-row .badge{min-width:90px;justify-content:flex-start;flex-shrink:0}
-.dash-status-key-def{font-size:11px;color:var(--text2);line-height:1.4}
+.dash-status-key{display:flex;flex-direction:column;gap:4px}
+.dash-status-key-row{display:flex;align-items:center;gap:7px}
+.dash-status-key-row .badge{min-width:78px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:2px 7px}
+.dash-status-key-def{font-size:10px;color:var(--text2);line-height:1.35}
 /* Action Station */
 .dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
 .dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
-.dash-station-next-run{padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:10px}
-.dash-station-next-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
-.dash-station-next-rel{font-size:16px;font-weight:700;color:var(--amber);line-height:1.1}
-.dash-station-next-abs{font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:2px}
+.dash-station-next-run{padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+.dash-station-next-label{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:2px}
+.dash-station-next-rel{font-size:14px;font-weight:700;color:var(--amber);line-height:1.1}
+.dash-station-next-abs{font-size:10px;color:var(--text2);font-family:var(--mono);margin-top:1px}
 /* Attention expand toggle */
 .dash-attention-toggle{margin-top:6px;color:var(--text3);font-size:11px;width:100%;justify-content:center}
 .dash-attention-toggle:hover{color:var(--text2)}
@@ -355,6 +355,8 @@ body.nav-collapsed main{margin-left:48px}
 .dash-action-buttons .btn-action-run:hover{background:color-mix(in srgb,var(--green) 22%,transparent);border-color:var(--green);color:var(--green)}
 .dash-action-buttons .btn-action-themes{background:var(--purple-soft);color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,var(--border))}
 .dash-action-buttons .btn-action-themes:hover{background:color-mix(in srgb,var(--purple) 22%,transparent);border-color:var(--purple);color:var(--purple)}
+.dash-action-buttons .btn-action-stop{background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))}
+.dash-action-buttons .btn-action-stop:hover{background:color-mix(in srgb,var(--red) 22%,transparent);border-color:var(--red);color:var(--red)}
 
 /* ─── How it Works overlay ─── */
 .dash-how-overlay{display:none;position:fixed;inset:0;z-index:200}
@@ -372,6 +374,17 @@ body.nav-collapsed main{margin-left:48px}
 .dash-activity-row.clickable:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22)}
 .dash-activity-row.clickable:active{transform:scale(0.995)}
 
+/* ─── Chart tooltip popup ─── */
+.dash-chart-tooltip{position:fixed;z-index:500;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 11px;font-size:11px;color:var(--text);box-shadow:0 6px 20px rgba(0,0,0,.35);max-width:220px;line-height:1.5;opacity:0;transition:opacity .12s}
+.dash-chart-tooltip.visible{opacity:1}
+.dash-chart-tooltip-title{font-weight:700;margin-bottom:4px;color:var(--text);font-size:11px}
+.dash-chart-tooltip-row{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);padding:1px 0}
+.dash-chart-tooltip-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.dash-chart-tooltip-val{margin-left:auto;font-weight:700;color:var(--text);font-family:var(--mono)}
+/* ─── Needs Attention accent ─── */
+.dash-attention-card{border-left:3px solid var(--amber)}
+.dash-attention-card .dashboard-attention-item{padding:7px 11px}
+.dash-attention-card .dashboard-main-copy{font-weight:700}
 /* ─── Compact status cards ─── */
 .dashboard-stat-grid.compact{gap:8px}
 .dashboard-stat-grid.compact .dashboard-stat{padding:10px 12px;gap:1px}
@@ -1211,14 +1224,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="card dashboard-card" style="margin-bottom:16px">
       <!-- Header row -->
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:0">Library Overview</div>
+        <div class="card-title" style="margin-bottom:0">Theme Library Overview</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
           <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
         </div>
       </div>
-      <!-- Per-library KPI stats -->
-      <div id="dash-lib-kpi" class="dashboard-stat-grid compact" style="margin-bottom:18px"></div>
       <!-- Processing History -->
       <div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
@@ -1244,7 +1255,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
     <!-- Row 4: Needs Attention + Action Station -->
     <div class="dashboard-grid" style="margin-bottom:16px">
-      <div class="card dashboard-card span-7">
+      <div class="card dashboard-card span-7 dash-attention-card">
         <div class="card-title">Needs Attention</div>
         <div id="dashboard-needs-attention"></div>
       </div>
@@ -2919,7 +2930,7 @@ function renderDashboardPipelineOverview(counts){
   const el=document.getElementById('dashboard-pipeline-overview');
   if(!el) return;
   el.innerHTML=items.map(item=>`
-    <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
+    <button class="dashboard-stat" style="border-top-color:${item.color}" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
       <span class="dashboard-stat-label">${item.label}</span>
       <span class="dashboard-stat-sub">${item.sub}</span>
@@ -2975,7 +2986,7 @@ function renderDashboardNeedsAttention(cfg, counts, enabledLibs){
         <div class="dashboard-main-copy">${item.title}</div>
         <div class="dashboard-sub-copy">${item.detail}</div>
       </div>
-      <button class="btn btn-ghost btn-xs" style="flex-shrink:0" onclick='dashboardOpenTarget(${JSON.stringify(item.target)})'>${item.cta}</button>
+      <button class="btn btn-amber btn-xs" style="flex-shrink:0" onclick='dashboardOpenTarget(${JSON.stringify(item.target)})'>${item.cta}</button>
     </div>`).join('');
   const toggleHtml=hasMore?`
     <button class="btn btn-ghost btn-xs dash-attention-toggle" onclick="toggleDashboardAttention(this,${items.length})">View all ${items.length} issues</button>`:'';
@@ -3009,11 +3020,33 @@ function renderDashboardActionStation(health){
       <div class="dash-station-next-label">Automation</div>
       <div style="margin-top:3px">${dashboardStatusBadge(s.label,s.state)}</div>
     </div>`;
+  } else {
+    nextRunHtml=`<div class="dash-station-next-run" style="border-style:dashed">
+      <div class="dash-station-next-label">Automation</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">No schedule configured</div>
+    </div>`;
   }
   const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
-  const runBtn=`<button class="btn btn-ghost btn-sm btn-action-run" onclick="startScheduledRun()">Run Schedule</button>`;
+  const runOrStopBtn=_dashRunActive
+    ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')" style="background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))">Stop</button>`
+    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun()">Run Schedule</button>`;
   const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
-  el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runBtn}${themesBtn}</div>`;
+  el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`;
+}
+function _updateDashRunButton(){
+  const btn=document.getElementById('dash-run-btn');
+  if(!btn) return;
+  if(_dashRunActive){
+    btn.textContent='Stop';
+    btn.className='btn btn-ghost btn-sm btn-action-stop';
+    btn.style.cssText='background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))';
+    btn.onclick=function(){stopRun('run');};
+  } else {
+    btn.textContent='Run Schedule';
+    btn.className='btn btn-ghost btn-sm btn-action-run';
+    btn.style.cssText='';
+    btn.onclick=function(){startScheduledRun();};
+  }
 }
 function dashboardLatestTask(entries, matcher){
   return (entries||[]).find(entry=>matcher((entry.task||''), entry)) || null;
@@ -3078,6 +3111,45 @@ function renderDashboardRecentActivity(entries){
 }
 function navigateToActivity(label){
   showPage('tasks');
+  setTimeout(()=>{
+    const keyword={'Last scan':'scan','Source discovery':'find sources','Download run':'download','Task run':''}[label]||'';
+    if(!keyword) return;
+    const cards=document.querySelectorAll('.task-activity-card');
+    for(const card of cards){
+      if(card.textContent.toLowerCase().includes(keyword)){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.classList.remove('section-flash');
+        void card.offsetWidth;
+        card.classList.add('section-flash');
+        setTimeout(()=>card.classList.remove('section-flash'),2000);
+        break;
+      }
+    }
+  },500);
+}
+// ── Dashboard chart tooltip ───────────────────────────────────────────────────
+let _dashTooltipEl=null;
+function _ensureDashTooltip(){
+  if(_dashTooltipEl) return _dashTooltipEl;
+  _dashTooltipEl=document.createElement('div');
+  _dashTooltipEl.className='dash-chart-tooltip';
+  document.body.appendChild(_dashTooltipEl);
+  return _dashTooltipEl;
+}
+function _showDashTooltip(html,evt){
+  const el=_ensureDashTooltip();
+  el.innerHTML=html;
+  el.classList.add('visible');
+  const rect=el.getBoundingClientRect();
+  let x=evt.clientX+12, y=evt.clientY-10;
+  if(x+rect.width>window.innerWidth-8) x=evt.clientX-rect.width-12;
+  if(y+rect.height>window.innerHeight-8) y=evt.clientY-rect.height-10;
+  if(y<4) y=4;
+  el.style.left=x+'px';
+  el.style.top=y+'px';
+}
+function _hideDashTooltip(){
+  if(_dashTooltipEl) _dashTooltipEl.classList.remove('visible');
 }
 // ── Dashboard library section + processing history ────────────────────────────
 let _dashLedgerByLib={};
@@ -3166,7 +3238,6 @@ function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();ren
 function switchDashLib(name){
   _dashSelectedLib=name;
   renderDashLibTabs(Object.keys(_dashLedgerByLib).map(n=>({name:n})));
-  renderDashLibKpi();
   renderProcessingHistory();
   renderPieChart();
 }
@@ -3270,25 +3341,29 @@ function renderProcessingHistory(){
   const totalW=shown.length*(barW+gap)+gap;
   const leftPad=34;
 
+  // Store bucket data for tooltip event handlers
+  const _histBuckets=buckets;
+  const _histGroup=group;
+  const _histDisplaySt=displaySt;
+  const _histColors=COLORS;
   let bars='';
   shown.forEach((key,i)=>{
     const x=leftPad+gap+i*(barW+gap);
     let yOff=0;
     const totalForPeriod=displaySt.reduce((s,st)=>s+(buckets[key]?.[st]||0),0);
+    // Invisible hover target for the full bar column
+    bars+=`<rect x="${x}" y="0" width="${barW}" height="${chartH}" fill="transparent" data-hist-key="${key}" style="cursor:pointer"/>`;
     displaySt.forEach(st=>{
       const count=buckets[key]?.[st]||0;
       if(!count) return;
       const h=Math.max(2,Math.round((count/maxVal)*(chartH-6)));
       const y=chartH-yOff-h;
-      // Build tooltip with all statuses for this period
-      const tipParts=displaySt.filter(s=>(buckets[key]?.[s]||0)>0).map(s=>`${s[0]+s.slice(1).toLowerCase()}: ${buckets[key][s]}`);
-      const tip=`${_periodLabel(key,group)}\n${tipParts.join('\n')}\nTotal: ${totalForPeriod}`;
-      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[st]||'#888'}" opacity="0.82" rx="2"><title>${tip}</title></rect>`;
+      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[st]||'#888'}" opacity="0.82" rx="2" data-hist-key="${key}" style="cursor:pointer;pointer-events:none"/>`;
       if(count>0&&h>12) bars+=`<text x="${x+barW/2}" y="${y+h/2+4}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" opacity="0.9" style="pointer-events:none">${count}</text>`;
       yOff+=h;
     });
     const lbl=_periodLabel(key,group);
-    bars+=`<text x="${x+barW/2}" y="${chartH+labelH-2}" text-anchor="middle" font-size="9" fill="var(--text3)">${lbl}</text>`;
+    bars+=`<text x="${x+barW/2}" y="${chartH+labelH-2}" text-anchor="middle" font-size="9" fill="var(--text3)" style="pointer-events:none">${lbl}</text>`;
   });
 
   // Dotted grid lines
@@ -3309,14 +3384,26 @@ function renderProcessingHistory(){
 
   const svgH=chartH+labelH+(legendStatuses.length?26:4)+14;
   el.innerHTML=`<div style="overflow-x:auto"><svg class="dash-chart-svg" viewBox="0 -8 ${leftPad+totalW+gap+16} ${svgH}" style="width:100%;min-width:${Math.min(leftPad+totalW+gap+16,340)}px;height:${svgH+8}px;display:block">${guides}${bars}${legend}</svg></div>`;
+  // Attach tooltip event handlers
+  el.querySelectorAll('rect[data-hist-key]').forEach(rect=>{
+    rect.addEventListener('mousemove',function(e){
+      const key=this.dataset.histKey;
+      const b=_histBuckets[key]||{};
+      const rows=_histDisplaySt.filter(s=>(b[s]||0)>0).map(s=>`<div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_histColors[s]||'#888'}"></span>${s[0]+s.slice(1).toLowerCase()}<span class="dash-chart-tooltip-val">${b[s]}</span></div>`);
+      const total=_histDisplaySt.reduce((sum,s)=>sum+(b[s]||0),0);
+      const html=`<div class="dash-chart-tooltip-title">${_periodLabel(key,_histGroup)}</div>${rows.join('')}<div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:3px;padding-top:3px;font-weight:700;color:var(--text)">Total<span class="dash-chart-tooltip-val">${total}</span></div>`;
+      _showDashTooltip(html,e);
+    });
+    rect.addEventListener('mouseleave',_hideDashTooltip);
+  });
 }
 // Pie chart — shows composition of selected library
 function renderPieChart(){
   const el=document.getElementById('dash-pie-chart');
   if(!el) return;
   const rows=_getHistRows();
-  const PIE_STATUSES=['AVAILABLE','STAGED','APPROVED','FAILED'];
-  const COLORS={STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252'};
+  const PIE_STATUSES=['MISSING','STAGED','APPROVED','AVAILABLE','FAILED','UNMONITORED'];
+  const COLORS={MISSING:'#f26d78',STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252',UNMONITORED:'#94a3b8'};
   const counts={};
   let total=0;
   PIE_STATUSES.forEach(st=>{counts[st]=0;});
@@ -3331,6 +3418,9 @@ function renderPieChart(){
   const r=60, cx=70, cy=70;
   let slices='', startAngle=-Math.PI/2;
   const legendItems=[];
+  const _pieCounts=counts;
+  const _pieTotal=total;
+  const _pieColors=COLORS;
   PIE_STATUSES.forEach(st=>{
     if(!counts[st]) return;
     const pct=counts[st]/total;
@@ -3340,14 +3430,26 @@ function renderPieChart(){
     const x1=cx+r*Math.cos(startAngle), y1=cy+r*Math.sin(startAngle);
     const x2=cx+r*Math.cos(endAngle), y2=cy+r*Math.sin(endAngle);
     if(pct>=0.999){
-      slices+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS[st]}" opacity="0.85"><title>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]} (${Math.round(pct*100)}%)</title></circle>`;
+      slices+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS[st]}" opacity="0.85" data-pie-st="${st}" style="cursor:pointer"/>`;
     } else {
-      slices+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${COLORS[st]}" opacity="0.85"><title>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]} (${Math.round(pct*100)}%)</title></path>`;
+      slices+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${COLORS[st]}" opacity="0.85" data-pie-st="${st}" style="cursor:pointer"/>`;
     }
     startAngle=endAngle;
     legendItems.push(`<div class="dash-pie-legend-item"><span class="dash-pie-legend-dot" style="background:${COLORS[st]}"></span>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]}</div>`);
   });
   el.innerHTML=`<svg width="140" height="140" viewBox="0 0 140 140">${slices}</svg><div class="dash-pie-legend">${legendItems.join('')}</div>`;
+  // Attach pie tooltip handlers
+  el.querySelectorAll('[data-pie-st]').forEach(shape=>{
+    shape.addEventListener('mousemove',function(e){
+      const st=this.dataset.pieSt;
+      const count=_pieCounts[st]||0;
+      const pct=Math.round(count/_pieTotal*100);
+      const label=st[0]+st.slice(1).toLowerCase();
+      const html=`<div class="dash-chart-tooltip-title">Composition</div><div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_pieColors[st]}"></span>${label}<span class="dash-chart-tooltip-val">${count}</span></div><div class="dash-chart-tooltip-row" style="color:var(--text3)">${pct}% of ${_pieTotal} total</div>`;
+      _showDashTooltip(html,e);
+    });
+    shape.addEventListener('mouseleave',_hideDashTooltip);
+  });
 }
 
 function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
@@ -3416,7 +3518,6 @@ async function loadDashboard(force=false){
   renderDashboardNeedsAttention(cfg, counts, enabledLibs);
   renderDashboardRecentActivity(history);
   renderDashLibTabs(enabledLibs);
-  renderDashLibKpi();
   renderHistStatusFilters();
   renderProcessingHistory();
   renderPieChart();
@@ -3487,6 +3588,7 @@ function removeItemDetailsPanel(){
 }
 
 let _wasRunning=false;
+let _dashRunActive=false;
 async function updateGlobalRunStatus(){
   try{
     const r=await fetch('/api/run/status');
@@ -3503,6 +3605,7 @@ async function updateGlobalRunStatus(){
       sub.textContent=d.scope ? `${d.scope} · ${d.last_line||'Working…'}` : (d.last_line||'Working…');
       if(dbPill){ dbPill.classList.add('active'); dbPill.innerHTML='<span class="run-dot active"></span><span>Running</span>'; }
       _wasRunning=true;
+      if(!_dashRunActive){_dashRunActive=true;_updateDashRunButton();}
       return;
     }
     dot.className='run-dot done';
@@ -3510,6 +3613,7 @@ async function updateGlobalRunStatus(){
     sub.textContent='';
     bar.classList.add('hidden');
     if(dbPill){ dbPill.classList.remove('active'); dbPill.innerHTML='<span class="run-dot"></span><span>Idle</span>'; }
+    if(_dashRunActive){_dashRunActive=false;_updateDashRunButton();}
     if(_wasRunning){
       _wasRunning=false;
       loadDashboard(); loadDatabase(); loadTasksPage(); loadRunPage();
