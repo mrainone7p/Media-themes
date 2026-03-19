@@ -152,6 +152,9 @@ body.nav-collapsed main{margin-left:48px}
   .field-grid-2,.lib-list,.toggle-grid,.run-lib-grid,.workflow-grid{grid-template-columns:1fr}
   .dashboard-grid{grid-template-columns:1fr}
   .span-12,.span-8,.span-7,.span-6,.span-5,.span-4{grid-column:span 1}
+  .dashboard-stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .dash-activity-row{grid-template-columns:70px 1fr}
+  .dash-activity-time,.dash-activity-summary{display:none}
 }
 .offset-input{width:110px;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;text-align:center}
 .offset-input:focus{border-color:var(--purple)}
@@ -225,32 +228,56 @@ body.nav-collapsed main{margin-left:48px}
 .span-6{grid-column:span 6}
 .span-5{grid-column:span 5}
 .span-4{grid-column:span 4}
-.dashboard-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px}
-.dashboard-stat{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 13px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s}
+/* KPI stat cards */
+.dashboard-stat-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.dashboard-stat{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px 15px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;transition:all .15s;text-align:left;width:100%}
 .dashboard-stat:hover{border-color:color-mix(in srgb,var(--amber) 34%,var(--border));transform:translateY(-1px)}
 .dashboard-stat.is-static{cursor:default}
 .dashboard-stat.is-static:hover{transform:none;border-color:var(--border)}
-.dashboard-stat-count{font-size:24px;font-weight:700;line-height:1}
-.dashboard-stat-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text2)}
-.dashboard-actions{display:flex;flex-wrap:wrap;gap:10px}
-.dashboard-health-list,.dashboard-activity-list,.dashboard-attention-list,.dashboard-library-list{display:grid;gap:10px}
-.dashboard-health-item,.dashboard-activity-item,.dashboard-attention-item,.dashboard-library-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
-.dashboard-health-copy,.dashboard-activity-copy,.dashboard-attention-copy,.dashboard-library-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.dashboard-stat-count{font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
+.dashboard-stat-label{font-size:12px;font-weight:600;color:var(--text)}
+.dashboard-stat-sub{font-size:11px;color:var(--text3);margin-top:1px}
+/* Quick actions */
+.dashboard-actions{display:flex;flex-direction:column;gap:8px}
+.dashboard-actions-group{display:flex;flex-wrap:wrap;gap:8px}
+/* Health + attention shared list styles */
+.dashboard-health-list,.dashboard-activity-list,.dashboard-attention-list,.dashboard-library-list{display:grid;gap:8px}
+.dashboard-health-item,.dashboard-activity-item,.dashboard-attention-item,.dashboard-library-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
+.dashboard-health-copy,.dashboard-activity-copy,.dashboard-attention-copy,.dashboard-library-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
 .dashboard-kicker{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
 .dashboard-main-copy{font-size:13px;font-weight:600;color:var(--text)}
-.dashboard-sub-copy{font-size:12px;color:var(--text2);line-height:1.45}
-.dashboard-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap}
+.dashboard-sub-copy{font-size:12px;color:var(--text2);line-height:1.4}
+.dashboard-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;white-space:nowrap;flex-shrink:0}
 .dashboard-badge.ok{background:var(--green-soft);color:var(--green)}
 .dashboard-badge.warn{background:var(--amber-soft);color:var(--amber)}
 .dashboard-badge.off{background:var(--gray-soft);color:var(--text3)}
 .dashboard-badge.fail{background:var(--red-soft);color:var(--red)}
-.dashboard-empty{padding:14px;border:1px dashed var(--border);border-radius:12px;color:var(--text3);font-size:12px;background:var(--surface2)}
-.workflow-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.workflow-step{padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);display:flex;flex-direction:column;gap:8px}
-.workflow-step .pipe-action-step{margin-bottom:0}
-.workflow-step .pipe-action-name{font-size:16px}
-.workflow-step .pipe-action-desc{margin-bottom:0}
-.dashboard-footer-actions{display:flex;justify-content:flex-end;margin-top:12px}
+.dashboard-badge.unknown{background:var(--gray-soft);color:var(--text3)}
+.dashboard-empty{padding:12px 14px;border:1px dashed var(--border);border-radius:10px;color:var(--text3);font-size:12px;background:var(--surface2)}
+/* Health row — compact single-line style */
+.dash-health-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2)}
+.dash-health-label{font-size:12px;font-weight:600;color:var(--text);min-width:0;flex:1}
+.dash-health-detail{font-size:11px;color:var(--text3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;text-align:right;padding-right:10px}
+/* Activity compact rows */
+.dash-activity-row{display:grid;grid-template-columns:80px 1fr auto auto;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);font-size:12px}
+.dash-activity-label{font-weight:600;color:var(--text)}
+.dash-activity-time{color:var(--text3);font-family:var(--mono);font-size:11px;white-space:nowrap}
+.dash-activity-summary{color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Schedule section */
+.dash-schedule-grid{display:grid;gap:6px}
+.dash-schedule-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)}
+.dash-schedule-key{font-size:12px;color:var(--text3);font-weight:600}
+.dash-schedule-val{font-size:12px;color:var(--text);font-weight:600;font-family:var(--mono)}
+/* Next step banner */
+.dash-next-step{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--amber-soft);border:1px solid color-mix(in srgb,var(--amber) 28%,var(--border));margin-bottom:16px;font-size:12px;color:var(--text2)}
+.dash-next-step strong{color:var(--amber)}
+/* Header utilities */
+.dash-header-utils{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.dash-last-updated{font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap}
+/* Skeleton loading */
+.dash-skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface-elev) 50%,var(--surface2) 75%);background-size:200% 100%;animation:dash-shimmer 1.4s infinite;border-radius:8px;height:18px}
+@keyframes dash-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.dashboard-footer-actions{display:flex;justify-content:flex-end;margin-top:10px}
 
 /* ─── Table ─── */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
@@ -983,75 +1010,90 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="page active" id="page-dashboard">
   <div class="page-head">
     <div>
-      <div class="page-title" data-ui="pages.dashboard.title">Dashboard</div>
-      <div class="page-desc" data-ui="pages.dashboard.description">Review pipeline health, recent activity, and the next actions that need attention.</div>
+      <div class="page-title">Dashboard</div>
+      <div class="page-desc">Monitor pipeline health, review what needs attention, and jump into the next step.</div>
+    </div>
+    <div class="dash-header-utils">
+      <span class="dash-last-updated" id="dash-last-updated"></span>
+      <button class="btn btn-ghost btn-sm" onclick="loadDashboard(true)">↺ Refresh</button>
     </div>
   </div>
   <div class="page-body"><div class="content">
-    <div class="dashboard-grid">
-      <div class="card dashboard-card span-8">
-        <div class="card-title">Pipeline Overview</div>
-        <div class="dashboard-stat-grid" id="dashboard-pipeline-overview"></div>
-      </div>
-      <div class="card dashboard-card span-4">
-        <div class="card-title">Quick Actions</div>
-        <div class="dashboard-actions">
-          <button class="btn btn-blue btn-sm" onclick="dashboardRunQuick(1)">⟳ Scan Libraries</button>
-          <button class="btn btn-purple btn-sm" onclick="dashboardRunQuick(2)">⚡ Find Sources</button>
-          <button class="btn btn-green btn-sm" onclick="dashboardRunQuick(3)">↓ Download Approved</button>
-          <button class="btn btn-ghost btn-sm golden-btn" onclick="dashboardImportGoldenSource()">★ Import Golden Source</button>
-          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">Open Tasks</button>
-        </div>
-      </div>
+
+    <!-- Recommended next step banner -->
+    <div id="dash-next-step-banner" class="dash-next-step" style="display:none"></div>
+
+    <!-- Row 1: KPI Cards -->
+    <div class="card dashboard-card" style="margin-bottom:16px">
+      <div class="dashboard-stat-grid" id="dashboard-pipeline-overview"></div>
     </div>
 
-    <div class="dashboard-grid">
-      <div class="card dashboard-card span-5">
-        <div class="card-title">System Health</div>
-        <div class="dashboard-health-list" id="dashboard-system-health"></div>
-      </div>
+    <!-- Row 2: Needs Attention + Quick Actions -->
+    <div class="dashboard-grid" style="margin-bottom:16px">
       <div class="card dashboard-card span-7">
         <div class="card-title">Needs Attention</div>
-        <div class="dashboard-attention-list" id="dashboard-needs-attention"></div>
+        <div id="dashboard-needs-attention"></div>
+      </div>
+      <div class="card dashboard-card span-5">
+        <div class="card-title">Quick Actions</div>
+        <div class="dashboard-actions">
+          <div class="dashboard-actions-group">
+            <button class="btn btn-amber btn-sm" onclick="dashboardRunQuick(2)">⚡ Find Sources</button>
+          </div>
+          <div class="dashboard-actions-group">
+            <button class="btn btn-blue btn-sm" onclick="dashboardRunQuick(1)">⟳ Scan Libraries</button>
+            <button class="btn btn-green btn-sm" onclick="dashboardRunQuick(3)">↓ Download Approved</button>
+          </div>
+          <div class="dashboard-actions-group">
+            <button class="btn btn-ghost btn-sm golden-btn" onclick="dashboardImportGoldenSource()">★ Import Golden Source</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">Tasks</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="dashboard-grid">
+    <!-- Row 3: System Health + Schedule -->
+    <div class="dashboard-grid" style="margin-bottom:16px">
       <div class="card dashboard-card span-7">
-        <div class="card-title">Workflow Overview</div>
-        <div class="workflow-grid">
-          <div class="workflow-step">
-            <div class="pipe-action-step scan" data-ui="schedule.summary.step1.label">STATUS KEY · Step 1</div>
-            <div class="pipe-action-name scan" data-ui="schedule.summary.step1.title">⟳ Scan Libraries</div>
-            <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
-          </div>
-          <div class="workflow-step">
-            <div class="pipe-action-step find" data-ui="schedule.summary.step2.label">AUTO SCHEDULE · Step 2</div>
-            <div class="pipe-action-name find" data-ui="schedule.summary.step2.title">⚡ Find Theme Sources</div>
-            <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step2.description">Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
-          </div>
-          <div class="workflow-step">
-            <div class="pipe-action-step dl" data-ui="schedule.summary.step3.label">PIPELINE STEPS · Step 3</div>
-            <div class="pipe-action-name dl" data-ui="schedule.summary.step3.title">↓ Download Themes</div>
-            <div class="pipe-action-desc status-copy" data-ui="schedule.summary.step3.description">Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.</div>
-          </div>
+        <div class="card-title" style="margin-bottom:10px">System Health</div>
+        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
+        <div style="margin-top:12px">
+          <button class="btn btn-ghost btn-sm" onclick="showPage('configuration')">Open Configuration</button>
         </div>
       </div>
       <div class="card dashboard-card span-5">
-        <div class="card-title">Recent Activity</div>
-        <div class="dashboard-activity-list" id="dashboard-recent-activity"></div>
-        <div class="dashboard-footer-actions">
-          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">Open Full Tasks History</button>
+        <div class="card-title" style="margin-bottom:10px">Schedule</div>
+        <div id="dashboard-schedule"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
+        <div style="margin-top:12px">
+          <button class="btn btn-ghost btn-sm" onclick="showPage('scheduler')">Open Scheduler</button>
         </div>
       </div>
     </div>
 
-    <div class="dashboard-grid">
-      <div class="card dashboard-card span-12">
-        <div class="card-title">Library Overview</div>
-        <div class="dashboard-library-list" id="dashboard-library-overview"></div>
+    <!-- Row 4: Recent Activity -->
+    <div class="card dashboard-card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">Recent Activity</div>
+        <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
       </div>
+      <div id="dashboard-recent-activity"></div>
     </div>
+
+    <!-- Row 5: Libraries -->
+    <div class="card dashboard-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">Libraries</div>
+        <button class="btn btn-ghost btn-sm" onclick="showPage('configuration')">Manage Libraries</button>
+      </div>
+      <div class="dash-schedule-row" id="dash-library-summary" style="margin-bottom:8px"></div>
+      <div id="dashboard-library-overview"></div>
+    </div>
+
+    <!-- How the pipeline works modal trigger -->
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn btn-ghost btn-sm" onclick="dashboardShowPipelineHelp()" style="font-size:11px;color:var(--text3)">How the pipeline works ↗</button>
+    </div>
+
   </div></div>
 </div>
 
@@ -2235,6 +2277,33 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   </div>
 </div>
 
+<!-- Pipeline Help Modal -->
+<div class="modal-overlay" id="pipeline-help-modal">
+  <div class="modal" style="max-width:480px;position:relative">
+    <button class="modal-close" onclick="document.getElementById('pipeline-help-modal').classList.remove('open')">✕</button>
+    <div class="modal-title">How the pipeline works</div>
+    <div class="modal-desc">Three steps process your media library from discovery to download.</div>
+    <div style="display:grid;gap:12px">
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
+        <div style="font-size:11px;font-weight:700;color:var(--blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Step 1</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">⟳ Scan Libraries</div>
+        <div style="font-size:12px;color:var(--text2)">Connects to Plex, checks each media folder for a local theme file, and marks items Missing or Available.</div>
+      </div>
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
+        <div style="font-size:11px;font-weight:700;color:var(--purple);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Step 2</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">⚡ Find Sources</div>
+        <div style="font-size:12px;color:var(--text2)">Searches for theme sources for Missing items using TMDB, YouTube, or Golden Source. Matches move to Staged.</div>
+      </div>
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
+        <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Step 3</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">↓ Download Approved</div>
+        <div style="font-size:12px;color:var(--text2)">Downloads theme files for Approved items using yt-dlp and ffmpeg, saves them to the media folder, and marks them Available.</div>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="document.getElementById('pipeline-help-modal').classList.remove('open')">Close</button></div>
+  </div>
+</div>
+
 <!-- Delete Confirm Modal -->
 <div class="modal-overlay" id="delete-modal">
   <div class="modal" style="max-width:420px;position:relative">
@@ -2493,17 +2562,29 @@ function dashboardQuickLibraries(){
   return scheduled.length ? scheduled : enabled;
 }
 function dashboardBadgeClass(state){
-  return {ok:'ok',warning:'warn',off:'off',fail:'fail'}[state] || 'off';
+  return {ok:'ok',warning:'warn',warn:'warn',off:'off',error:'fail',fail:'fail',unknown:'unknown'}[state] || 'off';
 }
 function dashboardStatusBadge(label,state='off'){
   return `<span class="dashboard-badge ${dashboardBadgeClass(state)}">${label}</span>`;
 }
 function formatDashboardTime(value){
-  if(!value) return 'No activity yet';
+  if(!value) return null;
   const safe=String(value).replace(' ','T');
   const dt=new Date(safe);
   if(Number.isNaN(dt.getTime())) return value;
   return dt.toLocaleString();
+}
+function formatNextRun(isoStr){
+  if(!isoStr) return null;
+  const dt=new Date(isoStr);
+  if(Number.isNaN(dt.getTime())) return isoStr;
+  const now=new Date();
+  const diffMs=dt-now;
+  const diffH=Math.round(diffMs/3600000);
+  if(diffH<1) return 'Soon';
+  if(diffH<24) return `In ${diffH}h`;
+  const diffD=Math.floor(diffH/24);
+  return `In ${diffD}d (${dt.toLocaleString([], {weekday:'short',hour:'2-digit',minute:'2-digit'})})`;
 }
 function openThemeManagerFiltered(status=''){
   showPage('theme-manager');
@@ -2532,13 +2613,16 @@ async function dashboardRunQuick(passNum){
   if(!libraries.length) return toast('Enable at least one library first','err');
   return startPipelineRun(passNum,'run',{libraries,scopeLabel:_formatScopeLabel(libraries,'enabled libraries')});
 }
+function dashboardShowPipelineHelp(){
+  document.getElementById('pipeline-help-modal').classList.add('open');
+}
 function renderDashboardPipelineOverview(counts){
   const items=[
-    {label:'Missing', status:'MISSING', value:counts.MISSING||0, color:'var(--text2)'},
-    {label:'Staged', status:'STAGED', value:counts.STAGED||0, color:'var(--purple)'},
-    {label:'Approved', status:'APPROVED', value:counts.APPROVED||0, color:'var(--yellow)'},
-    {label:'Available', status:'AVAILABLE', value:counts.AVAILABLE||0, color:'var(--green)'},
-    {label:'Failed', status:'FAILED', value:counts.FAILED||0, color:'var(--red)'},
+    {label:'Missing', sub:'Needs source', status:'MISSING', value:counts.MISSING||0, color:'var(--text2)'},
+    {label:'Staged', sub:'Review queue', status:'STAGED', value:counts.STAGED||0, color:'var(--purple)'},
+    {label:'Approved', sub:'Ready to download', status:'APPROVED', value:counts.APPROVED||0, color:'var(--yellow)'},
+    {label:'Available', sub:'Already local', status:'AVAILABLE', value:counts.AVAILABLE||0, color:'var(--green)'},
+    {label:'Failed', sub:'Needs review', status:'FAILED', value:counts.FAILED||0, color:'var(--red)'},
   ];
   const el=document.getElementById('dashboard-pipeline-overview');
   if(!el) return;
@@ -2546,138 +2630,184 @@ function renderDashboardPipelineOverview(counts){
     <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
       <span class="dashboard-stat-label">${item.label}</span>
+      <span class="dashboard-stat-sub">${item.sub}</span>
     </button>`).join('');
 }
-function renderDashboardSystemHealth(cfg, enabledLibs, scheduledLibs){
-  const plexReady=!!((cfg.plex_url||'').trim() && (cfg.plex_token||'').trim());
-  const tmdbReady=!!(cfg.tmdb_api_key||'').trim();
-  const goldenReady=!!(cfg.golden_source_url||'').trim();
-  const schedulerEnabled=cfg.schedule_enabled !== false;
-  const items=[
-    {label:'Plex connection', value:plexReady?'Configured':'Not configured', state:plexReady?'ok':'warning'},
-    {label:'TMDB API key', value:tmdbReady?'Configured':'Not configured', state:tmdbReady?'ok':'warning'},
-    {label:'Golden Source', value:goldenReady?'Configured':'Not configured', state:goldenReady?'ok':'off'},
-    {label:'Scheduler', value:schedulerEnabled?'Enabled':'Disabled', state:schedulerEnabled?'ok':'off'},
-    {label:'Enabled libraries', value:`${enabledLibs.length} enabled${scheduledLibs.length?` · ${scheduledLibs.length} scheduled`:''}`, state:enabledLibs.length?'ok':'warning'},
-  ];
+function renderDashboardSystemHealth(health){
   const el=document.getElementById('dashboard-system-health');
   if(!el) return;
-  el.innerHTML=items.map(item=>`
-    <div class="dashboard-health-item">
-      <div class="dashboard-health-copy">
-        <div class="dashboard-kicker">${item.label}</div>
-        <div class="dashboard-main-copy">${item.value}</div>
-      </div>
-      ${dashboardStatusBadge(item.value, item.state)}
-    </div>`).join('');
+  const rows=[
+    {label:'Plex', key:'plex'},
+    {label:'TMDB API', key:'tmdb'},
+    {label:'Golden Source', key:'golden_source'},
+    {label:'Download Toolchain', key:'toolchain'},
+    {label:'Storage', key:'storage'},
+    {label:'Database', key:'database'},
+    {label:'Libraries', key:'libraries'},
+  ];
+  el.innerHTML=rows.map(row=>{
+    const h=health[row.key]||{state:'unknown',label:'Unknown'};
+    const badge=dashboardStatusBadge(h.label, h.state);
+    const detail=h.detail||'';
+    return `<div class="dash-health-row">
+      <span class="dash-health-label">${row.label}</span>
+      ${detail ? `<span class="dash-health-detail" title="${detail.replace(/"/g,'&quot;')}">${detail}</span>` : ''}
+      ${badge}
+    </div>`;
+  }).join('');
+}
+function renderDashboardSchedule(health){
+  const el=document.getElementById('dashboard-schedule');
+  if(!el) return;
+  const s=health.schedule||{state:'unknown',label:'Unknown',cron:'',next_run:null,libraries:0};
+  const nextRunStr=formatNextRun(s.next_run);
+  const rows=[
+    {key:'Automation', val:dashboardStatusBadge(s.label, s.state)},
+    {key:'Cron', val:`<span style="font-family:var(--mono);font-size:11px">${s.cron||'—'}</span>`},
+    {key:'Next run', val:nextRunStr ? `<span style="color:var(--text2);font-size:12px">${nextRunStr}</span>` : `<span style="color:var(--text3);font-size:12px">—</span>`},
+    {key:'Libraries', val:`<span style="color:var(--text2);font-size:12px">${s.libraries||0} included</span>`},
+  ];
+  el.innerHTML=`<div class="dash-schedule-grid">`+rows.map(r=>`
+    <div class="dash-schedule-row">
+      <span class="dash-schedule-key">${r.key}</span>
+      <span class="dash-schedule-val">${r.val}</span>
+    </div>`).join('')+`</div>`;
 }
 function renderDashboardNeedsAttention(cfg, counts, enabledLibs){
   const items=[];
-  if((counts.MISSING||0)>0) items.push({title:`${counts.MISSING} missing title${counts.MISSING===1?'':'s'} need source discovery`, detail:'Open Theme Manager filtered to Missing and start finding sources.', target:{page:'theme-manager',filter:'MISSING'}});
-  if((counts.STAGED||0)>0) items.push({title:`${counts.STAGED} staged title${counts.STAGED===1?'':'s'} waiting for approval`, detail:'Review staged items and approve the ones ready for download.', target:{page:'theme-manager',filter:'STAGED'}});
-  if((counts.FAILED||0)>0) items.push({title:`${counts.FAILED} failed title${counts.FAILED===1?'':'s'} need review`, detail:'Inspect failures, update sources if needed, then retry.', target:{page:'theme-manager',filter:'FAILED'}});
-  if(!(cfg.golden_source_url||'').trim()) items.push({title:'Golden Source is not configured', detail:'Add a curated source list if you want tighter and faster source discovery.', target:{page:'configuration'}});
-  if(!((cfg.plex_url||'').trim() && (cfg.plex_token||'').trim()) || !(cfg.tmdb_api_key||'').trim()) items.push({title:'Connections still need setup', detail:'Finish Plex and TMDB configuration so scanning and matching can run cleanly.', target:{page:'configuration'}});
-  if(!enabledLibs.length) items.push({title:'No enabled libraries selected', detail:'Enable at least one movie or TV library to start processing themes.', target:{page:'configuration'}});
+  const plexOk=(cfg.plex_url||'').trim() && (cfg.plex_token||'').trim();
+  const tmdbOk=(cfg.tmdb_api_key||'').trim();
+  if(!plexOk) items.push({title:'Plex not configured', detail:'Connect Plex to enable library scanning and indexing.', cta:'Configure Plex', target:{page:'configuration'}});
+  if(!tmdbOk) items.push({title:'TMDB API not configured', detail:'Add your TMDB API key to enable metadata matching.', cta:'Configure TMDB', target:{page:'configuration'}});
+  if(!enabledLibs.length) items.push({title:'No libraries enabled', detail:'Enable at least one movie or TV library to start processing.', cta:'Add Libraries', target:{page:'configuration'}});
+  if((counts.MISSING||0)>0) items.push({title:`${counts.MISSING} missing title${counts.MISSING===1?'':'s'} need source discovery`, detail:`Run Find Sources to search for theme matches.`, cta:'Open Missing', target:{page:'theme-manager',filter:'MISSING'}});
+  if((counts.FAILED||0)>0) items.push({title:`${counts.FAILED} failed title${counts.FAILED===1?'':'s'} need review`, detail:'Inspect failures and update sources or retry.', cta:'Review Failed', target:{page:'theme-manager',filter:'FAILED'}});
   const el=document.getElementById('dashboard-needs-attention');
   if(!el) return;
   if(!items.length){
-    el.innerHTML='<div class="dashboard-empty">Nothing urgent right now. Your next actions will appear here as the pipeline changes.</div>';
+    el.innerHTML='<div class="dashboard-empty">Nothing needs attention right now.</div>';
     return;
   }
-  el.innerHTML=items.slice(0,5).map(item=>`
+  el.innerHTML=items.slice(0,3).map(item=>`
     <div class="dashboard-attention-item">
       <div class="dashboard-attention-copy">
         <div class="dashboard-main-copy">${item.title}</div>
         <div class="dashboard-sub-copy">${item.detail}</div>
       </div>
-      <button class="btn btn-ghost btn-xs" onclick='dashboardOpenTarget(${JSON.stringify(item.target)})'>Open</button>
+      <button class="btn btn-ghost btn-xs" style="flex-shrink:0" onclick='dashboardOpenTarget(${JSON.stringify(item.target)})'>${item.cta}</button>
     </div>`).join('');
+}
+function renderDashboardNextStep(cfg, counts, enabledLibs){
+  const banner=document.getElementById('dash-next-step-banner');
+  if(!banner) return;
+  const plexOk=(cfg.plex_url||'').trim()&&(cfg.plex_token||'').trim();
+  const tmdbOk=(cfg.tmdb_api_key||'').trim();
+  let msg=null;
+  if(!plexOk || !tmdbOk) msg='<strong>Recommended next step:</strong> Configure Plex and TMDB to get started.';
+  else if(!enabledLibs.length) msg='<strong>Recommended next step:</strong> Enable at least one library, then run Scan Libraries.';
+  else if((counts.MISSING||0)>0) msg=`<strong>Recommended next step:</strong> Run source discovery for ${counts.MISSING} missing title${counts.MISSING===1?'':'s'}.`;
+  else if((counts.APPROVED||0)>0) msg=`<strong>Recommended next step:</strong> Download ${counts.APPROVED} approved title${counts.APPROVED===1?'':'s'}.`;
+  if(msg){ banner.innerHTML=`<span>→</span><span>${msg}</span>`; banner.style.display='flex'; }
+  else { banner.style.display='none'; }
 }
 function dashboardLatestTask(entries, matcher){
   return (entries||[]).find(entry=>matcher((entry.task||''), entry)) || null;
 }
 function renderDashboardRecentActivity(entries){
   const recent={
-    scan: dashboardLatestTask(entries, (task, entry)=>/scan/i.test(task) || entry?.details?.pass===1),
-    discover: dashboardLatestTask(entries, (task, entry)=>/find sources|find theme sources/i.test(task) || entry?.details?.pass===2),
-    download: dashboardLatestTask(entries, (task, entry)=>/download/i.test(task) || entry?.details?.pass===3),
+    scan: dashboardLatestTask(entries, (task,entry)=>/scan/i.test(task)||entry?.details?.pass===1),
+    discover: dashboardLatestTask(entries, (task,entry)=>/find sources|source discovery/i.test(task)||entry?.details?.pass===2),
+    download: dashboardLatestTask(entries, (task,entry)=>/download/i.test(task)||entry?.details?.pass===3),
     task: dashboardLatestTask(entries, ()=>true),
   };
   const items=[
     {label:'Last scan', entry:recent.scan},
-    {label:'Last source discovery run', entry:recent.discover},
-    {label:'Last download run', entry:recent.download},
-    {label:'Last task run', entry:recent.task},
+    {label:'Source discovery', entry:recent.discover},
+    {label:'Download run', entry:recent.download},
+    {label:'Task run', entry:recent.task},
   ];
   const el=document.getElementById('dashboard-recent-activity');
   if(!el) return;
-  el.innerHTML=items.map(item=>{
+  el.innerHTML=`<div style="display:grid;gap:6px">`+items.map(item=>{
     const entry=item.entry;
-    const badge=entry ? dashboardStatusBadge((entry.status||'success').toUpperCase(), entry.status==='success'?'ok':entry.status==='stopped'?'off':'warning') : dashboardStatusBadge('No runs', 'off');
-    return `<div class="dashboard-activity-item">
-      <div class="dashboard-activity-copy">
-        <div class="dashboard-kicker">${item.label}</div>
-        <div class="dashboard-main-copy">${entry ? formatDashboardTime(entry.time) : 'No activity yet'}</div>
-        <div class="dashboard-sub-copy">${entry ? (entry.summary || entry.task || 'Completed') : 'Run this workflow from the Dashboard, Scheduler, or Tasks page.'}</div>
-      </div>
+    const statusState=entry?(entry.status==='success'?'ok':entry.status==='stopped'?'off':'fail'):'off';
+    const statusLabel=entry?(entry.status||'success').toUpperCase():'NONE';
+    const badge=dashboardStatusBadge(statusLabel, statusState);
+    const timeStr=entry?formatDashboardTime(entry.time):null;
+    const summary=entry?(entry.summary||entry.task||'Completed'):'Not run yet';
+    return `<div class="dash-activity-row">
       ${badge}
+      <span class="dash-activity-label">${item.label}</span>
+      <span class="dash-activity-time">${timeStr||'—'}</span>
+      <span class="dash-activity-summary">${summary}</span>
     </div>`;
-  }).join('');
+  }).join('')+`</div>`;
 }
 function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
   const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
   const disabledLibs=allLibs.filter(lib=>lib.enabled===false);
+  const summaryEl=document.getElementById('dash-library-summary');
   const el=document.getElementById('dashboard-library-overview');
+  if(summaryEl){
+    summaryEl.innerHTML=`
+      <span class="dash-schedule-key">Libraries</span>
+      <span style="font-size:12px;color:var(--text2)">${enabledLibs.length} enabled · ${disabledLibs.length} disabled · ${scheduledLibs.length} in scheduler</span>
+      ${dashboardStatusBadge(enabledLibs.length?'Ready':'Needs setup', enabledLibs.length?'ok':'warn')}`;
+  }
   if(!el) return;
   if(!allLibs.length){
-    el.innerHTML='<div class="dashboard-empty">No libraries configured yet. Add libraries in Configuration to get started.</div>';
+    el.innerHTML='<div class="dashboard-empty">No libraries configured. Add libraries in Configuration to get started.</div>';
     return;
   }
-  el.innerHTML=`
-    <div class="dashboard-library-item">
-      <div class="dashboard-library-copy">
-        <div class="dashboard-kicker">Library summary</div>
-        <div class="dashboard-main-copy">${enabledLibs.length} enabled · ${disabledLibs.length} disabled</div>
-        <div class="dashboard-sub-copy">${scheduledLibs.length} included in the current Scheduler selection.</div>
-      </div>
-      ${dashboardStatusBadge(enabledLibs.length ? 'Ready' : 'Needs setup', enabledLibs.length ? 'ok' : 'warning')}
-    </div>
-    ${allLibs.map(lib=>{
-      const scheduled=scheduledLibs.some(name=>name===lib.name);
-      const type=lib.type==='show'?'TV':'Movie';
-      return `<div class="dashboard-library-item">
-        <div class="dashboard-library-copy">
-          <div class="dashboard-main-copy">${lib.name}</div>
-          <div class="dashboard-sub-copy">${type} · ${lib.enabled===false?'Disabled':'Enabled'}${scheduled?' · In Scheduler':''}</div>
-        </div>
-        ${dashboardStatusBadge(lib.enabled===false?'Disabled':(scheduled?'Scheduled':'Enabled'), lib.enabled===false?'off':(scheduled?'ok':'warn'))}
-      </div>`;
-    }).join('')}`;
+  el.innerHTML=`<div style="display:grid;gap:6px">`+allLibs.map(lib=>{
+    const scheduled=scheduledLibs.some(n=>n===lib.name);
+    const type=lib.type==='show'?'TV':'Movie';
+    const disabled=lib.enabled===false;
+    return `<div class="dash-health-row">
+      <span class="dash-health-label">${lib.name}</span>
+      <span class="dash-health-detail">${type}${scheduled?' · In Scheduler':''}</span>
+      ${dashboardStatusBadge(disabled?'Disabled':(scheduled?'In Scheduler':'Enabled'), disabled?'off':(scheduled?'ok':'warn'))}
+    </div>`;
+  }).join('')+`</div>`;
 }
 async function loadDashboard(force=false){
+  // Update last-updated timestamp
+  const tsEl=document.getElementById('dash-last-updated');
+  if(tsEl) tsEl.textContent='Updated '+new Date().toLocaleTimeString();
   const cfg=await loadConfig(force);
   const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
   const enabledLibs=allLibs.filter(lib=>lib.enabled!==false);
   const selectedNames=new Set((cfg.schedule_libraries&&cfg.schedule_libraries.length)?cfg.schedule_libraries:enabledLibs.map(lib=>lib.name));
   const scheduledLibs=enabledLibs.filter(lib=>selectedNames.has(lib.name)).map(lib=>lib.name);
   _dashboardLibraries={enabled:enabledLibs.map(lib=>lib.name), scheduled:scheduledLibs};
-  const ledgers=await Promise.all(enabledLibs.map(async lib=>{
-    const {data}=await requestJson('/api/ledger?library='+encodeURIComponent(lib.name));
-    return Array.isArray(data)?data:[];
-  }));
+
+  // Fast: counts + activity (can render without health)
+  const [ledgerResults, historyResult] = await Promise.all([
+    Promise.all(enabledLibs.map(async lib=>{
+      const {data}=await requestJson('/api/ledger?library='+encodeURIComponent(lib.name));
+      return Array.isArray(data)?data:[];
+    })),
+    requestJson('/api/tasks/history?limit=100'),
+  ]);
   const counts={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};
-  ledgers.flat().forEach(row=>{
+  ledgerResults.flat().forEach(row=>{
     const status=String(row.status||'').toUpperCase();
     if(status in counts) counts[status]+=1;
   });
-  const {data:historyData}=await requestJson('/api/tasks/history?limit=100');
-  const history=Array.isArray(historyData)?historyData:[];
+  const history=Array.isArray(historyResult.data)?historyResult.data:[];
+
   renderDashboardPipelineOverview(counts);
-  renderDashboardSystemHealth(cfg, enabledLibs, scheduledLibs);
   renderDashboardNeedsAttention(cfg, counts, enabledLibs);
+  renderDashboardNextStep(cfg, counts, enabledLibs);
   renderDashboardRecentActivity(history);
   renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs);
+
+  // Async: real health validation (may be slower)
+  const {data:health}=await requestJson('/api/health');
+  if(health && typeof health==='object'){
+    renderDashboardSystemHealth(health);
+    renderDashboardSchedule(health);
+  }
 }
 function setPendingTestBadge(elId, label='Working…'){
   const el=document.getElementById(elId);
