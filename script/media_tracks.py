@@ -831,6 +831,7 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
                 continue
             ledger_upsert(
                 ledger, key, plex_title, title, year, folder, ST_STAGED,
+                url=match.get("source_url", ""),
                 golden_source_url=match.get("source_url", ""),
                 golden_source_offset=match.get("start_offset", 0),
                 end_offset=match.get("end_offset", 0),
@@ -920,6 +921,7 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
         ledger_upsert(
             ledger, key, plex_title, title, year, folder, ST_STAGED,
             url=url, notes=f"Found via {method_used} — awaiting approval", tmdb_id=tmdb_id,
+            source_origin=f"youtube_{method_used}",
         )
         stats["staged"] += 1
 

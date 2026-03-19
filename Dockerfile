@@ -27,6 +27,7 @@ COPY script/media_tracks.py  /app/script/media_tracks.py
 COPY script/entrypoint.sh    /app/script/entrypoint.sh
 COPY web/app.py              /app/web/app.py
 COPY web/template.html       /app/web/template.html
+COPY web/ui_terminology.yaml /app/web/ui_terminology.yaml
 COPY shared/storage.py       /app/shared/storage.py
 RUN chmod +x /app/script/entrypoint.sh
 

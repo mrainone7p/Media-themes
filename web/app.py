@@ -1273,6 +1273,7 @@ def bulk_ledger():
             row["status"] = status; row["last_updated"] = now
             row["notes"] = f"Bulk {cur}->{status} via web UI"; count += 1
     save_ledger(path, rows)
+    skipped = len(keys) - count
     return jsonify({"ok":True,"updated":count,"skipped":skipped})
 
 @app.route("/api/ledger/clear-sources", methods=["POST"])
@@ -1372,6 +1373,7 @@ def import_golden_source():
             continue
         row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id","") or "").strip()
         incoming_url = str(match.get("source_url", "") or "").strip()
+        row["url"] = incoming_url
         row["golden_source_url"] = incoming_url
         row["golden_source_offset"] = match.get("start_offset","0") or "0"
         row["end_offset"] = match.get("end_offset","0") or "0"
@@ -1833,6 +1835,8 @@ def proxy_preview(key):
 
 @app.route("/api/run/pass/<int:pass_num>", methods=["POST"])
 def trigger_pass(pass_num):
+    if pass_num not in (1, 2, 3):
+        return jsonify({"error": "pass must be 1, 2, or 3"}), 400
     global _run_active
     data = request.get_json(silent=True) or {}
     libraries = data.get("libraries")
@@ -1922,6 +1926,7 @@ def _do_run(force_pass=0, explicit_libraries=None, scope_label="", allow_schedul
     stop_requested = False
     outcome = "error"
     explicit_libraries = [str(name).strip() for name in (explicit_libraries or []) if str(name).strip()]
+    resolved_scope = scope_label or "unknown"
     try:
         resolved_scope = scope_label or (
             explicit_libraries[0] if len(explicit_libraries) == 1
