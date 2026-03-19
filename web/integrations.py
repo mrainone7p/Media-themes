@@ -12,6 +12,7 @@ import hashlib
 import re
 import shutil
 import subprocess
+import threading
 import time
 import urllib.parse
 import sys
@@ -42,6 +43,12 @@ _BIO_TTL = 86400
 _stream_cache: dict[str, tuple[float, str]] = {}
 _STREAM_TTL = 600
 _STREAM_MAX = 200
+
+_youtube_search_cache: dict[str, tuple[float, list[dict]]] = {}
+_YOUTUBE_SEARCH_TTL = 300
+_toolchain_cache: tuple[float, dict] | None = None
+_TOOLCHAIN_STATUS_TTL = 300
+_cache_lock = threading.Lock()
 
 
 # ── Generic external helpers ─────────────────────────────────────────────────
@@ -214,6 +221,13 @@ def test_tmdb_key(key: str) -> dict:
 # ── yt-dlp / ffmpeg helpers ──────────────────────────────────────────────────
 
 def youtube_search(query: str, cookies_file: str | None = None) -> list[dict]:
+    cache_key = f"{str(query or '').strip().lower()}|{str(cookies_file or '').strip()}"
+    now = time.time()
+    with _cache_lock:
+        cached = _youtube_search_cache.get(cache_key)
+        if cached and now - cached[0] < _YOUTUBE_SEARCH_TTL:
+            return [dict(row) for row in cached[1]]
+
     search_url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote(query)
     result = run_command(
         _yt_dlp_base_flags(cookies_file) + [
@@ -231,6 +245,8 @@ def youtube_search(query: str, cookies_file: str | None = None) -> list[dict]:
         parts = line.split("\t")
         if len(parts) >= 2 and parts[1].startswith("https://"):
             rows.append({"title": parts[0], "url": parts[1], "duration": parts[2] if len(parts) > 2 else ""})
+    with _cache_lock:
+        _youtube_search_cache[cache_key] = (now, [dict(row) for row in rows])
     return rows
 
 
@@ -334,6 +350,12 @@ def cleanup_temp_downloads(folder: str | Path, slug: str):
 # ── Dependency / toolchain helpers ───────────────────────────────────────────
 
 def toolchain_status() -> dict:
+    global _toolchain_cache
+    now = time.time()
+    with _cache_lock:
+        if _toolchain_cache and now - _toolchain_cache[0] < _TOOLCHAIN_STATUS_TTL:
+            return dict(_toolchain_cache[1])
+
     ytdlp_bin = shutil.which("yt-dlp")
     ffmpeg_bin = shutil.which("ffmpeg")
     ytdlp_ver = None
@@ -353,9 +375,14 @@ def toolchain_status() -> dict:
 
     if ytdlp_bin and ffmpeg_bin:
         detail = " · ".join(part for part in [f"yt-dlp {ytdlp_ver}" if ytdlp_ver else "", f"ffmpeg {ffmpeg_ver}" if ffmpeg_ver else ""] if part)
-        return {"state": "ok", "label": "Ready", "detail": detail, "ytdlp_version": ytdlp_ver, "ffmpeg_version": ffmpeg_ver}
-    if not ytdlp_bin and not ffmpeg_bin:
-        return {"state": "error", "label": "Dependency issue", "detail": "yt-dlp and ffmpeg not found"}
-    if not ytdlp_bin:
-        return {"state": "error", "label": "yt-dlp missing", "detail": f"ffmpeg {ffmpeg_ver}" if ffmpeg_ver else "ffmpeg present"}
-    return {"state": "error", "label": "ffmpeg missing", "detail": f"yt-dlp {ytdlp_ver}" if ytdlp_ver else "yt-dlp present"}
+        payload = {"state": "ok", "label": "Ready", "detail": detail, "ytdlp_version": ytdlp_ver, "ffmpeg_version": ffmpeg_ver}
+    elif not ytdlp_bin and not ffmpeg_bin:
+        payload = {"state": "error", "label": "Dependency issue", "detail": "yt-dlp and ffmpeg not found"}
+    elif not ytdlp_bin:
+        payload = {"state": "error", "label": "yt-dlp missing", "detail": f"ffmpeg {ffmpeg_ver}" if ffmpeg_ver else "ffmpeg present"}
+    else:
+        payload = {"state": "error", "label": "ffmpeg missing", "detail": f"yt-dlp {ytdlp_ver}" if ytdlp_ver else "yt-dlp present"}
+
+    with _cache_lock:
+        _toolchain_cache = (now, dict(payload))
+    return payload

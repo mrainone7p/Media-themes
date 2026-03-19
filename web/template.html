@@ -3858,6 +3858,28 @@ function initSidebarNav(){
 
 
 let _toastT;
+const _youtubeSearchCache={};
+const _youtubeSearchInflight={};
+
+async function youtubeSearchRequest(query,{ttlMs=300000}={}){
+  const normalized=String(query||'').trim();
+  if(!normalized) return {ok:false,error:'No query',results:[]};
+  const cacheKey=normalized.toLowerCase();
+  const cached=_youtubeSearchCache[cacheKey];
+  if(cached && Date.now()-cached.ts < ttlMs) return cached.data;
+  if(_youtubeSearchInflight[cacheKey]) return _youtubeSearchInflight[cacheKey];
+  _youtubeSearchInflight[cacheKey]=(async()=>{
+    const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:normalized})});
+    const data=await r.json();
+    if(data?.ok) _youtubeSearchCache[cacheKey]={ts:Date.now(),data};
+    return data;
+  })();
+  try{
+    return await _youtubeSearchInflight[cacheKey];
+  }finally{
+    delete _youtubeSearchInflight[cacheKey];
+  }
+}
 function toast(msg,type='info'){
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='show '+type;
@@ -5651,6 +5673,7 @@ function selectSearchMethod(method){
   });
   _updateQueryDisplay();
   _setSearchFooter(1);
+  _maybePrefetchMethodQuickPick(method);
 }
 
 function pickSearchMethod(method, event){
@@ -5821,8 +5844,7 @@ async function _searchByMethod(method, showStep=true){
     goToSearchStep(2);
     document.getElementById('search-results').innerHTML='<div class="search-results-state">Searching…</div>';
   }
-  const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
-  const data=await r.json();
+  const data=await youtubeSearchRequest(q);
   if(!data.ok){
     if(showStep){
       document.getElementById('search-results').innerHTML=`<div class="search-results-state error">${data.error}</div>`;
@@ -5898,7 +5920,6 @@ function _renderResults(results){
         <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}',{skipPreview:false,sourceTitle:'${r.title.replace(/'/g,"\\'").replace(/</g,'&lt;')}'})">Pick</button>
       </div>
     </div>`).join('');
-  if(results[0]?.url) setTimeout(()=>previewSearchResult(results[0].url),80);
 }
 
 
@@ -5930,11 +5951,25 @@ function _renderMethodQuickPick(method, result, opts={}){
 function _setMethodQuickPick(method, result){
   const el=document.getElementById('sm-first-'+method);
   if(!el) return;
-  if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
+  if(result===null){
+    delete el.dataset.loaded;
+    el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>';
+    return;
+  }
+  el.dataset.loaded='1';
   const quickPickOpts=method==='golden_source'
     ? {label:'Curated match', title:'Curated Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Select'}
     : {label:'First match'};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
+}
+
+
+function _maybePrefetchMethodQuickPick(method){
+  if(!['playlist','direct'].includes(method)) return;
+  const el=document.getElementById('sm-first-'+method);
+  if(!el || el.dataset.loaded==='1') return;
+  _setMethodQuickPick(method,null);
+  _prefetchMethodFirstResult(method);
 }
 
 
@@ -5986,20 +6021,20 @@ async function _prefetchMethodFirstResult(method){
   const q=buildSearchQuery(method,_searchTitle,_searchYear);
   if(!q) return;
   try{
-    const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
-    const data=await r.json();
+    const data=await youtubeSearchRequest(q);
     _setMethodQuickPick(method, (data.ok && data.results && data.results.length)?data.results[0]:false);
   }catch(_e){ _setMethodQuickPick(method,false); }
 }
 
 function _initMethodQuickPicks(existingRow){
-  _setMethodQuickPick('playlist',null);
-  _setMethodQuickPick('direct',null);
+  const playlistEl=document.getElementById('sm-first-playlist');
+  const directEl=document.getElementById('sm-first-direct');
+  if(playlistEl){ delete playlistEl.dataset.loaded; playlistEl.innerHTML='<span class="sm-quickpick-loading">Pick Playlist to load a quick match…</span>'; }
+  if(directEl){ delete directEl.dataset.loaded; directEl.innerHTML='<span class="sm-quickpick-loading">Pick Direct to load a quick match…</span>'; }
   const row=existingRow||_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
   const golden=_goldenSourceMeta(row);
   _setMethodQuickPick('golden_source', golden.url ? {title:'Golden Source URL', url:golden.url, start_offset:golden.offset} : false);
-  _prefetchMethodFirstResult('playlist');
-  _prefetchMethodFirstResult('direct');
+  _maybePrefetchMethodQuickPick(_searchMethod||_searchDefaultMethod||'playlist');
 }
 
 function searchPreviewSeek(val){ _searchPreviewAudio.seek(val); }
@@ -7408,6 +7443,26 @@ function toggleTheme(){
 (function(){try{const t=localStorage.getItem('mt-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');setTimeout(()=>{const b=document.getElementById('theme-toggle-btn');if(b)b.textContent='☾';},0);}}catch(e){}})();
 
 
+let _globalRunStatusTimer=null;
+
+function _scheduleGlobalRunStatusPoll(delayMs){
+  if(_globalRunStatusTimer) clearTimeout(_globalRunStatusTimer);
+  _globalRunStatusTimer=setTimeout(async()=>{
+    await updateGlobalRunStatus();
+    const nextDelay=document.hidden ? 15000 : ((_dashRunActive || _wasRunning) ? 2500 : 10000);
+    _scheduleGlobalRunStatusPoll(nextDelay);
+  }, delayMs);
+}
+
+function startGlobalRunStatusPolling(){
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden) updateGlobalRunStatus();
+    const nextDelay=document.hidden ? 15000 : ((_dashRunActive || _wasRunning) ? 2500 : 10000);
+    _scheduleGlobalRunStatusPoll(nextDelay);
+  });
+  _scheduleGlobalRunStatusPoll(10000);
+}
+
 try{
   document.addEventListener('DOMContentLoaded', async ()=>{
     await loadUiTerminology();
@@ -7416,12 +7471,9 @@ try{
     initSharedProgress();
     removeItemDetailsPanel();
     updateGlobalRunStatus();
-    setInterval(updateGlobalRunStatus, 4000);
-    setInterval(removeItemDetailsPanel, 2000);
+    startGlobalRunStatusPolling();
     const initial=((location.hash||'').replace(/^#/,'').trim());
-    if(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial)){
-      showPage(initial);
-    }
+    showPage(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial) ? initial : 'dashboard');
   });
 }catch(e){}
 
@@ -7435,7 +7487,6 @@ registerModalLifecycle('theme-modal',{requestClose:closeThemeModal});
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 renderTaskCards();
-loadDashboard();
 bindOffsetWheel();
 </script>
 </body>
