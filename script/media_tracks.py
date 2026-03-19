@@ -116,7 +116,7 @@ GOLDEN_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 def load_config() -> dict:
     with open(CONFIG_PATH) as f:
-        cfg = yaml.safe_load(f)
+        cfg = yaml.safe_load(f) or {}
     if os.environ.get("DRY_RUN", "").lower() == "true":
         cfg["dry_run"] = True
     log.info(f"Config loaded — mode: {cfg.get('mode', 'manual')}")
