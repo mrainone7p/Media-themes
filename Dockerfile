@@ -26,6 +26,8 @@ RUN mkdir -p /app/script /app/config /app/logs /app/web /app/shared /app/logs/ru
 COPY script/media_tracks.py  /app/script/media_tracks.py
 COPY script/entrypoint.sh    /app/script/entrypoint.sh
 COPY web/app.py              /app/web/app.py
+COPY web/logic.py            /app/web/logic.py
+COPY web/integrations.py     /app/web/integrations.py
 COPY web/template.html       /app/web/template.html
 COPY web/ui_terminology.yaml /app/web/ui_terminology.yaml
 COPY shared/storage.py       /app/shared/storage.py
