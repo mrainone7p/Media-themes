@@ -3336,11 +3336,24 @@ async function clearSourcesSelected(){
     text:`Clear source URLs for ${rows.length} selected items?`
   }, 'Clear URLs');
   if(!ok) return;
-  await Promise.all(rows.map(r=>fetch('/api/ledger/'+r.rating_key+'?library='+encodeURIComponent(_activeLib),{
-    method:'PATCH',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({url:'',status:'MISSING',notes:'Source cleared via Library'})
-  })));
-  clearSelection(); loadDatabase(); 
+  const r=await fetch(apiUrl('/api/ledger/clear-sources?library='+encodeURIComponent(_activeLib||'')),{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({keys})
+  });
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok || !d.ok){
+    toast(d.error||'Failed to clear source URLs','err');
+    await loadDatabase(false);
+    return;
+  }
+  const s=d.summary||{};
+  const parts=[`${s.cleared||0} URLs cleared`];
+  if(s.preserved_available) parts.push(`${s.preserved_available} kept ${displayStatus('AVAILABLE')}`);
+  if(s.reset_missing) parts.push(`${s.reset_missing} reset to ${displayStatus('MISSING')}`);
+  if(s.skipped_without_url) parts.push(`${s.skipped_without_url} already empty`);
+  toast(parts.join(' · '),'ok');
+  clearSelection();
+  loadDatabase();
 }
 
 
@@ -5077,7 +5090,12 @@ async function taskClearAllSources(){
   await runTaskAction({
     url:'/api/tasks/clear-source-urls',
     body:{library:lib==='__all__'?'':lib},
-    successMessage:(d)=>`Cleared ${d.cleared} URLs${d.libraries_cleared?` across ${d.libraries_cleared} libraries`:''}`,
+    successMessage:(d)=>{
+      const parts=[`Cleared ${d.cleared} URLs${d.libraries_cleared?` across ${d.libraries_cleared} libraries`:''}`];
+      if(d.preserved_available) parts.push(`${d.preserved_available} kept ${displayStatus('AVAILABLE')}`);
+      if(d.reset_missing) parts.push(`${d.reset_missing} reset to ${displayStatus('MISSING')}`);
+      return parts.join(' · ');
+    },
     failureFallback:'Failed',
     reloadDatabase:true
   });

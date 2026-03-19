@@ -41,6 +41,59 @@ EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
 VALID_STATUSES = {"UNMONITORED", "MISSING", "STAGED", "APPROVED", "AVAILABLE", "FAILED"}
 
 
+def _row_has_theme(row):
+    return str(row.get("theme_exists", "") or "") == "1"
+
+
+def _status_after_clearing_source(row):
+    current = str(row.get("status", "") or "").upper()
+    if _row_has_theme(row):
+        return "AVAILABLE", "preserved_available"
+    if current in {"STAGED", "APPROVED", "AVAILABLE", ""}:
+        return "MISSING", "reset_missing"
+    if current == "UNMONITORED":
+        return "UNMONITORED", "preserved_unmonitored"
+    if current == "FAILED":
+        return "FAILED", "preserved_failed"
+    return "MISSING", "reset_missing"
+
+
+def _clear_source_urls_for_rows(rows, *, keys=None, note, now):
+    key_filter = set(str(k) for k in (keys or []))
+    summary = {
+        "requested": len(key_filter) if keys is not None else len(rows),
+        "matched": 0,
+        "cleared": 0,
+        "updated": 0,
+        "preserved_available": 0,
+        "reset_missing": 0,
+        "preserved_failed": 0,
+        "preserved_unmonitored": 0,
+        "skipped_without_url": 0,
+    }
+    for row in rows:
+        rating_key = str(row.get("rating_key", "") or "")
+        if key_filter and rating_key not in key_filter:
+            continue
+        summary["matched"] += 1
+        had_url = bool(str(row.get("url", "") or "").strip())
+        if not had_url:
+            summary["skipped_without_url"] += 1
+            continue
+        next_status, bucket = _status_after_clearing_source(row)
+        previous_status = str(row.get("status", "") or "").upper()
+        row["url"] = ""
+        row["source_origin"] = "unknown"
+        row["status"] = next_status
+        row["last_updated"] = now
+        row["notes"] = note
+        summary["cleared"] += 1
+        summary[bucket] += 1
+        if previous_status != next_status:
+            summary["updated"] += 1
+    return summary
+
+
 def _status_validation_error(row, attempted_status):
     attempted = str(attempted_status or "").upper()
     current = str(row.get("status", "") or "").upper()
@@ -661,6 +714,29 @@ def bulk_ledger():
             row["notes"] = f"Bulk {cur}->{status} via web UI"; count += 1
     save_ledger(path, rows)
     return jsonify({"ok":True,"updated":count,"skipped":skipped})
+
+@app.route("/api/ledger/clear-sources", methods=["POST"])
+def clear_selected_sources():
+    data = request.json or {}
+    lib = (request.args.get("library", "") or data.get("library", "") or "").strip()
+    path = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
+    keys = [str(k) for k in (data.get("keys", []) or []) if str(k).strip()]
+    if not keys:
+        return jsonify({"ok": False, "error": "No ledger rows selected"}), 400
+    rows = load_ledger(path)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    summary = _clear_source_urls_for_rows(
+        rows,
+        keys=keys,
+        note="Source URL cleared via Library",
+        now=now,
+    )
+    missing_keys = sorted(set(keys) - {str(row.get("rating_key", "") or "") for row in rows})
+    if summary["cleared"]:
+        save_ledger(path, rows)
+    summary["missing_keys"] = missing_keys
+    summary["library"] = lib
+    return jsonify({"ok": True, "summary": summary})
 
 @app.route("/api/golden-source/import", methods=["POST"])
 def import_golden_source():
@@ -1455,26 +1531,42 @@ def clear_all_source_urls():
     if not target_libs:
         return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    cleared = 0
+    total_summary = {
+        'requested': 0,
+        'matched': 0,
+        'cleared': 0,
+        'updated': 0,
+        'preserved_available': 0,
+        'reset_missing': 0,
+        'preserved_failed': 0,
+        'preserved_unmonitored': 0,
+        'skipped_without_url': 0,
+    }
     changed_libs = 0
     for target_lib in target_libs:
         rows = load_ledger(ledger_path_for(target_lib))
-        lib_cleared = 0
-        for row in rows:
-            if str(row.get('url', '') or '').strip():
-                row['url'] = ''
-                row['source_origin'] = 'unknown'
-                if str(row.get('status', '') or '').upper() in ('STAGED', 'APPROVED'):
-                    row['status'] = 'MISSING'
-                row['last_updated'] = now
-                row['notes'] = 'Source URL cleared via Tasks maintenance'
-                lib_cleared += 1
-        if lib_cleared:
+        summary = _clear_source_urls_for_rows(
+            rows,
+            note='Source URL cleared via Tasks maintenance',
+            now=now,
+        )
+        for key, value in summary.items():
+            total_summary[key] += value
+        if summary['cleared']:
             save_ledger(ledger_path_for(target_lib), rows)
             changed_libs += 1
-            cleared += lib_cleared
-    _record_task('Clear All Source URLs', 'success', lib or 'all libraries', f'Cleared {cleared} URLs', {'library': lib or '', 'libraries_cleared': changed_libs, 'cleared': cleared})
-    return jsonify({'ok': True, 'library': lib, 'libraries_cleared': changed_libs, 'cleared': cleared})
+    _record_task(
+        'Clear All Source URLs',
+        'success',
+        lib or 'all libraries',
+        f"Cleared {total_summary['cleared']} URLs",
+        {
+            'library': lib or '',
+            'libraries_cleared': changed_libs,
+            **total_summary,
+        },
+    )
+    return jsonify({'ok': True, 'library': lib, 'libraries_cleared': changed_libs, **total_summary})
 
 @app.route("/api/run/status")
 def run_status():
