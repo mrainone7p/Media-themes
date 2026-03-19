@@ -156,10 +156,11 @@ body.nav-collapsed main{margin-left:48px}
 .btn:focus-visible,.field input:focus-visible,.field select:focus-visible,.search:focus-visible,.filter-sel:focus-visible,.st-sel:focus-visible,.inline-ed:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22)}
 
 /* ─── Dashboard lib tabs / processing history ─── */
-.dash-lib-tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.dash-lib-tab{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;white-space:nowrap;font-family:var(--ui)}
-.dash-lib-tab:hover{border-color:var(--text3);color:var(--text)}
+.dash-lib-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dash-lib-tab{display:inline-flex;align-items:center;justify-content:center;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;white-space:nowrap;font-family:var(--ui);min-height:36px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.dash-lib-tab:hover{border-color:var(--text3);color:var(--text);background:var(--surface2)}
 .dash-lib-tab.active{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.dash-lib-tab:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22)}
 .dash-overview-head,.dash-history-toolbar{position:relative;z-index:3}
 .dash-chart-area{position:relative;z-index:1}
 #dash-processing-chart,#dash-pie-chart{position:relative;z-index:1}
@@ -308,6 +309,9 @@ body.nav-collapsed main{margin-left:48px}
 .dash-health-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2)}
 .dash-health-label{font-size:12px;font-weight:600;color:var(--text);min-width:0;flex:1}
 .dash-health-detail{font-size:11px;color:var(--text3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;text-align:right;padding-right:10px}
+.dash-overview-head-actions,.dash-history-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dash-history-toolbar-label{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dash-history-toolbar-label select,.dash-history-toolbar-label input{min-height:36px}
 /* Activity compact rows */
 .dash-activity-row{display:grid;grid-template-columns:80px 1fr auto auto;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);font-size:12px}
 .dash-activity-label{font-weight:600;color:var(--text)}
@@ -335,9 +339,9 @@ body.nav-collapsed main{margin-left:48px}
 .dash-pipeline-step-desc{font-size:11px;color:var(--text2);line-height:1.4}
 /* Status Key */
 .dash-status-key{display:flex;flex-direction:column;gap:4px}
-.dash-status-key-row{display:flex;align-items:center;gap:7px}
+.dash-status-key-row{display:flex;align-items:flex-start;gap:7px}
 .dash-status-key-row .badge{min-width:78px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:2px 7px}
-.dash-status-key-def{font-size:10px;color:var(--text2);line-height:1.35}
+.dash-status-key-def{font-size:10px;color:var(--text2);line-height:1.35;min-width:0}
 /* Action Station */
 .dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
 .dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
@@ -404,21 +408,25 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid.compact .dashboard-stat-sub{font-size:10px}
 
 /* ─── Pie chart ─── */
-.dash-chart-area{display:grid;grid-template-columns:minmax(180px,220px) minmax(0,1fr);gap:20px;align-items:center}
-.dash-pie-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:180px;justify-content:center}
-.dash-pie-wrap svg{display:block;flex-shrink:0}
-.dash-pie-legend{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--text2);width:100%}
-.dash-pie-legend-item{display:flex;align-items:center;gap:6px}
-.dash-pie-legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
-.dash-chart-panel{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
-.dash-chart-scroll{width:100%;overflow-x:auto;padding-bottom:2px}
+.dash-chart-area{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:28px;align-items:stretch}
+.dash-pie-wrap,.dash-chart-panel{background:color-mix(in srgb,var(--surface2) 84%, transparent);border:1px solid color-mix(in srgb,var(--border) 88%, transparent);border-radius:16px;padding:18px}
+.dash-pie-wrap{display:flex;flex-direction:column;align-items:center;gap:18px;min-height:320px;justify-content:center}
+.dash-pie-wrap svg{display:block;flex-shrink:0;max-width:100%}
+.dash-pie-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;font-size:11px;color:var(--text2);width:100%}
+.dash-pie-legend-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.dash-pie-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.dash-chart-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;width:100%;min-height:320px}
+.dash-chart-scroll{width:100%;overflow-x:auto;padding:0 0 2px}
 .dash-chart-scroll svg{display:block;margin:0 auto}
-.dash-chart-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 16px;width:100%;font-size:10px;color:var(--text2)}
+.dash-chart-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 16px;width:100%;font-size:11px;color:var(--text2)}
 .dash-chart-legend-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .dash-chart-legend-swatch{width:10px;height:10px;border-radius:2px;opacity:.82;flex-shrink:0}
 .dash-pie-empty{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:30px 10px}
-@media(max-width:980px){.dash-chart-area{grid-template-columns:1fr;gap:16px}.dash-pie-wrap{flex-direction:row;align-items:flex-start;justify-content:flex-start;gap:16px;min-height:auto}.dash-pie-legend{min-width:0;flex:1}.dash-chart-panel{align-items:stretch}}
-@media(max-width:700px){.dash-pie-wrap{flex-direction:column;align-items:center}.dash-pie-legend{width:100%}.dash-chart-legend{justify-content:flex-start}}
+@media(max-width:980px){.dash-chart-area{grid-template-columns:1fr;gap:16px}.dash-pie-wrap,.dash-chart-panel{min-height:0}.dash-pie-wrap{padding:16px}.dash-chart-panel{align-items:stretch;padding:16px}}
+@media(max-width:700px){.dash-pie-legend,.dash-chart-legend{justify-content:flex-start}.dash-chart-panel,.dash-pie-wrap{padding:14px}}
+@media(max-width:980px){.dash-status-key-row{flex-direction:column;align-items:flex-start}.dash-status-key-row .badge{min-width:0}}
+@media(max-width:700px){.dashboard-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-stat{padding:10px 11px}.dashboard-main-copy,.dashboard-sub-copy{overflow-wrap:anywhere}.dash-action-buttons{flex-direction:column}.dash-action-buttons .btn{width:100%}.dash-health-row,.dashboard-health-item,.dashboard-activity-item,.dashboard-attention-item,.dashboard-library-item,.dash-activity-row{flex-direction:column;align-items:flex-start}.dash-activity-row{display:flex}.dash-health-detail,.dash-activity-summary{white-space:normal;text-align:left;padding-right:0}.dash-overview-head,.dash-history-toolbar{align-items:flex-start}.dash-overview-head-actions,.dash-history-controls{width:100%}.dash-history-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dash-history-controls>#dash-hist-status-filters{grid-column:1/-1}.dash-history-toolbar-label{width:100%;justify-content:space-between}.dash-history-toolbar-label select,.dash-history-toolbar-label input{width:100%}.dash-lib-tabs{gap:8px}.dash-lib-tab{flex:0 1 auto}.dash-pipeline-step{flex-direction:column}.dash-pipeline-step-num{align-self:flex-start}.dash-attention-card,.dashboard-card{overflow:hidden}}
+@media(max-width:520px){.dash-history-controls{grid-template-columns:1fr}.dashboard-stat-grid{grid-template-columns:1fr}.dash-lib-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.dash-lib-tab{width:100%}}
 
 /* ─── Theme Manager table console ─── */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
@@ -1327,7 +1335,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <!-- Header row -->
       <div class="dash-overview-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div class="card-title" style="margin-bottom:0">Theme Library Overview</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div class="dash-overview-head-actions">
           <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
           <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
         </div>
@@ -1336,15 +1344,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div>
         <div class="dash-history-toolbar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
           <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Processing History</div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="dash-history-controls">
             <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
-            <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">Group
-              <select id="dash-hist-group" onchange="renderProcessingHistory()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:3px 7px;outline:none;cursor:pointer">
+            <label class="dash-history-toolbar-label">Group
+              <select id="dash-hist-group" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11px;padding:6px 10px;outline:none;cursor:pointer">
                 <option value="day">Day</option><option value="week">Week</option><option value="month" selected>Month</option><option value="year">Year</option>
               </select>
             </label>
-            <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">Show last
-              <input id="dash-hist-count" type="number" value="12" min="1" max="60" onchange="renderProcessingHistory()" style="width:50px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:3px 6px;outline:none;font-family:var(--mono);text-align:center">
+            <label class="dash-history-toolbar-label">Show last
+              <input id="dash-hist-count" type="number" value="12" min="1" max="60" inputmode="numeric" style="width:72px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11px;padding:6px 10px;outline:none;font-family:var(--mono);text-align:center">
             </label>
           </div>
         </div>
@@ -3281,8 +3289,46 @@ let _dashLedgerByLib={};
 let _dashLedgerAll=[];
 let _dashSelectedLib='all';
 let _dashHistStatusFilter='all';
+let _dashControlsBound=false;
 
 function _getHistRows(){return _dashSelectedLib==='all'?_dashLedgerAll:(_dashLedgerByLib[_dashSelectedLib]||[]);}
+function _renderDashboardCharts(){renderProcessingHistory();renderPieChart();}
+function _sanitizeDashHistCount(){
+  const input=document.getElementById('dash-hist-count');
+  if(!input) return 12;
+  const sanitized=Math.min(60,Math.max(1,parseInt(input.value||'12',10)||12));
+  input.value=String(sanitized);
+  return sanitized;
+}
+function _bindDashboardControls(){
+  if(_dashControlsBound) return;
+  _dashControlsBound=true;
+  const page=document.getElementById('page-dashboard');
+  page?.addEventListener('click',evt=>{
+    const libBtn=evt.target.closest('[data-dash-lib]');
+    if(libBtn){
+      evt.preventDefault();
+      switchDashLib(libBtn.dataset.dashLib||'all');
+      return;
+    }
+    const filterBtn=evt.target.closest('[data-hist-filter]');
+    if(filterBtn){
+      evt.preventDefault();
+      _setHistFilter(filterBtn.dataset.histFilter||'all');
+    }
+  });
+  const group=document.getElementById('dash-hist-group');
+  group?.addEventListener('change',_renderDashboardCharts);
+  const count=document.getElementById('dash-hist-count');
+  count?.addEventListener('change',()=>{
+    _sanitizeDashHistCount();
+    _renderDashboardCharts();
+  });
+  count?.addEventListener('input',()=>{
+    _sanitizeDashHistCount();
+    renderProcessingHistory();
+  });
+}
 
 // How it Works? panel — always starts collapsed, ephemeral state
 let _howItWorksOpen=false;
@@ -3339,7 +3385,7 @@ function renderDashLibTabs(enabledLibs){
   const el=document.getElementById('dash-lib-tabs');
   if(!el) return;
   const tabs=[{name:'all',label:'All'},...(enabledLibs||[]).map(l=>({name:l.name||l,label:l.name||l}))];
-  el.innerHTML=tabs.map(t=>`<button type="button" class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
+  el.innerHTML=tabs.map(t=>`<button type="button" class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" data-dash-lib=${JSON.stringify(String(t.name))}>${t.label}</button>`).join('');
 }
 
 function renderHistStatusFilters(){
@@ -3354,17 +3400,16 @@ function renderHistStatusFilters(){
   ];
   el.innerHTML=filters.map(f=>{
     const active=f.k===_dashHistStatusFilter;
-    return `<button type="button" class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter(${JSON.stringify(f.k)})">${f.label}</button>`;
+    return `<button type="button" class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" data-hist-filter=${JSON.stringify(String(f.k))}>${f.label}</button>`;
   }).join('');
 }
 
-function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();renderProcessingHistory();renderPieChart();}
+function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();_renderDashboardCharts();}
 
 function switchDashLib(name){
   _dashSelectedLib=name;
   renderDashLibTabs(Object.keys(_dashLedgerByLib).map(n=>({name:n})));
-  renderProcessingHistory();
-  renderPieChart();
+  _renderDashboardCharts();
 }
 
 function renderDashLibKpi(){
@@ -3440,12 +3485,25 @@ function _periodLabel(key, group){
   try{return new Date(`${key}T00:00:00Z`).toLocaleString([],{month:'short',day:'numeric',timeZone:'UTC'});}catch(e){return key;}
 }
 
+function _startOfCurrentPeriod(group){
+  const now=new Date();
+  const utc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
+  if(group==='year') return new Date(Date.UTC(utc.getUTCFullYear(),0,1));
+  if(group==='month') return new Date(Date.UTC(utc.getUTCFullYear(),utc.getUTCMonth(),1));
+  if(group==='week'){
+    const weekStart=new Date(utc.getTime());
+    const day=(weekStart.getUTCDay()+6)%7;
+    weekStart.setUTCDate(weekStart.getUTCDate()-day);
+    return weekStart;
+  }
+  return utc;
+}
 function _zeroFillPeriods(keys, group, showN){
-  // Generate continuous trailing date buckets including zero-data periods
-  if(!keys.length) return [];
   const sorted=keys.slice().sort();
-  let cursor=_parsePeriodDate(sorted[sorted.length-1], group);
-  if(!cursor) return sorted.slice(-showN);
+  const latestExisting=sorted.length?_parsePeriodDate(sorted[sorted.length-1], group):null;
+  const currentPeriod=_startOfCurrentPeriod(group);
+  let cursor=currentPeriod;
+  if(latestExisting && latestExisting.getTime()>currentPeriod.getTime()) cursor=latestExisting;
   const filled=[];
   while(filled.length<showN){
     filled.push(_formatPeriodKey(cursor, group));
@@ -3455,7 +3513,7 @@ function _zeroFillPeriods(keys, group, showN){
 }
 function renderProcessingHistory(){
   const group=document.getElementById('dash-hist-group')?.value||'month';
-  const showN=Math.max(1,parseInt(document.getElementById('dash-hist-count')?.value||'12',10)||12);
+  const showN=_sanitizeDashHistCount();
   const rows=_getHistRows();
   const el=document.getElementById('dash-processing-chart');
   if(!el) return;
@@ -3476,15 +3534,12 @@ function renderProcessingHistory(){
   const shown=_zeroFillPeriods(rawKeys, group, showN);
   const displaySt=_dashHistStatusFilter==='all'?CHART_STATUSES:(_dashHistStatusFilter==='MISSING'?CHART_STATUSES:[_dashHistStatusFilter.toUpperCase()]);
 
-  if(!shown.length){
-    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;font-family:var(--mono)">No history data yet — items will appear here once processed</div>';
-    return;
-  }
+
 
   const maxVal=Math.max(1,...shown.map(k=>displaySt.reduce((s,st)=>s+(buckets[k]?.[st]||0),0)));
-  const chartH=140;
-  const labelH=22;
-  const barW=Math.max(16,Math.min(52,Math.floor(560/shown.length)));
+  const chartH=220;
+  const labelH=24;
+  const barW=Math.max(18,Math.min(48,Math.floor(560/Math.max(shown.length,1))));
   const gap=Math.max(3,Math.floor(barW*0.22));
   const totalW=shown.length*(barW+gap)+gap;
   const leftPad=34;
@@ -3503,7 +3558,7 @@ function renderProcessingHistory(){
     displaySt.forEach(st=>{
       const count=buckets[key]?.[st]||0;
       if(!count) return;
-      const h=Math.max(2,Math.round((count/maxVal)*(chartH-6)));
+      const h=Math.max(count?2:0,Math.round((count/maxVal)*(chartH-8)));
       const y=chartH-yOff-h;
       bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[st]||'#888'}" opacity="0.82" rx="2" data-hist-key="${key}" style="cursor:pointer;pointer-events:none"/>`;
       if(count>0&&h>12) bars+=`<text x="${x+barW/2}" y="${y+h/2+4}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" opacity="0.9" style="pointer-events:none">${count}</text>`;
@@ -3526,7 +3581,7 @@ function renderProcessingHistory(){
   const legendHtml=legendStatuses.length?`<div class="dash-chart-legend">${legendStatuses.map(st=>`<span class="dash-chart-legend-item"><span class="dash-chart-legend-swatch" style="background:${COLORS[st]||'#888'}"></span>${st[0]+st.slice(1).toLowerCase()}</span>`).join('')}</div>`:'';
 
   const svgW=leftPad+totalW+gap+16;
-  const svgH=chartH+labelH+14;
+  const svgH=chartH+labelH+24;
   el.innerHTML=`<div class="dash-chart-scroll"><svg class="dash-chart-svg" viewBox="0 -8 ${svgW} ${svgH}" style="width:100%;min-width:${Math.max(svgW,320)}px;height:${svgH+8}px">${guides}${bars}</svg></div>${legendHtml}`;
   // Attach tooltip event handlers
   el.querySelectorAll('rect[data-hist-key]').forEach(rect=>{
@@ -3559,7 +3614,7 @@ function renderPieChart(){
     el.innerHTML='<div class="dash-pie-empty">No processed data</div>';
     return;
   }
-  const r=60, cx=70, cy=70;
+  const r=92, cx=110, cy=110;
   let slices='', startAngle=-Math.PI/2;
   const legendItems=[];
   const _pieCounts=counts;
@@ -3589,7 +3644,7 @@ function renderPieChart(){
     startAngle=endAngle;
     legendItems.push(`<div class="dash-pie-legend-item"><span class="dash-pie-legend-dot" style="background:${COLORS[st]}"></span>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]}</div>`);
   });
-  el.innerHTML=`<svg width="140" height="140" viewBox="0 0 140 140">${slices}</svg><div class="dash-pie-legend">${legendItems.join('')}</div>`;
+  el.innerHTML=`<svg width="220" height="220" viewBox="0 0 220 220">${slices}</svg><div class="dash-pie-legend">${legendItems.join('')}</div>`;
   // Attach pie tooltip handlers
   el.querySelectorAll('[data-pie-st]').forEach(shape=>{
     shape.addEventListener('mousemove',function(e){
@@ -3637,6 +3692,7 @@ async function loadDashboard(force=false){
   // Update last-updated timestamp
   const tsEl=document.getElementById('dash-last-updated');
   if(tsEl) tsEl.textContent='Updated '+new Date().toLocaleTimeString();
+  _bindDashboardControls();
   const cfg=await loadConfig(force);
   const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
   const enabledLibs=allLibs.filter(lib=>lib.enabled!==false);
