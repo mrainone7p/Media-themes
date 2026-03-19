@@ -75,8 +75,8 @@ body.nav-collapsed main{margin-left:48px}
 .page-desc{font-size:13px;color:var(--text2);margin-top:6px;max-width:820px}
 .page-body{padding:24px 34px 28px;flex:1;overflow-y:auto}
 .content{max-width:var(--max-w);width:100%}
-#page-configuration .content,#page-schedule .content{max-width:var(--max-w)}
-#page-configuration .section-intro,#page-schedule .section-intro,#page-configuration .settings-lead{max-width:var(--max-w)}
+#page-configuration .content,#page-scheduler .content{max-width:var(--max-w)}
+#page-configuration .section-intro,#page-scheduler .section-intro,#page-configuration .settings-lead{max-width:var(--max-w)}
 
 /* ─── Cards ─── */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
@@ -138,13 +138,13 @@ body.nav-collapsed main{margin-left:48px}
 .toggle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .toggle-card{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;min-width:0}
 .toggle-card.alert{border-color:rgba(239,68,68,.35)}
-.toggle-card.golden{border-color:rgba(245,166,35,.42);background:color-mix(in srgb, var(--amber-soft) 65%, var(--surface2));box-shadow:inset 0 0 0 1px rgba(245,166,35,.2)}
+.toggle-card.golden{border-color:rgba(245,166,35,.24);background:color-mix(in srgb, var(--amber-soft) 22%, var(--surface2));box-shadow:none}
 .toggle-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
 .toggle-title.alert{color:var(--red)}
-.toggle-title.golden{color:var(--amber)}
+.toggle-title.golden{color:var(--text)}
 .toggle-note{font-size:12px;color:var(--text2);line-height:1.45;margin-top:4px}
 .toggle-note.alert{color:var(--red);font-weight:600}
-.toggle-note.golden{color:var(--amber);font-weight:600}
+.toggle-note.golden{color:var(--text2);font-weight:500}
 .run-lib-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .run-lib-pill{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;min-width:0}
 .run-lib-pill span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -337,12 +337,15 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .progress-wrap[data-state="error"] .progress-fill{background:var(--red)}
 
 /* ─── History ─── */
-.run-cards{display:flex;flex-direction:column;gap:8px}
+.run-cards,.history-stack{display:flex;flex-direction:column;gap:10px}
 .hcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .hcard-head{padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:background .15s}
 .hcard-head:hover{background:var(--gray-soft)}
 .hcard-time{font-size:14px;font-weight:600}
 .hcard-sum{font-size:12px;color:var(--text2);font-family:var(--mono);margin-top:2px}
+.hcard-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.hcard-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);font-size:10px;font-weight:700;color:var(--text2);font-family:var(--mono)}
+.hcard-chip.metric{background:color-mix(in srgb, var(--surface2) 70%, transparent)}
 .hcard-body{display:none;border-top:1px solid var(--border);background:#08080e;padding:14px 16px;font-family:var(--mono);font-size:11px;line-height:1.75;color:#6868a0;white-space:pre-wrap;word-break:break-all;max-height:360px;overflow-y:auto}
 .hcard-body.open{display:block}
 .pass-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:5px;flex-shrink:0}
@@ -490,29 +493,43 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .row-action-item{width:100%;justify-content:flex-start;text-align:left}
 
 .task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.task-grid.task-grid-2x2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .task-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;height:100%}
 .task-title{font-size:14px;font-weight:700;margin-bottom:0}
 .task-desc{font-size:12px;color:var(--text2);margin-bottom:0;line-height:1.5}
 .task-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .task-section-head{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .task-empty{padding:12px}
-.task-history-head{display:grid;grid-template-columns:1.2fr .8fr .8fr 1fr 1fr;gap:8px;padding:10px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;background:var(--surface2)}
-.task-history-list{border:1px solid var(--border);border-radius:0 0 12px 12px;overflow:hidden}
-.task-history-item{display:grid;grid-template-columns:1.2fr .8fr .8fr 1fr 1fr;gap:8px;padding:10px 12px;border-top:1px solid var(--border);font-size:12px;align-items:center}
-.task-history-item:first-child{border-top:none}
+.task-section-subtitle{font-size:12px;color:var(--text2);line-height:1.5}
+.task-activity-list{display:flex;flex-direction:column;gap:10px}
+.task-activity-card{border:1px solid var(--border);border-radius:14px;background:var(--surface2);padding:14px}
+.task-activity-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.task-activity-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.task-activity-title{font-size:13px;font-weight:700;color:var(--text)}
+.task-activity-sub{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.task-activity-summary{font-size:12px;color:var(--text2);line-height:1.5;margin-top:8px}
+.task-activity-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.task-activity-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:10px;font-weight:700;color:var(--text2);font-family:var(--mono)}
+.task-activity-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .task-status{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
 .task-status.success{background:var(--green-soft);color:var(--green)}
 .task-status.error{background:var(--red-soft);color:var(--red)}
 .task-status.stopped{background:var(--amber-soft);color:var(--amber)}
 .task-status.info{background:var(--blue-soft);color:var(--blue)}
-@media (max-width: 1100px){.task-grid{grid-template-columns:1fr}.task-history-head,.task-history-item{grid-template-columns:1fr}}
+@media (max-width: 1100px){.task-grid,.task-grid.task-grid-2x2{grid-template-columns:1fr}}
 
-.golden-emphasis{border-color:rgba(245,166,35,.42);box-shadow:inset 0 0 0 1px rgba(245,166,35,.2)}
+.golden-emphasis{border-color:rgba(245,166,35,.28);background:color-mix(in srgb, var(--amber-soft) 14%, var(--surface2));box-shadow:inset 0 0 0 1px rgba(245,166,35,.08)}
+.golden-panel{position:relative;border-color:rgba(245,166,35,.22);background:color-mix(in srgb, var(--amber-soft) 12%, var(--surface2))}
+.golden-panel::before{content:'Golden Source';display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:color-mix(in srgb, var(--amber-soft) 76%, var(--surface));border:1px solid rgba(245,166,35,.18);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
 .golden-btn{border-color:rgba(245,166,35,.45)!important;background:var(--amber-soft)!important;color:var(--amber)!important}
 .danger-note{color:var(--red)!important;font-weight:700}
-.task-lib-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.task-lib-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface2);font-size:12px;cursor:pointer}
-.task-lib-pill.active{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.task-lib-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.task-lib-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.task-lib-pill{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface2);font-size:12px;cursor:pointer;color:var(--text2);transition:all .15s}
+.task-lib-pill::before{content:'○';font-size:11px;color:var(--text3)}
+.task-lib-pill:hover{border-color:color-mix(in srgb, var(--amber) 45%, var(--border));color:var(--text)}
+.task-lib-pill.active{border-color:rgba(245,166,35,.4);color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 82%, var(--surface2));box-shadow:inset 0 0 0 1px rgba(245,166,35,.12)}
+.task-lib-pill.active::before{content:'✓';color:var(--amber)}
 .task-wide{grid-column:1 / -1}
 
 .db-topbar{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
@@ -755,7 +772,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .subcard-intro{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px}
 .accent-link{color:var(--amber);font-weight:700;text-decoration:none}
 .accent-link:hover{text-decoration:underline}
-.accent-link.subtle{color:var(--text3);font-weight:500}
+.accent-link.subtle{color:color-mix(in srgb, var(--amber) 72%, var(--text2));font-weight:600}
 .accent-link.subtle:hover{color:var(--amber)}
 .field-help{font-size:12px;color:var(--text2);line-height:1.5}
 .field-help.compact{font-size:11px;color:var(--text3)}
@@ -846,10 +863,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .pipeline-step-index.download{color:var(--green)}
 .pipeline-step-title{font-size:15px;font-weight:700;color:var(--text)}
 .pipeline-step-option{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;min-height:100%}
-.pipeline-step-option.golden{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 34%, var(--surface2))}
+.pipeline-step-option.golden{border-color:rgba(245,166,35,.24);background:color-mix(in srgb, var(--amber-soft) 18%, var(--surface2))}
 .pipeline-step-option-copy{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .pipeline-step-option-title{font-size:12px;font-weight:600;color:var(--text)}
-.pipeline-step-option.golden .pipeline-step-option-title,.pipeline-step-option.golden .pipeline-step-option-copy .body-copy.compact{color:var(--amber)}
+.pipeline-step-option.golden .pipeline-step-option-title,.pipeline-step-option.golden .pipeline-step-option-copy .body-copy.compact{color:var(--text)}
 .pipeline-step-input{width:86px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-family:var(--mono)}
 .sched-config-wrap.is-disabled{opacity:.46;pointer-events:none;filter:saturate(.85)}
 .settings-section .field input:not([type=checkbox]),
@@ -932,11 +949,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h14v-9.5"/><path d="M9 20v-6h6v6"/></svg>
       <span data-ui="nav.dashboard">Dashboard</span>
     </div>
-    <div class="nav-item" data-page="database" id="nav-database">
+    <div class="nav-item" data-page="theme-manager" id="nav-theme-manager">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
       <span data-ui="nav.database">Theme Manager</span>
     </div>
-    <div class="nav-item" data-page="schedule" id="nav-schedule">
+    <div class="nav-item" data-page="scheduler" id="nav-scheduler">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span data-ui="nav.schedule">Scheduler</span>
     </div>
@@ -1205,7 +1222,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="card-body">
         <div class="section-intro">A curated list of trusted theme matches. It can speed up matching and improve result quality for supported titles, though some gaps may remain depending on your library.</div>
         <div class="field-grid field-grid-2">
-          <div class="settings-subcard">
+          <div class="settings-subcard golden-panel">
             <div class="subcard-title">Golden Source</div>
             <div class="subcard-intro">Point to a trusted source CSV, then test it before using it for source matching.</div>
             <div class="field">
@@ -1218,7 +1235,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               <span id="golden-test-result"></span>
             </div>
           </div>
-          <div class="settings-subcard golden-emphasis" style="background:color-mix(in srgb, var(--amber-soft) 28%, var(--surface2)); border-color:rgba(245,166,35,.28)">
+          <div class="settings-subcard golden-emphasis golden-panel">
             <div class="subcard-title">Golden Source mode</div>
             <div class="subcard-intro">Use only the curated list when you want faster, more controlled matching.</div>
             <div class="toggle-card golden toggle-compact" style="margin-top:8px">
@@ -1231,7 +1248,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <div class="toggle-note golden">Disables YouTube source discovery and only matches against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
               </div>
             </div>
-            <div class="toggle-card golden toggle-compact" style="margin-top:10px;background:color-mix(in srgb, var(--amber-soft) 24%, var(--surface2));border-color:rgba(245,166,35,.24)">
+            <div class="toggle-card golden toggle-compact" style="margin-top:10px">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-refresh_golden_source_each_run">
                 <span class="toggle-track"></span>
@@ -1338,7 +1355,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 
 <!-- ══════════════════════════════════════ DATABASE ═══════════════════════════ -->
-<div class="page" id="page-database">
+<div class="page" id="page-theme-manager">
   <div class="page-head">
     <div><div class="page-title" data-ui="pages.database.title">Theme Manager</div><div class="page-desc" data-ui="pages.database.description">Browse, filter, review, and manage theme items in one place.</div></div>
   </div>
@@ -1446,7 +1463,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
-<div class="page" id="page-schedule">
+<div class="page" id="page-scheduler">
   <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Scheduler</div><div class="page-desc" data-ui="pages.schedule.description">Set what the automated schedule does, choose included libraries, and run the configured automation on demand.</div></div></div>
   <div class="page-body"><div class="content">
 
@@ -1455,28 +1472,38 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <span id="run-status" class="db-cell-subtle">Idle — run the configured automated schedule when ready</span>
     </div>
 
-    <div class="schedule-master">
-      <div class="schedule-master-copy">
-        <div class="schedule-master-title" data-ui="schedule.master.title">Automated Schedule</div>
-        <div class="schedule-master-desc" data-ui="schedule.master.description">Turn automated scheduling on or off. You can still run the saved Scheduler configuration on demand.</div>
-      </div>
-      <label class="toggle" style="margin-top:2px">
-        <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
-        <span class="toggle-track"></span>
-      </label>
-    </div>
-
     <div id="sched-config-wrap" class="sched-config-wrap">
-      <!-- Cron schedule -->
       <div class="card">
-        <div class="card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          <span data-ui="schedule.cards.auto_schedule.title">AUTO SCHEDULE</span>
+        <div class="card-title">RUN CURRENT SCHEDULER</div>
+        <div class="section-intro" style="margin-bottom:14px">Run your saved Scheduler setup right now using the currently included libraries and enabled steps below.</div>
+        <div class="dashboard-actions">
+          <button class="btn btn-amber" id="btn-schedule-run" onclick="startScheduledRun()">▶ Run Automated Schedule Now</button>
         </div>
-        <div class="field" style="max-width:340px;margin-bottom:14px">
+        <div class="field-hint" id="run-schedule-summary" style="margin-top:10px">Uses your current Scheduler library selection and enabled steps.</div>
+      </div>
+
+      <div class="card">
+        <div class="schedule-master" style="margin-bottom:0;padding:0;background:transparent;border:none">
+          <div class="schedule-master-copy">
+            <div class="schedule-master-title" data-ui="schedule.master.title">Automated Schedule</div>
+            <div class="schedule-master-desc" data-ui="schedule.master.description">Turn automated scheduling on or off. You can still run the saved Scheduler configuration on demand.</div>
+          </div>
+          <label class="toggle" style="margin-top:2px">
+            <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="field" style="max-width:340px;margin-top:16px">
           <label>Cron Schedule</label>
           <input id="run-cron" placeholder="0 3 * * *" onblur="saveRunSchedule()">
           <div class="field-hint">Defines when the automated pipeline runs. Restart the container to apply changes.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <span>INCLUDED LIBRARIES &amp; SCHEDULER SETTINGS</span>
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:8px">Libraries Included</label>
@@ -1568,14 +1595,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-title">RUN CURRENT SCHEDULER</div>
-        <div class="section-intro" style="margin-bottom:14px">Trigger the currently configured automated workflow now using the selected libraries and enabled pipeline steps above.</div>
-        <div class="dashboard-actions">
-          <button class="btn btn-amber" id="btn-schedule-run" onclick="startScheduledRun()">▶ Run Automated Schedule Now</button>
-        </div>
-        <div class="field-hint" id="run-schedule-summary" style="margin-top:10px">Uses your current Scheduler library selection and enabled steps.</div>
-      </div>
     </div>
 
     <!-- Progress -->
@@ -1592,6 +1611,14 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="progress-meta" id="run-progress-meta"></div>
     </div>
 
+    <div class="card">
+      <div class="task-section-head">
+        <div class="card-title">Scheduler Run History</div>
+        <div class="task-section-subtitle">Review recent automated runs, outcome summaries, and the captured run logs.</div>
+      </div>
+      <div class="history-stack" id="scheduler-run-history"><div class="empty">No Scheduler run history yet.</div></div>
+    </div>
+
 
   </div></div>
 </div>
@@ -1603,13 +1630,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="card">
       <div class="task-section-head">
         <div class="card-title">Run Pipeline Tasks</div>
-      <div class="task-desc">Select one or more libraries for pipeline runs.</div>
-      <div class="task-row">
-        <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(true)">Select all</button>
-        <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(false)">Clear</button>
-      </div>
-      <div class="task-lib-pills" id="task-lib-pills"></div>
-      <div class="task-grid" id="task-grid-run-pipeline"></div>
+        <div class="task-desc">Choose the libraries you want these pipeline steps to run against.</div>
+        <div class="task-lib-toolbar">
+          <div class="task-row">
+            <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(true)">Select all</button>
+            <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(false)">Clear</button>
+          </div>
+        </div>
+        <div class="task-lib-pills" id="task-lib-pills"></div>
+        <div class="task-grid" id="task-grid-run-pipeline"></div>
       </div>
     </div>
     <div class="card">
@@ -1621,9 +1650,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="card">
       <div class="task-section-head">
         <div class="card-title">Cleanup &amp; Maintenance</div>
+        <div class="task-section-subtitle">Housekeeping tools for logs, history, local theme detection, backups, and source cleanup.</div>
       </div>
-      <div class="task-grid" id="task-grid-cleanup"></div>
-      <div class="task-grid task-wide" id="task-grid-maintenance" style="margin-top:8px"></div>
+      <div class="task-grid task-grid-2x2" id="task-grid-cleanup"></div>
     </div>
     <div class="progress-wrap" id="tasks-progress" data-state="queued">
       <div class="progress-head">
@@ -1640,11 +1669,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
     <div class="card">
       <div class="task-section-head">
-        <div class="card-title">Recent Task History</div>
+        <div class="card-title">Recent Activity &amp; History</div>
+        <div class="task-section-subtitle">One combined history feed for pipeline runs, exports, and maintenance tasks.</div>
       </div>
-      <div class="task-history-head"><div>Task</div><div>Status</div><div>Time</div><div>Scope</div><div>Summary</div></div>
-      <div class="task-history-list" id="task-history-list"><div class="empty task-empty">No task history yet.</div></div>
-      <div class="run-cards" id="run-cards" style="margin-top:12px"><div class="empty">No run history yet.</div></div>
+      <div class="task-activity-list" id="task-history-list"><div class="empty task-empty">No activity yet.</div></div>
     </div>
   </div></div>
 </div>
@@ -2478,7 +2506,7 @@ function formatDashboardTime(value){
   return dt.toLocaleString();
 }
 function openThemeManagerFiltered(status=''){
-  showPage('database');
+  showPage('theme-manager');
   setTimeout(()=>{
     clearDbFilter();
     if(status) filterByStatus(status);
@@ -2487,12 +2515,13 @@ function openThemeManagerFiltered(status=''){
 function dashboardOpenTarget(target={}){
   if(target.page==='configuration') return showPage('configuration');
   if(target.page==='tasks') return showPage('tasks');
-  if(target.page==='schedule') return showPage('schedule');
-  if(target.page==='database') return openThemeManagerFiltered(target.filter||'');
+  if(target.page==='scheduler') return showPage('scheduler');
+  if(target.page==='schedule') return showPage('scheduler');
+  if(target.page==='theme-manager' || target.page==='database') return openThemeManagerFiltered(target.filter||'');
   return showPage('dashboard');
 }
 async function dashboardImportGoldenSource(){
-  showPage('database');
+  showPage('theme-manager');
   setTimeout(async()=>{
     if(!_activeLib) await loadDatabase();
     importGoldenSource();
@@ -2544,9 +2573,9 @@ function renderDashboardSystemHealth(cfg, enabledLibs, scheduledLibs){
 }
 function renderDashboardNeedsAttention(cfg, counts, enabledLibs){
   const items=[];
-  if((counts.MISSING||0)>0) items.push({title:`${counts.MISSING} missing title${counts.MISSING===1?'':'s'} need source discovery`, detail:'Open Theme Manager filtered to Missing and start finding sources.', target:{page:'database',filter:'MISSING'}});
-  if((counts.STAGED||0)>0) items.push({title:`${counts.STAGED} staged title${counts.STAGED===1?'':'s'} waiting for approval`, detail:'Review staged items and approve the ones ready for download.', target:{page:'database',filter:'STAGED'}});
-  if((counts.FAILED||0)>0) items.push({title:`${counts.FAILED} failed title${counts.FAILED===1?'':'s'} need review`, detail:'Inspect failures, update sources if needed, then retry.', target:{page:'database',filter:'FAILED'}});
+  if((counts.MISSING||0)>0) items.push({title:`${counts.MISSING} missing title${counts.MISSING===1?'':'s'} need source discovery`, detail:'Open Theme Manager filtered to Missing and start finding sources.', target:{page:'theme-manager',filter:'MISSING'}});
+  if((counts.STAGED||0)>0) items.push({title:`${counts.STAGED} staged title${counts.STAGED===1?'':'s'} waiting for approval`, detail:'Review staged items and approve the ones ready for download.', target:{page:'theme-manager',filter:'STAGED'}});
+  if((counts.FAILED||0)>0) items.push({title:`${counts.FAILED} failed title${counts.FAILED===1?'':'s'} need review`, detail:'Inspect failures, update sources if needed, then retry.', target:{page:'theme-manager',filter:'FAILED'}});
   if(!(cfg.golden_source_url||'').trim()) items.push({title:'Golden Source is not configured', detail:'Add a curated source list if you want tighter and faster source discovery.', target:{page:'configuration'}});
   if(!((cfg.plex_url||'').trim() && (cfg.plex_token||'').trim()) || !(cfg.tmdb_api_key||'').trim()) items.push({title:'Connections still need setup', detail:'Finish Plex and TMDB configuration so scanning and matching can run cleanly.', target:{page:'configuration'}});
   if(!enabledLibs.length) items.push({title:'No enabled libraries selected', detail:'Enable at least one movie or TV library to start processing themes.', target:{page:'configuration'}});
@@ -2679,19 +2708,21 @@ window.fetch = function(input, init){
 
 function showPage(name) {
   stopAllAudio();
-  const pageEl=document.getElementById('page-'+name);
-  const navEl=document.getElementById('nav-'+name);
+  const aliases={'database':'theme-manager','schedule':'scheduler'};
+  const resolved=aliases[String(name||'').trim()] || String(name||'').trim() || 'dashboard';
+  const pageEl=document.getElementById('page-'+resolved);
+  const navEl=document.getElementById('nav-'+resolved);
   if(!pageEl || !navEl){ console.warn('Missing page or nav for', name); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   pageEl.classList.add('active');
   navEl.classList.add('active');
-  if(history && history.replaceState){ history.replaceState(null,'','#'+name); }
-  if(name==='dashboard') loadDashboard();
-  if(name==='database'){ loadDatabase(); setTimeout(()=>{if(!_dbColsInit){initResizableCols('#page-database table');_dbColsInit=true;}},500); }
-  if(name==='tasks') loadTasksPage();
-  if(name==='configuration') loadConfiguration();
-  if(name==='schedule') loadRunPage();
+  if(history && history.replaceState){ history.replaceState(null,'','#'+resolved); }
+  if(resolved==='dashboard') loadDashboard();
+  if(resolved==='theme-manager'){ loadDatabase(); setTimeout(()=>{if(!_dbColsInit){initResizableCols('#page-theme-manager table');_dbColsInit=true;}},500); }
+  if(resolved==='tasks') loadTasksPage();
+  if(resolved==='configuration') loadConfiguration();
+  if(resolved==='scheduler') loadRunPage();
   removeItemDetailsPanel();
 }
 
@@ -2731,7 +2762,7 @@ async function updateGlobalRunStatus(){
     if(dbPill){ dbPill.classList.remove('active'); dbPill.innerHTML='<span class="run-dot"></span><span>Idle</span>'; }
     if(_wasRunning){
       _wasRunning=false;
-      loadDashboard(); loadDatabase(); loadTasksPage();
+      loadDashboard(); loadDatabase(); loadTasksPage(); loadRunPage();
     }
   }catch(e){}
 }
@@ -5381,7 +5412,7 @@ async function ytModalSave(){
     body:JSON.stringify({start_offset:s,notes:'Offset set via YouTube preview'})
   });
   closeYtModal(); toast('Offset saved','ok');
-  if(document.getElementById('page-database').classList.contains('active')) loadDatabase();
+  if(document.getElementById('page-theme-manager').classList.contains('active')) loadDatabase();
 }
 
 // ── SECTION: RUN / SCHEDULE LOGIC ──────────────────────────────────────────────
@@ -5401,6 +5432,7 @@ async function loadRunPage(){
   document.getElementById('sched-only-golden').checked = !!cfg.search_only_golden;
   applyScheduleEnabledState();
   _refreshScopedRunLabels();
+  loadSchedulerHistory();
 }
 
 function applyScheduleEnabledState(){
@@ -5474,7 +5506,7 @@ async function stopRun(scope='run'){
 function openRunResults(pass){
   const map={1:'MISSING',2:'STAGED',3:'AVAILABLE'};
   const st=map[pass]||'';
-  showPage('database');
+  showPage('theme-manager');
   setTimeout(()=>{
     if(st) filterByStatus(st);
     const search=document.getElementById('db-search');
@@ -5483,27 +5515,95 @@ function openRunResults(pass){
   },350);
 }
 
+function _activityMetricChips(stats={}, cls='hcard-chip metric'){
+  const s1=stats?.pass1||null;
+  const s2=stats?.pass2||null;
+  const s3=stats?.pass3||null;
+  const chips=[];
+  const add=(label, value)=>{
+    if(value===undefined || value===null || value==='' || Number.isNaN(Number(value))) return;
+    chips.push(`<span class="${cls}">${label} · ${value}</span>`);
+  };
+  if(s1){
+    add('Added', s1.new);
+    add('Missing', s1.missing);
+    add('Already available', s1.has_theme);
+    if(!s2 && s1.staged) add('Staged', s1.staged);
+    if(!s3 && s1.approved) add('Approved', s1.approved);
+  }
+  if(s2){
+    add('Staged', s2.staged);
+    add('Still missing', s2.missing);
+    add('Failed', s2.failed);
+  }
+  if(s3){
+    add('Downloaded', s3.available);
+    add('Failed', s3.failed);
+    add('Skipped', s3.skipped);
+  }
+  return chips;
+}
+
+async function loadSchedulerHistory(){
+  const el=document.getElementById('scheduler-run-history');
+  if(!el) return;
+  const r=await fetch('/api/history');
+  const runs=await r.json();
+  if(!runs.length){
+    el.innerHTML='<div class="empty">No Scheduler run history yet.</div>';
+    return;
+  }
+  const PASS_LABELS={0:'Automated Scheduler Run',1:'Step 1 — Scan Libraries',2:'Step 2 — Find Theme Sources',3:'Step 3 — Download Themes'};
+  const OUTCOME_BADGES={success:'pb-3 SUCCESS',error:'pb-e ERROR',stopped:'pb-2 STOPPED'};
+  el.innerHTML=runs.reverse().map((run,i)=>{
+    const outcome=(run.outcome||run.status||'success').toLowerCase();
+    const bc=OUTCOME_BADGES[outcome] || 'pb-e ERROR';
+    const [cls,...parts]=bc.split(' ');
+    const passLabel=PASS_LABELS[run.pass]||'Pipeline Run';
+    const summary=(run.summary||'No summary recorded.').replace(/</g,'&lt;');
+    const scope=(run.scope||'').replace(/</g,'&lt;');
+    const metricChips=_activityMetricChips(run.stats||{});
+    const meta=[
+      scope?`<span class="hcard-chip">Scope · ${scope}</span>`:'',
+      run.duration_seconds?`<span class="hcard-chip">Duration · ${Math.round(run.duration_seconds)}s</span>`:'',
+      ...metricChips
+    ].filter(Boolean).join('');
+    return `<div class="hcard">
+      <div class="hcard-head" onclick="document.getElementById('scheduler-log-${i}').classList.toggle('open')">
+        <div>
+          <div class="hcard-time">${(run.time||'').replace(/</g,'&lt;')}</div>
+          <div class="hcard-sum">${passLabel} · ${summary}</div>
+          ${meta?`<div class="hcard-meta">${meta}</div>`:''}
+          <div style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openRunResults(${run.pass||0})">Open filtered rows</button></div>
+        </div>
+        <span class="pass-badge ${cls}">${parts.join(' ')}</span>
+      </div>
+      <div class="hcard-body" id="scheduler-log-${i}">${(run.log||'').replace(/</g,'&lt;')}</div>
+    </div>`;
+  }).join('');
+}
+
 const TASK_CARD_CONFIG={
   runPipeline:[
     {
-      title:'Run Scan Now',
-      description:'Step 1 connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.',
+      title:'Step 1 — Scan Libraries',
+      description:'Checks the selected libraries in Plex, sees which items already have a local theme file, and updates each item to Missing or Available.',
       controlType:'button',
       buttonLabel:'Run Scan for Selected Libraries',
       buttonClass:'btn btn-blue btn-sm',
       handler:'taskRunPass(1)'
     },
     {
-      title:'Run Find Sources Now',
-      description:'Step 2 searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.',
+      title:'Step 2 — Find Theme Sources',
+      description:'Looks for source matches for Missing items using your current discovery settings. Matches that look usable are saved as Staged for review.',
       controlType:'button',
       buttonLabel:'Run Find Sources for Selected Libraries',
       buttonClass:'btn btn-purple btn-sm',
       handler:'taskRunPass(2)'
     },
     {
-      title:'Run Download Themes Now',
-      description:'Step 3 downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.',
+      title:'Step 3 — Download Themes',
+      description:'Downloads themes for Approved items, saves them into the media folders, and marks completed items as Available.',
       controlType:'button',
       buttonLabel:'Run Download for Selected Libraries',
       buttonClass:'btn btn-green btn-sm',
@@ -5529,7 +5629,7 @@ const TASK_CARD_CONFIG={
   cleanup:[
     {
       title:'Clean Up Logs',
-      description:'Delete old .log files. Keeps most recent days.',
+      description:'Delete old .log files while keeping the most recent number of days.',
       controlType:'inputAndButton',
       inputId:'task-keep-days',
       inputClass:'filter-sel',
@@ -5541,7 +5641,7 @@ const TASK_CARD_CONFIG={
     },
     {
       title:'Prune Task History',
-      description:'Keep only the newest run/task history entries.',
+      description:'Trim stored task and run history so only the newest entries remain.',
       controlType:'inputAndButton',
       inputId:'task-keep-runs',
       inputClass:'filter-sel',
@@ -5553,7 +5653,7 @@ const TASK_CARD_CONFIG={
     },
     {
       title:'Refresh Local Theme Detection',
-      description:'Resync disk theme files with database state.',
+      description:'Rescan one library so the app matches database state to the theme files currently on disk.',
       controlType:'selectAndButton',
       selectId:'task-lib-refresh',
       selectClass:'filter-sel',
@@ -5569,8 +5669,7 @@ const TASK_CARD_CONFIG={
       controlType:'button',
       buttonLabel:'Run',
       buttonClass:'btn btn-ghost btn-sm',
-      handler:'taskSqliteMaintenance()',
-      cardClass:'task-wide'
+      handler:'taskSqliteMaintenance()'
     },
     {
       title:'Clear All Source URLs',
@@ -5581,8 +5680,7 @@ const TASK_CARD_CONFIG={
       buttonLabel:'Clear URLs',
       buttonClass:'btn btn-red btn-sm',
       handler:'taskClearAllSources()',
-      titleStyle:'color:var(--red)',
-      cardClass:'task-wide'
+      titleStyle:'color:var(--red)'
     }
   ]
 };
@@ -5599,49 +5697,13 @@ function renderTaskCards(){
   const runGrid=document.getElementById('task-grid-run-pipeline');
   const exportGrid=document.getElementById('task-grid-export');
   const cleanupGrid=document.getElementById('task-grid-cleanup');
-  const maintenanceGrid=document.getElementById('task-grid-maintenance');
   if(runGrid) runGrid.innerHTML=renderCards(TASK_CARD_CONFIG.runPipeline);
   if(exportGrid) exportGrid.innerHTML=renderCards(TASK_CARD_CONFIG.exportData);
-  if(cleanupGrid) cleanupGrid.innerHTML=renderCards(TASK_CARD_CONFIG.cleanup);
-  if(maintenanceGrid) maintenanceGrid.innerHTML=renderCards(TASK_CARD_CONFIG.maintenance);
+  if(cleanupGrid) cleanupGrid.innerHTML=renderCards([...TASK_CARD_CONFIG.cleanup, ...TASK_CARD_CONFIG.maintenance]);
 }
 
 async function loadTasksPage(){
   await loadTaskHistoryList();
-  const r=await fetch('/api/history'); const runs=await r.json();
-  const el=document.getElementById('run-cards');
-  if(!runs.length){ el.innerHTML='<div class="empty">No run history yet.</div>'; return; }
-  const PASS_LABELS={1:'PASS 1 — SCAN',2:'PASS 2 — RESOLVE',3:'PASS 3 — DOWNLOAD'};
-  const OUTCOME_BADGES={
-    success:'pb-3 SUCCESS',
-    error:'pb-e ERROR',
-    stopped:'pb-2 STOPPED',
-  };
-  el.innerHTML=runs.reverse().map((run,i)=>{
-    const outcome=(run.outcome||run.status||'success').toLowerCase();
-    const passLabel=PASS_LABELS[run.pass]||'PIPELINE RUN';
-    const scopeLine=String(run.scope||'').trim();
-    const bc=OUTCOME_BADGES[outcome] || 'pb-e ERROR';
-    const [cls,...parts]=bc.split(' ');
-    const dur=run.duration_seconds?`${Math.round(run.duration_seconds)}s`:'';
-    const s1=run.stats?.pass1, s2=run.stats?.pass2, s3=run.stats?.pass3;
-    const statsLine = s1 ? `Pass1: ${s1.total} total · ${s1.missing} Missing · ${s1.staged} Staged · ${s1.approved} Approved`
-      : s2 ? `Pass2: ${s2.staged} Staged · ${s2.missing} Missing · ${s2.failed} Failed`
-      : s3 ? `Pass3: ${s3.available} Available · ${s3.failed} Failed · ${s3.skipped} skipped` : '';
-    return `<div class="hcard">
-      <div class="hcard-head" onclick="document.getElementById('hd-${i}').classList.toggle('open')">
-        <div>
-          <div class="hcard-time">${run.time}</div>
-          <div class="hcard-sum">${passLabel} · ${(run.summary||'').replace(/</g,'&lt;')}${dur?` · ${dur}`:''}</div>
-          ${scopeLine?`<div class="hcard-sum">Scope: ${scopeLine.replace(/</g,'&lt;')}</div>`:''}
-          ${statsLine?`<div class="hcard-sum">${statsLine}</div>`:''}
-          <div style="margin-top:7px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openRunResults(${run.pass||0})">Open filtered rows</button></div>
-        </div>
-        <span class="pass-badge ${cls}">${parts.join(' ')}</span>
-      </div>
-      <div class="hcard-body" id="hd-${i}">${(run.log||'').replace(/</g,'&lt;')}</div>
-    </div>`;
-  }).join('');
 }
 
 async function loadTaskHistoryList(){
@@ -5649,18 +5711,31 @@ async function loadTaskHistoryList(){
   const items=await r.json();
   const el=document.getElementById('task-history-list');
   if(!el) return;
-  if(!items.length){ el.innerHTML='<div class="empty task-empty">No task history yet.</div>'; return; }
+  if(!items.length){ el.innerHTML='<div class="empty task-empty">No activity yet.</div>'; return; }
   const statusClass=(status)=>{
     const normalized=String(status||'info').toLowerCase();
     return ['success','error','stopped','info'].includes(normalized) ? normalized : 'info';
   };
-  el.innerHTML=items.map(it=>`<div class="task-history-item">
-      <div>${(it.task||'').replace(/</g,'&lt;')}</div>
-      <div><span class="task-status ${statusClass(it.outcome||it.status)}">${String(it.outcome||it.status||'info').toUpperCase()}</span></div>
-      <div>${it.time||''}</div>
-      <div>${(it.scope||'all').replace(/</g,'&lt;')}</div>
-      <div>${(it.summary||'').replace(/</g,'&lt;')}</div>
-    </div>`).join('');
+  el.innerHTML=items.map(it=>{
+    const chips=[
+      it.scope?`<span class="task-activity-chip">Scope · ${(it.scope||'').replace(/</g,'&lt;')}</span>`:'',
+      it.duration_seconds?`<span class="task-activity-chip">Duration · ${Math.round(it.duration_seconds)}s</span>`:'',
+      ..._activityMetricChips(it.details?.stats||{}, 'task-activity-chip')
+    ].filter(Boolean).join('');
+    const actions=it.details?.pass?`<div class="task-activity-actions"><button class="btn btn-ghost btn-xs" onclick="openRunResults(${it.details.pass||0})">Open filtered rows</button></div>`:'';
+    return `<div class="task-activity-card">
+      <div class="task-activity-top">
+        <div class="task-activity-main">
+          <div class="task-activity-title">${(it.task||'Task').replace(/</g,'&lt;')}</div>
+          <div class="task-activity-sub">${(it.time||'').replace(/</g,'&lt;')}${it.details?.pass?` · Step ${it.details.pass}`:''}</div>
+        </div>
+        <span class="task-status ${statusClass(it.outcome||it.status)}">${String(it.outcome||it.status||'info').toUpperCase()}</span>
+      </div>
+      <div class="task-activity-summary">${(it.summary||'No summary recorded.').replace(/</g,'&lt;')}</div>
+      ${chips?`<div class="task-activity-meta">${chips}</div>`:''}
+      ${actions}
+    </div>`;
+  }).join('');
 }
 
 function taskLibValue(id){ const el=document.getElementById(id); return el?el.value:''; }
@@ -5677,7 +5752,7 @@ function _fillTaskLibSelects(){
     pills.innerHTML=(_libs||[]).map(l=>{
       const active=_taskLibSelection.has(l.name);
       const safe=encodeURIComponent(String(l.name||''));
-      return `<button class="task-lib-pill ${active?'active':''}" onclick="toggleTaskLib(decodeURIComponent('${safe}'))" title="Include ${l.name} in pipeline runs">${active?'✓':''} ${l.name}</button>`;
+      return `<button class="task-lib-pill ${active?'active':''}" onclick="toggleTaskLib(decodeURIComponent('${safe}'))" title="Include ${l.name} in pipeline runs">${l.name}</button>`;
     }).join('');
   }
 }
@@ -6204,7 +6279,7 @@ try{
     setInterval(updateGlobalRunStatus, 4000);
     setInterval(removeItemDetailsPanel, 2000);
     const initial=((location.hash||'').replace(/^#/,'').trim());
-    if(['dashboard','configuration','database','schedule','tasks'].includes(initial)){
+    if(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial)){
       showPage(initial);
     }
   });
