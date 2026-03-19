@@ -341,6 +341,54 @@ body.nav-collapsed main{margin-left:48px}
 .section-flash{animation:section-flash 1.6s ease-out forwards}
 @keyframes section-flash{0%{box-shadow:0 0 0 3px rgba(245,166,35,.5);border-color:rgba(245,166,35,.7)}100%{box-shadow:none;border-color:var(--border)}}
 
+/* ─── API key masking ─── */
+.field-secret-wrap{position:relative;display:flex;align-items:center}
+.field-secret-wrap input{padding-right:38px;width:100%}
+.field-secret-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:color .15s}
+.field-secret-toggle:hover{color:var(--text)}
+.field-secret-toggle svg{width:16px;height:16px}
+
+/* ─── Colorful Action Station buttons ─── */
+.dash-action-buttons .btn-action-setup{background:var(--blue-soft);color:var(--blue);border-color:color-mix(in srgb,var(--blue) 35%,var(--border))}
+.dash-action-buttons .btn-action-setup:hover{background:color-mix(in srgb,var(--blue) 22%,transparent);border-color:var(--blue);color:var(--blue)}
+.dash-action-buttons .btn-action-run{background:var(--green-soft);color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,var(--border))}
+.dash-action-buttons .btn-action-run:hover{background:color-mix(in srgb,var(--green) 22%,transparent);border-color:var(--green);color:var(--green)}
+.dash-action-buttons .btn-action-themes{background:var(--purple-soft);color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,var(--border))}
+.dash-action-buttons .btn-action-themes:hover{background:color-mix(in srgb,var(--purple) 22%,transparent);border-color:var(--purple);color:var(--purple)}
+
+/* ─── How it Works overlay ─── */
+.dash-how-overlay{display:none;position:fixed;inset:0;z-index:200}
+.dash-how-overlay.open{display:block}
+.dash-how-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35)}
+.dash-how-panel{position:relative;z-index:1}
+
+/* ─── Side-by-side Health + Activity ─── */
+.dash-split-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:980px){.dash-split-row{grid-template-columns:1fr}}
+
+/* ─── Clickable activity rows ─── */
+.dash-activity-row.clickable{cursor:pointer;transition:all .15s}
+.dash-activity-row.clickable:hover{border-color:color-mix(in srgb,var(--amber) 34%,var(--border));background:var(--surface-elev)}
+.dash-activity-row.clickable:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22)}
+.dash-activity-row.clickable:active{transform:scale(0.995)}
+
+/* ─── Compact status cards ─── */
+.dashboard-stat-grid.compact{gap:8px}
+.dashboard-stat-grid.compact .dashboard-stat{padding:10px 12px;gap:1px}
+.dashboard-stat-grid.compact .dashboard-stat-count{font-size:24px;margin-bottom:2px}
+.dashboard-stat-grid.compact .dashboard-stat-label{font-size:11px}
+.dashboard-stat-grid.compact .dashboard-stat-sub{font-size:10px}
+
+/* ─── Pie chart ─── */
+.dash-chart-area{display:grid;grid-template-columns:180px 1fr;gap:20px;align-items:start}
+.dash-pie-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:180px;justify-content:center}
+.dash-pie-wrap svg{display:block}
+.dash-pie-legend{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--text2);width:100%}
+.dash-pie-legend-item{display:flex;align-items:center;gap:6px}
+.dash-pie-legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.dash-pie-empty{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:30px 10px}
+@media(max-width:980px){.dash-chart-area{grid-template-columns:1fr}.dash-pie-wrap{flex-direction:row;gap:16px;min-height:auto}}
+
 /* ─── Table ─── */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
 table{width:100%;border-collapse:collapse;font-size:12px}
@@ -1080,107 +1128,82 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   </div>
   <div class="page-body"><div class="content">
 
-    <!-- Row 1: How the Pipeline Works + Status Key (collapsible, state saved in localStorage) -->
-    <details id="dash-pipeline-help" class="card dashboard-card" style="margin-bottom:16px" ontoggle="_savePipelineHelpState(this.open)">
-      <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;padding:0;margin-bottom:0">
-        <div class="card-title" style="margin-bottom:0">How the Pipeline Works &amp; Status Key</div>
-        <span class="settings-chev" id="dash-pipeline-help-chev">∧</span>
-      </summary>
-      <div style="margin-top:14px">
-        <div class="dashboard-grid">
-          <div class="span-7">
-            <div class="card-title" style="margin-bottom:10px">How the Pipeline Works</div>
-            <div class="dash-pipeline-steps">
-              <div class="dash-pipeline-step">
-                <div class="dash-pipeline-step-num" style="color:var(--blue)">Step 1</div>
-                <div>
-                  <div style="font-size:12px;font-weight:700;margin-bottom:2px">⟳ Scan Libraries</div>
-                  <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <strong style="color:var(--red)">Missing</strong> or <strong style="color:var(--green)">Available</strong>.</div>
+    <!-- Row 1: How it Works? (always starts collapsed, ephemeral) -->
+    <div style="position:relative;margin-bottom:16px">
+      <div class="card dashboard-card" id="dash-pipeline-help" style="margin-bottom:0">
+        <button type="button" id="dash-how-toggle" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:0;margin:0;background:none;border:none;color:inherit;width:100%;text-align:left" onclick="toggleHowItWorks()" aria-expanded="false" aria-controls="dash-how-content">
+          <div class="card-title" style="margin-bottom:0">How it Works?</div>
+          <span class="settings-chev" id="dash-pipeline-help-chev" style="transform:rotate(180deg)">∧</span>
+        </button>
+        <div id="dash-how-content" style="display:none;margin-top:14px">
+          <div class="dashboard-grid">
+            <div class="span-7">
+              <div class="card-title" style="margin-bottom:10px">Pipeline Steps</div>
+              <div class="dash-pipeline-steps">
+                <div class="dash-pipeline-step">
+                  <div class="dash-pipeline-step-num" style="color:var(--blue)">Step 1</div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700;margin-bottom:2px">⟳ Scan Libraries</div>
+                    <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <strong style="color:var(--red)">Missing</strong> or <strong style="color:var(--green)">Available</strong>.</div>
+                  </div>
                 </div>
-              </div>
-              <div class="dash-pipeline-step">
-                <div class="dash-pipeline-step-num" style="color:var(--purple)">Step 2</div>
-                <div>
-                  <div style="font-size:12px;font-weight:700;margin-bottom:2px">⚡ Find Sources</div>
-                  <div class="dash-pipeline-step-desc">Searches for sources for <strong style="color:var(--red)">Missing</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong style="color:var(--purple)">Staged</strong> for manual review and <strong style="color:var(--yellow)">Approval</strong>.</div>
+                <div class="dash-pipeline-step">
+                  <div class="dash-pipeline-step-num" style="color:var(--purple)">Step 2</div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700;margin-bottom:2px">⚡ Find Sources</div>
+                    <div class="dash-pipeline-step-desc">Searches for sources for <strong style="color:var(--red)">Missing</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong style="color:var(--purple)">Staged</strong> for manual review and <strong style="color:var(--yellow)">Approval</strong>.</div>
+                  </div>
                 </div>
-              </div>
-              <div class="dash-pipeline-step">
-                <div class="dash-pipeline-step-num" style="color:var(--green)">Step 3</div>
-                <div>
-                  <div style="font-size:12px;font-weight:700;margin-bottom:2px">↓ Download Approved</div>
-                  <div class="dash-pipeline-step-desc">Downloads theme files for <strong style="color:var(--yellow)">Approved</strong> items using yt-dlp and ffmpeg, then marks them <strong style="color:var(--green)">Available</strong>.</div>
+                <div class="dash-pipeline-step">
+                  <div class="dash-pipeline-step-num" style="color:var(--green)">Step 3</div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700;margin-bottom:2px">↓ Download Approved</div>
+                    <div class="dash-pipeline-step-desc">Downloads theme files for <strong style="color:var(--yellow)">Approved</strong> items using yt-dlp and ffmpeg, then marks them <strong style="color:var(--green)">Available</strong>.</div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div class="span-5">
-            <div class="card-title" style="margin-bottom:10px">Status Key</div>
-            <div class="dash-status-key">
-              <div class="dash-status-key-row">
-                <span class="badge s-MISSING"><span class="si"></span>Missing</span>
-                <span class="dash-status-key-def">No local theme file found; needs source discovery</span>
-              </div>
-              <div class="dash-status-key-row">
-                <span class="badge s-STAGED"><span class="si"></span>Staged</span>
-                <span class="dash-status-key-def">Source match found, awaiting review or action</span>
-              </div>
-              <div class="dash-status-key-row">
-                <span class="badge s-APPROVED"><span class="si"></span>Approved</span>
-                <span class="dash-status-key-def">Approved and ready to download</span>
-              </div>
-              <div class="dash-status-key-row">
-                <span class="badge s-AVAILABLE"><span class="si"></span>Available</span>
-                <span class="dash-status-key-def">Local theme file already exists</span>
-              </div>
-              <div class="dash-status-key-row">
-                <span class="badge s-FAILED"><span class="si"></span>Failed</span>
-                <span class="dash-status-key-def">Something went wrong; needs manual review</span>
-              </div>
-              <div class="dash-status-key-row">
-                <span class="badge s-UNMONITORED"><span class="si"></span>Unmonitored</span>
-                <span class="dash-status-key-def">Excluded from automated processing</span>
+            <div class="span-5">
+              <div class="card-title" style="margin-bottom:10px">Status Key</div>
+              <div class="dash-status-key">
+                <div class="dash-status-key-row">
+                  <span class="badge s-MISSING"><span class="si"></span>Missing</span>
+                  <span class="dash-status-key-def">No local theme file found; needs source discovery</span>
+                </div>
+                <div class="dash-status-key-row">
+                  <span class="badge s-STAGED"><span class="si"></span>Staged</span>
+                  <span class="dash-status-key-def">Source match found, awaiting review or action</span>
+                </div>
+                <div class="dash-status-key-row">
+                  <span class="badge s-APPROVED"><span class="si"></span>Approved</span>
+                  <span class="dash-status-key-def">Approved and ready to download</span>
+                </div>
+                <div class="dash-status-key-row">
+                  <span class="badge s-AVAILABLE"><span class="si"></span>Available</span>
+                  <span class="dash-status-key-def">Local theme file already exists</span>
+                </div>
+                <div class="dash-status-key-row">
+                  <span class="badge s-FAILED"><span class="si"></span>Failed</span>
+                  <span class="dash-status-key-def">Something went wrong; needs manual review</span>
+                </div>
+                <div class="dash-status-key-row">
+                  <span class="badge s-UNMONITORED"><span class="si"></span>Unmonitored</span>
+                  <span class="dash-status-key-def">Excluded from automated processing</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </details>
+    </div>
 
     <!-- Row 2: KPI Cards -->
     <div class="card dashboard-card" style="margin-bottom:16px">
       <div class="dashboard-stat-grid" id="dashboard-pipeline-overview"></div>
     </div>
 
-    <!-- Row 3: Needs Attention + Action Station -->
-    <div class="dashboard-grid" style="margin-bottom:16px">
-      <div class="card dashboard-card span-7">
-        <div class="card-title">Needs Attention</div>
-        <div id="dashboard-needs-attention"></div>
-      </div>
-      <div class="card dashboard-card span-5">
-        <div class="card-title">Action Station</div>
-        <div id="dashboard-action-station"><div class="dash-skeleton" style="margin-bottom:8px"></div><div class="dash-skeleton" style="margin-bottom:8px"></div><div class="dash-skeleton"></div></div>
-      </div>
-    </div>
-
-    <!-- Row 4: System Health -->
+    <!-- Row 3: Library Overview + Processing History (moved above Needs Attention) -->
     <div class="card dashboard-card" style="margin-bottom:16px">
-      <div class="card-title" style="margin-bottom:10px">System Health</div>
-      <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
-    </div>
-
-    <!-- Row 5: Recent Activity -->
-    <div class="card dashboard-card" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="card-title" style="margin-bottom:0">Recent Activity</div>
-        <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
-      </div>
-      <div id="dashboard-recent-activity"></div>
-    </div>
-
-    <!-- Row 6: Library Overview + Processing History -->
-    <div class="card dashboard-card">
       <!-- Header row -->
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div class="card-title" style="margin-bottom:0">Library Overview</div>
@@ -1190,7 +1213,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
       </div>
       <!-- Per-library KPI stats -->
-      <div id="dash-lib-kpi" class="dashboard-stat-grid" style="margin-bottom:18px"></div>
+      <div id="dash-lib-kpi" class="dashboard-stat-grid compact" style="margin-bottom:18px"></div>
       <!-- Processing History -->
       <div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
@@ -1207,7 +1230,37 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             </label>
           </div>
         </div>
-        <div id="dash-processing-chart" style="min-height:140px"></div>
+        <div class="dash-chart-area">
+          <div class="dash-pie-wrap" id="dash-pie-chart"></div>
+          <div id="dash-processing-chart" style="min-height:140px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Needs Attention + Action Station -->
+    <div class="dashboard-grid" style="margin-bottom:16px">
+      <div class="card dashboard-card span-7">
+        <div class="card-title">Needs Attention</div>
+        <div id="dashboard-needs-attention"></div>
+      </div>
+      <div class="card dashboard-card span-5">
+        <div class="card-title">Action Station</div>
+        <div id="dashboard-action-station"><div class="dash-skeleton" style="margin-bottom:8px"></div><div class="dash-skeleton" style="margin-bottom:8px"></div><div class="dash-skeleton"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 5: System Health + Recent Activity (side by side) -->
+    <div class="dash-split-row" style="margin-bottom:16px">
+      <div class="card dashboard-card">
+        <div class="card-title" style="margin-bottom:10px">System Health</div>
+        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
+      </div>
+      <div class="card dashboard-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-title" style="margin-bottom:0">Recent Activity</div>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
+        </div>
+        <div id="dashboard-recent-activity"></div>
       </div>
     </div>
 
@@ -1246,7 +1299,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </div>
               <div class="field">
                 <label>Plex Token</label>
-                <input id="cfg-plex_token" type="text" placeholder="your-plex-token">
+                <div class="field-secret-wrap">
+                  <input id="cfg-plex_token" type="password" placeholder="your-plex-token" autocomplete="off">
+                  <button type="button" class="field-secret-toggle" onclick="toggleSecretField(this)" aria-label="Toggle visibility" title="Show / hide token">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-off-icon" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="settings-actions">
@@ -1259,7 +1318,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="subcard-intro">Used to normalize titles and years, resolve TMDB IDs, and provide TMDB links.</div>
             <div class="field" style="max-width:520px">
               <label>TMDB API Key <a class="accent-link subtle" href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">themoviedb.org/settings/api</a></label>
-              <input id="cfg-tmdb_api_key" placeholder="your-tmdb-key">
+              <div class="field-secret-wrap">
+                <input id="cfg-tmdb_api_key" type="password" placeholder="your-tmdb-key" autocomplete="off">
+                <button type="button" class="field-secret-toggle" onclick="toggleSecretField(this)" aria-label="Toggle visibility" title="Show / hide API key">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-off-icon" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
             </div>
             <div class="settings-actions">
               <button class="btn btn-ghost btn-sm" onclick="testTmdb()">⚡ Test API Key</button>
@@ -2910,9 +2975,9 @@ function renderDashboardActionStation(health){
       <div style="margin-top:3px">${dashboardStatusBadge(s.label,s.state)}</div>
     </div>`;
   }
-  const setupBtn=`<button class="btn btn-ghost btn-sm" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
-  const runBtn=`<button class="btn btn-ghost btn-sm" onclick="startScheduledRun()">Run Schedule</button>`;
-  const themesBtn=`<button class="btn btn-ghost btn-sm" onclick="showPage('theme-manager')">Manage Themes</button>`;
+  const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
+  const runBtn=`<button class="btn btn-ghost btn-sm btn-action-run" onclick="startScheduledRun()">Run Schedule</button>`;
+  const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
   el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runBtn}${themesBtn}</div>`;
 }
 function dashboardLatestTask(entries, matcher){
@@ -2967,13 +3032,17 @@ function renderDashboardRecentActivity(entries){
     const badge=dashboardStatusBadge(statusLabel, statusState);
     const timeStr=entry?formatDashboardTime(entry.time):null;
     const summary=formatRunSummary(entry);
-    return `<div class="dash-activity-row">
+    const hasEntry=!!entry;
+    return `<div class="dash-activity-row${hasEntry?' clickable':''}"${hasEntry?' tabindex="0" role="button" aria-label="View '+item.label+' details" onclick="navigateToActivity(\''+item.label+'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();navigateToActivity(\''+item.label+'\')}"':''}>
       ${badge}
       <span class="dash-activity-label">${item.label}</span>
       <span class="dash-activity-time">${timeStr||'—'}</span>
       <span class="dash-activity-summary">${summary}</span>
     </div>`;
   }).join('')+`</div>`;
+}
+function navigateToActivity(label){
+  showPage('tasks');
 }
 // ── Dashboard library section + processing history ────────────────────────────
 let _dashLedgerByLib={};
@@ -2983,12 +3052,55 @@ let _dashHistStatusFilter='all';
 
 function _getHistRows(){return _dashSelectedLib==='all'?_dashLedgerAll:(_dashLedgerByLib[_dashSelectedLib]||[]);}
 
-function _savePipelineHelpState(open){try{localStorage.setItem('mt-pipeline-help-open',open?'1':'0');}catch(e){}}
-function _restorePipelineHelpState(){
-  const el=document.getElementById('dash-pipeline-help');
-  if(!el) return;
-  try{const saved=localStorage.getItem('mt-pipeline-help-open'); el.open=saved===null?true:saved==='1';}
-  catch(e){el.open=true;}
+// How it Works? panel — always starts collapsed, ephemeral state
+let _howItWorksOpen=false;
+function toggleHowItWorks(){
+  _howItWorksOpen=!_howItWorksOpen;
+  _applyHowItWorksState();
+  if(_howItWorksOpen){
+    setTimeout(()=>document.addEventListener('click',_howItWorksOutsideClick,true),0);
+    document.addEventListener('keydown',_howItWorksEscape);
+  }
+}
+function _applyHowItWorksState(){
+  const content=document.getElementById('dash-how-content');
+  const chev=document.getElementById('dash-pipeline-help-chev');
+  const btn=document.getElementById('dash-how-toggle');
+  if(content) content.style.display=_howItWorksOpen?'':'none';
+  if(chev) chev.style.transform=_howItWorksOpen?'':'rotate(180deg)';
+  if(btn) btn.setAttribute('aria-expanded',String(_howItWorksOpen));
+}
+function closeHowItWorks(){
+  if(!_howItWorksOpen) return;
+  _howItWorksOpen=false;
+  _applyHowItWorksState();
+  document.removeEventListener('click',_howItWorksOutsideClick,true);
+  document.removeEventListener('keydown',_howItWorksEscape);
+}
+function _howItWorksOutsideClick(e){
+  const panel=document.getElementById('dash-pipeline-help');
+  if(panel && !panel.contains(e.target)) closeHowItWorks();
+}
+function _howItWorksEscape(e){
+  if(e.key==='Escape') closeHowItWorks();
+}
+function _resetHowItWorks(){
+  _howItWorksOpen=false;
+  _applyHowItWorksState();
+  document.removeEventListener('click',_howItWorksOutsideClick,true);
+  document.removeEventListener('keydown',_howItWorksEscape);
+}
+// Toggle secret field visibility (API keys)
+function toggleSecretField(btn){
+  const wrap=btn.closest('.field-secret-wrap');
+  const input=wrap?.querySelector('input');
+  if(!input) return;
+  const isPassword=input.type==='password';
+  input.type=isPassword?'text':'password';
+  const eyeOn=btn.querySelector('.eye-icon');
+  const eyeOff=btn.querySelector('.eye-off-icon');
+  if(eyeOn) eyeOn.style.display=isPassword?'none':'';
+  if(eyeOff) eyeOff.style.display=isPassword?'':'none';
 }
 
 function renderDashLibTabs(enabledLibs){
@@ -3004,7 +3116,6 @@ function renderHistStatusFilters(){
   const filters=[
     {k:'all',label:'All',c:'var(--text2)'},
     {k:'AVAILABLE',label:'Available',c:'var(--green)'},
-    {k:'MISSING',label:'Missing',c:'var(--red)'},
     {k:'STAGED',label:'Staged',c:'var(--purple)'},
     {k:'APPROVED',label:'Approved',c:'var(--yellow)'},
     {k:'FAILED',label:'Failed',c:'var(--red)'},
@@ -3015,13 +3126,14 @@ function renderHistStatusFilters(){
   }).join('');
 }
 
-function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();renderProcessingHistory();}
+function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();renderProcessingHistory();renderPieChart();}
 
 function switchDashLib(name){
   _dashSelectedLib=name;
   renderDashLibTabs(Object.keys(_dashLedgerByLib).map(n=>({name:n})));
   renderDashLibKpi();
   renderProcessingHistory();
+  renderPieChart();
 }
 
 function renderDashLibKpi(){
@@ -3061,6 +3173,32 @@ function _periodLabel(key, group){
   try{return new Date(key+'T00:00:00').toLocaleString([],{month:'short',day:'numeric'});}catch(e){return key;}
 }
 
+function _zeroFillPeriods(keys, group, showN){
+  // Generate continuous date buckets including zero-data periods
+  if(!keys.length) return keys;
+  const sorted=keys.slice().sort();
+  const first=sorted[0], last=sorted[sorted.length-1];
+  const all=[];
+  if(group==='year'){
+    for(let y=parseInt(first);y<=parseInt(last);y++) all.push(String(y));
+  } else if(group==='month'){
+    let [cy,cm]=first.split('-').map(Number);
+    const [ey,em]=last.split('-').map(Number);
+    while(cy<ey||(cy===ey&&cm<=em)){
+      all.push(`${cy}-${String(cm).padStart(2,'0')}`);
+      cm++; if(cm>12){cm=1;cy++;}
+    }
+  } else if(group==='week'||group==='day'){
+    const step=group==='week'?7:1;
+    let cur=new Date(first+'T00:00:00');
+    const end=new Date(last+'T00:00:00');
+    while(cur<=end){
+      all.push(cur.toISOString().slice(0,10));
+      cur.setDate(cur.getDate()+step);
+    }
+  }
+  return all.length?all.slice(-showN):sorted.slice(-showN);
+}
 function renderProcessingHistory(){
   const group=document.getElementById('dash-hist-group')?.value||'month';
   const showN=Math.max(1,parseInt(document.getElementById('dash-hist-count')?.value||'12',10)||12);
@@ -3068,21 +3206,21 @@ function renderProcessingHistory(){
   const el=document.getElementById('dash-processing-chart');
   if(!el) return;
 
-  // Build period buckets from last_updated
-  const STATUSES=['AVAILABLE','APPROVED','STAGED','MISSING','FAILED'];
-  const COLORS={MISSING:'#f26d78',STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252'};
+  // Exclude MISSING from chart — only show processed statuses
+  const CHART_STATUSES=['AVAILABLE','APPROVED','STAGED','FAILED'];
+  const COLORS={STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252'};
   const buckets={};
   rows.forEach(row=>{
     const key=_periodKey(row.last_updated||'', group);
     if(!key) return;
-    if(!buckets[key]){buckets[key]={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};}
+    if(!buckets[key]){buckets[key]={STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};}
     const st=String(row.status||'').toUpperCase();
     if(st in buckets[key]) buckets[key][st]++;
   });
 
-  const keys=Object.keys(buckets).sort();
-  const shown=keys.slice(-showN);
-  const displaySt=_dashHistStatusFilter==='all'?STATUSES:[_dashHistStatusFilter.toUpperCase()];
+  const rawKeys=Object.keys(buckets).sort();
+  const shown=_zeroFillPeriods(rawKeys, group, showN);
+  const displaySt=_dashHistStatusFilter==='all'?CHART_STATUSES:(_dashHistStatusFilter==='MISSING'?CHART_STATUSES:[_dashHistStatusFilter.toUpperCase()]);
 
   if(!shown.length){
     el.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;font-family:var(--mono)">No history data yet — items will appear here once processed</div>';
@@ -3101,36 +3239,80 @@ function renderProcessingHistory(){
   shown.forEach((key,i)=>{
     const x=leftPad+gap+i*(barW+gap);
     let yOff=0;
+    const totalForPeriod=displaySt.reduce((s,st)=>s+(buckets[key]?.[st]||0),0);
     displaySt.forEach(st=>{
       const count=buckets[key]?.[st]||0;
       if(!count) return;
       const h=Math.max(2,Math.round((count/maxVal)*(chartH-6)));
       const y=chartH-yOff-h;
-      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[st]||'#888'}" opacity="0.82" rx="2"><title>${_periodLabel(key,group)}\n${st}: ${count}</title></rect>`;
-      if(count>0&&h>12) bars+=`<text x="${x+barW/2}" y="${y+h/2+4}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" opacity="0.9">${count}</text>`;
+      // Build tooltip with all statuses for this period
+      const tipParts=displaySt.filter(s=>(buckets[key]?.[s]||0)>0).map(s=>`${s[0]+s.slice(1).toLowerCase()}: ${buckets[key][s]}`);
+      const tip=`${_periodLabel(key,group)}\n${tipParts.join('\n')}\nTotal: ${totalForPeriod}`;
+      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[st]||'#888'}" opacity="0.82" rx="2"><title>${tip}</title></rect>`;
+      if(count>0&&h>12) bars+=`<text x="${x+barW/2}" y="${y+h/2+4}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" opacity="0.9" style="pointer-events:none">${count}</text>`;
       yOff+=h;
     });
     const lbl=_periodLabel(key,group);
     bars+=`<text x="${x+barW/2}" y="${chartH+labelH-2}" text-anchor="middle" font-size="9" fill="var(--text3)">${lbl}</text>`;
   });
 
+  // Dotted grid lines
   let guides='';
   [0,0.25,0.5,0.75,1].forEach(f=>{
     const y=Math.round(chartH*(1-f));
     const v=Math.round(maxVal*f);
-    guides+=`<line x1="${leftPad}" y1="${y}" x2="${leftPad+totalW+gap}" y2="${y}" stroke="var(--border)" stroke-dasharray="3,3"/>`;
+    guides+=`<line x1="${leftPad}" y1="${y}" x2="${leftPad+totalW+gap}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,4" stroke-opacity="0.6"/>`;
     guides+=`<text x="${leftPad-5}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${v}</text>`;
   });
 
-  // Legend
+  // Legend — exclude Missing
   let legend='';
-  const legendStatuses=displaySt.filter(st=>shown.some(k=>(buckets[k]?.[st]||0)>0));
+  const legendStatuses=displaySt.filter(st=>st!=='MISSING');
   legendStatuses.forEach((st,i)=>{
     legend+=`<g transform="translate(${leftPad+i*80},${chartH+labelH+10})"><rect width="10" height="10" rx="2" fill="${COLORS[st]||'#888'}" opacity="0.82"/><text x="14" y="9" font-size="9" fill="var(--text2)">${st[0]+st.slice(1).toLowerCase()}</text></g>`;
   });
 
   const svgH=chartH+labelH+(legendStatuses.length?26:4)+14;
   el.innerHTML=`<div style="overflow-x:auto"><svg class="dash-chart-svg" viewBox="0 -8 ${leftPad+totalW+gap+16} ${svgH}" style="width:100%;min-width:${Math.min(leftPad+totalW+gap+16,340)}px;height:${svgH+8}px;display:block">${guides}${bars}${legend}</svg></div>`;
+}
+// Pie chart — shows composition of selected library
+function renderPieChart(){
+  const el=document.getElementById('dash-pie-chart');
+  if(!el) return;
+  const rows=_getHistRows();
+  const PIE_STATUSES=['AVAILABLE','STAGED','APPROVED','FAILED'];
+  const COLORS={STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252'};
+  const counts={};
+  let total=0;
+  PIE_STATUSES.forEach(st=>{counts[st]=0;});
+  rows.forEach(row=>{
+    const st=String(row.status||'').toUpperCase();
+    if(st in counts){counts[st]++;total++;}
+  });
+  if(!total){
+    el.innerHTML='<div class="dash-pie-empty">No processed data</div>';
+    return;
+  }
+  const r=60, cx=70, cy=70;
+  let slices='', startAngle=-Math.PI/2;
+  const legendItems=[];
+  PIE_STATUSES.forEach(st=>{
+    if(!counts[st]) return;
+    const pct=counts[st]/total;
+    const angle=pct*2*Math.PI;
+    const endAngle=startAngle+angle;
+    const largeArc=angle>Math.PI?1:0;
+    const x1=cx+r*Math.cos(startAngle), y1=cy+r*Math.sin(startAngle);
+    const x2=cx+r*Math.cos(endAngle), y2=cy+r*Math.sin(endAngle);
+    if(pct>=0.999){
+      slices+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS[st]}" opacity="0.85"><title>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]} (${Math.round(pct*100)}%)</title></circle>`;
+    } else {
+      slices+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${COLORS[st]}" opacity="0.85"><title>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]} (${Math.round(pct*100)}%)</title></path>`;
+    }
+    startAngle=endAngle;
+    legendItems.push(`<div class="dash-pie-legend-item"><span class="dash-pie-legend-dot" style="background:${COLORS[st]}"></span>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]}</div>`);
+  });
+  el.innerHTML=`<svg width="140" height="140" viewBox="0 0 140 140">${slices}</svg><div class="dash-pie-legend">${legendItems.join('')}</div>`;
 }
 
 function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
@@ -3202,7 +3384,8 @@ async function loadDashboard(force=false){
   renderDashLibKpi();
   renderHistStatusFilters();
   renderProcessingHistory();
-  _restorePipelineHelpState();
+  renderPieChart();
+  _resetHowItWorks();
 
   // Async: real health validation (may be slower)
   const {data:health}=await requestJson('/api/health');
