@@ -35,6 +35,12 @@ fi
 # Start Flask web UI in background (log to container stdout)
 echo "[INFO] Starting web UI on port 8080..."
 python3 /app/web/app.py >> /proc/1/fd/1 2>> /proc/1/fd/2 &
+WEB_PID=$!
+sleep 1
+if ! kill -0 "$WEB_PID" 2>/dev/null; then
+    echo "[ERROR] Web UI failed to start — check Python import/runtime errors above"
+    exit 1
+fi
 
 # Register cron job
 CRON_JOB="$CRON_SCHEDULE python3 /app/script/media_tracks.py >> /proc/1/fd/1 2>> /proc/1/fd/2"
