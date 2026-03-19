@@ -56,7 +56,6 @@ import subprocess
 import sys
 import time
 import urllib.parse
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -70,10 +69,12 @@ if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
 from storage import (
+    CONFIG_PATH,
     LEDGER_HEADERS,
     ffprobe_duration,
     ledger_path_for,
     load_ledger_map as load_ledger,
+    now_str,
     read_golden_source_text,
     save_ledger_map as save_ledger,
     sync_theme_cache,
@@ -108,7 +109,6 @@ def emit_progress(pass_num: int, current: int, total: int, title: str, action: s
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
-CONFIG_PATH = os.environ.get("CONFIG_PATH", "/app/config/config.yaml")
 LOCK_PATH   = os.environ.get("LOCK_PATH",   "/app/logs/media_tracks.lock")
 GOLDEN_CACHE_DIR = Path(os.environ.get("GOLDEN_CACHE_DIR", str(Path(LOCK_PATH).resolve().parent / "golden_source_cache")))
 GOLDEN_CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -195,7 +195,7 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         "rating_key":     rating_key,
         "tmdb_id":        str(tmdb_id) if tmdb_id else existing.get("tmdb_id", ""),
         "source_origin":  str(source_origin or "unknown"),
-        "last_updated":   datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "last_updated":   now_str(),
         "notes":          notes,
         # Preserve cached theme metadata
         "theme_exists":   existing.get("theme_exists", 0),
@@ -565,10 +565,6 @@ def _fetch_golden_source_catalog(url: str, force_refresh: bool = True, cache_ttl
 
 # ─── Audio helpers ────────────────────────────────────────────────────────────
 
-def get_audio_duration(filepath: Path) -> float:
-    return ffprobe_duration(filepath)
-
-
 def validate_audio_file(filepath: Path) -> tuple:
     if not filepath.exists():
         return False, "File missing after download"
@@ -585,7 +581,7 @@ def validate_audio_file(filepath: Path) -> tuple:
     if result.returncode != 0 or "audio" not in result.stdout:
         filepath.unlink(missing_ok=True)
         return False, f"ffprobe rejected: {result.stderr.strip()[:120]}"
-    dur = get_audio_duration(filepath)
+    dur = ffprobe_duration(filepath)
     return True, f"{size / 1024:.1f} KB, {dur:.1f}s"
 
 
@@ -593,7 +589,7 @@ def trim_audio(filepath: Path, start_offset: int, end_offset: int,
                max_duration: int, audio_format: str) -> tuple:
     if start_offset <= 0 and end_offset <= 0 and max_duration <= 0:
         return True, "No trimming needed"
-    dur = get_audio_duration(filepath)
+    dur = ffprobe_duration(filepath)
     if dur <= 0:
         return True, "Could not determine duration, skipping trim"
     start = max(0, start_offset)
@@ -613,7 +609,7 @@ def trim_audio(filepath: Path, start_offset: int, end_offset: int,
             tmp.unlink(missing_ok=True)
             return False, f"ffmpeg trim failed: {result.stderr[:120]}"
         tmp.replace(filepath)
-        new_dur = get_audio_duration(filepath)
+        new_dur = ffprobe_duration(filepath)
         return True, f"Trimmed to {new_dur:.1f}s (was {dur:.1f}s)"
     except Exception as e:
         tmp.unlink(missing_ok=True)
@@ -730,13 +726,13 @@ def pass1_scan(ledger: dict, plex_movies: list, theme_filename: str) -> tuple:
 
         if has_theme and current != ST_AVAILABLE:
             row["status"]       = ST_AVAILABLE
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            row["last_updated"] = now_str()
             row["notes"]        = "Theme detected on disk — auto-promoted"
             log.info(f"[PROMOTED] {plex_title} ({plex_year})")
         elif not has_theme and current == ST_AVAILABLE:
             row["status"]       = ST_MISSING
             row["url"]          = ""
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            row["last_updated"] = now_str()
             row["notes"]        = "Theme file missing — re-queued"
             log.info(f"[RESET]    {plex_title} ({plex_year})")
 
@@ -835,6 +831,7 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
                 continue
             ledger_upsert(
                 ledger, key, plex_title, title, year, folder, ST_STAGED,
+                url=match.get("source_url", ""),
                 golden_source_url=match.get("source_url", ""),
                 golden_source_offset=match.get("start_offset", 0),
                 end_offset=match.get("end_offset", 0),
@@ -924,6 +921,7 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
         ledger_upsert(
             ledger, key, plex_title, title, year, folder, ST_STAGED,
             url=url, notes=f"Found via {method_used} — awaiting approval", tmdb_id=tmdb_id,
+            source_origin=f"youtube_{method_used}",
         )
         stats["staged"] += 1
 
@@ -968,7 +966,7 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
         if not url:
             log.warning(f"[APPROVED] {title} ({year}) — no URL, resetting to MISSING")
             row["status"]       = ST_MISSING
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            row["last_updated"] = now_str()
             row["notes"]        = "APPROVED but no URL — reset to MISSING"
             continue
 
@@ -990,7 +988,7 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
         if success:
             log.info(f"[OK]       {title} ({year}) — {message}")
             row["status"]       = ST_AVAILABLE
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            row["last_updated"] = now_str()
             row["notes"]        = message
             row, _              = sync_theme_cache(row, theme_filename, probe_duration=True)
             ledger[rk]          = row  # write back with updated theme cache
@@ -998,7 +996,7 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
         else:
             log.warning(f"[FAILED]   {title} ({year}) — {message}")
             row["status"]       = ST_FAILED
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            row["last_updated"] = now_str()
             row["notes"]        = message
             stats["failed"]    += 1
 
@@ -1206,7 +1204,7 @@ def _auto_approve_staged(ledger: dict):
     for row in ledger.values():
         if row["status"] == ST_STAGED:
             row["status"]       = ST_APPROVED
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            row["last_updated"] = now_str()
             row["notes"]        = "Auto-approved"
             count += 1
     if count:

@@ -1,0 +1,18 @@
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Runtime / data
+*.db
+*.db-shm
+*.db-wal
+*.lock
+logs/
+
+# Local config (never commit secrets)
+config/config.yaml
+
+# OS
+.DS_Store
