@@ -540,20 +540,21 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .review-panel-heading{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
 .review-panel-title{font-size:15px;font-weight:700;color:var(--text)}
 .theme-status-flow-wrap{display:flex;flex-direction:column;gap:6px;min-width:0}
-.theme-status-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
-.theme-status-step{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.05em;line-height:1;text-transform:uppercase;white-space:nowrap;transition:border-color .15s,color .15s,background .15s,transform .15s}
-.theme-status-step::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0}
-.theme-status-step.is-complete{color:var(--text2);border-color:color-mix(in srgb,var(--amber) 22%,var(--border))}
-.theme-status-step.is-current{font-size:11px;font-weight:800;color:var(--text);border-color:currentColor;background:color-mix(in srgb,currentColor 10%,var(--surface2));box-shadow:0 0 0 1px color-mix(in srgb,currentColor 22%,transparent);transform:translateY(-1px)}
-.theme-status-step.is-current::before,.theme-status-step.is-complete::before{opacity:1}
-.theme-status-step.status-MISSING.is-current,.theme-status-step.status-MISSING.is-complete{color:var(--text2)}
-.theme-status-step.status-STAGED.is-current,.theme-status-step.status-STAGED.is-complete{color:var(--purple)}
-.theme-status-step.status-APPROVED.is-current,.theme-status-step.status-APPROVED.is-complete{color:var(--yellow)}
-.theme-status-step.status-AVAILABLE.is-current,.theme-status-step.status-AVAILABLE.is-complete{color:var(--green)}
-.theme-status-step.status-FAILED.is-current,.theme-status-step.status-FAILED.is-complete{color:var(--red)}
-.theme-status-sep{color:var(--text3);font-size:11px;line-height:1;flex-shrink:0}
 .theme-status-helper{font-size:11px;color:var(--text3);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .review-meta-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--surface) 45%, transparent);overflow:hidden}
+.review-card.compact{padding:12px}
+.review-card.compact .review-card-header{margin-bottom:8px}
+.review-empty{font-size:12px;color:var(--text3);line-height:1.5;padding:9px 11px;border:1px dashed var(--border);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,transparent)}
+#theme-modal .modal-header{padding:18px 18px 0;gap:12px}
+#theme-modal .modal-poster{width:64px;height:96px}
+#theme-modal .review-panel-head{padding:0 18px 8px}
+#theme-modal .review-card{margin:0 18px 10px;padding:12px}
+#theme-modal .review-card-header{margin-bottom:8px}
+#theme-modal .review-meta-item{padding:8px 10px;gap:4px}
+#theme-modal .modal-bio{padding:0 18px 8px}
+#theme-modal .review-section-divider{margin:2px 18px 10px}
+#theme-modal .modal-footer{padding:10px 18px}
+#theme-modal .simple-line{margin-bottom:4px}
 .review-meta-item{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 12px;border-top:1px solid var(--border)}
 .review-meta-item:first-child{border-top:none}
 .review-meta-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
@@ -1771,17 +1772,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="review-panel-heading">
         <div class="review-panel-title" id="theme-modal-summary">Manage Theme</div>
         <div class="theme-status-flow-wrap">
-          <div class="theme-status-flow" id="theme-modal-status-flow" aria-label="Theme status progression">
-            <span class="theme-status-step status-MISSING" data-status="MISSING">Missing</span>
-            <span class="theme-status-sep" aria-hidden="true">→</span>
-            <span class="theme-status-step status-STAGED" data-status="STAGED">Staged</span>
-            <span class="theme-status-sep" aria-hidden="true">→</span>
-            <span class="theme-status-step status-APPROVED" data-status="APPROVED">Approved</span>
-            <span class="theme-status-sep" aria-hidden="true">→</span>
-            <span class="theme-status-step status-AVAILABLE" data-status="AVAILABLE">Available</span>
-            <span class="theme-status-sep" aria-hidden="true">•</span>
-            <span class="theme-status-step status-FAILED" data-status="FAILED">Failed</span>
-          </div>
           <div class="theme-status-helper" id="theme-modal-status-helper">No source attached yet.</div>
         </div>
       </div>
@@ -1795,9 +1785,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="review-card-subtitle" id="theme-modal-local-status">Review the local file, playback, and cleanup actions.</div>
         </div>
       </div>
-      <div class="simple-line" id="theme-modal-file">File path: —</div>
-      <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
-      <div id="theme-local-missing" style="font-size:12px;color:var(--text3);display:none">No local theme file yet.</div>
+      <div id="theme-local-meta">
+        <div class="simple-line" id="theme-modal-file">File path: —</div>
+        <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
+      </div>
+      <div class="review-empty" id="theme-local-missing" style="display:none">No local theme file is saved right now.</div>
       <div id="theme-local-player" style="display:none">
         <div class="modal-player-row">
           <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
@@ -1826,7 +1818,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
         <div class="review-source-pill is-unknown" id="theme-modal-source-pill">Unknown</div>
       </div>
-      <div class="review-meta-list">
+      <div class="review-empty" id="theme-source-empty" style="display:none">No source is attached right now.</div>
+      <div class="review-meta-list" id="theme-source-meta-list">
         <div class="review-meta-item">
           <div class="review-meta-label">Theme Source</div>
           <div class="review-meta-value" id="theme-modal-source-url">—</div>
@@ -4021,15 +4014,20 @@ function _setMethodQuickPick(method, result){
   const safeUrl=(result.url||'').replace(/'/g,"\\'");
   const rawTitle=(result.title||'1st result');
   const safeTitle=rawTitle.replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const safeHref=(result.url||'').replace(/"/g,'&quot;');
+  const safeOffset=(result.start_offset||'0').replace(/'/g,"\\'");
+  const offsetLabel=result.start_offset?`<span class="muted-chip" style="margin:4px 0 0">Offset ${_normalizedOffsetValue(result.start_offset)}</span>`:'';
+  if(method==='golden_source'){
+    el.innerHTML=`<span class="sm-quickpick-label">Quick pick · curated match</span><span class="sm-quickpick-title">Curated Golden Source URL</span>${offsetLabel}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}','${safeOffset}')">Pick</button><a class="btn btn-ghost btn-xs" href="${safeHref}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Open</a></div>`;
+    return;
+  }
   const isLong=rawTitle.length>34;
   const titleClass=isLong?'sm-quickpick-title scroll':'sm-quickpick-title';
   const titleBody=`<span class="sm-quickpick-track"><span class="sm-quickpick-copy">${safeTitle}</span></span>`;
   const duration=Math.max(12, Math.min(24, Math.ceil(rawTitle.length/3)));
   const distance=Math.max(0, (rawTitle.length*6)-190);
   const styleAttr=isLong?` style="--qp-duration:${duration}s;--qp-scroll-distance:${distance}px"`:'';
-  const offsetLabel=result.start_offset?`<span class="muted-chip" style="margin:4px 0 0">Offset ${_normalizedOffsetValue(result.start_offset)}</span>`:'';
-  const safeOffset=(result.start_offset||'0').replace(/'/g,"\\'");
-  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"${styleAttr}><a class="sm-quickpick-link" href="${result.url}" target="_blank" rel="noopener">${titleBody}<span>↗</span></a></span>${offsetLabel}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}','${safeOffset}')">Pick</button></div>`;
+  el.innerHTML=`<span class="sm-quickpick-label">Quick pick · 1st result</span><span class="${titleClass}" title="${safeTitle}"${styleAttr}><a class="sm-quickpick-link" href="${safeHref}" target="_blank" rel="noopener">${titleBody}<span>↗</span></a></span>${offsetLabel}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}','${safeOffset}')">Pick</button></div>`;
 }
 
 
@@ -5113,21 +5111,8 @@ const THEME_MODAL_STATUS_HELPERS={
   AVAILABLE:'Local theme saved.',
   FAILED:'Needs attention before retrying.'
 };
-const THEME_MODAL_STATUS_ORDER=['MISSING','STAGED','APPROVED','AVAILABLE'];
 function _themeModalUpdateStatusFlow(status='MISSING'){
   const normalized=String(status||'MISSING').toUpperCase();
-  const flow=document.getElementById('theme-modal-status-flow');
-  if(flow){
-    const currentIndex=THEME_MODAL_STATUS_ORDER.indexOf(normalized);
-    flow.querySelectorAll('.theme-status-step').forEach(step=>{
-      const stepStatus=String(step.dataset.status||'').toUpperCase();
-      const stepIndex=THEME_MODAL_STATUS_ORDER.indexOf(stepStatus);
-      const isCurrent=stepStatus===normalized;
-      const isComplete=currentIndex>=0 && stepIndex>=0 && stepIndex<currentIndex;
-      step.classList.toggle('is-current',isCurrent);
-      step.classList.toggle('is-complete',isComplete);
-    });
-  }
   const helper=document.getElementById('theme-modal-status-helper');
   if(helper) helper.textContent=THEME_MODAL_STATUS_HELPERS[normalized]||'Review the current theme state.';
 }
@@ -5135,9 +5120,11 @@ function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
   _themeModalContext={rk,title,year,folder,row};
   const hasTheme=_themeHasLocal(row);
-  const primarySourceUrl=_themeModalPrimarySourceUrl(row);
-  const hasSource=!!primarySourceUrl;
-  const sourceMeta=_themeSourceMeta(row);
+  const status=String(row?.status||'MISSING').toUpperCase();
+  const storedPrimarySourceUrl=_themeModalPrimarySourceUrl(row);
+  const hasSource=status!=='MISSING' && !!storedPrimarySourceUrl;
+  const primarySourceUrl=hasSource?storedPrimarySourceUrl:'';
+  const sourceMeta=hasSource?_themeSourceMeta(row):{label:'None',className:'is-unknown',method:'—'};
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
 
@@ -5146,7 +5133,6 @@ function openThemeModal(rk,title,year,folder,row={}){
   document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'Theme missing';
   document.getElementById('theme-modal-summary').textContent='Manage Theme';
   const statusBadge=document.getElementById('theme-modal-status-badge');
-  const status=String(row?.status||'MISSING').toUpperCase();
   if(statusBadge){
     statusBadge.className=`badge s-${status}`;
     statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
@@ -5154,31 +5140,44 @@ function openThemeModal(rk,title,year,folder,row={}){
   _themeModalUpdateStatusFlow(status);
   document.getElementById('theme-modal-local-status').textContent=hasTheme
     ?'Theme saved locally and playable.'
-    :'No local file is saved right now.';
+    :'No local theme file is saved right now.';
   document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
   document.getElementById('theme-modal-local-dur').textContent=`Duration: ${hasTheme&&row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
   document.getElementById('theme-modal-source-url').innerHTML=_themeModalLink(primarySourceUrl,'—');
-  document.getElementById('theme-modal-origin').textContent=sourceMeta.method;
-  const goldenSourceUrl=String(row?.golden_source_url||'').trim();
-  document.getElementById('theme-modal-imported').textContent=_themeModalImportedAt(row);
-  document.getElementById('theme-modal-offset').textContent=_themeModalOffsetLabel(row, hasTheme);
-  document.getElementById('theme-modal-source-notes').textContent=String(row?.notes||'').trim()||'No source notes recorded.';
+  document.getElementById('theme-modal-origin').textContent=hasSource?sourceMeta.method:'—';
+  document.getElementById('theme-modal-imported').textContent=hasSource?_themeModalImportedAt(row):'—';
+  document.getElementById('theme-modal-offset').textContent=hasSource?_themeModalOffsetLabel(row, hasTheme):'—';
+  document.getElementById('theme-modal-source-notes').textContent=hasSource?(String(row?.notes||'').trim()||'No source notes recorded.'):'—';
   document.getElementById('theme-modal-source-summary').textContent=hasSource
     ?'Theme used for download and the details applied to it.'
-    :'No download source is attached yet. Use Find Theme to attach one.';
+    :'No source is attached right now.';
   const sourcePill=document.getElementById('theme-modal-source-pill');
   sourcePill.textContent=sourceMeta.label;
   sourcePill.className=`review-source-pill ${sourceMeta.className}`;
+  sourcePill.style.display=hasSource?'inline-flex':'none';
 
   const sourceActions=document.getElementById('theme-source-actions');
-  if(sourceActions) sourceActions.style.display='flex';
+  const sourceEmpty=document.getElementById('theme-source-empty');
+  const sourceMetaList=document.getElementById('theme-source-meta-list');
   const openSourceBtn=document.getElementById('theme-open-source-btn');
+  if(sourceActions) sourceActions.style.display=hasSource?'flex':'none';
+  if(sourceEmpty) sourceEmpty.style.display=hasSource?'none':'block';
+  if(sourceMetaList) sourceMetaList.style.display=hasSource?'flex':'none';
   if(openSourceBtn) openSourceBtn.style.display=hasSource?'':'none';
+
+  const localCard=document.getElementById('theme-local-card');
+  const localMeta=document.getElementById('theme-local-meta');
+  const localMissing=document.getElementById('theme-local-missing');
+  if(localCard) localCard.classList.toggle('compact', !hasTheme);
+  if(localMeta) localMeta.style.display=hasTheme?'block':'none';
+  if(localMissing) localMissing.style.display=hasTheme?'none':'block';
+  const sourceCard=document.getElementById('theme-source-card');
+  if(sourceCard) sourceCard.classList.toggle('compact', !hasSource);
 
   const replaceBtn=document.getElementById('theme-replace-btn');
   const findBtn=document.getElementById('theme-find-btn');
   const nextStepBtn=document.getElementById('theme-next-step-btn');
-  if(replaceBtn) replaceBtn.style.display=hasTheme||hasSource||goldenSourceUrl?'':'none';
+  if(replaceBtn) replaceBtn.style.display=hasTheme||hasSource?'':'none';
   if(findBtn) findBtn.style.display=hasTheme?'none':'';
   const nextAction=_themeModalNextAction(row, hasTheme);
   if(nextStepBtn){
