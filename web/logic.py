@@ -561,12 +561,19 @@ def row_has_theme(row: dict) -> bool:
     return str(row.get("theme_exists", "") or "") == "1"
 
 
-def status_validation_error(row: dict, attempted_status: str):
+def status_validation_error(
+    row: dict,
+    attempted_status: str,
+    *,
+    current_status: str | None = None,
+    has_url: bool | None = None,
+    has_theme: bool | None = None,
+):
     return validate_manual_status_transition(
-        row.get("status", ""),
+        current_status if current_status is not None else row.get("status", ""),
         attempted_status,
-        has_url=bool(str(row.get("url", "") or "").strip()),
-        has_theme=row_has_theme(row),
+        has_url=bool(str(row.get("url", "") or "").strip()) if has_url is None else has_url,
+        has_theme=row_has_theme(row) if has_theme is None else has_theme,
     )
 
 
@@ -576,6 +583,7 @@ def ledger_row_response(row: dict) -> dict:
 
 def save_ledger_row_updates(row: dict, updates: dict, *, default_notes: str | None = None):
     attempted_status = None
+    original_status = str(row.get("status", "") or "")
     candidate_row = dict(row)
     for key, value in updates.items():
         if key not in EDITABLE_LEDGER_FIELDS:
@@ -583,12 +591,20 @@ def save_ledger_row_updates(row: dict, updates: dict, *, default_notes: str | No
         normalized = str(value or "")
         if key == "status":
             attempted_status = normalized.upper()
-            candidate_row[key] = attempted_status
-        else:
-            candidate_row[key] = normalized
+            continue
+        candidate_row[key] = normalized
+
+    candidate_has_url = bool(str(candidate_row.get("url", "") or "").strip())
+    candidate_has_theme = row_has_theme(candidate_row)
 
     if attempted_status:
-        error = status_validation_error(candidate_row, attempted_status)
+        error = status_validation_error(
+            candidate_row,
+            attempted_status,
+            current_status=original_status,
+            has_url=candidate_has_url,
+            has_theme=candidate_has_theme,
+        )
         if error:
             error["rating_key"] = str(row.get("rating_key", "") or "")
             error["title"] = row.get("title") or row.get("plex_title") or ""
@@ -598,7 +614,9 @@ def save_ledger_row_updates(row: dict, updates: dict, *, default_notes: str | No
         if key not in EDITABLE_LEDGER_FIELDS:
             continue
         normalized = str(value or "")
-        row[key] = attempted_status if key == "status" and attempted_status else normalized
+        row[key] = normalized
+    if attempted_status:
+        row["status"] = attempted_status
 
     if "url" in updates:
         row["source_origin"] = "manual" if str(updates.get("url") or "").strip() else "unknown"
