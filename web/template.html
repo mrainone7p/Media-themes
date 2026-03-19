@@ -23,6 +23,9 @@
   --mono: 'IBM Plex Mono', monospace;
   --radius: 12px;
   --max-w: 1200px;
+  --modal-pad-x:22px;
+  --modal-pad-y:14px;
+  --modal-footer-pad-y:12px;
 }
 [data-theme="light"] {
   --bg:#f4f4f8; --surface:#ffffff; --surface2:#eeeef2; --border:#d8d8e0;
@@ -493,7 +496,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-modal-info{flex:1}
 
 /* ─── Unified modal design language ─── */
-.modal-header{display:flex;gap:16px;align-items:flex-start;padding:22px 22px 0}
+.modal-header{display:flex;gap:16px;align-items:flex-start;padding:22px var(--modal-pad-x) 0}
 .modal-poster{width:75px;height:112px;border-radius:8px;object-fit:cover;background:var(--surface2);flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .modal-movie-info{flex:1;min-width:0}
 .modal-movie-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px}
@@ -507,13 +510,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-link-pill.yt-pill{border-color:rgba(220,50,50,.35);color:#cc3030;background:rgba(220,50,50,.05)}
 .modal-link-pill.yt-pill:hover{border-color:#cc3030;background:rgba(220,50,50,.1)}
 .modal-divider{height:1px;background:var(--border);margin:14px 0 0}
-.modal-section{padding:14px 22px 4px}
-.modal-section-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.modal-section{padding:var(--modal-pad-y) var(--modal-pad-x) 4px}
+.modal-section-label,.source-editor-title,.search-method-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
 .modal-copy{font-size:13px;color:var(--text2);line-height:1.6}
-.modal-subsection{padding:14px 22px 10px}
+.modal-subsection{padding:var(--modal-pad-y) var(--modal-pad-x) 10px}
 .modal-subsection-title{font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)}
 .modal-field-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.modal-actions-row{display:flex;gap:8px;flex-wrap:wrap}
+.modal-actions-row,.review-footer-actions,.source-summary-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .modal-info-card{display:flex;flex-direction:column;gap:10px}
 .modal-status-inline{padding-left:0;padding-top:5px}
 .modal-header.compact{padding-bottom:16px}
@@ -523,7 +526,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-time-row{display:flex;justify-content:space-between;font-size:10px;font-family:var(--mono);color:var(--text3)}
 .modal-trim-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;padding-bottom:10px}
 .modal-trim-result{font-size:12px;font-family:var(--mono);color:var(--amber);padding-bottom:2px;white-space:nowrap}
-.modal-footer{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 22px;border-top:1px solid var(--border);margin-top:6px}
+.modal-footer{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:var(--modal-footer-pad-y) var(--modal-pad-x);border-top:1px solid var(--border);margin-top:6px}
 .modal-steps{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--surface2)}
 .modal-steps-left{display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap}
 .modal-step{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
@@ -532,22 +535,40 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-step.active .modal-step-dot{background:var(--purple)}
 .modal-step-sep{width:22px;height:2px;background:var(--border);opacity:.7}
 .modal-kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--surface2)}
-.modal-bio{font-size:12px;color:var(--text2);line-height:1.55;padding:10px 22px 0;border-top:1px solid var(--border);margin-top:10px}
+.modal-bio{font-size:12px;color:var(--text2);line-height:1.55;padding:10px var(--modal-pad-x) 0;border-top:1px solid var(--border);margin-top:10px}
 .modal-bio.is-clamped{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-.modal-section-header{padding:0 22px 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.01em}
-.modal-section-divider{height:1px;background:var(--border);margin:0 22px 0}
-.modal-status-txt{font-size:11px;font-family:var(--mono);color:var(--text3);padding:0 22px 6px;min-height:18px}
+.modal-section-header{padding:0 var(--modal-pad-x) 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.01em}
+.modal-section-divider{height:1px;background:var(--border);margin:0 var(--modal-pad-x) 0}
+.modal-status-txt{font-size:11px;font-family:var(--mono);color:var(--text3);padding:0 var(--modal-pad-x) 6px;min-height:18px}
+.modal-section-header-row,.source-summary-row,.theme-source-url-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ui-selected-state,.sm-card-state{display:none;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(187,134,255,.18);border:1px solid rgba(187,134,255,.38);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--purple);white-space:nowrap}
+.ui-selected-state::before,.sm-card-state::before{content:'✓';font-size:10px;line-height:1}
+.ui-badge,.sm-card-badge,.src-badge{display:inline-flex;align-items:center;justify-content:center;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.ui-badge.recommended,.sm-card-badge.recommended,.src-badge.recommended{background:var(--green-soft);color:var(--green);border-color:rgba(45,212,160,.35)}
+.ui-badge.result-chip,.src-badge.result-chip{padding:1px 6px;font-size:8px;letter-spacing:.04em;flex-shrink:0}
+.ui-pill,.review-source-pill,.sm-card-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:9px;line-height:1.2;color:var(--text2);font-family:var(--mono)}
+.review-source-pill{justify-content:center;padding:5px 10px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:var(--ui)}
+.ui-pill.is-golden,.review-source-pill.is-golden,.src-badge.golden{border-color:rgba(245,166,35,.4);background:var(--amber-soft);color:var(--amber)}
+.ui-pill.is-custom,.review-source-pill.is-custom,.review-source-pill.is-manual{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
+.ui-pill.is-playlist,.review-source-pill.is-playlist{border-color:rgba(176,106,255,.35);background:rgba(176,106,255,.1);color:#b06aff}
+.ui-pill.is-direct,.review-source-pill.is-direct{border-color:rgba(45,212,160,.35);background:var(--green-soft);color:var(--green)}
+.ui-pill.is-unknown,.review-source-pill.is-unknown{color:var(--text3)}
+.ui-meta-list,.review-meta-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--surface) 45%, transparent);overflow:hidden}
+.ui-meta-row,.review-meta-item{display:flex;flex-direction:column;gap:4px;min-width:0;padding:10px 12px;border-top:1px solid var(--border)}
+.ui-meta-row:first-child,.review-meta-item:first-child{border-top:none}
+.review-meta-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.review-meta-value{font-size:12px;color:var(--text2);line-height:1.5;word-break:break-word}
+.review-meta-value a{color:var(--blue)}
+.footer-action-group{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;width:100%}
+.ui-truncate-1,.source-summary-title,.source-summary-url,.theme-source-url-text,.sm-card-first,.sm-quickpick-title{display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .source-editor-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px}
-.source-editor-title{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
 .source-editor-value{font-size:12px;color:var(--text2);font-family:var(--mono);word-break:break-word}
 .source-editor-link{display:inline-flex;align-items:center;gap:4px;color:var(--blue);text-decoration:none;font-size:12px;font-family:var(--mono);word-break:break-all}
 .source-editor-link:hover{text-decoration:underline}
 .source-editor-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.source-summary-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .source-summary-meta{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
-.source-summary-title{font-size:13px;font-weight:700;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.source-summary-url{font-size:11px;color:var(--text2);font-family:var(--mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.source-summary-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.source-summary-title{font-size:13px;font-weight:700;color:var(--text)}
+.source-summary-url,.theme-source-url-text,.sm-card-first,.sm-quickpick-title{font-size:11px;color:var(--text2);font-family:var(--mono)}
 .source-edit-wrap{display:flex;flex-direction:column;gap:5px;margin-top:10px}
 .source-edit-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
 .source-edit-note{font-size:11px;color:var(--text3)}
@@ -602,40 +623,23 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-source-details[open] > summary{margin-bottom:8px}
 .theme-source-details[open] .settings-chev{transform:rotate(180deg)}
 .theme-source-summary-text{display:inline-flex;align-items:center;gap:8px}
-.theme-source-url-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.theme-source-url-text{font-family:var(--mono);font-size:11px;color:var(--text2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .theme-source-url-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.review-meta-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--surface) 45%, transparent);overflow:hidden}
 .review-card.compact{padding:12px}
 .review-card.compact .review-card-header{margin-bottom:8px}
 .review-empty{font-size:12px;color:var(--text3);line-height:1.5;padding:9px 11px;border:1px dashed var(--border);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,transparent)}
-#theme-modal .modal-header{padding:16px 18px 0;gap:10px}
+#theme-modal,#search-modal{--modal-pad-x:20px;--modal-pad-y:12px;--modal-footer-pad-y:10px}
+#theme-modal .modal-header{gap:10px}
 #theme-modal .modal-poster{width:58px;height:88px}
-#theme-modal .review-panel-head{padding:0 18px 6px}
-#theme-modal .review-card{margin:0 18px 8px;padding:10px 12px}
+#theme-modal .review-panel-head{padding:0 var(--modal-pad-x) 6px}
+#theme-modal .review-card{margin:0 var(--modal-pad-x) 8px;padding:10px 12px}
 #theme-modal .review-card-header{margin-bottom:6px}
 #theme-modal .review-meta-item{padding:8px 10px;gap:4px}
-#theme-modal .modal-bio{padding:0 18px 8px}
-#theme-modal .review-section-divider{margin:2px 18px 8px}
-#theme-modal .modal-footer{padding:10px 18px}
+#theme-modal .modal-bio{padding:0 var(--modal-pad-x) 8px}
+#theme-modal .review-section-divider{margin:2px var(--modal-pad-x) 8px}
 #theme-modal .simple-line{margin-bottom:3px}
 #theme-modal .theme-status-flow-wrap{gap:2px}
 #theme-modal .theme-source-details{margin-top:8px}
-.review-meta-item{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 12px;border-top:1px solid var(--border)}
-.review-meta-item:first-child{border-top:none}
-.review-meta-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
-.review-meta-value{font-size:12px;color:var(--text2);line-height:1.5;word-break:break-word}
-.review-meta-value a{color:var(--blue)}
-.review-source-pill{display:inline-flex;align-items:center;justify-content:center;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
-.review-source-pill.is-golden{border-color:rgba(245,166,35,.4);background:var(--amber-soft);color:var(--amber)}
-.review-source-pill.is-custom{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
-.review-source-pill.is-playlist{border-color:rgba(176,106,255,.35);background:rgba(176,106,255,.1);color:#b06aff}
-.review-source-pill.is-direct{border-color:rgba(45,212,160,.35);background:var(--green-soft);color:var(--green)}
-.review-source-pill.is-manual{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
-.review-source-pill.is-unknown{color:var(--text3)}
-.review-footer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;width:100%}
 @media (max-width: 640px){.review-card-header,.review-panel-head{flex-direction:column;align-items:flex-start}.review-footer-actions{justify-content:stretch}.review-footer-actions .btn{flex:1}.theme-status-helper{white-space:normal;overflow:visible;text-overflow:clip}}
-.search-method-head{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
 .search-method-input{margin-top:6px;width:100%;font-size:12px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);outline:none}
 .search-method-card.disabled{opacity:.55;border-style:dashed;cursor:not-allowed}
 
@@ -692,32 +696,16 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .srail-step.done .srail-num{background:var(--green);color:#000}
 .srail-step.done .srail-label{color:var(--green)}
 .srail-sep{flex:1;height:2px;background:var(--border);min-width:12px;max-width:40px}
-.search-method-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.95fr);align-items:center;gap:10px;padding:12px;border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;background:var(--surface2);user-select:none;min-height:84px;overflow:hidden}
-.search-method-card:hover{border-color:var(--purple);background:var(--purple-soft)}
-.search-method-card.active{border-color:var(--purple);background:var(--purple-soft)}
-.search-method-card.golden-source{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 35%, var(--surface2))}
-.search-method-card.golden-source.active{border-color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 50%, var(--surface2))}
-.search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 20%, var(--surface2));opacity:.68;cursor:not-allowed}
-.sm-card-topline{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.sm-card-badge{display:none;align-items:center;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
-.sm-card-badge.recommended{background:var(--green-soft);color:var(--green);border:1px solid rgba(45,212,160,.35)}
-.search-method-card.recommended .sm-card-badge{display:inline-flex}
 .golden-link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-decoration:none;background:var(--amber-soft);color:var(--amber);border:1px solid rgba(245,166,35,.4);white-space:nowrap}
 .golden-link-pill:hover{text-decoration:none;filter:brightness(1.04)}
 .result-idx{display:inline-flex;align-items:center;justify-content:center;min-width:24px;font-size:11px;color:var(--text3);font-family:var(--mono)}
 .sm-card-icon{font-size:22px;line-height:1}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text3);line-height:1.35}
-.sm-card-first{min-height:18px;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sm-card-first button{margin-top:2px}
 .search-result-card{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--border);transition:background .12s;cursor:pointer}
 .search-result-card:hover{background:var(--gray-soft)}
 .search-result-card.recommended{border-left:3px solid var(--amber);background:var(--amber-soft)}
 .search-result-card.recommended:hover{background:color-mix(in srgb, var(--amber) 14%, transparent)}
-.src-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
-.src-badge.golden{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(245,166,35,.4)}
-.src-badge.recommended{background:var(--green-soft);color:var(--green);border:1px solid rgba(45,212,160,.4)}
-.src-badge.result-chip{padding:1px 6px;font-size:8px;letter-spacing:.04em;flex-shrink:0}
 
 
 .settings-lead{font-size:13px;color:var(--text2);max-width:820px;line-height:1.6}
@@ -778,30 +766,21 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .sm-card-main{display:flex;align-items:flex-start;gap:9px;min-width:0;flex:1}
 .sm-card-icon{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--gray-soft);font-size:15px;line-height:1;flex-shrink:0}
 .search-method-card.active .sm-card-icon{background:rgba(187,134,255,.22);color:var(--purple)}
+.search-method-card.active .sm-card-state{display:inline-flex}
+.search-method-card.recommended .sm-card-badge{display:inline-flex}
 .sm-card-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
 .sm-card-topline{display:flex;align-items:center;gap:6px;min-width:0}
 .sm-card-title{font-size:12px;font-weight:700;color:var(--text)}
 .sm-card-desc{font-size:10px;color:var(--text2);line-height:1.25}
 .sm-card-submeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:10px;color:var(--text3);font-family:var(--mono)}
-.sm-card-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:9px;line-height:1.2;color:var(--text2);font-family:var(--mono)}
 .sm-card-actions{display:flex;align-items:flex-start;justify-content:flex-start;gap:4px;flex-shrink:0;min-width:0;width:100%;max-width:none;margin-left:0;flex-direction:column}
 .sm-card-first{min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
 .sm-card-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%}
 .sm-card-input{flex:1;min-width:180px}
 .sm-card-select-btn{margin-left:auto}
-.sm-card-state{display:none;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;background:rgba(187,134,255,.18);border:1px solid rgba(187,134,255,.38);font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--purple);white-space:nowrap}
-.sm-card-state::before{content:'✓';font-size:10px;line-height:1}
-.search-method-card.active .sm-card-state{display:inline-flex}
-.sm-card-badge{display:none;align-items:center;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
-.sm-card-badge.recommended{background:var(--green-soft);color:var(--green);border:1px solid rgba(45,212,160,.35)}
-.search-method-card.recommended .sm-card-badge{display:inline-flex}
 .sm-quickpick-label{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:1px}
-.sm-quickpick-title{display:block;font-size:10px;color:var(--text2);font-family:var(--mono);max-width:100%;overflow:hidden;white-space:nowrap;margin-bottom:3px;position:relative}
 .sm-quickpick-link{display:inline-flex;align-items:center;gap:4px;color:var(--blue);text-decoration:none}
 .sm-quickpick-link:hover{text-decoration:underline}
-.sm-quickpick-track{display:inline-block;white-space:nowrap;min-width:max-content;will-change:transform}
-.sm-quickpick-copy{display:inline-block;padding-right:0}
-.sm-quickpick-title.scroll .sm-quickpick-track{animation:qp-marquee var(--qp-duration, 14s) linear infinite}
 .sm-quickpick-loading{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--text3);font-family:var(--mono)}
 .sm-quickpick-buttons{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 
@@ -869,10 +848,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   .tabs{margin-bottom:12px}
   .tab{padding:8px 12px;font-size:12px}
   .modal-overlay{align-items:flex-end}
-  .modal{width:100%;max-width:none;max-height:90vh;border-radius:14px 14px 0 0;padding:16px}
-  .modal-header{padding:16px 16px 0;gap:12px}
-  .modal-section{padding:12px 16px 4px}
-  .modal-footer{padding:10px 16px}
+  .modal{width:100%;max-width:none;max-height:90vh;border-radius:14px 14px 0 0;padding:16px;--modal-pad-x:16px;--modal-pad-y:12px;--modal-footer-pad-y:10px}
+  .modal-header{gap:12px}
   .modal-close{top:10px;right:10px}
   #search-step-rail{padding:8px 10px!important;overflow-x:auto}
   #search-step-rail .srail-label{font-size:10px;letter-spacing:.04em}
@@ -1718,7 +1695,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                     <div class="sm-card-badge recommended" id="sm-golden-recommended">Recommended</div>
                   </div>
                   <div class="sm-card-desc" id="sm-golden-desc">Use the curated source already linked to this item.</div>
-                  <div class="sm-card-submeta"><span class="sm-card-chip" id="sm-golden-offset">Offset —</span><span id="sm-golden-meta">Curated match</span></div>
+                  <div class="sm-card-submeta"><span class="ui-pill sm-card-chip" id="sm-golden-offset">Offset —</span><span id="sm-golden-meta">Curated match</span></div>
                 </div>
               </div>
               <div class="sm-card-actions">
@@ -1863,7 +1840,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="modal-section" style="padding-top:8px;padding-bottom:0">
         <div class="source-editor-card">
           <div class="source-editor-title">Selected Source</div>
-          <div class="source-summary-row">
+          <div class="modal-section-header-row source-summary-row">
             <div class="source-summary-meta">
               <div id="se-source-title" class="source-summary-title">—</div>
               <div id="se-source-url-summary" class="source-summary-url">No source URL selected</div>
@@ -1903,7 +1880,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Footer -->
     <div class="modal-footer" id="search-modal-footer" style="flex-shrink:0;justify-content:space-between">
       <button class="btn btn-ghost" id="search-modal-back" onclick="searchModalBack()">← Back</button>
-      <div class="modal-actions-row">
+      <div class="modal-actions-row footer-action-group">
         <button class="btn btn-ghost" onclick="closeSearchModal()">Cancel</button>
         <button class="btn btn-amber" id="search-modal-primary" onclick="searchModalPrimary()">🔍 Search</button>
         <button class="btn btn-green" id="search-modal-download-now" style="display:none" onclick="searchModalDownloadNow()">Download Now</button>
@@ -1931,7 +1908,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
       </div>
     </div>
-    <div class="modal-bio" id="theme-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0 22px 10px"></div>
+    <div class="modal-bio" id="theme-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0 var(--modal-pad-x) 10px"></div>
     <div class="review-section-divider"></div>
 
     <div class="review-panel-head">
@@ -1982,7 +1959,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="modal-section-label" style="margin-bottom:0">Source Details</div>
           <div class="review-card-subtitle" id="theme-modal-source-summary">Theme used for download and the details applied to it.</div>
         </div>
-        <div class="review-source-pill is-unknown" id="theme-modal-source-pill">Unknown</div>
+        <div class="ui-pill review-source-pill is-unknown" id="theme-modal-source-pill">Unknown</div>
       </div>
       <div class="review-empty" id="theme-source-empty" style="display:none">No source is attached right now.</div>
       <details class="surface-panel compact theme-source-details" id="theme-source-details">
@@ -1990,8 +1967,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <span class="theme-source-summary-text">Source metadata</span>
           <span class="settings-chev">▾</span>
         </summary>
-        <div class="review-meta-list" id="theme-source-meta-list">
-          <div class="review-meta-item">
+        <div class="ui-meta-list review-meta-list" id="theme-source-meta-list">
+          <div class="ui-meta-row review-meta-item">
             <div class="review-meta-label">Theme Source</div>
             <div class="review-meta-value theme-source-url-row">
               <span class="theme-source-url-text" id="theme-modal-source-url">—</span>
@@ -2001,19 +1978,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
               </span>
             </div>
           </div>
-          <div class="review-meta-item">
+          <div class="ui-meta-row review-meta-item">
             <div class="review-meta-label">Imported</div>
             <div class="review-meta-value" id="theme-modal-imported">—</div>
           </div>
-          <div class="review-meta-item">
+          <div class="ui-meta-row review-meta-item">
             <div class="review-meta-label">Pull Method</div>
             <div class="review-meta-value" id="theme-modal-origin">—</div>
           </div>
-          <div class="review-meta-item">
+          <div class="ui-meta-row review-meta-item">
             <div class="review-meta-label">Length / Offset</div>
             <div class="review-meta-value" id="theme-modal-offset">—</div>
           </div>
-          <div class="review-meta-item">
+          <div class="ui-meta-row review-meta-item">
             <div class="review-meta-label">Notes</div>
             <div class="review-meta-value" id="theme-modal-source-notes">—</div>
           </div>
@@ -2023,7 +2000,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
     <!-- Footer -->
     <div class="modal-footer">
-      <div class="review-footer-actions">
+      <div class="review-footer-actions footer-action-group">
         <button class="btn btn-ghost" id="theme-next-step-btn" style="display:none" onclick="themeModalRunNextStep()">Next Step</button>
         <button class="btn btn-amber" id="theme-find-btn" style="display:none" onclick="themeModalOpenManualSearch()">Find Theme</button>
         <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
@@ -3040,10 +3017,21 @@ function _htmlAttr(s){
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
-function _truncateSourceUrl(url, max=70){
-  const raw=String(url||'').trim();
-  if(!raw) return 'No source URL selected';
-  return raw.length>max ? raw.slice(0, max-1)+'…' : raw;
+function _truncateSourceText(value, {fallback='—', max=64, middle=false}={}){
+  const raw=String(value||'').trim();
+  if(!raw) return fallback;
+  if(raw.length<=max) return raw;
+  if(!middle) return raw.slice(0, Math.max(1, max-1))+'…';
+  const head=Math.max(18, Math.floor((max-1)/2));
+  const tail=Math.max(12, max-head-1);
+  return `${raw.slice(0,head)}…${raw.slice(-tail)}`;
+}
+
+function _applyTruncatedText(el, value, options={}){
+  if(!el) return;
+  const raw=String(value||'').trim();
+  el.textContent=_truncateSourceText(raw, options);
+  el.title=raw||options.fallback||'';
 }
 
 function _renderSelectedSourceSummary(url, title){
@@ -3053,11 +3041,8 @@ function _renderSelectedSourceSummary(url, title){
   const openBtn=document.getElementById('se-open-btn');
   const cleanUrl=String(url||'').trim();
   const cleanTitle=String(title||'').trim()||_sourceTitleFromUrl(cleanUrl)||'—';
-  if(sourceEl) sourceEl.textContent=cleanTitle;
-  if(summaryEl){
-    summaryEl.textContent=_truncateSourceUrl(cleanUrl);
-    summaryEl.title=cleanUrl||'';
-  }
+  _applyTruncatedText(sourceEl, cleanTitle, {fallback:'—', max:62});
+  _applyTruncatedText(summaryEl, cleanUrl, {fallback:'No source URL selected', max:64, middle:true});
   if(copyBtn) copyBtn.disabled=!cleanUrl;
   if(openBtn) openBtn.disabled=!cleanUrl;
 }
@@ -4409,7 +4394,7 @@ function _renderResults(results){
     <div class="search-result-card ${i===0?'recommended':''}">
       <div class="result-idx">${i+1}.</div>
       <div class="search-result-main">
-        ${i===0?`<span class="src-badge recommended result-chip">Best match</span>`:''}
+        ${i===0?`<span class="ui-badge src-badge recommended result-chip">Best match</span>`:''}
         <a href="${r.url}" target="_blank" rel="noopener" class="search-result-title">${r.title.replace(/</g,'&lt;')} <span style="font-size:11px">↗</span></a>
       </div>
       <div class="search-result-actions">
@@ -4422,28 +4407,38 @@ function _renderResults(results){
 }
 
 
+function _renderMethodQuickPick(method, result, opts={}){
+  if(!result) return '<span class="sm-quickpick-title">No quick match available</span>';
+  const safeMethod=String(method||'').replace(/'/g,"\\'");
+  const safeUrl=String(result.url||'').replace(/'/g,"\\'");
+  const safeHref=String(result.url||'').replace(/"/g,'&quot;');
+  const rawTitle=String(opts.title || result.title || '1st result').trim();
+  const safeTitleAttr=rawTitle.replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const safeTitleJs=rawTitle.replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const safeOffset=String(result.start_offset||'0').replace(/'/g,"\\'");
+  const label=opts.label || 'First match';
+  const showOpen=opts.showOpen===true;
+  const titleText=_truncateSourceText(rawTitle, {fallback:'1st result', max:52, middle:!!opts.truncateMiddle});
+  const titleMarkup=opts.linkTitle===false
+    ? `<span class="sm-quickpick-title" title="${safeTitleAttr}">${titleText}</span>`
+    : `<a class="sm-quickpick-link sm-quickpick-title" href="${safeHref}" target="_blank" rel="noopener" title="${safeTitleAttr}">${titleText}<span>↗</span></a>`;
+  const offsetMarkup=result.start_offset
+    ? `<span class="ui-pill muted-chip" style="margin:4px 0 0">Offset ${_normalizedOffsetValue(result.start_offset)}</span>`
+    : '';
+  const openMarkup=showOpen
+    ? `<a class="btn btn-ghost btn-xs" href="${safeHref}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Open</a>`
+    : '';
+  return `<span class="sm-quickpick-label">${label}</span>${titleMarkup}${offsetMarkup}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${safeMethod}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${safeMethod}','${safeUrl}','${safeTitleJs}','${safeOffset}')">Pick</button>${openMarkup}</div>`;
+}
+
 function _setMethodQuickPick(method, result){
   const el=document.getElementById('sm-first-'+method);
   if(!el) return;
   if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
-  if(!result){ el.innerHTML='<span class="sm-quickpick-title">No quick match available</span>'; return; }
-  const safeUrl=(result.url||'').replace(/'/g,"\\'");
-  const rawTitle=(result.title||'1st result');
-  const safeTitle=rawTitle.replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  const safeHref=(result.url||'').replace(/"/g,'&quot;');
-  const safeOffset=(result.start_offset||'0').replace(/'/g,"\\'");
-  const offsetLabel=result.start_offset?`<span class="muted-chip" style="margin:4px 0 0">Offset ${_normalizedOffsetValue(result.start_offset)}</span>`:'';
-  if(method==='golden_source'){
-    el.innerHTML=`<span class="sm-quickpick-label">Curated Match</span><span class="sm-quickpick-title">Curated Golden Source URL</span>${offsetLabel}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}','${safeOffset}')">Pick</button><a class="btn btn-ghost btn-xs" href="${safeHref}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Open</a></div>`;
-    return;
-  }
-  const isLong=rawTitle.length>34;
-  const titleClass=isLong?'sm-quickpick-title scroll':'sm-quickpick-title';
-  const titleBody=`<span class="sm-quickpick-track"><span class="sm-quickpick-copy">${safeTitle}</span></span>`;
-  const duration=Math.max(12, Math.min(24, Math.ceil(rawTitle.length/3)));
-  const distance=Math.max(0, (rawTitle.length*6)-190);
-  const styleAttr=isLong?` style="--qp-duration:${duration}s;--qp-scroll-distance:${distance}px"`:'';
-  el.innerHTML=`<span class="sm-quickpick-label">First match</span><span class="${titleClass}" title="${safeTitle}"${styleAttr}><a class="sm-quickpick-link" href="${safeHref}" target="_blank" rel="noopener">${titleBody}<span>↗</span></a></span>${offsetLabel}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${method}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${method}','${safeUrl}','${safeTitle}','${safeOffset}')">Pick</button></div>`;
+  const quickPickOpts=method==='golden_source'
+    ? {label:'Curated match', title:'Curated Golden Source URL', showOpen:true, linkTitle:false}
+    : {label:'First match'};
+  el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
 }
 
 
@@ -5481,14 +5476,6 @@ function _themeSourceMeta(row={}){
 function _themeModalPrimarySourceUrl(row={}){
   return String(row?.url||'').trim() || String(row?.golden_source_url||'').trim();
 }
-function _themeModalShortUrl(url,fallback='—',maxLen=56){
-  const v=String(url||'').trim();
-  if(!v) return fallback;
-  if(v.length<=maxLen) return v;
-  const head=Math.max(18,Math.floor((maxLen-1)/2));
-  const tail=Math.max(12,maxLen-head-1);
-  return `${v.slice(0,head)}…${v.slice(-tail)}`;
-}
 function _themeModalImportedAt(row={}){
   const raw=String(row?.last_updated||'').trim();
   if(!raw) return 'Not imported yet';
@@ -5592,8 +5579,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   document.getElementById('theme-modal-local-dur').textContent=`Duration: ${hasTheme&&row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
   const sourceUrlEl=document.getElementById('theme-modal-source-url');
   if(sourceUrlEl){
-    sourceUrlEl.textContent=_themeModalShortUrl(primarySourceUrl,'—');
-    sourceUrlEl.title=primarySourceUrl||'';
+    _applyTruncatedText(sourceUrlEl, primarySourceUrl, {fallback:'—', max:56, middle:true});
   }
   document.getElementById('theme-modal-origin').textContent=hasSource?sourceMeta.method:'—';
   document.getElementById('theme-modal-imported').textContent=hasSource?_themeModalImportedAt(row):'—';
