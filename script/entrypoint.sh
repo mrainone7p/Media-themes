@@ -43,9 +43,10 @@ chmod 0644 /etc/cron.d/media-tracks
 crontab /etc/cron.d/media-tracks
 echo "[INFO] Cron job registered: $CRON_SCHEDULE"
 
-# Initial scan on startup
+# Initial scan on startup (|| true prevents set -e from killing the daemon
+# if the scan exits non-zero, e.g. plex_token not yet configured)
 echo "[INFO] Running initial scan..."
-python3 /app/script/media_tracks.py
+python3 /app/script/media_tracks.py || true
 
 echo "[INFO] Entering cron daemon mode..."
 cron -f
