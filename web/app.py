@@ -3,12 +3,19 @@
 
 from __future__ import annotations
 
+import logging
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 
-from flask import Flask, Response, abort, jsonify, request, send_file, stream_with_context
+WEB_DIR = Path(__file__).resolve().parent
+SHARED_DIR = WEB_DIR.parent / "shared"
+if str(SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(SHARED_DIR))
+
+from flask import Flask, Response, abort, g, jsonify, request, send_file, stream_with_context
 
 import integrations
 import logic
@@ -23,12 +30,48 @@ from storage import (
 )
 
 app = Flask(__name__)
+logging.getLogger("werkzeug").setLevel(logging.WARNING)
+REQUEST_LOG = logging.getLogger("media_tracks.web")
+
+if not REQUEST_LOG.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
+    REQUEST_LOG.addHandler(handler)
+REQUEST_LOG.setLevel(logging.INFO)
+REQUEST_LOG.propagate = False
+
+_QUIET_PATH_PREFIXES = (
+    "/api/run/status",
+    "/api/health",
+    "/api/tasks/history",
+    "/api/ledger",
+    "/api/cookies",
+    "/api/youtube/search",
+    "/api/preview",
+    "/api/movie/bio",
+    "/api/poster",
+)
 
 
 @app.before_request
 def _auth_guard():
+    g._request_started_at = time.perf_counter()
     if not logic.is_authorized_api_request(request.path, request.headers, request.args):
         return jsonify({"error": "unauthorized"}), 401
+
+
+@app.after_request
+def _log_request(response: Response):
+    started_at = getattr(g, "_request_started_at", None)
+    elapsed_ms = (time.perf_counter() - started_at) * 1000 if started_at is not None else 0.0
+    path = request.path or "/"
+    is_quiet_path = any(path == prefix or path.startswith(f"{prefix}/") for prefix in _QUIET_PATH_PREFIXES)
+    is_mutating = request.method not in {"GET", "HEAD", "OPTIONS"}
+    should_log = response.status_code >= 400 or elapsed_ms >= 750 or (is_mutating and not is_quiet_path)
+    if should_log:
+        level = logging.WARNING if response.status_code >= 400 else logging.INFO
+        REQUEST_LOG.log(level, "%s %s -> %s in %.0fms", request.method, path, response.status_code, elapsed_ms)
+    return response
 
 
 @app.route("/")

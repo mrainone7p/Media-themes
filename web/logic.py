@@ -61,6 +61,8 @@ EXPORTS_DIR = LOGS_DIR / "exports"
 SCRIPT_PATH = "/app/script/media_tracks.py"
 GOLDEN_CACHE_DIR = LOGS_DIR / "golden_source_cache"
 TEMPLATE_PATH = Path("/app/web/template.html")
+_HEALTH_CACHE_TTL = 30
+_health_cache: dict[str, object] = {"ts": 0.0, "key": None, "payload": None}
 
 for path in (RUNS_DIR, EXPORTS_DIR, GOLDEN_CACHE_DIR):
     path.mkdir(parents=True, exist_ok=True)
@@ -361,11 +363,13 @@ def load_config() -> dict:
 
 
 def save_config(data: dict) -> dict:
+    global _health_cache
     normalized, errors = normalize_config(data, for_save=True)
     if errors:
         raise ValueError(errors)
     with open(CONFIG_PATH, "w", encoding="utf-8") as fh:
         yaml.dump(normalized, fh, default_flow_style=False, allow_unicode=True, sort_keys=False)
+    _health_cache = {"ts": 0.0, "key": None, "payload": None}
     return normalized
 
 
@@ -1161,6 +1165,30 @@ def next_cron_run(cron_expr: str) -> str | None:
 
 def api_health_payload() -> dict:
     cfg = load_config()
+    cache_key = json.dumps(
+        {
+            "plex_url": (cfg.get("plex_url") or "").strip(),
+            "plex_token": bool((cfg.get("plex_token") or "").strip()),
+            "tmdb_key": bool((cfg.get("tmdb_api_key") or "").strip()),
+            "golden_source_url": (cfg.get("golden_source_url") or "").strip(),
+            "media_roots": list(get_media_roots(cfg)),
+            "libraries": [
+                {
+                    "name": lib.get("name"),
+                    "type": lib.get("type"),
+                    "enabled": lib.get("enabled", True),
+                }
+                for lib in (cfg.get("libraries") or [])
+            ],
+            "schedule_enabled": bool(cfg.get("schedule_enabled", False)),
+            "schedule_libraries": list(cfg.get("schedule_libraries") or []),
+            "cron_schedule": (cfg.get("cron_schedule") or "0 3 * * *").strip(),
+        },
+        sort_keys=True,
+    )
+    now = time.time()
+    if _health_cache["payload"] is not None and _health_cache["key"] == cache_key and now - float(_health_cache["ts"] or 0.0) < _HEALTH_CACHE_TTL:
+        return dict(_health_cache["payload"])
     result = {}
 
     plex_url = (cfg.get("plex_url") or "").strip().rstrip("/")
@@ -1245,6 +1273,9 @@ def api_health_payload() -> dict:
     else:
         result["schedule"] = {"state": "ok", "label": "Enabled", "cron": cron_expr, "next_run": next_run, "libraries": len(scheduled)}
 
+    _health_cache["ts"] = now
+    _health_cache["key"] = cache_key
+    _health_cache["payload"] = dict(result)
     return result
 
 
