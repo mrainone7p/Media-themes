@@ -404,14 +404,21 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid.compact .dashboard-stat-sub{font-size:10px}
 
 /* ─── Pie chart ─── */
-.dash-chart-area{display:grid;grid-template-columns:180px 1fr;gap:20px;align-items:start}
-.dash-pie-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:180px;justify-content:center}
-.dash-pie-wrap svg{display:block}
+.dash-chart-area{display:grid;grid-template-columns:minmax(180px,220px) minmax(0,1fr);gap:20px;align-items:center}
+.dash-pie-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:180px;justify-content:center}
+.dash-pie-wrap svg{display:block;flex-shrink:0}
 .dash-pie-legend{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--text2);width:100%}
 .dash-pie-legend-item{display:flex;align-items:center;gap:6px}
 .dash-pie-legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.dash-chart-panel{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.dash-chart-scroll{width:100%;overflow-x:auto;padding-bottom:2px}
+.dash-chart-scroll svg{display:block;margin:0 auto}
+.dash-chart-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 16px;width:100%;font-size:10px;color:var(--text2)}
+.dash-chart-legend-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.dash-chart-legend-swatch{width:10px;height:10px;border-radius:2px;opacity:.82;flex-shrink:0}
 .dash-pie-empty{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:30px 10px}
-@media(max-width:980px){.dash-chart-area{grid-template-columns:1fr}.dash-pie-wrap{flex-direction:row;gap:16px;min-height:auto}}
+@media(max-width:980px){.dash-chart-area{grid-template-columns:1fr;gap:16px}.dash-pie-wrap{flex-direction:row;align-items:flex-start;justify-content:flex-start;gap:16px;min-height:auto}.dash-pie-legend{min-width:0;flex:1}.dash-chart-panel{align-items:stretch}}
+@media(max-width:700px){.dash-pie-wrap{flex-direction:column;align-items:center}.dash-pie-legend{width:100%}.dash-chart-legend{justify-content:flex-start}}
 
 /* ─── Theme Manager table console ─── */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
@@ -1343,7 +1350,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
         <div class="dash-chart-area">
           <div class="dash-pie-wrap" id="dash-pie-chart"></div>
-          <div id="dash-processing-chart" style="min-height:140px"></div>
+          <div class="dash-chart-panel" id="dash-processing-chart" style="min-height:140px"></div>
         </div>
       </div>
     </div>
@@ -3381,47 +3388,70 @@ function renderDashLibKpi(){
     </button>`).join('');
 }
 
+function _dateKeyUTC(dt){
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}-${String(dt.getUTCDate()).padStart(2,'0')}`;
+}
+function _parsePeriodDate(key, group){
+  if(!key) return null;
+  if(group==='year') return new Date(Date.UTC(parseInt(key,10),0,1));
+  if(group==='month'){
+    const [y,m]=key.split('-').map(Number);
+    return new Date(Date.UTC(y,m-1,1));
+  }
+  return new Date(`${key}T00:00:00Z`);
+}
+function _formatPeriodKey(dt, group){
+  if(group==='year') return String(dt.getUTCFullYear());
+  if(group==='month') return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}`;
+  return _dateKeyUTC(dt);
+}
+function _stepPeriod(dt, group, step){
+  const next=new Date(dt.getTime());
+  if(group==='year') next.setUTCFullYear(next.getUTCFullYear()+step);
+  else if(group==='month') next.setUTCMonth(next.getUTCMonth()+step,1);
+  else next.setUTCDate(next.getUTCDate()+(group==='week'?7:1)*step);
+  return next;
+}
 function _periodKey(isoStr, group){
   if(!isoStr) return null;
-  const dt=new Date(String(isoStr).replace(' ','T'));
-  if(isNaN(dt)) return null;
-  if(group==='day') return dt.toISOString().slice(0,10);
-  if(group==='week'){const d=new Date(dt);d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return d.toISOString().slice(0,10);}
-  if(group==='year') return String(dt.getFullYear());
-  return dt.toISOString().slice(0,7);
+  const norm=String(isoStr).trim().replace(' ','T');
+  const dt=new Date(norm.endsWith('Z')||/[+-]\d\d:?\d\d$/.test(norm)?norm:`${norm}Z`);
+  if(Number.isNaN(dt.getTime())) return null;
+  if(group==='day') return _dateKeyUTC(dt);
+  if(group==='week'){
+    const d=new Date(Date.UTC(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate()));
+    const day=(d.getUTCDay()+6)%7;
+    d.setUTCDate(d.getUTCDate()-day);
+    return _dateKeyUTC(d);
+  }
+  if(group==='year') return String(dt.getUTCFullYear());
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}`;
 }
 function _periodLabel(key, group){
   if(!key) return '';
   if(group==='year') return key;
-  if(group==='month'){const [y,m]=key.split('-');return new Date(+y,+m-1,1).toLocaleString([],{month:'short',year:'2-digit'});}
-  try{return new Date(key+'T00:00:00').toLocaleString([],{month:'short',day:'numeric'});}catch(e){return key;}
+  if(group==='month'){
+    const [y,m]=key.split('-');
+    return new Date(Date.UTC(+y,+m-1,1)).toLocaleString([],{month:'short',year:'2-digit',timeZone:'UTC'});
+  }
+  if(group==='week'){
+    try{return new Date(`${key}T00:00:00Z`).toLocaleString([],{month:'short',day:'numeric',timeZone:'UTC'});}catch(e){return key;}
+  }
+  try{return new Date(`${key}T00:00:00Z`).toLocaleString([],{month:'short',day:'numeric',timeZone:'UTC'});}catch(e){return key;}
 }
 
 function _zeroFillPeriods(keys, group, showN){
-  // Generate continuous date buckets including zero-data periods
-  if(!keys.length) return keys;
+  // Generate continuous trailing date buckets including zero-data periods
+  if(!keys.length) return [];
   const sorted=keys.slice().sort();
-  const first=sorted[0], last=sorted[sorted.length-1];
-  const all=[];
-  if(group==='year'){
-    for(let y=parseInt(first);y<=parseInt(last);y++) all.push(String(y));
-  } else if(group==='month'){
-    let [cy,cm]=first.split('-').map(Number);
-    const [ey,em]=last.split('-').map(Number);
-    while(cy<ey||(cy===ey&&cm<=em)){
-      all.push(`${cy}-${String(cm).padStart(2,'0')}`);
-      cm++; if(cm>12){cm=1;cy++;}
-    }
-  } else if(group==='week'||group==='day'){
-    const step=group==='week'?7:1;
-    let cur=new Date(first+'T00:00:00');
-    const end=new Date(last+'T00:00:00');
-    while(cur<=end){
-      all.push(cur.toISOString().slice(0,10));
-      cur.setDate(cur.getDate()+step);
-    }
+  let cursor=_parsePeriodDate(sorted[sorted.length-1], group);
+  if(!cursor) return sorted.slice(-showN);
+  const filled=[];
+  while(filled.length<showN){
+    filled.push(_formatPeriodKey(cursor, group));
+    cursor=_stepPeriod(cursor, group, -1);
   }
-  return all.length?all.slice(-showN):sorted.slice(-showN);
+  return filled.reverse();
 }
 function renderProcessingHistory(){
   const group=document.getElementById('dash-hist-group')?.value||'month';
@@ -3468,7 +3498,6 @@ function renderProcessingHistory(){
   shown.forEach((key,i)=>{
     const x=leftPad+gap+i*(barW+gap);
     let yOff=0;
-    const totalForPeriod=displaySt.reduce((s,st)=>s+(buckets[key]?.[st]||0),0);
     // Invisible hover target for the full bar column
     bars+=`<rect x="${x}" y="0" width="${barW}" height="${chartH}" fill="transparent" data-hist-key="${key}" style="cursor:pointer"/>`;
     displaySt.forEach(st=>{
@@ -3493,15 +3522,12 @@ function renderProcessingHistory(){
     guides+=`<text x="${leftPad-5}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${v}</text>`;
   });
 
-  // Legend — exclude Missing
-  let legend='';
   const legendStatuses=displaySt.filter(st=>st!=='MISSING');
-  legendStatuses.forEach((st,i)=>{
-    legend+=`<g transform="translate(${leftPad+i*80},${chartH+labelH+10})"><rect width="10" height="10" rx="2" fill="${COLORS[st]||'#888'}" opacity="0.82"/><text x="14" y="9" font-size="9" fill="var(--text2)">${st[0]+st.slice(1).toLowerCase()}</text></g>`;
-  });
+  const legendHtml=legendStatuses.length?`<div class="dash-chart-legend">${legendStatuses.map(st=>`<span class="dash-chart-legend-item"><span class="dash-chart-legend-swatch" style="background:${COLORS[st]||'#888'}"></span>${st[0]+st.slice(1).toLowerCase()}</span>`).join('')}</div>`:'';
 
-  const svgH=chartH+labelH+(legendStatuses.length?26:4)+14;
-  el.innerHTML=`<div style="overflow-x:auto"><svg class="dash-chart-svg" viewBox="0 -8 ${leftPad+totalW+gap+16} ${svgH}" style="width:100%;min-width:${Math.min(leftPad+totalW+gap+16,340)}px;height:${svgH+8}px;display:block">${guides}${bars}${legend}</svg></div>`;
+  const svgW=leftPad+totalW+gap+16;
+  const svgH=chartH+labelH+14;
+  el.innerHTML=`<div class="dash-chart-scroll"><svg class="dash-chart-svg" viewBox="0 -8 ${svgW} ${svgH}" style="width:100%;min-width:${Math.max(svgW,320)}px;height:${svgH+8}px">${guides}${bars}</svg></div>${legendHtml}`;
   // Attach tooltip event handlers
   el.querySelectorAll('rect[data-hist-key]').forEach(rect=>{
     rect.addEventListener('mousemove',function(e){
