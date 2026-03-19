@@ -117,6 +117,7 @@ _run_lock    = threading.Lock()
 _run_active  = False
 _run_clients = []
 _run_proc    = None
+_run_stop_requested = False
 _run_started_at = None
 _run_last_line = ""
 _run_pass = 0
@@ -174,10 +175,12 @@ def _parse_run_stats(lines):
     return stats
 
 def _record_task(task_name, status="success", scope="", summary="", details=None, duration_seconds=None):
+    normalized_status = str(status or "success")
     entry = {
         "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "task": str(task_name or "Task"),
-        "status": str(status or "success"),
+        "status": normalized_status,
+        "outcome": normalized_status,
         "scope": str(scope or ""),
         "summary": str(summary or ""),
         "details": details or {},
@@ -204,13 +207,20 @@ def _load_task_entries(limit=250):
     for f in sorted(RUNS_DIR.glob("*.json")):
         try:
             run = json.loads(f.read_text(encoding="utf-8"))
+            run_status = str(run.get("status") or run.get("outcome") or "success")
             run_entries.append({
                 "time": run.get("time", ""),
                 "task": {1: "Scan Libraries", 2: "Find Sources", 3: "Download Themes"}.get(run.get("pass"), "Pipeline Run"),
-                "status": "success",
+                "status": run_status,
+                "outcome": run_status,
                 "scope": "",
                 "summary": run.get("summary", ""),
-                "details": {"pass": run.get("pass", 0), "stats": run.get("stats", {})},
+                "details": {
+                    "pass": run.get("pass", 0),
+                    "stats": run.get("stats", {}),
+                    "return_code": run.get("return_code"),
+                    "stop_requested": bool(run.get("stop_requested")),
+                },
                 "duration_seconds": run.get("duration_seconds") or 0,
                 "is_run_history": True,
             })
@@ -1207,49 +1217,74 @@ def trigger_scan():
 
 @app.route("/api/run/stop", methods=["POST"])
 def stop_run():
-    global _run_proc
+    global _run_proc, _run_stop_requested
     if _run_proc and _run_proc.poll() is None:
+        _run_stop_requested = True
         try: _run_proc.send_signal(signal.SIGTERM); _broadcast("[STOP] Graceful stop requested…")
         except Exception: _run_proc.kill()
         return jsonify({"ok":True})
     return jsonify({"ok":False,"error":"No run in progress"})
 
 def _do_run(force_pass=0):
-    global _run_active, _run_proc, _run_started_at, _run_last_line, _run_pass
+    global _run_active, _run_proc, _run_stop_requested, _run_started_at, _run_last_line, _run_pass
     run_log = []; timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); run_pass = force_pass or 0
+    proc = None
+    return_code = None
+    stop_requested = False
+    outcome = "error"
     try:
-        _run_started_at = _time.time(); _run_last_line = ""; _run_pass = run_pass
+        _run_started_at = _time.time(); _run_last_line = ""; _run_pass = run_pass; _run_stop_requested = False
         env = {**os.environ, "CONFIG_PATH": CONFIG_PATH}
         if force_pass: env["FORCE_PASS"] = str(force_pass)
         else: env.pop("FORCE_PASS", None)
-        _run_proc = subprocess.Popen([sys.executable, SCRIPT_PATH],
+        proc = subprocess.Popen([sys.executable, SCRIPT_PATH],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
-        for line in _run_proc.stdout:
+        _run_proc = proc
+        for line in proc.stdout:
             line = line.rstrip(); run_log.append(line); _broadcast(line)
             _run_last_line = line
             if "Pass 1" in line: run_pass = max(run_pass, 1)
             if "Pass 2" in line: run_pass = max(run_pass, 2)
             if "Pass 3" in line: run_pass = max(run_pass, 3)
             _run_pass = run_pass
-        _run_proc.wait()
+        return_code = proc.wait()
     except Exception as e:
         msg = f"[ERROR] {e}"; run_log.append(msg); _broadcast(msg)
     finally:
-        _run_proc = None; _broadcast("__DONE__"); _run_active = False
+        stop_requested = _run_stop_requested
+        if return_code == 0 and not stop_requested:
+            outcome = "success"
+        elif stop_requested:
+            outcome = "stopped"
+        elif return_code is not None:
+            outcome = "error"
+        elif any("[ERROR]" in line for line in run_log):
+            outcome = "error"
+        _run_proc = None; _run_stop_requested = False; _broadcast("__DONE__"); _run_active = False
         duration = _time.time() - _run_started_at if _run_started_at else None
         summary = next((l for l in reversed(run_log) if any(k in l for k in
-            ["complete","caught up","nothing to do","processed","STOP"])),"No output")
+            ["complete","caught up","nothing to do","processed","STOP","ERROR"])),"No output")
         stats = _parse_run_stats(run_log)
         fname = timestamp.replace(":","-").replace(" ","_")+".json"
         with open(RUNS_DIR/fname,"w") as f:
-            json.dump({"time":timestamp,"pass":run_pass,"summary":summary,
-                       "log":"\n".join(run_log),"duration_seconds":duration,"stats":stats}, f)
+            json.dump({
+                "time": timestamp,
+                "pass": run_pass,
+                "summary": summary,
+                "status": outcome,
+                "outcome": outcome,
+                "log": "\n".join(run_log),
+                "duration_seconds": duration,
+                "stats": stats,
+                "return_code": return_code,
+                "stop_requested": stop_requested,
+            }, f)
         _record_task(
             {1:'Run Scan Now',2:'Run Find Sources Now',3:'Run Download Themes Now'}.get(run_pass, 'Run Pipeline'),
-            'success' if (_run_proc is None) else 'error',
+            outcome,
             '',
             summary,
-            {'pass': run_pass, 'stats': stats},
+            {'pass': run_pass, 'stats': stats, 'return_code': return_code, 'stop_requested': stop_requested},
             duration,
         )
         _run_started_at = None

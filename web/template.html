@@ -430,6 +430,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .task-status{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
 .task-status.success{background:var(--green-soft);color:var(--green)}
 .task-status.error{background:var(--red-soft);color:var(--red)}
+.task-status.stopped{background:var(--amber-soft);color:var(--amber)}
 .task-status.info{background:var(--blue-soft);color:var(--blue)}
 @media (max-width: 1100px){.task-grid{grid-template-columns:1fr}.task-history-head,.task-history-item{grid-template-columns:1fr}}
 
@@ -4801,9 +4802,16 @@ async function loadTasksPage(){
   const r=await fetch('/api/history'); const runs=await r.json();
   const el=document.getElementById('run-cards');
   if(!runs.length){ el.innerHTML='<div class="empty">No run history yet.</div>'; return; }
-  const PBCLS={1:'pb-1 PASS 1 — SCAN',2:'pb-2 PASS 2 — RESOLVE',3:'pb-3 PASS 3 — DOWNLOAD'};
+  const PASS_LABELS={1:'PASS 1 — SCAN',2:'PASS 2 — RESOLVE',3:'PASS 3 — DOWNLOAD'};
+  const OUTCOME_BADGES={
+    success:'pb-3 SUCCESS',
+    error:'pb-e ERROR',
+    stopped:'pb-2 STOPPED',
+  };
   el.innerHTML=runs.reverse().map((run,i)=>{
-    const bc=PBCLS[run.pass]||'pb-e ERROR';
+    const outcome=(run.outcome||run.status||'success').toLowerCase();
+    const passLabel=PASS_LABELS[run.pass]||'PIPELINE RUN';
+    const bc=OUTCOME_BADGES[outcome] || 'pb-e ERROR';
     const [cls,...parts]=bc.split(' ');
     const dur=run.duration_seconds?`${Math.round(run.duration_seconds)}s`:'';
     const s1=run.stats?.pass1, s2=run.stats?.pass2, s3=run.stats?.pass3;
@@ -4814,7 +4822,7 @@ async function loadTasksPage(){
       <div class="hcard-head" onclick="document.getElementById('hd-${i}').classList.toggle('open')">
         <div>
           <div class="hcard-time">${run.time}</div>
-          <div class="hcard-sum">${(run.summary||'').replace(/</g,'&lt;')}${dur?` · ${dur}`:''}</div>
+          <div class="hcard-sum">${passLabel} · ${(run.summary||'').replace(/</g,'&lt;')}${dur?` · ${dur}`:''}</div>
           ${statsLine?`<div class="hcard-sum">${statsLine}</div>`:''}
           <div style="margin-top:7px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openRunResults(${run.pass||0})">Open filtered rows</button></div>
         </div>
@@ -4831,9 +4839,13 @@ async function loadTaskHistoryList(){
   const el=document.getElementById('task-history-list');
   if(!el) return;
   if(!items.length){ el.innerHTML='<div class="empty" style="padding:12px">No task history yet.</div>'; return; }
+  const statusClass=(status)=>{
+    const normalized=String(status||'info').toLowerCase();
+    return ['success','error','stopped','info'].includes(normalized) ? normalized : 'info';
+  };
   el.innerHTML=items.map(it=>`<div class="task-history-item">
       <div>${(it.task||'').replace(/</g,'&lt;')}</div>
-      <div><span class="task-status ${(it.status||'info')}\">${(it.status||'info').toUpperCase()}</span></div>
+      <div><span class="task-status ${statusClass(it.outcome||it.status)}">${String(it.outcome||it.status||'info').toUpperCase()}</span></div>
       <div>${it.time||''}</div>
       <div>${(it.scope||'all').replace(/</g,'&lt;')}</div>
       <div>${(it.summary||'').replace(/</g,'&lt;')}</div>
