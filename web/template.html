@@ -156,16 +156,11 @@ body.nav-collapsed main{margin-left:48px}
 .btn:focus-visible,.field input:focus-visible,.field select:focus-visible,.search:focus-visible,.filter-sel:focus-visible,.st-sel:focus-visible,.inline-ed:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22)}
 
 /* ─── Dashboard lib tabs / processing history ─── */
-.dash-lib-tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.dash-lib-tab{display:inline-flex;align-items:center;justify-content:center;padding:6px 14px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;white-space:nowrap;font-family:var(--ui);min-height:36px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.dash-lib-tab:hover{border-color:var(--text3);color:var(--text);background:var(--surface2)}
+.dash-lib-tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.dash-lib-tab{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;white-space:nowrap;font-family:var(--ui)}
+.dash-lib-tab:hover{border-color:var(--text3);color:var(--text)}
 .dash-lib-tab.active{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
-.dash-lib-tab:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22)}
-.dash-overview-head,.dash-history-toolbar{position:relative;z-index:3}
-.dash-chart-area{position:relative;z-index:1}
-#dash-processing-chart,#dash-pie-chart{position:relative;z-index:1}
 .dash-chart-svg{overflow:visible}
-.dash-pie-slice-label{fill:#fff;font-size:11px;font-weight:700;font-family:var(--mono);text-anchor:middle;dominant-baseline:middle;pointer-events:none}
 
 /* ─── Test badges ─── */
 .test-result{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:5px;font-size:12px;font-weight:600;font-family:var(--mono);margin-left:8px}
@@ -309,9 +304,6 @@ body.nav-collapsed main{margin-left:48px}
 .dash-health-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2)}
 .dash-health-label{font-size:12px;font-weight:600;color:var(--text);min-width:0;flex:1}
 .dash-health-detail{font-size:11px;color:var(--text3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;text-align:right;padding-right:10px}
-.dash-overview-head-actions,.dash-history-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.dash-history-toolbar-label{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.dash-history-toolbar-label select,.dash-history-toolbar-label input{min-height:36px}
 /* Activity compact rows */
 .dash-activity-row{display:grid;grid-template-columns:80px 1fr auto auto;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);font-size:12px}
 .dash-activity-label{font-weight:600;color:var(--text)}
@@ -339,9 +331,9 @@ body.nav-collapsed main{margin-left:48px}
 .dash-pipeline-step-desc{font-size:11px;color:var(--text2);line-height:1.4}
 /* Status Key */
 .dash-status-key{display:flex;flex-direction:column;gap:4px}
-.dash-status-key-row{display:flex;align-items:flex-start;gap:7px}
+.dash-status-key-row{display:flex;align-items:center;gap:7px}
 .dash-status-key-row .badge{min-width:78px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:2px 7px}
-.dash-status-key-def{font-size:10px;color:var(--text2);line-height:1.35;min-width:0}
+.dash-status-key-def{font-size:10px;color:var(--text2);line-height:1.35}
 /* Action Station */
 .dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
 .dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
@@ -408,117 +400,37 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid.compact .dashboard-stat-sub{font-size:10px}
 
 /* ─── Pie chart ─── */
-.dash-chart-area{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:28px;align-items:stretch}
-.dash-pie-wrap,.dash-chart-panel{background:color-mix(in srgb,var(--surface2) 84%, transparent);border:1px solid color-mix(in srgb,var(--border) 88%, transparent);border-radius:16px;padding:18px}
-.dash-pie-wrap{display:flex;flex-direction:column;align-items:center;gap:18px;min-height:320px;justify-content:center}
-.dash-pie-wrap svg{display:block;flex-shrink:0;max-width:100%}
-.dash-pie-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;font-size:11px;color:var(--text2);width:100%}
-.dash-pie-legend-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.dash-pie-legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-.dash-chart-panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;width:100%;min-height:320px}
-.dash-chart-scroll{width:100%;overflow-x:auto;padding:0 0 2px}
-.dash-chart-scroll svg{display:block;margin:0 auto}
-.dash-chart-legend{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 16px;width:100%;font-size:11px;color:var(--text2)}
-.dash-chart-legend-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.dash-chart-legend-swatch{width:10px;height:10px;border-radius:2px;opacity:.82;flex-shrink:0}
+.dash-chart-area{display:grid;grid-template-columns:180px 1fr;gap:20px;align-items:start}
+.dash-pie-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;min-height:180px;justify-content:center}
+.dash-pie-wrap svg{display:block}
+.dash-pie-legend{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--text2);width:100%}
+.dash-pie-legend-item{display:flex;align-items:center;gap:6px}
+.dash-pie-legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 .dash-pie-empty{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:30px 10px}
-@media(max-width:980px){.dash-chart-area{grid-template-columns:1fr;gap:16px}.dash-pie-wrap,.dash-chart-panel{min-height:0}.dash-pie-wrap{padding:16px}.dash-chart-panel{align-items:stretch;padding:16px}}
-@media(max-width:700px){.dash-pie-legend,.dash-chart-legend{justify-content:flex-start}.dash-chart-panel,.dash-pie-wrap{padding:14px}}
-@media(max-width:980px){.dash-status-key-row{flex-direction:column;align-items:flex-start}.dash-status-key-row .badge{min-width:0}}
-@media(max-width:700px){.dashboard-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-stat{padding:10px 11px}.dashboard-main-copy,.dashboard-sub-copy{overflow-wrap:anywhere}.dash-action-buttons{flex-direction:column}.dash-action-buttons .btn{width:100%}.dash-health-row,.dashboard-health-item,.dashboard-activity-item,.dashboard-attention-item,.dashboard-library-item,.dash-activity-row{flex-direction:column;align-items:flex-start}.dash-activity-row{display:flex}.dash-health-detail,.dash-activity-summary{white-space:normal;text-align:left;padding-right:0}.dash-overview-head,.dash-history-toolbar{align-items:flex-start}.dash-overview-head-actions,.dash-history-controls{width:100%}.dash-history-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dash-history-controls>#dash-hist-status-filters{grid-column:1/-1}.dash-history-toolbar-label{width:100%;justify-content:space-between}.dash-history-toolbar-label select,.dash-history-toolbar-label input{width:100%}.dash-lib-tabs{gap:8px}.dash-lib-tab{flex:0 1 auto}.dash-pipeline-step{flex-direction:column}.dash-pipeline-step-num{align-self:flex-start}.dash-attention-card,.dashboard-card{overflow:hidden}}
-@media(max-width:520px){.dash-history-controls{grid-template-columns:1fr}.dashboard-stat-grid{grid-template-columns:1fr}.dash-lib-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.dash-lib-tab{width:100%}}
+@media(max-width:980px){.dash-chart-area{grid-template-columns:1fr}.dash-pie-wrap{flex-direction:row;gap:16px;min-height:auto}}
 
-/* ─── Theme Manager table console ─── */
-.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
-.db-table{table-layout:fixed;min-width:1360px}
-.db-table-wrap{box-shadow:0 10px 28px rgba(0,0,0,.18)}
+/* ─── Table ─── */
+.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+.db-table{table-layout:fixed;min-width:1540px}
 thead{background:var(--surface-elev);position:sticky;top:0;z-index:2}
-th{padding:0;text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);user-select:none;background:var(--surface-elev)}
-th.sortable{cursor:pointer}
-th.db-col-select{padding:0 0 0 14px}
-.db-sort-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;background:transparent;border:none;color:inherit;font:inherit;text-transform:inherit;letter-spacing:inherit;cursor:pointer}
-.db-sort-btn:hover{color:var(--text)}
-.sort-indicator{font-size:10px;color:var(--text3)}
-td{padding:13px 14px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text);background:var(--surface)}
+th{padding:11px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:color .15s}
+th:hover{color:var(--text)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
 tr:last-child td{border-bottom:none}
-#db-tbody tr:hover td{background:rgba(255,255,255,.025)}
-#db-tbody tr.is-selected td{background:rgba(245,166,35,.08)}
+tr:hover td{background:rgba(255,255,255,.025)}
 
-.inline-ed{background:transparent;border:1px solid transparent;border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:3px 6px;width:100%;outline:none;transition:border-color .15s}
+.inline-ed{background:transparent;border:1px solid transparent;border-radius:4px;color:var(--text);font-family:var(--mono);font-size:12px;padding:3px 6px;width:100%;outline:none;transition:border-color .15s}
 .inline-ed:focus{border-color:var(--amber);background:var(--amber-soft)}
 
 /* ─── Status select in table — READABLE ─── */
-.st-sel{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--ui);font-size:12px;font-weight:600;outline:none;cursor:pointer;padding:4px 8px;appearance:auto}
+.st-sel{background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:var(--ui);font-size:12px;font-weight:600;outline:none;cursor:pointer;padding:4px 8px;appearance:auto}
 .st-sel option{background:var(--surface2);color:var(--text);padding:6px;font-size:13px}
 
 .pag{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12px;font-family:var(--mono);color:var(--text3)}
-.pag-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--text);cursor:pointer;font-family:var(--mono);font-size:12px;transition:all .15s}
+.pag-btn{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 12px;color:var(--text);cursor:pointer;font-family:var(--mono);font-size:12px;transition:all .15s}
 .pag-btn:hover{border-color:var(--text3)}
 .pag-btn:disabled{opacity:.3;cursor:not-allowed}
-
-.db-summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;margin-bottom:12px}
-.db-stat{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);cursor:pointer;text-align:left;transition:all .15s}
-.db-stat:hover{border-color:color-mix(in srgb,var(--amber) 34%,var(--border));background:var(--surface-elev)}
-.db-stat.active{border-color:rgba(245,166,35,.36);box-shadow:inset 0 0 0 1px rgba(245,166,35,.12);background:color-mix(in srgb,var(--amber-soft) 60%,var(--surface))}
-.db-stat-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.db-stat-count{font-size:21px;font-weight:800;color:var(--text);font-family:var(--mono)}
-.db-stat-label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text2)}
-.db-stat-meta{font-size:11px;color:var(--text3)}
-.db-stat-dot{width:8px;height:8px;border-radius:999px;flex-shrink:0}
-
-.db-console-toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;padding:12px 14px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
-.db-toolbar-main{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;flex:1;min-width:min(100%,680px)}
-.db-search-input{min-width:min(100%,340px);flex:1}
-.db-filter-stack{min-width:150px}
-.db-toolbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.db-results-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;padding:0 2px}
-.db-results-meta{font-size:12px;font-weight:700;color:var(--text2)}
-.db-results-hint{font-size:11px;color:var(--text3)}
-.tabs-compact{margin-bottom:12px}
-.tabs-compact .tab{padding:8px 12px}
-
-.bulk-bar{display:none;align-items:center;gap:10px;padding:12px 14px;background:var(--amber-soft);border:1px solid rgba(245,166,35,.4);border-radius:14px;margin-bottom:10px;flex-wrap:wrap}
-.bulk-bar.active{display:flex}
-.bulk-copy{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.bulk-count{font-size:13px;font-weight:700;color:var(--amber);font-family:var(--mono);margin-right:2px}
-.bulk-hint{font-size:11px;color:var(--text3);font-family:var(--mono)}
-.bulk-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.bulk-spacer{flex:1}
-
-.run-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-size:11px;font-family:var(--mono);color:var(--text2);background:var(--surface2)}
-.run-pill.active{border-color:var(--amber);color:var(--amber)}
-.run-pill .run-dot{width:6px;height:6px}
-
-.row-action-wrap{display:flex;align-items:center;justify-content:flex-start}
-.row-primary-action{min-width:88px}
-
-.db-title-button{display:flex;flex-direction:column;gap:4px;align-items:flex-start;padding:0;background:none;border:none;color:inherit;cursor:pointer;text-align:left;max-width:100%}
-.db-title-button:hover .db-title-main{color:var(--blue)}
-.db-title-main{font-size:13px;font-weight:700;color:var(--text);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.db-title-meta{font-size:10px;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;gap:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.db-title-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text3)}
-.db-state-cell,.db-note-cell{display:flex;flex-direction:column;gap:5px;min-width:0}
-.db-state-pill{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:4px 9px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text2)}
-.db-state-pill.has-source{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
-.db-state-pill.no-source{color:var(--text3)}
-.db-state-pill.has-golden{border-color:rgba(245,166,35,.4);background:var(--amber-soft);color:var(--amber)}
-.db-state-pill.no-golden{color:var(--text3)}
-.db-state-meta{font-size:11px;color:var(--text3);line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.db-updated-main{font-size:12px;font-weight:700;color:var(--text)}
-.db-updated-sub{font-size:10px;color:var(--text3);font-family:var(--mono)}
-.db-note-top{display:flex;align-items:center;gap:6px}
-.db-note-indicator{width:8px;height:8px;border-radius:999px;background:var(--border);flex-shrink:0}
-.db-note-indicator.has-notes{background:var(--amber)}
-.db-note-label{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text3)}
-.db-note-text{font-size:11px;color:var(--text2);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
-.db-note-empty{color:var(--text3)}
-
-@media (max-width: 1100px){
-  .db-console-toolbar{align-items:stretch}
-  .db-toolbar-main,.db-toolbar-actions{width:100%}
-  .db-toolbar-actions{justify-content:flex-start}
-}
 
 /* ─── Audio player ─── */
 .player{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 8px;min-width:180px}
@@ -706,6 +618,18 @@ th.resizable .col-resize{position:absolute;right:-5px;top:0;bottom:0;width:10px;
 th.resizable .col-resize:hover{background:var(--amber)}
 th.resizable .col-resize.dragging{background:var(--amber)}
 
+/* ─── Bulk action bar ─── */
+.bulk-bar{display:none;align-items:center;gap:8px;padding:10px 14px;background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius);margin-bottom:10px;flex-wrap:wrap}
+.bulk-bar.active{display:flex}
+.bulk-count{font-size:13px;font-weight:700;color:var(--amber);font-family:var(--mono);margin-right:4px}
+.bulk-hint{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.bulk-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bulk-spacer{flex:1}
+
+.run-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);font-size:11px;font-family:var(--mono);color:var(--text2);background:var(--surface2)}
+.run-pill.active{border-color:var(--amber);color:var(--amber)}
+.run-pill .run-dot{width:6px;height:6px}
+
 .guide-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px dashed var(--border);border-radius:var(--radius);background:var(--surface);margin:12px 0}
 .guide-step{font-size:11px;font-family:var(--mono);color:var(--text3)}
 .guide-step strong{color:var(--text)}
@@ -718,6 +642,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .action-icon{padding:4px 8px;font-size:11px;min-width:28px;justify-content:center}
 .action-icon span{display:none}
 .action-icon .icon-only{display:inline-block}
+.row-action-wrap{position:relative;display:flex;align-items:center;gap:6px;justify-content:flex-start}
+.row-primary-action{min-width:96px}
+.row-action-more{min-width:30px;padding:4px 8px}
+.row-action-menu{position:absolute;right:0;bottom:calc(100% + 6px);min-width:170px;background:var(--surface-elev);border:1px solid var(--border);border-radius:8px;padding:6px;display:none;flex-direction:column;gap:5px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.row-action-menu.open{display:flex}
+.row-action-item{width:100%;justify-content:flex-start;text-align:left}
 
 .task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .task-grid.task-grid-2x2{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1333,32 +1263,32 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Row 3: Library Overview + Processing History (moved above Needs Attention) -->
     <div class="card dashboard-card" style="margin-bottom:16px">
       <!-- Header row -->
-      <div class="dash-overview-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div class="card-title" style="margin-bottom:0">Theme Library Overview</div>
-        <div class="dash-overview-head-actions">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
           <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
         </div>
       </div>
       <!-- Processing History -->
       <div>
-        <div class="dash-history-toolbar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
           <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Processing History</div>
-          <div class="dash-history-controls">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
-            <label class="dash-history-toolbar-label">Group
-              <select id="dash-hist-group" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11px;padding:6px 10px;outline:none;cursor:pointer">
+            <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">Group
+              <select id="dash-hist-group" onchange="renderProcessingHistory()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:3px 7px;outline:none;cursor:pointer">
                 <option value="day">Day</option><option value="week">Week</option><option value="month" selected>Month</option><option value="year">Year</option>
               </select>
             </label>
-            <label class="dash-history-toolbar-label">Show last
-              <input id="dash-hist-count" type="number" value="12" min="1" max="60" inputmode="numeric" style="width:72px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11px;padding:6px 10px;outline:none;font-family:var(--mono);text-align:center">
+            <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">Show last
+              <input id="dash-hist-count" type="number" value="12" min="1" max="60" onchange="renderProcessingHistory()" style="width:50px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:3px 6px;outline:none;font-family:var(--mono);text-align:center">
             </label>
           </div>
         </div>
         <div class="dash-chart-area">
           <div class="dash-pie-wrap" id="dash-pie-chart"></div>
-          <div class="dash-chart-panel" id="dash-processing-chart" style="min-height:140px"></div>
+          <div id="dash-processing-chart" style="min-height:140px"></div>
         </div>
       </div>
     </div>
@@ -1701,12 +1631,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="field">
             <label>Quality Profile</label>
             <select id="cfg-quality_profile">
-              <option value="high">High — best available quality</option>
+              <option value="high">Best available — source dependent</option>
               <option value="balanced">Balanced — about 192 kbps equivalent</option>
               <option value="small">Compact — about 128 kbps equivalent</option>
               <option value="smallest">Smallest — about 96 kbps equivalent</option>
             </select>
-            <div class="field-help compact">Actual bitrate varies by source and output codec. High keeps the best practical quality.</div>
+            <div class="field-help compact">Actual bitrate varies by source and output codec. Best available keeps the highest practical quality.</div>
           </div>
           <div class="field">
             <label>Max Retries</label>
@@ -1736,52 +1666,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div><div class="page-title" data-ui="pages.database.title">Theme Manager</div><div class="page-desc" data-ui="pages.database.description">Browse, filter, review, and manage theme items in one place.</div></div>
   </div>
   <div class="page-body">
-    <div class="tabs tabs-compact" id="lib-tabs"></div>
-
-    <div class="db-summary-strip" id="db-chips"></div>
-
-    <div class="db-console-toolbar">
-      <div class="db-toolbar-main">
-        <input class="search search-wide db-search-input" type="text" placeholder="Search title, year, source, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search Theme Manager">
-        <div class="filter-stack db-filter-stack">
-          <span class="filter-label">Status</span>
-          <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
-            <option value="">All statuses</option>
-            <option value="UNMONITORED">Unmonitored</option>
-            <option value="MISSING">Missing</option>
-            <option value="STAGED">Staged</option>
-            <option value="APPROVED">Approved</option>
-            <option value="AVAILABLE">Available</option>
-            <option value="FAILED">Failed</option>
-          </select>
-        </div>
-        <div class="filter-stack db-filter-stack">
-          <span class="filter-label">Source</span>
-          <select class="filter-sel" onchange="filterBySourceState(this.value)" id="db-source-filter">
-            <option value="">All sources</option>
-            <option value="SOURCE_URL">Has source</option>
-            <option value="NO_SOURCE_URL">No source</option>
-            <option value="GOLDEN">Has Golden Source</option>
-            <option value="NO_GOLDEN">No Golden Source</option>
-          </select>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="clearDbFilter()">Clear Filters</button>
-      </div>
-      <div class="db-toolbar-actions">
-        <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
-        <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan</button>
-        <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
-        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download Approved</button>
-        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve Staged</button>
-        <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
-      </div>
-    </div>
-
-    <div class="db-results-bar">
-      <div class="db-results-meta" id="db-result-meta">Showing 0 items</div>
-      <div class="db-results-hint">Click a title or <strong>Manage</strong> to review sources, preview, trim, download, or delete.</div>
-    </div>
-
+    <!-- Progress bar -->
     <div class="progress-wrap" id="db-progress" data-state="queued">
       <div class="progress-head">
         <div class="progress-copy" id="db-progress-label">Queued — waiting to start.</div>
@@ -1795,12 +1680,62 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="progress-meta" id="db-progress-meta"></div>
     </div>
 
-    <div class="bulk-bar" id="db-bulk-bar">
-      <div class="bulk-copy">
-        <span class="bulk-count" id="db-bulk-count">0 selected</span>
-        <span class="bulk-hint">Shift+click to select a range</span>
+    <div class="tabs" id="lib-tabs"></div>
+    <div class="db-topbar">
+      <div class="chips" id="db-chips"></div>
+      <div class="db-main-actions">
+        <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan Library</button>
+        <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
+        <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
+        <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download Approved Items</button>
+        <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
       </div>
-      <button class="btn btn-ghost btn-xs" onclick="selectAllVisible()">Select visible</button>
+    </div>
+
+    <div class="toolbar">
+      <input class="search search-wide" type="text" placeholder="Search titles, years, URLs, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search database">
+      <div class="toolbar-group">
+        <div class="filter-stack">
+          <span class="filter-label">Status</span>
+          <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
+            <option value="">All statuses</option>
+            <option value="UNMONITORED">Unmonitored</option>
+            <option value="MISSING">Missing</option>
+            <option value="STAGED">Staged</option>
+            <option value="APPROVED">Approved</option>
+            <option value="AVAILABLE">Available</option>
+            <option value="FAILED">Failed</option>
+          </select>
+        </div>
+        <div class="filter-stack">
+          <span class="filter-label">Source</span>
+          <select class="filter-sel" onchange="filterBySourceState(this.value)" id="db-source-filter">
+            <option value="">All source states</option>
+            <option value="GOLDEN">With Golden Source</option>
+            <option value="NO_GOLDEN">Without Golden Source</option>
+            <option value="SOURCE_URL">With Source URL</option>
+            <option value="NO_SOURCE_URL">Without Source URL</option>
+          </select>
+        </div>
+        <div class="filter-stack">
+          <span class="filter-label">Action</span>
+          <select class="filter-sel" onchange="filterByAction(this.value)" id="db-action-filter">
+            <option value="">All actions</option>
+            <option value="MANAGE">Manage</option>
+            <option value="APPROVE">Approve</option>
+            <option value="DOWNLOAD">Download</option>
+            <option value="FIND_SOURCE">Find Source</option>
+          </select>
+        </div>
+      </div>
+      <div class="db-toolbar-actions">
+        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve Staged Items</button>
+      </div>
+    </div>
+    <div class="bulk-bar" id="db-bulk-bar">
+      <span class="bulk-count" id="db-bulk-count">0 selected</span>
+      <span class="bulk-hint">Shift+click to range</span>
+      <button class="btn btn-ghost btn-xs" onclick="selectAllVisible()">Select all on page</button>
       <span class="bulk-spacer"></span>
       <div class="bulk-actions">
         <button class="btn btn-green btn-sm" id="db-bulk-approve" onclick="bulkSetStatus2('APPROVED')" data-ui="actions.bulk.approve">✓ Set Approved</button>
@@ -1810,22 +1745,20 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <button class="btn btn-red btn-sm" onclick="clearSelection()">✕ Clear</button>
       </div>
     </div>
-
-    <div class="tbl-wrap db-table-wrap">
+    <div class="tbl-wrap">
       <table class="db-table">
-        <thead>
-          <tr>
-            <th class="db-col-select" style="width:42px"><input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered"></th>
-            <th class="sortable" style="width:290px" onclick="sortTable('title')"><button class="db-sort-btn" type="button">Title <span class="sort-indicator" data-sort-indicator="title">↕</span></button></th>
-            <th class="sortable" style="width:84px" onclick="sortTable('year')"><button class="db-sort-btn" type="button">Year <span class="sort-indicator" data-sort-indicator="year">↕</span></button></th>
-            <th class="sortable" style="width:170px" onclick="sortTable('status')"><button class="db-sort-btn" type="button">Status <span class="sort-indicator" data-sort-indicator="status">↕</span></button></th>
-            <th class="sortable" style="width:180px" onclick="sortTable('source_state')"><button class="db-sort-btn" type="button">Source <span class="sort-indicator" data-sort-indicator="source_state">↕</span></button></th>
-            <th class="sortable" style="width:160px" onclick="sortTable('golden_state')"><button class="db-sort-btn" type="button">Golden Source <span class="sort-indicator" data-sort-indicator="golden_state">↕</span></button></th>
-            <th class="sortable" style="width:128px" onclick="sortTable('last_updated')"><button class="db-sort-btn" type="button">Updated <span class="sort-indicator" data-sort-indicator="last_updated">↕</span></button></th>
-            <th class="sortable" style="width:240px" onclick="sortTable('notes')"><button class="db-sort-btn" type="button">Notes <span class="sort-indicator" data-sort-indicator="notes">↕</span></button></th>
-            <th style="width:120px">Manage</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th style="width:28px"><input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered"></th>
+          <th style="width:230px" onclick="sortTable('title')">Title ↕</th>
+          <th style="width:90px" onclick="sortTable('year')">Year ↕</th>
+          <th style="width:165px" onclick="sortTable('status')">Status ↕</th>
+          <th style="width:170px">Action</th>
+          <th style="width:220px" onclick="sortTable('golden_source_url')">Golden Source URL ↕</th>
+          <th style="width:260px" onclick="sortTable('url')">Source URL ↕</th>
+          <th style="width:150px" onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
+          <th style="width:130px" onclick="sortTable('last_updated')">Updated ↕</th>
+          <th style="width:220px" onclick="sortTable('notes')">Notes ↕</th>
+        </tr></thead>
         <tbody id="db-tbody"></tbody>
       </table>
     </div>
@@ -3289,46 +3222,8 @@ let _dashLedgerByLib={};
 let _dashLedgerAll=[];
 let _dashSelectedLib='all';
 let _dashHistStatusFilter='all';
-let _dashControlsBound=false;
 
 function _getHistRows(){return _dashSelectedLib==='all'?_dashLedgerAll:(_dashLedgerByLib[_dashSelectedLib]||[]);}
-function _renderDashboardCharts(){renderProcessingHistory();renderPieChart();}
-function _sanitizeDashHistCount(){
-  const input=document.getElementById('dash-hist-count');
-  if(!input) return 12;
-  const sanitized=Math.min(60,Math.max(1,parseInt(input.value||'12',10)||12));
-  input.value=String(sanitized);
-  return sanitized;
-}
-function _bindDashboardControls(){
-  if(_dashControlsBound) return;
-  _dashControlsBound=true;
-  const page=document.getElementById('page-dashboard');
-  page?.addEventListener('click',evt=>{
-    const libBtn=evt.target.closest('[data-dash-lib]');
-    if(libBtn){
-      evt.preventDefault();
-      switchDashLib(libBtn.dataset.dashLib||'all');
-      return;
-    }
-    const filterBtn=evt.target.closest('[data-hist-filter]');
-    if(filterBtn){
-      evt.preventDefault();
-      _setHistFilter(filterBtn.dataset.histFilter||'all');
-    }
-  });
-  const group=document.getElementById('dash-hist-group');
-  group?.addEventListener('change',_renderDashboardCharts);
-  const count=document.getElementById('dash-hist-count');
-  count?.addEventListener('change',()=>{
-    _sanitizeDashHistCount();
-    _renderDashboardCharts();
-  });
-  count?.addEventListener('input',()=>{
-    _sanitizeDashHistCount();
-    renderProcessingHistory();
-  });
-}
 
 // How it Works? panel — always starts collapsed, ephemeral state
 let _howItWorksOpen=false;
@@ -3385,7 +3280,7 @@ function renderDashLibTabs(enabledLibs){
   const el=document.getElementById('dash-lib-tabs');
   if(!el) return;
   const tabs=[{name:'all',label:'All'},...(enabledLibs||[]).map(l=>({name:l.name||l,label:l.name||l}))];
-  el.innerHTML=tabs.map(t=>`<button type="button" class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" data-dash-lib=${JSON.stringify(String(t.name))}>${t.label}</button>`).join('');
+  el.innerHTML=tabs.map(t=>`<button class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
 }
 
 function renderHistStatusFilters(){
@@ -3400,16 +3295,17 @@ function renderHistStatusFilters(){
   ];
   el.innerHTML=filters.map(f=>{
     const active=f.k===_dashHistStatusFilter;
-    return `<button type="button" class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" data-hist-filter=${JSON.stringify(String(f.k))}>${f.label}</button>`;
+    return `<button class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter(${JSON.stringify(f.k)})">${f.label}</button>`;
   }).join('');
 }
 
-function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();_renderDashboardCharts();}
+function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();renderProcessingHistory();renderPieChart();}
 
 function switchDashLib(name){
   _dashSelectedLib=name;
   renderDashLibTabs(Object.keys(_dashLedgerByLib).map(n=>({name:n})));
-  _renderDashboardCharts();
+  renderProcessingHistory();
+  renderPieChart();
 }
 
 function renderDashLibKpi(){
@@ -3426,94 +3322,58 @@ function renderDashLibKpi(){
     {label:'Failed',sub:'Needs review',status:'FAILED',value:counts.FAILED,color:'var(--red)'},
   ];
   el.innerHTML=items.map(item=>`
-    <button type="button" class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
+    <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
       <span class="dashboard-stat-label status-label status-tone-${item.status}" style="color:${item.color}">${displayStatus(item.status)}</span>
       <span class="dashboard-stat-sub">${item.sub}</span>
     </button>`).join('');
 }
 
-function _dateKeyUTC(dt){
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}-${String(dt.getUTCDate()).padStart(2,'0')}`;
-}
-function _parsePeriodDate(key, group){
-  if(!key) return null;
-  if(group==='year') return new Date(Date.UTC(parseInt(key,10),0,1));
-  if(group==='month'){
-    const [y,m]=key.split('-').map(Number);
-    return new Date(Date.UTC(y,m-1,1));
-  }
-  return new Date(`${key}T00:00:00Z`);
-}
-function _formatPeriodKey(dt, group){
-  if(group==='year') return String(dt.getUTCFullYear());
-  if(group==='month') return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}`;
-  return _dateKeyUTC(dt);
-}
-function _stepPeriod(dt, group, step){
-  const next=new Date(dt.getTime());
-  if(group==='year') next.setUTCFullYear(next.getUTCFullYear()+step);
-  else if(group==='month') next.setUTCMonth(next.getUTCMonth()+step,1);
-  else next.setUTCDate(next.getUTCDate()+(group==='week'?7:1)*step);
-  return next;
-}
 function _periodKey(isoStr, group){
   if(!isoStr) return null;
-  const norm=String(isoStr).trim().replace(' ','T');
-  const dt=new Date(norm.endsWith('Z')||/[+-]\d\d:?\d\d$/.test(norm)?norm:`${norm}Z`);
-  if(Number.isNaN(dt.getTime())) return null;
-  if(group==='day') return _dateKeyUTC(dt);
-  if(group==='week'){
-    const d=new Date(Date.UTC(dt.getUTCFullYear(),dt.getUTCMonth(),dt.getUTCDate()));
-    const day=(d.getUTCDay()+6)%7;
-    d.setUTCDate(d.getUTCDate()-day);
-    return _dateKeyUTC(d);
-  }
-  if(group==='year') return String(dt.getUTCFullYear());
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}`;
+  const dt=new Date(String(isoStr).replace(' ','T'));
+  if(isNaN(dt)) return null;
+  if(group==='day') return dt.toISOString().slice(0,10);
+  if(group==='week'){const d=new Date(dt);d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return d.toISOString().slice(0,10);}
+  if(group==='year') return String(dt.getFullYear());
+  return dt.toISOString().slice(0,7);
 }
 function _periodLabel(key, group){
   if(!key) return '';
   if(group==='year') return key;
-  if(group==='month'){
-    const [y,m]=key.split('-');
-    return new Date(Date.UTC(+y,+m-1,1)).toLocaleString([],{month:'short',year:'2-digit',timeZone:'UTC'});
-  }
-  if(group==='week'){
-    try{return new Date(`${key}T00:00:00Z`).toLocaleString([],{month:'short',day:'numeric',timeZone:'UTC'});}catch(e){return key;}
-  }
-  try{return new Date(`${key}T00:00:00Z`).toLocaleString([],{month:'short',day:'numeric',timeZone:'UTC'});}catch(e){return key;}
+  if(group==='month'){const [y,m]=key.split('-');return new Date(+y,+m-1,1).toLocaleString([],{month:'short',year:'2-digit'});}
+  try{return new Date(key+'T00:00:00').toLocaleString([],{month:'short',day:'numeric'});}catch(e){return key;}
 }
 
-function _startOfCurrentPeriod(group){
-  const now=new Date();
-  const utc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()));
-  if(group==='year') return new Date(Date.UTC(utc.getUTCFullYear(),0,1));
-  if(group==='month') return new Date(Date.UTC(utc.getUTCFullYear(),utc.getUTCMonth(),1));
-  if(group==='week'){
-    const weekStart=new Date(utc.getTime());
-    const day=(weekStart.getUTCDay()+6)%7;
-    weekStart.setUTCDate(weekStart.getUTCDate()-day);
-    return weekStart;
-  }
-  return utc;
-}
 function _zeroFillPeriods(keys, group, showN){
+  // Generate continuous date buckets including zero-data periods
+  if(!keys.length) return keys;
   const sorted=keys.slice().sort();
-  const latestExisting=sorted.length?_parsePeriodDate(sorted[sorted.length-1], group):null;
-  const currentPeriod=_startOfCurrentPeriod(group);
-  let cursor=currentPeriod;
-  if(latestExisting && latestExisting.getTime()>currentPeriod.getTime()) cursor=latestExisting;
-  const filled=[];
-  while(filled.length<showN){
-    filled.push(_formatPeriodKey(cursor, group));
-    cursor=_stepPeriod(cursor, group, -1);
+  const first=sorted[0], last=sorted[sorted.length-1];
+  const all=[];
+  if(group==='year'){
+    for(let y=parseInt(first);y<=parseInt(last);y++) all.push(String(y));
+  } else if(group==='month'){
+    let [cy,cm]=first.split('-').map(Number);
+    const [ey,em]=last.split('-').map(Number);
+    while(cy<ey||(cy===ey&&cm<=em)){
+      all.push(`${cy}-${String(cm).padStart(2,'0')}`);
+      cm++; if(cm>12){cm=1;cy++;}
+    }
+  } else if(group==='week'||group==='day'){
+    const step=group==='week'?7:1;
+    let cur=new Date(first+'T00:00:00');
+    const end=new Date(last+'T00:00:00');
+    while(cur<=end){
+      all.push(cur.toISOString().slice(0,10));
+      cur.setDate(cur.getDate()+step);
+    }
   }
-  return filled.reverse();
+  return all.length?all.slice(-showN):sorted.slice(-showN);
 }
 function renderProcessingHistory(){
   const group=document.getElementById('dash-hist-group')?.value||'month';
-  const showN=_sanitizeDashHistCount();
+  const showN=Math.max(1,parseInt(document.getElementById('dash-hist-count')?.value||'12',10)||12);
   const rows=_getHistRows();
   const el=document.getElementById('dash-processing-chart');
   if(!el) return;
@@ -3534,12 +3394,15 @@ function renderProcessingHistory(){
   const shown=_zeroFillPeriods(rawKeys, group, showN);
   const displaySt=_dashHistStatusFilter==='all'?CHART_STATUSES:(_dashHistStatusFilter==='MISSING'?CHART_STATUSES:[_dashHistStatusFilter.toUpperCase()]);
 
-
+  if(!shown.length){
+    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;font-family:var(--mono)">No history data yet — items will appear here once processed</div>';
+    return;
+  }
 
   const maxVal=Math.max(1,...shown.map(k=>displaySt.reduce((s,st)=>s+(buckets[k]?.[st]||0),0)));
-  const chartH=220;
-  const labelH=24;
-  const barW=Math.max(18,Math.min(48,Math.floor(560/Math.max(shown.length,1))));
+  const chartH=140;
+  const labelH=22;
+  const barW=Math.max(16,Math.min(52,Math.floor(560/shown.length)));
   const gap=Math.max(3,Math.floor(barW*0.22));
   const totalW=shown.length*(barW+gap)+gap;
   const leftPad=34;
@@ -3553,12 +3416,13 @@ function renderProcessingHistory(){
   shown.forEach((key,i)=>{
     const x=leftPad+gap+i*(barW+gap);
     let yOff=0;
+    const totalForPeriod=displaySt.reduce((s,st)=>s+(buckets[key]?.[st]||0),0);
     // Invisible hover target for the full bar column
     bars+=`<rect x="${x}" y="0" width="${barW}" height="${chartH}" fill="transparent" data-hist-key="${key}" style="cursor:pointer"/>`;
     displaySt.forEach(st=>{
       const count=buckets[key]?.[st]||0;
       if(!count) return;
-      const h=Math.max(count?2:0,Math.round((count/maxVal)*(chartH-8)));
+      const h=Math.max(2,Math.round((count/maxVal)*(chartH-6)));
       const y=chartH-yOff-h;
       bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[st]||'#888'}" opacity="0.82" rx="2" data-hist-key="${key}" style="cursor:pointer;pointer-events:none"/>`;
       if(count>0&&h>12) bars+=`<text x="${x+barW/2}" y="${y+h/2+4}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" opacity="0.9" style="pointer-events:none">${count}</text>`;
@@ -3577,12 +3441,15 @@ function renderProcessingHistory(){
     guides+=`<text x="${leftPad-5}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${v}</text>`;
   });
 
+  // Legend — exclude Missing
+  let legend='';
   const legendStatuses=displaySt.filter(st=>st!=='MISSING');
-  const legendHtml=legendStatuses.length?`<div class="dash-chart-legend">${legendStatuses.map(st=>`<span class="dash-chart-legend-item"><span class="dash-chart-legend-swatch" style="background:${COLORS[st]||'#888'}"></span>${st[0]+st.slice(1).toLowerCase()}</span>`).join('')}</div>`:'';
+  legendStatuses.forEach((st,i)=>{
+    legend+=`<g transform="translate(${leftPad+i*80},${chartH+labelH+10})"><rect width="10" height="10" rx="2" fill="${COLORS[st]||'#888'}" opacity="0.82"/><text x="14" y="9" font-size="9" fill="var(--text2)">${st[0]+st.slice(1).toLowerCase()}</text></g>`;
+  });
 
-  const svgW=leftPad+totalW+gap+16;
-  const svgH=chartH+labelH+24;
-  el.innerHTML=`<div class="dash-chart-scroll"><svg class="dash-chart-svg" viewBox="0 -8 ${svgW} ${svgH}" style="width:100%;min-width:${Math.max(svgW,320)}px;height:${svgH+8}px">${guides}${bars}</svg></div>${legendHtml}`;
+  const svgH=chartH+labelH+(legendStatuses.length?26:4)+14;
+  el.innerHTML=`<div style="overflow-x:auto"><svg class="dash-chart-svg" viewBox="0 -8 ${leftPad+totalW+gap+16} ${svgH}" style="width:100%;min-width:${Math.min(leftPad+totalW+gap+16,340)}px;height:${svgH+8}px;display:block">${guides}${bars}${legend}</svg></div>`;
   // Attach tooltip event handlers
   el.querySelectorAll('rect[data-hist-key]').forEach(rect=>{
     rect.addEventListener('mousemove',function(e){
@@ -3614,7 +3481,7 @@ function renderPieChart(){
     el.innerHTML='<div class="dash-pie-empty">No processed data</div>';
     return;
   }
-  const r=92, cx=110, cy=110;
+  const r=60, cx=70, cy=70;
   let slices='', startAngle=-Math.PI/2;
   const legendItems=[];
   const _pieCounts=counts;
@@ -3628,23 +3495,15 @@ function renderPieChart(){
     const largeArc=angle>Math.PI?1:0;
     const x1=cx+r*Math.cos(startAngle), y1=cy+r*Math.sin(startAngle);
     const x2=cx+r*Math.cos(endAngle), y2=cy+r*Math.sin(endAngle);
-    const midAngle=startAngle+(angle/2);
-    const labelRadius=pct>=0.999 ? 0 : r*0.58;
-    const labelX=cx+labelRadius*Math.cos(midAngle);
-    const labelY=cy+labelRadius*Math.sin(midAngle);
     if(pct>=0.999){
       slices+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS[st]}" opacity="0.85" data-pie-st="${st}" style="cursor:pointer"/>`;
-      slices+=`<text x="${cx}" y="${cy}" class="dash-pie-slice-label">${counts[st]}</text>`;
     } else {
       slices+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${COLORS[st]}" opacity="0.85" data-pie-st="${st}" style="cursor:pointer"/>`;
-      if(angle >= 0.38){
-        slices+=`<text x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" class="dash-pie-slice-label">${counts[st]}</text>`;
-      }
     }
     startAngle=endAngle;
     legendItems.push(`<div class="dash-pie-legend-item"><span class="dash-pie-legend-dot" style="background:${COLORS[st]}"></span>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]}</div>`);
   });
-  el.innerHTML=`<svg width="220" height="220" viewBox="0 0 220 220">${slices}</svg><div class="dash-pie-legend">${legendItems.join('')}</div>`;
+  el.innerHTML=`<svg width="140" height="140" viewBox="0 0 140 140">${slices}</svg><div class="dash-pie-legend">${legendItems.join('')}</div>`;
   // Attach pie tooltip handlers
   el.querySelectorAll('[data-pie-st]').forEach(shape=>{
     shape.addEventListener('mousemove',function(e){
@@ -3652,7 +3511,7 @@ function renderPieChart(){
       const count=_pieCounts[st]||0;
       const pct=Math.round(count/_pieTotal*100);
       const label=st[0]+st.slice(1).toLowerCase();
-      const html=`<div class="dash-chart-tooltip-title">${label}</div><div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_pieColors[st]}"></span>Count<span class="dash-chart-tooltip-val">${count}</span></div><div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_pieColors[st]};opacity:.35"></span>Share<span class="dash-chart-tooltip-val">${pct}%</span></div><div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:3px;padding-top:3px;font-weight:700;color:var(--text)">Total<span class="dash-chart-tooltip-val">${_pieTotal}</span></div>`;
+      const html=`<div class="dash-chart-tooltip-title">Composition</div><div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_pieColors[st]}"></span>${label}<span class="dash-chart-tooltip-val">${count}</span></div><div class="dash-chart-tooltip-row" style="color:var(--text3)">${pct}% of ${_pieTotal} total</div>`;
       _showDashTooltip(html,e);
     });
     shape.addEventListener('mouseleave',_hideDashTooltip);
@@ -3692,7 +3551,6 @@ async function loadDashboard(force=false){
   // Update last-updated timestamp
   const tsEl=document.getElementById('dash-last-updated');
   if(tsEl) tsEl.textContent='Updated '+new Date().toLocaleTimeString();
-  _bindDashboardControls();
   const cfg=await loadConfig(force);
   const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
   const enabledLibs=allLibs.filter(lib=>lib.enabled!==false);
@@ -3858,28 +3716,6 @@ function initSidebarNav(){
 
 
 let _toastT;
-const _youtubeSearchCache={};
-const _youtubeSearchInflight={};
-
-async function youtubeSearchRequest(query,{ttlMs=300000}={}){
-  const normalized=String(query||'').trim();
-  if(!normalized) return {ok:false,error:'No query',results:[]};
-  const cacheKey=normalized.toLowerCase();
-  const cached=_youtubeSearchCache[cacheKey];
-  if(cached && Date.now()-cached.ts < ttlMs) return cached.data;
-  if(_youtubeSearchInflight[cacheKey]) return _youtubeSearchInflight[cacheKey];
-  _youtubeSearchInflight[cacheKey]=(async()=>{
-    const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:normalized})});
-    const data=await r.json();
-    if(data?.ok) _youtubeSearchCache[cacheKey]={ts:Date.now(),data};
-    return data;
-  })();
-  try{
-    return await _youtubeSearchInflight[cacheKey];
-  }finally{
-    delete _youtubeSearchInflight[cacheKey];
-  }
-}
 function toast(msg,type='info'){
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='show '+type;
@@ -4336,36 +4172,33 @@ function upsertLedgerRow(savedRow){
 
 function renderChips(){
   const counts={};
-  let withSource=0;
-  let withGolden=0;
+  let golden=0, noGolden=0;
+  let manage=0;
   _rows.forEach(r=>{
     counts[r.status]=(counts[r.status]||0)+1;
-    if(String(r.url||'').trim()) withSource+=1;
-    if(String(r.golden_source_url||'').trim()) withGolden+=1;
+    if(String(r.golden_source_url||'').trim()) golden+=1;
+    else noGolden+=1;
+    if(rowActionType(r)==='MANAGE') manage+=1;
   });
-  const searchActive=!!document.getElementById('db-search').value.trim();
-  const statusActive=document.getElementById('db-filter').value;
-  const sourceActive=document.getElementById('db-source-filter').value;
-  const cards=[
-    {label:'All Items', count:_rows.length, meta:'Full library view', active:!searchActive&&!statusActive&&!sourceActive, color:'var(--text)', handler:'clearDbFilter()'},
-    {label:'Missing', count:counts.MISSING||0, meta:'Needs a source', active:statusActive==='MISSING', color:SC.MISSING, handler:"filterByStatus('MISSING')"},
-    {label:'Staged', count:counts.STAGED||0, meta:'Awaiting review', active:statusActive==='STAGED', color:SC.STAGED, handler:"filterByStatus('STAGED')"},
-    {label:'Approved', count:counts.APPROVED||0, meta:'Ready to download', active:statusActive==='APPROVED', color:SC.APPROVED, handler:"filterByStatus('APPROVED')"},
-    {label:'Available', count:counts.AVAILABLE||0, meta:'Theme on disk', active:statusActive==='AVAILABLE', color:SC.AVAILABLE, handler:"filterByStatus('AVAILABLE')"},
-    {label:'Has Source', count:withSource, meta:'Manual or curated URL', active:sourceActive==='SOURCE_URL', color:'var(--blue)', handler:"filterBySourceState('SOURCE_URL')"},
-    {label:'Golden Source', count:withGolden, meta:'Curated catalog match', active:sourceActive==='GOLDEN', color:'var(--amber)', handler:"filterBySourceState('GOLDEN')"}
+  const filters=[
+    {label:'Total', count:_rows.length, active:!document.getElementById('db-search').value.trim() && !document.getElementById('db-filter').value && !document.getElementById('db-source-filter').value && !document.getElementById('db-action-filter').value, color:'', handler:"clearDbFilter()"},
+    {label:'MISSING', count:counts.MISSING||0, active:document.getElementById('db-filter').value==='MISSING', color:SC.MISSING, handler:"filterByStatus('MISSING')"},
+    {label:'AVAILABLE', count:counts.AVAILABLE||0, active:document.getElementById('db-filter').value==='AVAILABLE', color:SC.AVAILABLE, handler:"filterByStatus('AVAILABLE')"},
+    {label:'GOLDEN SOURCE', count:golden, active:document.getElementById('db-source-filter').value==='GOLDEN', color:'var(--amber)', handler:"filterBySourceState('GOLDEN')"},
+    {label:'NO GOLDEN SOURCE', count:noGolden, active:document.getElementById('db-source-filter').value==='NO_GOLDEN', color:'var(--text3)', handler:"filterBySourceState('NO_GOLDEN')"},
+    {label:'MANAGE', count:manage, active:document.getElementById('db-action-filter').value==='MANAGE', color:'var(--blue)', handler:"filterByAction('MANAGE')"},
+    {label:'STAGED', count:counts.STAGED||0, active:document.getElementById('db-filter').value==='STAGED', color:SC.STAGED, handler:"filterByStatus('STAGED')"},
+    {label:'APPROVED', count:counts.APPROVED||0, active:document.getElementById('db-filter').value==='APPROVED', color:SC.APPROVED, handler:"filterByStatus('APPROVED')"},
+    {label:'FAILED', count:counts.FAILED||0, active:document.getElementById('db-filter').value==='FAILED', color:SC.FAILED, handler:"filterByStatus('FAILED')"}
   ];
-  document.getElementById('db-chips').innerHTML=cards.map(card=>`
-    <button type="button" class="db-stat ${card.active?'active':''}" onclick="${card.handler}">
-      <div class="db-stat-top">
-        <span class="db-stat-count">${card.count}</span>
-        <span class="db-stat-dot" style="background:${card.color}"></span>
-      </div>
-      <span class="db-stat-label">${card.label}</span>
-      <span class="db-stat-meta">${card.meta}</span>
+  document.getElementById('db-chips').innerHTML=filters.map(f=>`
+    <button type="button" class="chip ${f.active?'active':''}" onclick="${f.handler}">
+      <span class="chip-head">${f.count}</span>
+      <span class="chip-body">${f.color?`<span class="chip-dot" style="background:${f.color}"></span>`:''}<span class="status-label"${f.color?` style="color:${f.color}"`:''}>${formatStatusLabel(f.label)}</span></span>
     </button>`).join('');
   updateDbActionHints(counts);
 }
+
 
 function updateDbActionHints(counts){
   const pending=counts.MISSING||0;
@@ -4390,9 +4223,11 @@ function updateDbActionHints(counts){
 
 function filterByStatus(s){ document.getElementById('db-filter').value=s; filterTable(); }
 function filterBySourceState(value){ document.getElementById('db-source-filter').value=value; filterTable(); }
+function filterByAction(value){ document.getElementById('db-action-filter').value=value; filterTable(); }
 function clearDbFilter(opts={}){
   document.getElementById('db-filter').value='';
   document.getElementById('db-source-filter').value='';
+  document.getElementById('db-action-filter').value='';
   if(!opts.keepSearch) document.getElementById('db-search').value='';
   filterTable();
 }
@@ -4405,62 +4240,17 @@ function rowActionType(row){
   return 'MANAGE';
 }
 
-function _sourceStateMeta(row){
-  const hasSource=!!String(row?.url||'').trim();
-  const origin=String(row?.source_origin||'').trim()||'unknown';
-  if(!hasSource) return {label:'No source', detail:'Open Manage to search or paste a URL', cls:'no-source', sort:[0,origin]};
-  const labelMap={golden_source:'Golden Source',manual:'Manual',playlist:'Playlist',direct:'Direct',unknown:'Linked'};
-  return {label:'Source linked', detail:labelMap[origin]||origin.replace(/_/g,' '), cls:'has-source', sort:[1,origin]};
-}
-
-function _goldenStateMeta(row){
-  const hasGolden=!!String(row?.golden_source_url||'').trim();
-  return hasGolden
-    ? {label:'Catalog match', detail:'Curated URL recorded', cls:'has-golden', sort:[1,'golden']}
-    : {label:'Not in catalog', detail:'No Golden Source entry', cls:'no-golden', sort:[0,'none']};
-}
-
-function _formatUpdatedCell(value=''){
-  const raw=String(value||'').trim();
-  if(!raw) return {main:'—', sub:'No updates yet'};
-  return {main:raw.slice(5,10), sub:raw.slice(11,16)||raw};
-}
-
-function _renderSourceStateCell(row){
-  const meta=_sourceStateMeta(row);
-  return `<div class="db-state-cell"><span class="db-state-pill ${meta.cls}">${meta.label}</span><span class="db-state-meta">${meta.detail}</span></div>`;
-}
-
-function _renderGoldenStateCell(row){
-  const meta=_goldenStateMeta(row);
-  return `<div class="db-state-cell"><span class="db-state-pill ${meta.cls}">${meta.label}</span><span class="db-state-meta">${meta.detail}</span></div>`;
-}
-
-function _renderNotesCell(row){
-  const notes=String(row?.notes||'').trim();
-  return `<div class="db-note-cell"><div class="db-note-top"><span class="db-note-indicator ${notes?'has-notes':''}"></span><span class="db-note-label">${notes?'Notes':'No notes'}</span></div><div class="db-note-text ${notes?'':'db-note-empty'}">${notes||'Open Manage to add or review source details.'}</div></div>`;
-}
-
-function _renderUpdatedCell(row){
-  const updated=_formatUpdatedCell(row?.last_updated||'');
-  return `<div class="db-state-cell"><span class="db-updated-main">${updated.main}</span><span class="db-updated-sub">${updated.sub}</span></div>`;
-}
-
-function renderSortHeaders(){
-  document.querySelectorAll('[data-sort-indicator]').forEach(el=>{
-    const col=el.dataset.sortIndicator;
-    el.textContent = col===_sortCol ? (_sortDir===1?'↑':'↓') : '↕';
-  });
-}
-
 function _sortVal(row,col){
   if(col==='title') return (row.title||row.plex_title||'').toString().toLowerCase();
   if(col==='year') return Number(row.year||0);
+  if(col==='start_offset') return parseTrim(row.start_offset||'0');
   if(col==='last_updated') return Date.parse((row.last_updated||'').replace(' ','T'))||0;
-  if(col==='source_state') return _sourceStateMeta(row).sort;
-  if(col==='golden_state') return _goldenStateMeta(row).sort;
-  if(col==='notes') return [String(row.notes||'').trim()?1:0, String(row.notes||'').toLowerCase()];
-  if(col==='status') return STATUSES.indexOf(String(row.status||'').toUpperCase());
+  if(col==='golden_source_url'){
+    const url=String(row.golden_source_url||'').trim().toLowerCase();
+    return [url?1:0,url];
+  }
+  if(col==='source_origin') return (row.source_origin||'').toString().toLowerCase();
+  if(col==='current_theme') return (row.status==='AVAILABLE'?1:0);
   return (row[col]||'').toString().toLowerCase();
 }
 
@@ -4468,6 +4258,7 @@ function filterTable(){
   const q=(document.getElementById('db-search').value||'').toLowerCase().trim();
   const st=document.getElementById('db-filter').value;
   const sourceFilter=document.getElementById('db-source-filter').value;
+  const actionFilter=document.getElementById('db-action-filter').value;
   renderChips();
   _filtered=_rows.filter(r=>{
     if(st&&r.status!==st) return false;
@@ -4477,39 +4268,22 @@ function filterTable(){
     if(sourceFilter==='NO_GOLDEN' && hasGolden) return false;
     if(sourceFilter==='SOURCE_URL' && !hasSource) return false;
     if(sourceFilter==='NO_SOURCE_URL' && hasSource) return false;
-    const haystack=[r.title||'',r.plex_title||'',r.year||'',r.url||'',r.golden_source_url||'',r.notes||'',r.status||'',r.source_origin||''].join(' ').toLowerCase();
+    if(actionFilter && rowActionType(r)!==actionFilter) return false;
+    const haystack=[r.title||'',r.plex_title||'',r.year||'',r.url||'',r.golden_source_url||'',r.notes||'',r.status||''].join(' ').toLowerCase();
     if(q&&!haystack.includes(q)) return false;
     return true;
   });
   _filtered.sort((a,b)=>{
+    if(_sortCol==='golden_source_url'){
+      const [ap,au]=_sortVal(a,_sortCol);
+      const [bp,bu]=_sortVal(b,_sortCol);
+      if(ap!==bp) return (ap-bp)*_sortDir;
+      return au<bu?-_sortDir:au>bu?_sortDir:0;
+    }
     const av=_sortVal(a,_sortCol), bv=_sortVal(b,_sortCol);
-    if(Array.isArray(av) && Array.isArray(bv)){
-      for(let i=0;i<Math.max(av.length,bv.length);i++){
-        const left=av[i];
-        const right=bv[i];
-        if(left===right) continue;
-        return left<right?-_sortDir:_sortDir;
-      }
-      const titleA=(a.title||a.plex_title||'').toLowerCase();
-      const titleB=(b.title||b.plex_title||'').toLowerCase();
-      return titleA<titleB?-1:titleA>titleB?1:0;
-    }
-    if(av===bv){
-      const titleA=(a.title||a.plex_title||'').toLowerCase();
-      const titleB=(b.title||b.plex_title||'').toLowerCase();
-      return titleA<titleB?-1:titleA>titleB?1:0;
-    }
     return av<bv?-_sortDir:av>bv?_sortDir:0;
   });
-  const meta=document.getElementById('db-result-meta');
-  if(meta){
-    const scope=_activeLib?`in ${_activeLib}`:'';
-    const filterBits=[st?displayStatus(st):'', sourceFilter?sourceFilter.replace(/_/g,' ').toLowerCase():''].filter(Boolean);
-    meta.textContent=`Showing ${_filtered.length.toLocaleString()} of ${_rows.length.toLocaleString()} items ${scope}${filterBits.length?` · ${filterBits.join(' · ')}`:''}`.trim();
-  }
-  _page=0;
-  renderSortHeaders();
-  renderTable();
+  _page=0; renderTable();
 }
 
 let _dbFilterTimer=null;
@@ -4569,8 +4343,21 @@ function _manualSaveTargetStatus(){
 }
 
 function _recommendedAction(row){
-  if(row.rating_key) return {label:'Manage', cls:'btn btn-blue btn-sm row-primary-action', fn:'_playTheme'};
-  return {label:'Manage', cls:'btn btn-ghost btn-sm row-primary-action', fn:'_manualSearch'};
+  if(row.rating_key) return {label:'Manage', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
+  return {label:'Manage', cls:'btn btn-ghost btn-xs row-primary-action', fn:'_manualSearch'};
+}
+
+function _rowSecondaryActions(row){
+  const hasTheme=(row.status==='AVAILABLE');
+  const hasSource=_hasSourceUrl(row);
+  const actions=[];
+  if(hasSource) actions.push({label:'Preview source', fn:'_previewSource'});
+  if(row.status!=='STAGED' && hasSource) actions.push({label:'Set Staged', fn:'_stageRow'});
+  if(row.status!=='APPROVED' && row.status==='STAGED') actions.push({label:'Approve to Approved', fn:'_approveRow'});
+  if(row.rating_key) actions.push({label:'Open manage', fn:'_playTheme'});
+  if(hasTheme && row.rating_key) actions.push({label:'Delete theme', fn:'_deleteTheme'});
+  actions.push({label:'Manual search', fn:'_manualSearch'});
+  return actions;
 }
 
 function renderRowActionCell(row){
@@ -4580,7 +4367,30 @@ function renderRowActionCell(row){
   const title=_htmlAttr(row.title||row.plex_title||'');
   const year=_htmlAttr(row.year||'');
   const primary=_recommendedAction(row);
-  return `<div class="row-action-wrap"><button class="${primary.cls}" data-rk="${rk}" data-url="${url}" data-folder="${folder}" data-title="${title}" data-year="${year}" onclick="${primary.fn}(this)">${primary.label}</button></div>`;
+  const secondaries=_rowSecondaryActions(row)
+    .filter(a=>a.fn!==primary.fn)
+    .map(a=>`<button class="btn btn-ghost btn-xs row-action-item" data-rk="${rk}" data-url="${url}" data-folder="${folder}" data-title="${title}" data-year="${year}" onclick="_rowActionInvoke('${a.fn}',this)">${a.label}</button>`)
+    .join('');
+  return `<div class="row-action-wrap">
+    <button class="${primary.cls}" data-rk="${rk}" data-url="${url}" data-folder="${folder}" data-title="${title}" data-year="${year}" onclick="${primary.fn}(this)">${primary.label}</button>
+    <button class="btn btn-ghost btn-xs row-action-more" onclick="toggleRowMenu(this,event)" title="More actions">⋯</button>
+    <div class="row-action-menu">${secondaries||'<span class="bulk-hint" style="padding:6px">No secondary actions</span>'}</div>
+  </div>`;
+}
+
+function toggleRowMenu(btn, evt){
+  if(evt) evt.stopPropagation();
+  const wrap=btn.closest('.row-action-wrap');
+  if(!wrap) return;
+  const menu=wrap.querySelector('.row-action-menu');
+  const willOpen=!menu.classList.contains('open');
+  document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
+  if(willOpen) menu.classList.add('open');
+}
+
+function _rowActionInvoke(fnName, btn){
+  document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
+  if(typeof window[fnName]==='function') window[fnName](btn);
 }
 
 function _stageRow(btn){
@@ -4790,6 +4600,10 @@ async function previewUrl(key, encodedUrl){
   } catch(e){ toast('Preview error','err'); }
 }
 
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('.row-action-wrap')) document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
+});
+
 // === TABLE / ROW RENDERING ===
 // ── Table render ─────────────────────────────────────────────────────────────
 function renderTable(){
@@ -4800,7 +4614,7 @@ function renderTable(){
     tbody.innerHTML=''; 
     const q=(document.getElementById('db-search').value||'').trim();
     const st=document.getElementById('db-filter').value;
-    const hasFilter=!!(q||st||document.getElementById('db-source-filter').value);
+    const hasFilter=!!(q||st||document.getElementById('db-source-filter').value||document.getElementById('db-action-filter').value);
     empty.innerHTML=hasFilter
       ? `No matches for the current filters. <button class="btn btn-ghost btn-xs" onclick="clearDbFilter()">Clear filters</button>`
       : `No items yet. <button class="btn btn-ghost btn-xs" onclick="dbRunPass(1)">⟳ Scan Library</button>`;
@@ -4814,30 +4628,35 @@ function renderTable(){
     const checked=_selectedKeys.has(rk)?'checked':'';
     const rawTitle=(row.title||row.plex_title||'');
     const titleAttr=rawTitle.replace(/"/g,'&quot;');
-    const selectedClass=_selectedKeys.has(rk)?'is-selected':'';
-    return `<tr class="${selectedClass}">
+    const safeUrlAttr=(row.url||'').replace(/"/g,'&quot;');
+    const off=fmt(parseTrim(row.start_offset||0));
+    const tmdbHref=_tmdbLink(row.title||row.plex_title,row.year);
+    return `<tr>
       <td><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
-      <td title="${titleAttr}">
-        <button class="db-title-button" onclick="_playTheme(this)" type="button" data-rk="${_htmlAttr(rk)}" data-title="${_htmlAttr(rawTitle)}" data-year="${_htmlAttr(row.year||'')}" data-folder="${_htmlAttr(row.folder||'')}" data-url="${_htmlAttr(row.url||'')}">
-          <span class="db-title-main">${rawTitle}</span>
-          <span class="db-title-meta"><span class="db-title-badge">${displayStatus(row.status||'MISSING')}</span><span>${row.plex_title&&row.plex_title!==rawTitle?`Plex: ${row.plex_title}`:'Open Manage for source details and actions'}</span></span>
-        </button>
+      <td class="db-cell-title" title="${titleAttr}">
+        <a class="media-title-link" href="${tmdbHref}" onclick="return _openTmdbRow('${rk}',event)" target="_blank" rel="noopener">${rawTitle}</a>
       </td>
-      <td class="db-cell-subtle">${row.year||'—'}</td>
-      <td>${renderStatusCell(row)}</td>
-      <td>${_renderSourceStateCell(row)}</td>
-      <td>${_renderGoldenStateCell(row)}</td>
-      <td>${_renderUpdatedCell(row)}</td>
-      <td>${_renderNotesCell(row)}</td>
+      <td class="db-cell-subtle">${row.year||''}</td>
+      <td>
+        ${renderStatusCell(row)}
+      </td>
       <td>${renderRowActionCell(row)}</td>
+      <td style="white-space:nowrap">${row.golden_source_url?`<a class="golden-link-pill" href="${String(row.golden_source_url).replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${String(row.golden_source_url).replace(/"/g,'&quot;')}">★ Golden Source ↗</a>`:'Not available'}</td>
+      <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" class="db-link-icon" title="${safeUrlAttr}">↗</a>`:''}
+        <input class="inline-ed db-inline-url" value="${safeUrlAttr}" placeholder="paste URL…" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+      <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:74px;font-size:11px"
+        onblur="saveOffsetInput('${rk}',this)"
+        onkeydown="if(event.key==='Enter')this.blur()"></td>
+      <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
+      <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
     </tr>`;
   }).join('');
 
   const tot=Math.ceil(_filtered.length/PAGE);
   document.getElementById('db-pag').innerHTML=tot<=1
-    ?`<span>${_filtered.length} items</span>`
+    ?`<span>${_filtered.length} movies</span>`
     :`<button class="pag-btn" onclick="goPage(${_page-1})" ${_page===0?'disabled':''}>← Prev</button>
-      <span>Page ${_page+1} of ${tot} · ${_filtered.length} items</span>
+      <span>Page ${_page+1} of ${tot} · ${_filtered.length} movies</span>
       <button class="pag-btn" onclick="goPage(${_page+1})" ${_page>=tot-1?'disabled':''}>Next →</button>`;
 }
 
@@ -5673,7 +5492,6 @@ function selectSearchMethod(method){
   });
   _updateQueryDisplay();
   _setSearchFooter(1);
-  _maybePrefetchMethodQuickPick(method);
 }
 
 function pickSearchMethod(method, event){
@@ -5844,7 +5662,8 @@ async function _searchByMethod(method, showStep=true){
     goToSearchStep(2);
     document.getElementById('search-results').innerHTML='<div class="search-results-state">Searching…</div>';
   }
-  const data=await youtubeSearchRequest(q);
+  const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+  const data=await r.json();
   if(!data.ok){
     if(showStep){
       document.getElementById('search-results').innerHTML=`<div class="search-results-state error">${data.error}</div>`;
@@ -5920,6 +5739,7 @@ function _renderResults(results){
         <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}',{skipPreview:false,sourceTitle:'${r.title.replace(/'/g,"\\'").replace(/</g,'&lt;')}'})">Pick</button>
       </div>
     </div>`).join('');
+  if(results[0]?.url) setTimeout(()=>previewSearchResult(results[0].url),80);
 }
 
 
@@ -5951,25 +5771,11 @@ function _renderMethodQuickPick(method, result, opts={}){
 function _setMethodQuickPick(method, result){
   const el=document.getElementById('sm-first-'+method);
   if(!el) return;
-  if(result===null){
-    delete el.dataset.loaded;
-    el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>';
-    return;
-  }
-  el.dataset.loaded='1';
+  if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
   const quickPickOpts=method==='golden_source'
     ? {label:'Curated match', title:'Curated Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Select'}
     : {label:'First match'};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
-}
-
-
-function _maybePrefetchMethodQuickPick(method){
-  if(!['playlist','direct'].includes(method)) return;
-  const el=document.getElementById('sm-first-'+method);
-  if(!el || el.dataset.loaded==='1') return;
-  _setMethodQuickPick(method,null);
-  _prefetchMethodFirstResult(method);
 }
 
 
@@ -6021,20 +5827,20 @@ async function _prefetchMethodFirstResult(method){
   const q=buildSearchQuery(method,_searchTitle,_searchYear);
   if(!q) return;
   try{
-    const data=await youtubeSearchRequest(q);
+    const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+    const data=await r.json();
     _setMethodQuickPick(method, (data.ok && data.results && data.results.length)?data.results[0]:false);
   }catch(_e){ _setMethodQuickPick(method,false); }
 }
 
 function _initMethodQuickPicks(existingRow){
-  const playlistEl=document.getElementById('sm-first-playlist');
-  const directEl=document.getElementById('sm-first-direct');
-  if(playlistEl){ delete playlistEl.dataset.loaded; playlistEl.innerHTML='<span class="sm-quickpick-loading">Pick Playlist to load a quick match…</span>'; }
-  if(directEl){ delete directEl.dataset.loaded; directEl.innerHTML='<span class="sm-quickpick-loading">Pick Direct to load a quick match…</span>'; }
+  _setMethodQuickPick('playlist',null);
+  _setMethodQuickPick('direct',null);
   const row=existingRow||_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
   const golden=_goldenSourceMeta(row);
   _setMethodQuickPick('golden_source', golden.url ? {title:'Golden Source URL', url:golden.url, start_offset:golden.offset} : false);
-  _maybePrefetchMethodQuickPick(_searchMethod||_searchDefaultMethod||'playlist');
+  _prefetchMethodFirstResult('playlist');
+  _prefetchMethodFirstResult('direct');
 }
 
 function searchPreviewSeek(val){ _searchPreviewAudio.seek(val); }
@@ -7443,26 +7249,6 @@ function toggleTheme(){
 (function(){try{const t=localStorage.getItem('mt-theme');if(t==='light'){document.documentElement.setAttribute('data-theme','light');setTimeout(()=>{const b=document.getElementById('theme-toggle-btn');if(b)b.textContent='☾';},0);}}catch(e){}})();
 
 
-let _globalRunStatusTimer=null;
-
-function _scheduleGlobalRunStatusPoll(delayMs){
-  if(_globalRunStatusTimer) clearTimeout(_globalRunStatusTimer);
-  _globalRunStatusTimer=setTimeout(async()=>{
-    await updateGlobalRunStatus();
-    const nextDelay=document.hidden ? 15000 : ((_dashRunActive || _wasRunning) ? 2500 : 10000);
-    _scheduleGlobalRunStatusPoll(nextDelay);
-  }, delayMs);
-}
-
-function startGlobalRunStatusPolling(){
-  document.addEventListener('visibilitychange', ()=>{
-    if(!document.hidden) updateGlobalRunStatus();
-    const nextDelay=document.hidden ? 15000 : ((_dashRunActive || _wasRunning) ? 2500 : 10000);
-    _scheduleGlobalRunStatusPoll(nextDelay);
-  });
-  _scheduleGlobalRunStatusPoll(10000);
-}
-
 try{
   document.addEventListener('DOMContentLoaded', async ()=>{
     await loadUiTerminology();
@@ -7471,9 +7257,12 @@ try{
     initSharedProgress();
     removeItemDetailsPanel();
     updateGlobalRunStatus();
-    startGlobalRunStatusPolling();
+    setInterval(updateGlobalRunStatus, 4000);
+    setInterval(removeItemDetailsPanel, 2000);
     const initial=((location.hash||'').replace(/^#/,'').trim());
-    showPage(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial) ? initial : 'dashboard');
+    if(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial)){
+      showPage(initial);
+    }
   });
 }catch(e){}
 
@@ -7487,6 +7276,7 @@ registerModalLifecycle('theme-modal',{requestClose:closeThemeModal});
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 renderTaskCards();
+loadDashboard();
 bindOffsetWheel();
 </script>
 </body>
