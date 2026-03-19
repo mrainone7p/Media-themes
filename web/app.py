@@ -975,6 +975,230 @@ def list_cookies():
     files = [str(f) for f in config_dir.glob("*.txt")] if config_dir.exists() else []
     return jsonify({"files": files})
 
+
+def _next_cron_run(cron_expr):
+    """Compute the next run time for a 5-field cron expression (UTC).
+    Returns an ISO 8601 string or None on failure.
+    """
+    import math
+    try:
+        parts = cron_expr.strip().split()
+        if len(parts) != 5:
+            return None
+        minute_s, hour_s, dom_s, month_s, dow_s = parts
+
+        def _parse_field(s, lo, hi):
+            vals = set()
+            for chunk in s.split(","):
+                if chunk == "*":
+                    vals.update(range(lo, hi + 1))
+                elif "/" in chunk:
+                    base, step = chunk.split("/", 1)
+                    step = int(step)
+                    start = lo if base == "*" else int(base)
+                    vals.update(range(start, hi + 1, step))
+                elif "-" in chunk:
+                    a, b = chunk.split("-", 1)
+                    vals.update(range(int(a), int(b) + 1))
+                else:
+                    vals.add(int(chunk))
+            return sorted(v for v in vals if lo <= v <= hi)
+
+        minutes = _parse_field(minute_s, 0, 59)
+        hours   = _parse_field(hour_s,   0, 23)
+        months  = _parse_field(month_s,  1, 12)
+        dom     = _parse_field(dom_s,    1, 31) if dom_s != "*" else None
+        dow     = _parse_field(dow_s,    0,  6) if dow_s != "*" else None
+
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
+        candidate = now + timedelta(minutes=1)
+        for _ in range(366 * 24 * 60):
+            if candidate.month not in months:
+                candidate += timedelta(minutes=1)
+                continue
+            day_ok = True
+            if dom is not None and dow is not None:
+                day_ok = (candidate.day in dom) or (candidate.weekday() % 7 in dow)
+            elif dom is not None:
+                day_ok = candidate.day in dom
+            elif dow is not None:
+                day_ok = candidate.weekday() % 7 in dow
+            if not day_ok:
+                candidate += timedelta(minutes=1)
+                continue
+            if candidate.hour not in hours:
+                candidate += timedelta(minutes=1)
+                continue
+            if candidate.minute not in minutes:
+                candidate += timedelta(minutes=1)
+                continue
+            return candidate.isoformat()
+        return None
+    except Exception:
+        return None
+
+
+@app.route("/api/health", methods=["GET"])
+def api_health():
+    """Return validated system health for each component."""
+    import shutil, sqlite3 as _sqlite3
+    cfg = load_config()
+    result = {}
+
+    # ── Plex ──────────────────────────────────────────────────────────────────
+    plex_url   = (cfg.get("plex_url")   or "").strip().rstrip("/")
+    plex_token = (cfg.get("plex_token") or "").strip()
+    if not plex_url or not plex_token:
+        result["plex"] = {"state": "off", "label": "Not configured"}
+    else:
+        try:
+            r = http_requests.get(
+                f"{plex_url}/library/sections",
+                headers={"X-Plex-Token": plex_token, "Accept": "application/json"},
+                timeout=8,
+            )
+            r.raise_for_status()
+            libs = r.json().get("MediaContainer", {}).get("Directory", [])
+            result["plex"] = {"state": "ok", "label": "Connected", "detail": f"{len(libs)} libraries"}
+        except Exception as exc:
+            result["plex"] = {"state": "error", "label": "Connection failed", "detail": str(exc)[:100]}
+
+    # ── TMDB API ───────────────────────────────────────────────────────────────
+    tmdb_key = (cfg.get("tmdb_api_key") or "").strip()
+    if not tmdb_key:
+        result["tmdb"] = {"state": "off", "label": "Not configured"}
+    else:
+        try:
+            r = http_requests.get(
+                "https://api.themoviedb.org/3/configuration",
+                params={"api_key": tmdb_key},
+                timeout=8,
+            )
+            if r.status_code == 401:
+                result["tmdb"] = {"state": "error", "label": "Invalid key"}
+            elif r.ok:
+                result["tmdb"] = {"state": "ok", "label": "Connected"}
+            else:
+                result["tmdb"] = {"state": "warning", "label": "API error", "detail": f"HTTP {r.status_code}"}
+        except Exception as exc:
+            result["tmdb"] = {"state": "error", "label": "API error", "detail": str(exc)[:100]}
+
+    # ── Golden Source ──────────────────────────────────────────────────────────
+    gs_url = (cfg.get("golden_source_url") or "").strip()
+    if not gs_url:
+        result["golden_source"] = {"state": "off", "label": "Not configured"}
+    else:
+        try:
+            _, rows, _, _ = _fetch_golden_source_catalog(gs_url)
+            if not rows:
+                result["golden_source"] = {"state": "warning", "label": "Loaded: 0 rows", "detail": "No usable rows found"}
+            else:
+                result["golden_source"] = {"state": "ok", "label": f"Loaded: {len(rows):,} rows"}
+        except Exception as exc:
+            result["golden_source"] = {"state": "error", "label": "Load failed", "detail": str(exc)[:100]}
+
+    # ── Download Toolchain ─────────────────────────────────────────────────────
+    ytdlp_bin  = shutil.which("yt-dlp")
+    ffmpeg_bin = shutil.which("ffmpeg")
+    ytdlp_ver  = None
+    ffmpeg_ver = None
+    if ytdlp_bin:
+        try:
+            rv = subprocess.run(["yt-dlp", "--version"], capture_output=True, text=True, timeout=5)
+            ytdlp_ver = rv.stdout.strip()
+        except Exception:
+            pass
+    if ffmpeg_bin:
+        try:
+            rv = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, timeout=5)
+            first = rv.stdout.splitlines()[0] if rv.stdout else ""
+            m = re.search(r"ffmpeg version (\S+)", first)
+            ffmpeg_ver = m.group(1) if m else "unknown"
+        except Exception:
+            pass
+    if ytdlp_bin and ffmpeg_bin:
+        parts = []
+        if ytdlp_ver:  parts.append(f"yt-dlp {ytdlp_ver}")
+        if ffmpeg_ver: parts.append(f"ffmpeg {ffmpeg_ver}")
+        result["toolchain"] = {"state": "ok", "label": "Ready", "detail": " · ".join(parts),
+                               "ytdlp_version": ytdlp_ver, "ffmpeg_version": ffmpeg_ver}
+    elif not ytdlp_bin and not ffmpeg_bin:
+        result["toolchain"] = {"state": "error", "label": "Dependency issue", "detail": "yt-dlp and ffmpeg not found"}
+    elif not ytdlp_bin:
+        result["toolchain"] = {"state": "error", "label": "yt-dlp missing",
+                               "detail": f"ffmpeg {ffmpeg_ver}" if ffmpeg_ver else "ffmpeg present"}
+    else:
+        result["toolchain"] = {"state": "error", "label": "ffmpeg missing",
+                               "detail": f"yt-dlp {ytdlp_ver}" if ytdlp_ver else "yt-dlp present"}
+
+    # ── Storage / Paths ────────────────────────────────────────────────────────
+    roots = get_media_roots(cfg)
+    missing_paths, readonly_paths = [], []
+    for root in roots:
+        p = Path(root)
+        if not p.exists():
+            missing_paths.append(root)
+        elif not os.access(str(p), os.W_OK):
+            readonly_paths.append(root)
+    if missing_paths:
+        result["storage"] = {"state": "error", "label": "Missing path",
+                             "detail": "; ".join(missing_paths[:2])}
+    elif readonly_paths:
+        result["storage"] = {"state": "warning", "label": "Read-only path",
+                             "detail": "; ".join(readonly_paths[:2])}
+    else:
+        result["storage"] = {"state": "ok", "label": "Writable",
+                             "detail": f"{len(roots)} path{'s' if len(roots) != 1 else ''} writable"}
+
+    # ── Database ───────────────────────────────────────────────────────────────
+    try:
+        db_path = Path(get_db_path())
+        if not db_path.exists():
+            result["database"] = {"state": "warning", "label": "Not initialized"}
+        else:
+            conn = _sqlite3.connect(str(db_path), timeout=5)
+            conn.execute("SELECT 1")
+            conn.close()
+            result["database"] = {"state": "ok", "label": "Healthy"}
+    except Exception as exc:
+        result["database"] = {"state": "error", "label": "DB error", "detail": str(exc)[:100]}
+
+    # ── Libraries ─────────────────────────────────────────────────────────────
+    all_libs   = [l for l in (cfg.get("libraries") or [])
+                  if not l.get("type") or l.get("type") in ("movie", "show")]
+    enabled    = [l for l in all_libs if l.get("enabled") is not False]
+    sched_names = set(cfg.get("schedule_libraries") or [l["name"] for l in enabled])
+    scheduled  = [l for l in enabled if l.get("name") in sched_names]
+    if not enabled:
+        result["libraries"] = {"state": "warning", "label": "No enabled libraries", "enabled": 0, "scheduled": 0}
+    else:
+        result["libraries"] = {"state": "ok", "label": f"{len(enabled)} enabled",
+                               "detail": f"{len(scheduled)} in scheduler",
+                               "enabled": len(enabled), "scheduled": len(scheduled)}
+
+    # ── Schedule ───────────────────────────────────────────────────────────────
+    sched_enabled = cfg.get("schedule_enabled", False)
+    cron_expr     = (cfg.get("cron_schedule") or "0 3 * * *").strip()
+    cron_parts    = cron_expr.split()
+    cron_valid    = len(cron_parts) == 5
+    next_run      = _next_cron_run(cron_expr) if cron_valid else None
+    sched_libs_count = len(scheduled)
+    if not cron_valid:
+        result["schedule"] = {"state": "error", "label": "Invalid cron", "cron": cron_expr,
+                              "next_run": None, "libraries": sched_libs_count}
+    elif not sched_enabled:
+        result["schedule"] = {"state": "off", "label": "Disabled", "cron": cron_expr,
+                              "next_run": next_run, "libraries": sched_libs_count}
+    elif not scheduled:
+        result["schedule"] = {"state": "warning", "label": "No libraries selected", "cron": cron_expr,
+                              "next_run": next_run, "libraries": 0}
+    else:
+        result["schedule"] = {"state": "ok", "label": "Enabled", "cron": cron_expr,
+                              "next_run": next_run, "libraries": sched_libs_count}
+
+    return jsonify(result)
+
 @app.route("/api/ledger", methods=["GET"])
 def get_ledger():
     lib = request.args.get("library","")
