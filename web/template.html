@@ -113,6 +113,8 @@ body.nav-collapsed main{margin-left:48px}
 .btn-blue:hover{filter:brightness(1.1)}
 .btn-purple{background:var(--purple);color:#fff}
 .btn-purple:hover{filter:brightness(1.1)}
+.btn-danger-ghost{background:transparent;color:var(--red);border:1px solid color-mix(in srgb,var(--red) 45%,var(--border))}
+.btn-danger-ghost:hover{background:var(--red-soft);border-color:var(--red);color:var(--red)}
 .btn-sm{padding:6px 12px;font-size:12px}
 .btn-xs{padding:4px 9px;font-size:11px}
 .btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
@@ -491,9 +493,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-header{display:flex;gap:16px;align-items:flex-start;padding:22px 22px 0}
 .modal-poster{width:75px;height:112px;border-radius:8px;object-fit:cover;background:var(--surface2);flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .modal-movie-info{flex:1;min-width:0}
-.modal-movie-title{font-size:18px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px}
-.modal-movie-meta{font-size:12px;color:var(--text3);font-family:var(--mono);display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px}
-.modal-movie-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.modal-movie-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:3px}
+.modal-movie-title{font-size:18px;font-weight:700;color:var(--text);line-height:1.2;min-width:0;flex:1}
+.modal-movie-meta{font-size:12px;color:var(--text3);font-family:var(--mono);display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:2px}
+.modal-movie-links{display:flex;flex-wrap:wrap;gap:6px}
 .modal-link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--text2);background:var(--surface2);transition:all .15s;white-space:nowrap}
 .modal-link-pill:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
 .modal-link-pill.tmdb-pill{border-color:rgba(245,166,35,.4);color:var(--amber);background:var(--amber-soft)}
@@ -527,6 +530,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-step-sep{width:22px;height:2px;background:var(--border);opacity:.7}
 .modal-kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--surface2)}
 .modal-bio{font-size:12px;color:var(--text2);line-height:1.55;padding:10px 22px 0;border-top:1px solid var(--border);margin-top:10px}
+.modal-bio.is-clamped{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .modal-section-header{padding:0 22px 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.01em}
 .modal-section-divider{height:1px;background:var(--border);margin:0 22px 0}
 .modal-status-txt{font-size:11px;font-family:var(--mono);color:var(--text3);padding:0 22px 6px;min-height:18px}
@@ -572,25 +576,36 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .review-header-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;padding:0 22px 8px}
 .review-section-divider{height:1px;background:var(--border);margin:2px 22px 12px}
 .simple-line{font-size:12px;color:var(--text2);margin-bottom:6px;word-break:break-word}
-.review-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:0 22px 8px}
-.review-panel-heading{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.review-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:0 22px 6px}
+.review-panel-heading{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .review-panel-title{font-size:15px;font-weight:700;color:var(--text)}
 .theme-status-flow-wrap{display:flex;flex-direction:column;gap:6px;min-width:0}
 .theme-status-helper{font-size:11px;color:var(--text3);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.theme-source-details{margin-top:10px;border-radius:10px}
+.theme-source-details > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
+.theme-source-details > summary::-webkit-details-marker{display:none}
+.theme-source-details[open] > summary{margin-bottom:8px}
+.theme-source-details[open] .settings-chev{transform:rotate(180deg)}
+.theme-source-summary-text{display:inline-flex;align-items:center;gap:8px}
+.theme-source-url-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.theme-source-url-text{font-family:var(--mono);font-size:11px;color:var(--text2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.theme-source-url-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .review-meta-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--surface) 45%, transparent);overflow:hidden}
 .review-card.compact{padding:12px}
 .review-card.compact .review-card-header{margin-bottom:8px}
 .review-empty{font-size:12px;color:var(--text3);line-height:1.5;padding:9px 11px;border:1px dashed var(--border);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,transparent)}
-#theme-modal .modal-header{padding:18px 18px 0;gap:12px}
-#theme-modal .modal-poster{width:64px;height:96px}
-#theme-modal .review-panel-head{padding:0 18px 8px}
-#theme-modal .review-card{margin:0 18px 10px;padding:12px}
-#theme-modal .review-card-header{margin-bottom:8px}
+#theme-modal .modal-header{padding:16px 18px 0;gap:10px}
+#theme-modal .modal-poster{width:58px;height:88px}
+#theme-modal .review-panel-head{padding:0 18px 6px}
+#theme-modal .review-card{margin:0 18px 8px;padding:10px 12px}
+#theme-modal .review-card-header{margin-bottom:6px}
 #theme-modal .review-meta-item{padding:8px 10px;gap:4px}
 #theme-modal .modal-bio{padding:0 18px 8px}
-#theme-modal .review-section-divider{margin:2px 18px 10px}
+#theme-modal .review-section-divider{margin:2px 18px 8px}
 #theme-modal .modal-footer{padding:10px 18px}
-#theme-modal .simple-line{margin-bottom:4px}
+#theme-modal .simple-line{margin-bottom:3px}
+#theme-modal .theme-status-flow-wrap{gap:2px}
+#theme-modal .theme-source-details{margin-top:8px}
 .review-meta-item{display:flex;flex-direction:column;gap:5px;min-width:0;padding:10px 12px;border-top:1px solid var(--border)}
 .review-meta-item:first-child{border-top:none}
 .review-meta-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
@@ -1824,12 +1839,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="modal-header">
       <img class="modal-poster" id="theme-modal-poster" src="" onerror="this.style.display='none'">
       <div class="modal-movie-info">
-        <div class="modal-movie-title" id="theme-modal-title"></div>
+        <div class="modal-movie-title-row">
+          <div class="modal-movie-title" id="theme-modal-title"></div>
+          <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
+        </div>
         <div class="modal-movie-meta">
           <span id="theme-modal-year"></span>
           <span id="theme-modal-dur-meta" style="color:var(--green)"></span>
+          <div class="modal-movie-links" id="theme-modal-links"></div>
         </div>
-        <div class="modal-movie-links" id="theme-modal-links"></div>
       </div>
     </div>
     <div class="modal-bio" id="theme-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0 22px 10px"></div>
@@ -1837,19 +1855,18 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
     <div class="review-panel-head">
       <div class="review-panel-heading">
-        <div class="review-panel-title" id="theme-modal-summary">Manage Theme</div>
+        <div class="review-panel-title hidden" id="theme-modal-summary">Manage Theme</div>
         <div class="theme-status-flow-wrap">
           <div class="theme-status-helper" id="theme-modal-status-helper">No source attached yet.</div>
         </div>
       </div>
-      <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
     </div>
 
     <div class="review-card" id="theme-local-card">
       <div class="review-card-header">
         <div class="review-card-heading">
           <div class="modal-section-label" style="margin-bottom:0">Local Theme</div>
-          <div class="review-card-subtitle" id="theme-modal-local-status">Review the local file, playback, and cleanup actions.</div>
+          <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
         </div>
       </div>
       <div id="theme-local-meta">
@@ -1857,6 +1874,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
       </div>
       <div class="review-empty" id="theme-local-missing" style="display:none">No local theme file is saved right now.</div>
+      <div class="modal-actions-row" style="margin-top:10px" id="theme-local-actions">
+        <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim</button>
+        <button class="btn btn-amber btn-sm" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace</button>
+        <button class="btn btn-danger-ghost btn-sm" id="theme-modal-delete-btn" onclick="themeModalDelete()">Delete</button>
+      </div>
       <div id="theme-local-player" style="display:none">
         <div class="modal-player-row">
           <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
@@ -1870,10 +1892,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
         </div>
         <audio id="theme-modal-audio" style="display:none"></audio>
-        <div class="modal-actions-row" style="margin-top:10px">
-          <button class="btn btn-ghost btn-sm" onclick="themeModalEditTrim()">Edit Trim</button>
-          <button class="btn btn-red btn-sm" onclick="themeModalDelete()">Delete Theme</button>
-        </div>
       </div>
     </div>
 
@@ -1886,31 +1904,40 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="review-source-pill is-unknown" id="theme-modal-source-pill">Unknown</div>
       </div>
       <div class="review-empty" id="theme-source-empty" style="display:none">No source is attached right now.</div>
-      <div class="review-meta-list" id="theme-source-meta-list">
-        <div class="review-meta-item">
-          <div class="review-meta-label">Theme Source</div>
-          <div class="review-meta-value" id="theme-modal-source-url">—</div>
+      <details class="surface-panel compact theme-source-details" id="theme-source-details">
+        <summary>
+          <span class="theme-source-summary-text">Source metadata</span>
+          <span class="settings-chev">▾</span>
+        </summary>
+        <div class="review-meta-list" id="theme-source-meta-list">
+          <div class="review-meta-item">
+            <div class="review-meta-label">Theme Source</div>
+            <div class="review-meta-value theme-source-url-row">
+              <span class="theme-source-url-text" id="theme-modal-source-url">—</span>
+              <span class="theme-source-url-actions">
+                <button class="btn btn-ghost btn-xs" id="theme-copy-source-btn" onclick="themeModalCopySource()">Copy</button>
+                <button class="btn btn-ghost btn-xs" id="theme-open-source-btn" onclick="themeModalOpenSource()">Open</button>
+              </span>
+            </div>
+          </div>
+          <div class="review-meta-item">
+            <div class="review-meta-label">Imported</div>
+            <div class="review-meta-value" id="theme-modal-imported">—</div>
+          </div>
+          <div class="review-meta-item">
+            <div class="review-meta-label">Pull Method</div>
+            <div class="review-meta-value" id="theme-modal-origin">—</div>
+          </div>
+          <div class="review-meta-item">
+            <div class="review-meta-label">Length / Offset</div>
+            <div class="review-meta-value" id="theme-modal-offset">—</div>
+          </div>
+          <div class="review-meta-item">
+            <div class="review-meta-label">Notes</div>
+            <div class="review-meta-value" id="theme-modal-source-notes">—</div>
+          </div>
         </div>
-        <div class="review-meta-item">
-          <div class="review-meta-label">Imported</div>
-          <div class="review-meta-value" id="theme-modal-imported">—</div>
-        </div>
-        <div class="review-meta-item">
-          <div class="review-meta-label">Pull Method</div>
-          <div class="review-meta-value" id="theme-modal-origin">—</div>
-        </div>
-        <div class="review-meta-item">
-          <div class="review-meta-label">Length / Offset</div>
-          <div class="review-meta-value" id="theme-modal-offset">—</div>
-        </div>
-        <div class="review-meta-item">
-          <div class="review-meta-label">Notes</div>
-          <div class="review-meta-value" id="theme-modal-source-notes">—</div>
-        </div>
-      </div>
-      <div class="modal-actions-row" style="margin-top:12px" id="theme-source-actions">
-        <button class="btn btn-ghost btn-sm" id="theme-open-source-btn" onclick="themeModalOpenSource()">↗ Open Source</button>
-      </div>
+      </details>
     </div>
 
     <!-- Footer -->
@@ -1918,7 +1945,6 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="review-footer-actions">
         <button class="btn btn-ghost" id="theme-next-step-btn" style="display:none" onclick="themeModalRunNextStep()">Next Step</button>
         <button class="btn btn-amber" id="theme-find-btn" style="display:none" onclick="themeModalOpenManualSearch()">Find Theme</button>
-        <button class="btn btn-ghost" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace Theme</button>
         <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
       </div>
     </div>
@@ -5334,12 +5360,13 @@ function _themeSourceMeta(row={}){
 function _themeModalPrimarySourceUrl(row={}){
   return String(row?.url||'').trim() || String(row?.golden_source_url||'').trim();
 }
-function _themeModalLink(url,fallback='—'){
+function _themeModalShortUrl(url,fallback='—',maxLen=56){
   const v=String(url||'').trim();
   if(!v) return fallback;
-  const safeHref=v.replace(/"/g,'&quot;');
-  const safeText=v.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  return `<a href="${safeHref}" target="_blank" rel="noopener">${safeText}</a>`;
+  if(v.length<=maxLen) return v;
+  const head=Math.max(18,Math.floor((maxLen-1)/2));
+  const tail=Math.max(12,maxLen-head-1);
+  return `${v.slice(0,head)}…${v.slice(-tail)}`;
 }
 function _themeModalImportedAt(row={}){
   const raw=String(row?.last_updated||'').trim();
@@ -5431,7 +5458,6 @@ function openThemeModal(rk,title,year,folder,row={}){
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
   document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'Theme missing';
-  document.getElementById('theme-modal-summary').textContent='Manage Theme';
   const statusBadge=document.getElementById('theme-modal-status-badge');
   if(statusBadge){
     statusBadge.className=`badge s-${status}`;
@@ -5439,11 +5465,15 @@ function openThemeModal(rk,title,year,folder,row={}){
   }
   _themeModalUpdateStatusFlow(status);
   document.getElementById('theme-modal-local-status').textContent=hasTheme
-    ?'Theme saved locally and playable.'
-    :'No local theme file is saved right now.';
+    ?'Available locally'
+    :'Missing locally';
   document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
   document.getElementById('theme-modal-local-dur').textContent=`Duration: ${hasTheme&&row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
-  document.getElementById('theme-modal-source-url').innerHTML=_themeModalLink(primarySourceUrl,'—');
+  const sourceUrlEl=document.getElementById('theme-modal-source-url');
+  if(sourceUrlEl){
+    sourceUrlEl.textContent=_themeModalShortUrl(primarySourceUrl,'—');
+    sourceUrlEl.title=primarySourceUrl||'';
+  }
   document.getElementById('theme-modal-origin').textContent=hasSource?sourceMeta.method:'—';
   document.getElementById('theme-modal-imported').textContent=hasSource?_themeModalImportedAt(row):'—';
   document.getElementById('theme-modal-offset').textContent=hasSource?_themeModalOffsetLabel(row, hasTheme):'—';
@@ -5456,28 +5486,37 @@ function openThemeModal(rk,title,year,folder,row={}){
   sourcePill.className=`review-source-pill ${sourceMeta.className}`;
   sourcePill.style.display=hasSource?'inline-flex':'none';
 
-  const sourceActions=document.getElementById('theme-source-actions');
   const sourceEmpty=document.getElementById('theme-source-empty');
   const sourceMetaList=document.getElementById('theme-source-meta-list');
+  const sourceDetails=document.getElementById('theme-source-details');
   const openSourceBtn=document.getElementById('theme-open-source-btn');
-  if(sourceActions) sourceActions.style.display=hasSource?'flex':'none';
   if(sourceEmpty) sourceEmpty.style.display=hasSource?'none':'block';
   if(sourceMetaList) sourceMetaList.style.display=hasSource?'flex':'none';
   if(openSourceBtn) openSourceBtn.style.display=hasSource?'':'none';
+  const copySourceBtn=document.getElementById('theme-copy-source-btn');
+  if(copySourceBtn) copySourceBtn.style.display=hasSource?'':'none';
+  if(sourceDetails){
+    sourceDetails.style.display=hasSource?'block':'none';
+    sourceDetails.open=false;
+  }
 
   const localCard=document.getElementById('theme-local-card');
   const localMeta=document.getElementById('theme-local-meta');
   const localMissing=document.getElementById('theme-local-missing');
+  const localTrimBtn=document.getElementById('theme-modal-trim-btn');
+  const localDeleteBtn=document.getElementById('theme-modal-delete-btn');
   if(localCard) localCard.classList.toggle('compact', !hasTheme);
-  if(localMeta) localMeta.style.display=hasTheme?'block':'none';
-  if(localMissing) localMissing.style.display=hasTheme?'none':'block';
+  if(localMeta) localMeta.style.display='block';
+  if(localMissing) localMissing.style.display='none';
+  if(localTrimBtn) localTrimBtn.style.display=hasTheme?'':'none';
+  if(localDeleteBtn) localDeleteBtn.style.display=hasTheme?'':'none';
   const sourceCard=document.getElementById('theme-source-card');
   if(sourceCard) sourceCard.classList.toggle('compact', !hasSource);
 
   const replaceBtn=document.getElementById('theme-replace-btn');
   const findBtn=document.getElementById('theme-find-btn');
   const nextStepBtn=document.getElementById('theme-next-step-btn');
-  if(replaceBtn) replaceBtn.style.display=hasTheme||hasSource?'':'none';
+  if(replaceBtn) replaceBtn.style.display='';
   if(findBtn) findBtn.style.display=hasTheme?'none':'';
   const nextAction=_themeModalNextAction(row, hasTheme);
   if(nextStepBtn){
@@ -5495,7 +5534,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   }
 
   document.getElementById('theme-local-player').style.display=hasTheme?'block':'none';
-  document.getElementById('theme-local-missing').style.display=hasTheme?'none':'block';
+  document.getElementById('theme-local-missing').style.display='none';
 
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
@@ -5505,6 +5544,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   document.getElementById('theme-modal-links').innerHTML=
     `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
   setBio('theme-modal-bio', rk);
+  document.getElementById('theme-modal-bio')?.classList.add('is-clamped');
   _themeModalAudio.cleanup({clearSrc:false});
   if(hasTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
   else _themeModalAudio.audio.src='';
@@ -5547,6 +5587,28 @@ function themeModalOpenSource(){
   const url=_themeModalPrimarySourceUrl(_themeModalContext?.row||{});
   if(!url) return toast('No source URL on this row','info');
   window.open(url,'_blank');
+}
+async function themeModalCopySource(){
+  const url=_themeModalPrimarySourceUrl(_themeModalContext?.row||{});
+  if(!url) return toast('No source URL on this row','info');
+  try{
+    if(navigator.clipboard?.writeText){
+      await navigator.clipboard.writeText(url);
+    }else{
+      const tmp=document.createElement('textarea');
+      tmp.value=url;
+      tmp.setAttribute('readonly','readonly');
+      tmp.style.position='absolute';
+      tmp.style.left='-9999px';
+      document.body.appendChild(tmp);
+      tmp.select();
+      document.execCommand('copy');
+      document.body.removeChild(tmp);
+    }
+    toast('Source URL copied','ok');
+  }catch{
+    toast('Could not copy source URL','err');
+  }
 }
 function themeModalSetStatus(status){
   const key=_themeModalContext?.rk;
