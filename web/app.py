@@ -166,6 +166,44 @@ def _status_validation_error(row, attempted_status):
         }
     return None
 
+
+def _ledger_row_response(row):
+    return {header: str(row.get(header, "") or "") for header in LEDGER_HEADERS}
+
+
+def _save_ledger_row_updates(row, updates, *, default_notes=None):
+    attempted_status = None
+    candidate_row = dict(row)
+    for key, value in updates.items():
+        if key not in EDITABLE_LEDGER_FIELDS:
+            continue
+        normalized = str(value or "")
+        if key == "status":
+            attempted_status = normalized.upper()
+            candidate_row[key] = attempted_status
+        else:
+            candidate_row[key] = normalized
+
+    if attempted_status:
+        err = _status_validation_error(candidate_row, attempted_status)
+        if err:
+            err["rating_key"] = str(row.get("rating_key", "") or "")
+            err["title"] = row.get("title") or row.get("plex_title") or ""
+            return None, err
+
+    for key, value in updates.items():
+        if key not in EDITABLE_LEDGER_FIELDS:
+            continue
+        normalized = str(value or "")
+        row[key] = attempted_status if key == "status" and attempted_status else normalized
+
+    if "url" in updates:
+        row["source_origin"] = "manual" if str(updates.get("url") or "").strip() else "unknown"
+    row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if "notes" not in updates and default_notes is not None:
+        row["notes"] = default_notes
+    return row, None
+
 _run_lock    = threading.Lock()
 _run_active  = False
 _run_clients = []
@@ -669,29 +707,48 @@ def patch_ledger(key):
     for row in rows:
         if row.get("rating_key") == key:
             req = request.json or {}
-            attempted_status = None
-            if "status" in req:
-                attempted_status = str(req.get("status") or "").upper()
-                candidate_row = dict(row)
-                for k, v in req.items():
-                    if k in EDITABLE_LEDGER_FIELDS:
-                        candidate_row[k] = str(v)
-                err = _status_validation_error(candidate_row, attempted_status)
-                if err:
-                    err["rating_key"] = key
-                    err["title"] = row.get("title") or row.get("plex_title") or ""
-                    return jsonify(err), 400
-            for k, v in req.items():
-                if k in EDITABLE_LEDGER_FIELDS: row[k] = str(v)
-            if attempted_status:
-                row["status"] = attempted_status
-            if "url" in req and str(req.get("url") or "").strip():
-                row["source_origin"] = "manual"
-            row["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            if "notes" not in req: row["notes"] = "Edited via web UI"
+            saved_row, err = _save_ledger_row_updates(row, req, default_notes="Edited via web UI")
+            if err:
+                return jsonify(err), 400
             save_ledger(path, rows)
-            return jsonify({"ok":True})
+            return jsonify({"ok":True, "row": _ledger_row_response(saved_row)})
     return jsonify({"error":"not found"}), 404
+
+@app.route("/api/ledger/manual-source", methods=["POST"])
+def save_manual_source():
+    data = request.json or {}
+    key = str(data.get("rating_key", "") or "").strip()
+    lib = str(data.get("library", "") or "").strip()
+    if not key:
+        return jsonify({"ok": False, "error": "Missing rating_key"}), 400
+    if not lib:
+        return jsonify({"ok": False, "error": "Missing library"}), 400
+    url = str(data.get("url", "") or "").strip()
+    target_status = str(data.get("target_status", data.get("status", "")) or "").strip().upper()
+    if not url:
+        return jsonify({"ok": False, "error": "Missing url"}), 400
+    if not target_status:
+        return jsonify({"ok": False, "error": "Missing target_status"}), 400
+
+    path = ledger_path_for(lib)
+    rows = load_ledger(path)
+    row = next((r for r in rows if str(r.get("rating_key", "") or "").strip() == key), None)
+    if not row:
+        return jsonify({"ok": False, "error": "not found"}), 404
+
+    updates = {
+        "url": url,
+        "start_offset": data.get("start_offset", "0"),
+        "notes": data.get("notes", ""),
+        "status": target_status,
+    }
+    saved_row, err = _save_ledger_row_updates(row, updates)
+    if err:
+        err["library"] = lib
+        return jsonify(err), 400
+
+    save_ledger(path, rows)
+    return jsonify({"ok": True, "row": _ledger_row_response(saved_row)})
 
 @app.route("/api/ledger/bulk", methods=["POST"])
 def bulk_ledger():
