@@ -1056,17 +1056,34 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
 
 # ─── Library helpers ──────────────────────────────────────────────────────────
 
-def get_libraries(cfg: dict) -> list:
+def _explicit_run_libraries_from_env() -> list[str]:
+    raw = (os.environ.get("RUN_LIBRARIES") or "").strip()
+    if not raw:
+        return []
+    try:
+        decoded = json.loads(raw)
+        if isinstance(decoded, list):
+            return [str(name).strip() for name in decoded if str(name).strip()]
+    except json.JSONDecodeError:
+        pass
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def get_libraries(cfg: dict, explicit_names: Optional[list[str]] = None) -> list:
     """Return libraries selected for scheduled/manual batch runs."""
     libs = cfg.get("libraries")
     if libs and isinstance(libs, list):
         available      = [l for l in libs if l.get("enabled", True)]
-        selected_names = set(cfg.get("schedule_libraries") or [])
+        selected_names = set(explicit_names or cfg.get("schedule_libraries") or [])
         if selected_names:
             chosen = [l for l in available if l.get("name") in selected_names]
             if chosen:
                 return chosen
+            if explicit_names:
+                log.warning(f"Requested explicit libraries not found/enabled: {sorted(selected_names)}")
         return available
+    if explicit_names:
+        return [{"name": name, "enabled": True} for name in explicit_names]
     name = cfg.get("plex_library_name", "Movies")
     return [{"name": name, "enabled": True}]
 
@@ -1261,13 +1278,16 @@ def main():
     force_pass = int(os.environ.get("FORCE_PASS", "0"))
     if force_pass:
         log.info(f"FORCE_PASS={force_pass} — running Pass {force_pass} only")
+    explicit_run_libraries = _explicit_run_libraries_from_env()
+    if explicit_run_libraries:
+        log.info(f"RUN_LIBRARIES override active — limiting this run to: {explicit_run_libraries}")
 
     schedule_enabled = cfg.get("schedule_enabled", True)
     if force_pass == 0 and not schedule_enabled:
         log.info("Automated schedule is disabled — exiting without running pipeline")
         return
 
-    libraries = get_libraries(cfg)
+    libraries = get_libraries(cfg, explicit_names=explicit_run_libraries or None)
     if not libraries:
         log.error("No libraries configured or all disabled — check config.yaml")
         sys.exit(1)

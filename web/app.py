@@ -212,6 +212,8 @@ _run_stop_requested = False
 _run_started_at = None
 _run_last_line = ""
 _run_pass = 0
+_run_scope_label = ""
+_run_libraries = []
 _poster_cache  = {}
 _media_cache   = {}
 _stream_cache  = {}
@@ -1333,19 +1335,37 @@ def proxy_preview(key):
 @app.route("/api/run/pass/<int:pass_num>", methods=["POST"])
 def trigger_pass(pass_num):
     global _run_active
+    data = request.get_json(silent=True) or {}
+    libraries = data.get("libraries")
+    library = str(data.get("library") or "").strip()
+    if libraries is not None and not isinstance(libraries, list):
+        return jsonify({"error": "libraries must be an array"}), 400
+    explicit_libraries = [str(name).strip() for name in (libraries or []) if str(name).strip()]
+    if library:
+        explicit_libraries = [library]
+    scope_label = str(data.get("scope_label") or "").strip()
     with _run_lock:
         if _run_active: return jsonify({"error":"run in progress"}), 409
         _run_active = True
-    threading.Thread(target=_do_run, args=(pass_num,), daemon=True).start()
+    threading.Thread(target=_do_run, args=(pass_num, explicit_libraries, scope_label), daemon=True).start()
     return jsonify({"ok":True})
 
 @app.route("/api/run/scan", methods=["POST"])
 def trigger_scan():
     global _run_active
+    data = request.get_json(silent=True) or {}
+    libraries = data.get("libraries")
+    library = str(data.get("library") or "").strip()
+    if libraries is not None and not isinstance(libraries, list):
+        return jsonify({"error": "libraries must be an array"}), 400
+    explicit_libraries = [str(name).strip() for name in (libraries or []) if str(name).strip()]
+    if library:
+        explicit_libraries = [library]
+    scope_label = str(data.get("scope_label") or "").strip()
     with _run_lock:
         if _run_active: return jsonify({"error":"run in progress"}), 409
         _run_active = True
-    threading.Thread(target=_do_run, args=(1,), daemon=True).start()
+    threading.Thread(target=_do_run, args=(1, explicit_libraries, scope_label), daemon=True).start()
     return jsonify({"ok":True})
 
 @app.route("/api/run/stop", methods=["POST"])
@@ -1358,18 +1378,30 @@ def stop_run():
         return jsonify({"ok":True})
     return jsonify({"ok":False,"error":"No run in progress"})
 
-def _do_run(force_pass=0):
-    global _run_active, _run_proc, _run_stop_requested, _run_started_at, _run_last_line, _run_pass
+def _do_run(force_pass=0, explicit_libraries=None, scope_label=""):
+    global _run_active, _run_proc, _run_stop_requested, _run_started_at, _run_last_line, _run_pass, _run_scope_label, _run_libraries
     run_log = []; timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S"); run_pass = force_pass or 0
     proc = None
     return_code = None
     stop_requested = False
     outcome = "error"
+    explicit_libraries = [str(name).strip() for name in (explicit_libraries or []) if str(name).strip()]
     try:
+        resolved_scope = scope_label or (
+            explicit_libraries[0] if len(explicit_libraries) == 1
+            else f"{len(explicit_libraries)} selected libraries" if explicit_libraries
+            else "scheduled libraries"
+        )
         _run_started_at = _time.time(); _run_last_line = ""; _run_pass = run_pass; _run_stop_requested = False
+        _run_scope_label = resolved_scope
+        _run_libraries = list(explicit_libraries)
         env = {**os.environ, "CONFIG_PATH": CONFIG_PATH}
         if force_pass: env["FORCE_PASS"] = str(force_pass)
         else: env.pop("FORCE_PASS", None)
+        if explicit_libraries:
+            env["RUN_LIBRARIES"] = json.dumps(explicit_libraries)
+        else:
+            env.pop("RUN_LIBRARIES", None)
         proc = subprocess.Popen([sys.executable, SCRIPT_PATH],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
         _run_proc = proc
@@ -1403,6 +1435,8 @@ def _do_run(force_pass=0):
             json.dump({
                 "time": timestamp,
                 "pass": run_pass,
+                "scope": resolved_scope,
+                "libraries": explicit_libraries,
                 "summary": summary,
                 "status": outcome,
                 "outcome": outcome,
@@ -1415,12 +1449,14 @@ def _do_run(force_pass=0):
         _record_task(
             {1:'Run Scan Now',2:'Run Find Sources Now',3:'Run Download Themes Now'}.get(run_pass, 'Run Pipeline'),
             outcome,
-            '',
+            resolved_scope,
             summary,
-            {'pass': run_pass, 'stats': stats, 'return_code': return_code, 'stop_requested': stop_requested},
+            {'pass': run_pass, 'stats': stats, 'return_code': return_code, 'stop_requested': stop_requested, 'libraries': explicit_libraries},
             duration,
         )
         _run_started_at = None
+        _run_scope_label = ""
+        _run_libraries = []
 
 @app.route("/api/run/stream")
 def run_stream():
@@ -1628,7 +1664,8 @@ def clear_all_source_urls():
 @app.route("/api/run/status")
 def run_status():
     return jsonify({"active":_run_active,"started_at":_run_started_at,
-                    "pass":_run_pass,"last_line":_run_last_line})
+                    "pass":_run_pass,"last_line":_run_last_line,
+                    "scope":_run_scope_label,"libraries":_run_libraries})
 
 def _cleanup():
     global _run_proc
