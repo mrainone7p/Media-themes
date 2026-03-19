@@ -1,6 +1,6 @@
 #!/bin/sh
 # entrypoint.sh — Media Tracks
-# Starts the Flask web UI and the cron daemon, then runs an initial scan.
+# Starts the Flask web UI and the cron daemon without kicking off a startup scan.
 
 set -e
 
@@ -43,10 +43,7 @@ chmod 0644 /etc/cron.d/media-tracks
 crontab /etc/cron.d/media-tracks
 echo "[INFO] Cron job registered: $CRON_SCHEDULE"
 
-# Initial scan on startup (|| true prevents set -e from killing the daemon
-# if the scan exits non-zero, e.g. plex_token not yet configured)
-echo "[INFO] Running initial scan..."
-python3 /app/script/media_tracks.py || true
+echo "[INFO] Startup scan disabled — waiting for scheduled or manual runs..."
 
 echo "[INFO] Entering cron daemon mode..."
 cron -f
