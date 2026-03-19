@@ -2083,8 +2083,6 @@ def export_candidate_csv():
     if not target_libs:
         return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
     out_rows = []
-    seen = set()
-    now = now_str()
     for target_lib in target_libs:
         rows = load_ledger(ledger_path_for(target_lib))
         for r in rows:
@@ -2095,25 +2093,17 @@ def export_candidate_csv():
             gs_url = str(r.get('golden_source_url', '') or '').strip()
             if gs_url:
                 continue
-            dedupe_key = (tmdb_id, url)
-            if dedupe_key in seen:
-                continue
-            seen.add(dedupe_key)
             out_rows.append({
                 'tmdb_id': tmdb_id,
-                'title': str(r.get('title', '') or r.get('plex_title', '') or '').strip(),
-                'year': str(r.get('year', '') or '').strip(),
                 'source_url': url,
                 'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
-                'updated_at': str(r.get('last_updated', '') or '').strip() or now,
-                'notes': str(r.get('notes', '') or '').strip(),
             })
     stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     scope_name = lib or 'all_libraries'
     fname = f'candidate_export_{re.sub(r"[^a-z0-9]+", "_", scope_name.lower()).strip("_") or "library"}_{stamp}.csv'
     fpath = EXPORTS_DIR / fname
     with open(fpath, 'w', newline='', encoding='utf-8') as fh:
-        w = csv.DictWriter(fh, fieldnames=['tmdb_id','title','year','source_url','start_offset','updated_at','notes'])
+        w = csv.DictWriter(fh, fieldnames=['tmdb_id','source_url','start_offset'])
         w.writeheader()
         w.writerows(out_rows)
     _record_task('Export Candidate CSV', 'success', lib or 'all libraries', f'Exported {len(out_rows)} candidate rows',
