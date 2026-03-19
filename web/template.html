@@ -193,6 +193,7 @@ body.nav-collapsed main{margin-left:48px}
 
 /* ─── Toolbar ─── */
 .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.toolbar .search.search-wide{min-width:260px}
 .search{flex:1;min-width:180px;background:var(--surface2);border:1px solid color-mix(in srgb, var(--amber) 18%, var(--border));border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .15s, box-shadow .15s, background .15s}
 .search::placeholder{color:var(--text3)}
 .search:focus{border-color:var(--amber);box-shadow:0 0 0 3px color-mix(in srgb, var(--amber) 16%, transparent);background:var(--surface2)}
@@ -315,6 +316,21 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .media-poster-placeholder{width:50px;height:75px;border-radius:6px;background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:18px}
 .media-info{min-width:160px;flex-shrink:0}
 .media-card-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.db-cell-title{font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.db-cell-subtle{color:var(--text3)}
+.db-cell-mono{font-size:10px;font-family:var(--mono);color:var(--text3);white-space:nowrap}
+.db-cell-notes{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3);font-size:10px;font-family:var(--mono)}
+.db-link-icon{color:var(--text3);font-size:12px;margin-right:4px;text-decoration:none}
+.db-inline-url{min-width:80px;max-width:140px;font-size:10px}
+.db-inline-url.wide{min-width:100px;max-width:160px}
+.empty-inline{padding:12px 8px}
+.search-results-state{color:var(--text3);padding:16px 0;font-size:13px;text-align:center}
+.search-results-state.error{color:var(--red);text-align:left}
+.search-result-main{flex:1;min-width:0}
+.search-result-title{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--blue);text-decoration:none}
+.search-result-title:hover{text-decoration:underline}
+.search-result-actions{display:flex;gap:8px;flex-shrink:0;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.search-result-duration{font-size:11px;color:var(--text3);font-family:var(--mono)}
 .media-card-year{font-size:12px;color:var(--text3);font-family:var(--mono)}
 .media-card-dur{font-size:11px;color:var(--text2);font-family:var(--mono)}
 .media-title-link{color:var(--text);text-decoration:none}
@@ -345,6 +361,21 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
 .divider{height:1px;background:var(--border);margin:16px 0}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hidden{display:none!important}
+.inline-wrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.inline-wrap.tight{gap:6px}
+.inline-wrap.spread{justify-content:space-between}
+.stack-sm{display:flex;flex-direction:column;gap:8px}
+.stack-md{display:flex;flex-direction:column;gap:12px}
+.panel-divider{height:1px;background:var(--border);margin:0}
+.surface-panel{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.surface-panel.compact{padding:10px 12px}
+.section-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.body-copy{font-size:12px;color:var(--text2);line-height:1.55}
+.body-copy.compact{font-size:11px;color:var(--text3)}
+.link-muted{color:var(--blue);text-decoration:none}
+.link-muted:hover{text-decoration:underline}
+.icon-badge{width:44px;height:44px;border-radius:10px;background:var(--amber-soft);border:1px solid var(--amber);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:var(--amber)}
 
 /* ─── Preview player (for YouTube URL test) ─── */
 .preview-player{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:12px;display:none}
@@ -413,10 +444,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .row-action-item{width:100%;justify-content:flex-start;text-align:left}
 
 .task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
-.task-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
-.task-title{font-size:14px;font-weight:700;margin-bottom:4px}
-.task-desc{font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5}
+.task-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;height:100%}
+.task-title{font-size:14px;font-weight:700;margin-bottom:0}
+.task-desc{font-size:12px;color:var(--text2);margin-bottom:0;line-height:1.5}
 .task-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.task-section-head{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.task-empty{padding:12px}
 .task-history-head{display:grid;grid-template-columns:1.2fr .8fr .8fr 1fr 1fr;gap:8px;padding:10px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;background:var(--surface2)}
 .task-history-list{border:1px solid var(--border);border-radius:0 0 12px 12px;overflow:hidden}
 .task-history-item{display:grid;grid-template-columns:1.2fr .8fr .8fr 1fr 1fr;gap:8px;padding:10px 12px;border-top:1px solid var(--border);font-size:12px;align-items:center}
@@ -470,6 +503,14 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-divider{height:1px;background:var(--border);margin:14px 0 0}
 .modal-section{padding:14px 22px 4px}
 .modal-section-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.modal-copy{font-size:13px;color:var(--text2);line-height:1.6}
+.modal-subsection{padding:14px 22px 10px}
+.modal-subsection-title{font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)}
+.modal-field-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.modal-actions-row{display:flex;gap:8px;flex-wrap:wrap}
+.modal-info-card{display:flex;flex-direction:column;gap:10px}
+.modal-status-inline{padding-left:0;padding-top:5px}
+.modal-header.compact{padding-bottom:16px}
 .modal-player-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .modal-scrubber-wrap{flex:1;min-width:0}
 .modal-scrubber-wrap input[type=range]{width:100%;margin-bottom:2px}
@@ -660,6 +701,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .field-help{font-size:12px;color:var(--text2);line-height:1.5}
 .field-help.compact{font-size:11px;color:var(--text3)}
 .settings-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.settings-subcard.compact{padding:14px}
+.settings-subcard + .settings-subcard{margin-top:0}
+.section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.control-note{font-size:12px;color:var(--text2)}
+.control-note.compact{font-size:11px;color:var(--text3)}
+.toggle-card.clickable{cursor:pointer}
+.toggle-card.toggle-compact{padding:8px 12px;border-radius:10px}
 .note-box{background:var(--gray-soft);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
 .note-box-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px}
 .note-box-text{font-size:12px;color:var(--text2);line-height:1.5}
@@ -719,6 +767,22 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .schedule-master-copy{min-width:0;flex:1}
 .schedule-master-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
 .schedule-master-desc{font-size:12px;color:var(--text2);line-height:1.55;max-width:760px}
+.pipeline-step{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.pipeline-step:last-child{border-bottom:none;padding-bottom:0}
+.pipeline-step:first-of-type{padding-top:0}
+.pipeline-step-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.pipeline-step-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pipeline-step-index{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.pipeline-step-index.scan{color:var(--blue)}
+.pipeline-step-index.find{color:var(--purple)}
+.pipeline-step-index.download{color:var(--green)}
+.pipeline-step-title{font-size:15px;font-weight:700;color:var(--text)}
+.pipeline-step-option{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;min-height:100%}
+.pipeline-step-option.golden{border-color:rgba(245,166,35,.36);background:color-mix(in srgb, var(--amber-soft) 34%, var(--surface2))}
+.pipeline-step-option-copy{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.pipeline-step-option-title{font-size:12px;font-weight:600;color:var(--text)}
+.pipeline-step-option.golden .pipeline-step-option-title,.pipeline-step-option.golden .pipeline-step-option-copy .body-copy.compact{color:var(--amber)}
+.pipeline-step-input{width:86px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-family:var(--mono)}
 .sched-config-wrap.is-disabled{opacity:.46;pointer-events:none;filter:saturate(.85)}
 .settings-section .field input:not([type=checkbox]),
 .settings-section .field select,
@@ -784,7 +848,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <body>
 
 <nav>
-  <div class="logo" style="display:flex;align-items:center;justify-content:space-between">
+  <div class="logo inline-wrap spread">
     <div>
       <div class="logo-title">Media Tracks</div>
       <div class="logo-sub">theme downloader</div>
@@ -809,9 +873,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <span data-ui="nav.tasks">Tasks</span>
     </div>
   </div>
-  <div class="nav-footer" style="display:flex;align-items:center;justify-content:space-between">
+  <div class="nav-footer inline-wrap spread">
     <span>v3.0</span>
-    <button onclick="toggleTheme()" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text2);font-size:14px;padding:3px 6px;line-height:1" title="Toggle light/dark" id="theme-toggle-btn">☀</button>
+    <button onclick="toggleTheme()" class="collapse-btn" title="Toggle light/dark" id="theme-toggle-btn">☀</button>
   </div>
 </nav>
 
@@ -889,7 +953,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="card-body">
         <div class="section-intro">Choose which movie and TV libraries should be managed. Libraries start disabled so you can opt in only to the ones you want.</div>
         <div class="lib-list" id="lib-list"></div>
-        <div class="library-actions" style="margin-top:12px">
+        <div class="library-actions section-actions">
           <button class="btn btn-ghost btn-sm" onclick="addLibrary()">+ Add Library</button>
           <button class="btn btn-amber btn-sm" onclick="importLibraries()">↓ Import from Plex</button>
           <span id="lib-import-result"></span>
@@ -999,7 +1063,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="settings-subcard golden-emphasis">
             <div class="subcard-title">Golden Source mode</div>
             <div class="subcard-intro">Use only the curated list when you want faster, more controlled matching.</div>
-            <div class="toggle-card golden" style="margin-top:8px">
+            <div class="toggle-card golden toggle-compact" style="margin-top:8px">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-search_only_golden">
                 <span class="toggle-track"></span>
@@ -1009,7 +1073,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
                 <div class="toggle-note golden">Disable YouTube source discovery and only match against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
               </div>
             </div>
-            <div class="toggle-card" style="margin-top:10px">
+            <div class="toggle-card toggle-compact" style="margin-top:10px">
               <label class="toggle" style="margin-top:2px">
                 <input type="checkbox" id="cfg-refresh_golden_source_each_run">
                 <span class="toggle-track"></span>
@@ -1034,27 +1098,27 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </summary>
       <div class="card-body">
         <div class="section-intro">These settings control what gets downloaded and how source matching behaves.</div>
-        <div class="settings-subcard" style="margin-bottom:16px">
+        <div class="settings-subcard compact" style="margin-bottom:16px">
           <div class="subcard-title">Theme filename &amp; length</div>
           <div class="subcard-intro">Set the output filename and maximum theme length. Downloads shorter than this are kept as-is, while longer downloads are trimmed.</div>
           <div class="field" style="margin-bottom:10px">
             <label>Theme Filename</label>
             <input id="cfg-theme_filename" placeholder="theme.mp3">
           </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="modal-field-row">
             <div class="dur-toggle" id="dur-toggle">
               <div class="dur-opt" data-val="30" onclick="setDuration(30)">30s</div>
               <div class="dur-opt" data-val="45" onclick="setDuration(45)">45s</div>
               <div class="dur-opt" data-val="60" onclick="setDuration(60)">60s</div>
               <div class="dur-opt" data-val="0" onclick="setDuration(0)">No limit</div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px">
+            <div class="inline-wrap tight">
               <input type="number" id="cfg-custom-dur" min="1" max="600" placeholder="Custom" style="width:98px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none" onchange="setDuration(parseInt(this.value)||0)">
-              <span style="font-size:12px;color:var(--text2)">seconds</span>
+              <span class="control-note">seconds</span>
             </div>
           </div>
         </div>
-        <div class="settings-subcard" style="margin-bottom:16px">
+        <div class="settings-subcard compact" style="margin-bottom:16px">
           <div class="subcard-title">Cookies</div>
           <div class="subcard-intro">Optional yt-dlp helper for improved reliability and performance when YouTube is harder to fetch.</div>
           <div class="field">
@@ -1067,7 +1131,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <span id="cookie-indicator" class="cookie-indicator cookie-none">No file selected</span>
           </div>
         </div>
-        <div class="settings-subcard" style="margin-bottom:16px">
+        <div class="settings-subcard compact" style="margin-bottom:16px">
           <div class="subcard-title"><span class="status-term">MISSING</span> titles per run</div>
           <div class="subcard-intro">Control how many <span class="status-term">MISSING</span> items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
           <div class="field">
@@ -1134,7 +1198,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="progress-meta" id="db-progress-meta"></div>
     </div>
 
-    <div class="pipe-actions" style="margin-bottom:10px">
+    <div class="pipe-actions">
       <div class="pipe-action scan">
         <div class="pipe-action-step scan" data-ui="schedule.summary.step1.label">STATUS KEY · Step 1</div>
         <div class="pipe-action-name scan" data-ui="schedule.summary.step1.title">⟳ Scan Libraries</div>
@@ -1152,7 +1216,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       </div>
     </div>
 
-    <div class="tabs" id="lib-tabs" style="margin-bottom:10px;border-bottom:1px solid var(--border)"></div>
+    <div class="tabs" id="lib-tabs"></div>
     <div class="db-topbar">
       <div class="chips" id="db-chips"></div>
       <div class="db-main-actions">
@@ -1165,7 +1229,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     </div>
 
     <div class="toolbar">
-      <input class="search" type="text" placeholder="Search titles, years, URLs, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search database" style="min-width:260px">
+      <input class="search search-wide" type="text" placeholder="Search titles, years, URLs, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search database">
       <div class="toolbar-group">
         <div class="filter-stack">
           <span class="filter-label">Status</span>
@@ -1245,9 +1309,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Schedule</div><div class="page-desc" data-ui="pages.schedule.description">Set the automated schedule, choose which pipeline steps run automatically, and launch manual runs for the selected libraries.</div></div></div>
   <div class="page-body"><div class="content">
 
-    <div class="run-bar" style="margin-bottom:14px">
+    <div class="run-bar">
       <div class="run-dot" id="run-dot"></div>
-      <span id="run-status" style="color:var(--text2)">Idle — select a step above to run manually</span>
+      <span id="run-status" class="db-cell-subtle">Idle — select a step above to run manually</span>
     </div>
 
     <div class="schedule-master">
@@ -1289,50 +1353,50 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         <div class="field-hint" style="margin-bottom:16px" data-ui="schedule.cards.pipeline_steps.description">Choose which parts of the automated pipeline should run. Manual "Run Now" buttons work regardless of these settings.</div>
 
         <!-- Step 1 -->
-        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
+        <div class="pipeline-step">
           <label class="toggle" style="margin-top:2px">
             <input type="checkbox" id="sched-step1" onchange="saveRunSchedule()">
             <span class="toggle-track"></span>
           </label>
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-              <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue)">Step 1</span>
-              <span style="font-size:15px;font-weight:700">Scan Libraries</span>
+          <div class="pipeline-step-main">
+            <div class="pipeline-step-heading">
+              <span class="pipeline-step-index scan">Step 1</span>
+              <span class="pipeline-step-title">Scan Libraries</span>
             </div>
-            <div class="status-copy" style="font-size:12px;color:var(--text2);line-height:1.5" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
+            <div class="status-copy body-copy" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.</div>
           </div>
           <button class="btn btn-blue btn-sm" id="btn-pass1" onclick="startPass(1)">⟳ Run Now</button>
         </div>
 
         <!-- Step 2 -->
-        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
+        <div class="pipeline-step">
           <label class="toggle" style="margin-top:2px">
             <input type="checkbox" id="sched-step2" onchange="saveRunSchedule()">
             <span class="toggle-track"></span>
           </label>
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-              <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple)">Step 2</span>
-              <span style="font-size:15px;font-weight:700">Find Theme Sources</span>
+          <div class="pipeline-step-main">
+            <div class="pipeline-step-heading">
+              <span class="pipeline-step-index find">Step 2</span>
+              <span class="pipeline-step-title">Find Theme Sources</span>
             </div>
-            <div class="status-copy" style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
+            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
             <div class="schedule-step2-options">
-              <div class="toggle-card golden" style="padding:8px 12px;border-radius:6px;height:100%">
+              <div class="pipeline-step-option golden">
                 <label class="toggle" style="transform:scale(.85)">
                   <input type="checkbox" id="sched-only-golden" onchange="saveRunSchedule()">
                   <span class="toggle-track"></span>
                 </label>
                 <div>
-                  <span style="font-size:12px;font-weight:600;color:var(--amber)" data-ui="schedule.cards.pipeline_steps.step2.only_golden.title">Only use Golden Source</span>
-                  <div style="font-size:11px;color:var(--amber)" data-ui="schedule.cards.pipeline_steps.step2.only_golden.description">Use a curated Golden Source for tighter, faster, and more reliable source discovery.</div>
+                  <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step2.only_golden.title">Only use Golden Source</span>
+                  <div class="body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.only_golden.description">Use a curated Golden Source for tighter, faster, and more reliable source discovery.</div>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
+              <div class="pipeline-step-option">
                 <div>
-                  <span style="font-size:12px;font-weight:600;color:var(--text)" data-ui="schedule.cards.pipeline_steps.step2.limit.title">Missing Titles Per Run</span>
-                  <div class="status-copy" style="font-size:11px;color:var(--text3)" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many Missing items are processed per run. 0 = unlimited.</div>
+                  <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step2.limit.title">Missing Titles Per Run</span>
+                  <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many Missing items are processed per run. 0 = unlimited.</div>
                 </div>
-                <input id="run-schedule-limit" type="number" min="0" onblur="saveRunSchedule()" style="width:86px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-family:var(--mono)">
+                <input id="run-schedule-limit" class="pipeline-step-input" type="number" min="0" onblur="saveRunSchedule()">
               </div>
             </div>
           </div>
@@ -1340,25 +1404,25 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
 
         <!-- Step 3 -->
-        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px 0">
+        <div class="pipeline-step">
           <label class="toggle" style="margin-top:2px">
             <input type="checkbox" id="sched-step3" onchange="saveRunSchedule()">
             <span class="toggle-track"></span>
           </label>
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-              <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green)">Step 3</span>
-              <span style="font-size:15px;font-weight:700">Download Themes</span>
+          <div class="pipeline-step-main">
+            <div class="pipeline-step-heading">
+              <span class="pipeline-step-index download">Step 3</span>
+              <span class="pipeline-step-title">Download Themes</span>
             </div>
-            <div class="status-copy" style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.</div>
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;height:100%">
+            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each Approved item, saves the theme file into the media folder, and moves the item to Available. Items marked Unmonitored or Failed are ignored. Uses yt-dlp and ffmpeg.</div>
+            <div class="pipeline-step-option">
               <label class="toggle" style="transform:scale(.85)">
                 <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
                 <span class="toggle-track"></span>
               </label>
               <div>
-                <span style="font-size:12px;font-weight:600;color:var(--text)" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve STAGED Items</span>
-                <div class="status-copy" style="font-size:11px;color:var(--text3)" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move Staged items to Approved before downloading for a fully hands-off pipeline.</div>
+                <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve STAGED Items</span>
+                <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move Staged items to Approved before downloading for a fully hands-off pipeline.</div>
               </div>
             </div>
           </div>
@@ -1390,23 +1454,29 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   <div class="page-head"><div><div class="page-title" data-ui="pages.tasks.title">Tasks</div><div class="page-desc" data-ui="pages.tasks.description">Run utilities, export curated data, perform maintenance, and review task/run history.</div></div></div>
   <div class="page-body"><div class="content">
     <div class="card">
-      <div class="card-title">Run Pipeline Tasks</div>
-      <div class="task-desc" style="margin-bottom:10px">Select one or more libraries for pipeline runs.</div>
-      <div class="task-row" style="margin-bottom:8px">
+      <div class="task-section-head">
+        <div class="card-title">Run Pipeline Tasks</div>
+      <div class="task-desc">Select one or more libraries for pipeline runs.</div>
+      <div class="task-row">
         <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(true)">Select all</button>
         <button class="btn btn-ghost btn-xs" onclick="taskSelectAllLibs(false)">Clear</button>
       </div>
       <div class="task-lib-pills" id="task-lib-pills"></div>
       <div class="task-grid" id="task-grid-run-pipeline"></div>
+      </div>
     </div>
     <div class="card">
-      <div class="card-title">Export / Data Tasks</div>
-      <div class="task-grid" id="task-grid-export" style="grid-template-columns:1fr"></div>
+      <div class="task-section-head">
+        <div class="card-title">Export / Data Tasks</div>
+      </div>
+      <div class="task-grid task-wide" id="task-grid-export"></div>
     </div>
     <div class="card">
-      <div class="card-title">Cleanup &amp; Maintenance</div>
+      <div class="task-section-head">
+        <div class="card-title">Cleanup &amp; Maintenance</div>
+      </div>
       <div class="task-grid" id="task-grid-cleanup"></div>
-      <div class="task-grid" id="task-grid-maintenance" style="grid-template-columns:1fr;margin-top:8px"></div>
+      <div class="task-grid task-wide" id="task-grid-maintenance" style="margin-top:8px"></div>
     </div>
     <div class="progress-wrap" id="tasks-progress" data-state="queued">
       <div class="progress-head">
@@ -1422,9 +1492,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     </div>
 
     <div class="card">
-      <div class="card-title">Recent Task History</div>
+      <div class="task-section-head">
+        <div class="card-title">Recent Task History</div>
+      </div>
       <div class="task-history-head"><div>Task</div><div>Status</div><div>Time</div><div>Scope</div><div>Summary</div></div>
-      <div class="task-history-list" id="task-history-list"><div class="empty" style="padding:12px">No task history yet.</div></div>
+      <div class="task-history-list" id="task-history-list"><div class="empty task-empty">No task history yet.</div></div>
       <div class="run-cards" id="run-cards" style="margin-top:12px"><div class="empty">No run history yet.</div></div>
     </div>
   </div></div>
@@ -1466,22 +1538,22 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
       </div>
       <audio id="yt-modal-audio" style="display:none"></audio>
-      <div class="modal-status-txt" id="yt-modal-status" style="padding-left:0;padding-top:5px">Resolving stream…</div>
+      <div class="modal-status-txt modal-status-inline" id="yt-modal-status">Resolving stream…</div>
     </div>
 
     <!-- Bio -->
     <div class="modal-bio" id="yt-modal-bio" style="display:none"></div>
 
     <!-- Section heading -->
-    <div style="padding:14px 22px 10px">
-      <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)">Preview &amp; Set Offset</div>
-      <div style="height:1px;background:var(--border)"></div>
+    <div class="modal-subsection">
+      <div class="modal-subsection-title">Preview &amp; Set Offset</div>
+      <div class="panel-divider"></div>
     </div>
 
     <!-- Start Offset — inline -->
     <div class="modal-section" style="padding-top:4px;padding-bottom:16px">
       <div class="modal-section-label">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(seconds)</span></div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="modal-field-row">
         <input type="text" id="yt-modal-start" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="ytModalUpdateTrim()" onblur="normalizeOffsetInput(this)">
         <div class="offset-steps">
           <button class="offset-step" onclick="adjustOffset(document.getElementById('yt-modal-start'),1)">▲</button>
@@ -1503,19 +1575,19 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <!-- ══════════════ GOLDEN SOURCE IMPORT MODAL ══════════════ -->
 <div class="modal-overlay" id="gs-modal">
   <div class="modal" style="max-width:520px;position:relative;padding:0">
-    <div class="modal-header" style="padding-bottom:16px">
-      <div style="width:44px;height:44px;border-radius:10px;background:var(--amber-soft);border:1px solid var(--amber);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">★</div>
+    <div class="modal-header compact">
+      <div class="icon-badge">★</div>
       <div class="modal-movie-info">
         <div class="modal-movie-title" style="font-size:16px">Import Golden Source</div>
         <div class="modal-movie-meta" id="gs-modal-lib-label" style="color:var(--text2)">—</div>
       </div>
     </div>
-    <div style="height:1px;background:var(--border);margin:0 22px"></div>
+    <div class="modal-section-divider"></div>
     <div class="modal-section" style="padding-top:16px;padding-bottom:0">
-      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px">Match your library against the curated Golden Source CSV using TMDB IDs. Only rows with a <code>tmdb_id</code> and <code>source_url</code> will be imported.</div>
+      <div class="modal-copy" style="margin-bottom:16px">Match your library against the curated Golden Source CSV using TMDB IDs. Only rows with a <code>tmdb_id</code> and <code>source_url</code> will be imported.</div>
 
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
-        <div class="toggle-card" style="cursor:pointer" onclick="document.getElementById('gs-overwrite').click()">
+      <div class="modal-info-card" style="margin-bottom:16px">
+        <div class="toggle-card clickable" onclick="document.getElementById('gs-overwrite').click()">
           <label class="toggle" style="pointer-events:none">
             <input type="checkbox" id="gs-overwrite">
             <span class="toggle-track"></span>
@@ -1525,7 +1597,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="toggle-note">Replace source URLs that already exist on a row. Off = keep existing URLs.</div>
           </div>
         </div>
-        <div class="toggle-card" style="cursor:pointer" onclick="document.getElementById('gs-approve').click()">
+        <div class="toggle-card clickable" onclick="document.getElementById('gs-approve').click()">
           <label class="toggle" style="pointer-events:none">
             <input type="checkbox" id="gs-approve">
             <span class="toggle-track"></span>
@@ -1537,7 +1609,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
         </div>
       </div>
 
-      <div id="gs-result" style="display:none;padding:10px 12px;border-radius:8px;font-size:12px;font-family:var(--mono);margin-bottom:12px;background:var(--green-soft);color:var(--green);border:1px solid var(--green)"></div>
+      <div id="gs-result" class="surface-panel compact" style="margin-bottom:12px;background:var(--green-soft);color:var(--green);border-color:var(--green)"></div>
     </div>
     <div class="modal-footer" style="justify-content:space-between">
       <button class="btn btn-ghost" onclick="closeGoldenSourceModal()">Cancel</button>
@@ -1551,7 +1623,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   <div class="modal" style="max-width:640px;position:relative;padding:0;display:flex;flex-direction:column;max-height:92vh">
 
     <!-- Step rail - TOP -->
-    <div style="display:flex;align-items:center;gap:0;padding:10px 22px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0" id="search-step-rail">
+    <div class="inline-wrap" style="gap:0;padding:10px 22px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0" id="search-step-rail">
       <div class="srail-step active" id="srail-1" onclick="_srailClick(1)">
         <span class="srail-num">1.</span><span class="srail-label">Choose Search Method</span>
       </div>
@@ -1569,7 +1641,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="modal-header" style="flex-shrink:0">
       <img class="modal-poster" id="search-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
       <div class="modal-movie-info">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+        <div class="inline-wrap spread" style="align-items:flex-start">
           <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
           <div class="modal-movie-links" id="search-modal-links" style="margin-top:0"></div>
         </div>
@@ -1648,12 +1720,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
     <!-- Step 2: Review Results -->
     <div id="search-step-2" class="search-step-body" style="display:none;overflow-y:auto;flex:1">
-      <div style="padding:12px 22px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)">Results · Select the best source match</div>
+      <div class="inline-wrap spread" style="padding:12px 22px 8px;flex-shrink:0">
+        <div class="section-label">Results · Select the best source match</div>
         <div id="sm-results-meta" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></div>
       </div>
       <div style="padding:0 22px 8px">
-        <div class="modal-player-row" style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2)">
+        <div class="modal-player-row surface-panel compact">
           <button class="play-btn" id="sm-preview-play" onclick="searchPreviewToggle()">
             <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </button>
@@ -1663,7 +1735,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
         </div>
       </div>
-      <div style="padding:0 22px 6px;display:flex;justify-content:flex-end">
+      <div class="inline-wrap spread" style="padding:0 22px 6px;justify-content:flex-end">
         <div id="sm-results-count" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></div>
       </div>
       <div id="search-results" style="padding:0 22px 16px"></div>
@@ -1709,7 +1781,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="source-editor-title">Selected Source &amp; URL</div>
           <div id="se-source-title" class="source-editor-value">—</div>
           <div class="source-editor-row" style="margin-top:8px">
-          <input id="se-url" style="flex:1;font-size:12px;font-family:var(--mono);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);outline:none" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
+          <input id="se-url" class="search-method-input" style="flex:1;margin-top:0;background:var(--surface2)" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
           <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Refresh</button>
           </div>
         </div>
@@ -1735,7 +1807,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- Footer -->
     <div class="modal-footer" id="search-modal-footer" style="flex-shrink:0;justify-content:space-between">
       <button class="btn btn-ghost" id="search-modal-back" onclick="searchModalBack()">← Back</button>
-      <div style="display:flex;gap:8px">
+      <div class="modal-actions-row">
         <button class="btn btn-ghost" onclick="closeSearchModal()">Cancel</button>
         <button class="btn btn-amber" id="search-modal-primary" onclick="searchModalPrimary()">🔍 Search</button>
         <button class="btn btn-green" id="search-modal-download-now" style="display:none" onclick="searchModalDownloadNow()">Download Now</button>
@@ -1798,7 +1870,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           </div>
         </div>
         <audio id="theme-modal-audio" style="display:none"></audio>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <div class="modal-actions-row" style="margin-top:10px">
           <button class="btn btn-ghost btn-sm" onclick="themeModalEditTrim()">Edit Trim</button>
           <button class="btn btn-red btn-sm" onclick="themeModalDelete()">Delete Theme</button>
         </div>
@@ -1836,7 +1908,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
           <div class="review-meta-value" id="theme-modal-source-notes">—</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px" id="theme-source-actions">
+      <div class="modal-actions-row" style="margin-top:12px" id="theme-source-actions">
         <button class="btn btn-ghost btn-sm" id="theme-open-source-btn" onclick="themeModalOpenSource()">↗ Open Source</button>
       </div>
     </div>
@@ -1871,9 +1943,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <div class="modal-bio" id="trim-modal-info"></div>
 
     <!-- ── Section heading ── -->
-    <div style="padding:14px 22px 10px">
-      <div style="font-size:11px;font-weight:700;color:var(--amber);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;padding-left:8px;border-left:2px solid var(--amber)">Trim Local Theme File</div>
-      <div style="height:1px;background:var(--border)"></div>
+    <div class="modal-subsection">
+      <div class="modal-subsection-title">Trim Local Theme File</div>
+      <div class="panel-divider"></div>
     </div>
 
     <!-- ── Playback ── -->
@@ -1902,7 +1974,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
     <!-- ── Start Offset — inline ── -->
     <div class="modal-section" style="padding-top:4px;padding-bottom:16px">
       <div class="modal-section-label">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(seconds or m:ss)</span></div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="modal-field-row">
         <input type="text" id="trim-modal-offset" value="0" placeholder="mm:ss" inputmode="numeric" style="width:72px" oninput="trimModalUpdateResult()">
         <div class="modal-trim-result" id="trim-modal-result"></div>
         <button class="btn btn-purple btn-sm" onclick="trimModalPreview(true)">▶ Preview from offset</button>
@@ -1924,7 +1996,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal" style="max-width:440px;position:relative">
     <div class="modal-title" id="confirm-modal-title">Confirm Action</div>
-    <div style="font-size:13px;color:var(--text2);margin:12px 0;line-height:1.6" id="confirm-modal-message"></div>
+    <div class="modal-copy" style="margin:12px 0" id="confirm-modal-message"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
       <button class="btn btn-amber" id="confirm-modal-ok">Confirm</button>
@@ -1936,9 +2008,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 <div class="modal-overlay" id="delete-modal">
   <div class="modal" style="max-width:420px;position:relative">
     <div class="modal-title">Delete Theme</div>
-    <div style="font-size:13px;color:var(--text2);margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--amber)">MISSING</b> status.</div>
-    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px" id="delete-modal-name"></div>
-    <div style="font-size:11px;font-family:var(--mono);color:var(--text3);margin-bottom:16px;word-break:break-all" id="delete-modal-path"></div>
+    <div class="modal-copy" style="margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--amber)">MISSING</b> status.</div>
+    <div class="task-title" style="margin-bottom:4px" id="delete-modal-name"></div>
+    <div class="db-cell-mono" style="margin-bottom:16px;word-break:break-all" id="delete-modal-path"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
       <button class="btn btn-red" onclick="confirmDelete()">Delete Theme</button>
@@ -2680,7 +2752,7 @@ async function loadDatabase(syncPeer=true){
   const libs=allLibs.filter(l=>(!l.type||l.type==='movie'||l.type==='show') && l.enabled);
   const tabs=document.getElementById('lib-tabs');
   if(!libs.length){
-    tabs.innerHTML='<div class="empty" style="padding:12px 8px">No enabled libraries — toggle one on in Configuration.</div>';
+    tabs.innerHTML='<div class="empty empty-inline">No enabled libraries — toggle one on in Configuration.</div>';
     document.getElementById('db-tbody').innerHTML='';
     document.getElementById('db-empty').style.display='block';
     document.getElementById('db-empty').textContent='No enabled libraries.';
@@ -2982,9 +3054,9 @@ function _manualSearch(btn){
 function renderUrlInput(row){
   let html='';
   if(row.url){
-    html+=`<a href="${row.url}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px;margin-right:4px" title="Open in YouTube">↗</a>`;
+    html+=`<a href="${row.url}" target="_blank" rel="noopener" class="db-link-icon" title="Open in YouTube">↗</a>`;
   }
-  html+=`<input class="inline-ed" value="${(row.url||'').replace(/"/g,'&quot;')}" placeholder="paste URL…" style="min-width:100px;max-width:160px;font-size:10px" onblur="updateRowAndRefresh('${row.rating_key}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
+  html+=`<input class="inline-ed db-inline-url wide" value="${(row.url||'').replace(/"/g,'&quot;')}" placeholder="paste URL…" onblur="updateRowAndRefresh('${row.rating_key}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()">`;
   return html;
 }
 
@@ -3152,22 +3224,22 @@ function renderTable(){
     const tmdbHref=_tmdbLink(row.title||row.plex_title,row.year);
     return `<tr>
       <td><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
-      <td style="font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${titleAttr}">
+      <td class="db-cell-title" title="${titleAttr}">
         <a class="media-title-link" href="${tmdbHref}" onclick="return _openTmdbRow('${rk}',event)" target="_blank" rel="noopener">${rawTitle}</a>
       </td>
-      <td style="color:var(--text3)">${row.year||''}</td>
+      <td class="db-cell-subtle">${row.year||''}</td>
       <td>
         ${renderStatusCell(row)}
       </td>
       <td>${renderRowActionCell(row)}</td>
       <td style="white-space:nowrap">${row.golden_source_url?`<a class="golden-link-pill" href="${String(row.golden_source_url).replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${String(row.golden_source_url).replace(/"/g,'&quot;')}">★ Golden Source ↗</a>`:'Not available'}</td>
-      <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" style="color:var(--text3);font-size:12px;margin-right:4px" title="${safeUrlAttr}">↗</a>`:''}
-        <input class="inline-ed" value="${safeUrlAttr}" placeholder="paste URL…" style="min-width:80px;max-width:140px;font-size:10px" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+      <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" class="db-link-icon" title="${safeUrlAttr}">↗</a>`:''}
+        <input class="inline-ed db-inline-url" value="${safeUrlAttr}" placeholder="paste URL…" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
       <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:74px;font-size:11px"
         onblur="saveOffsetInput('${rk}',this)"
         onkeydown="if(event.key==='Enter')this.blur()"></td>
-      <td style="color:var(--text3);white-space:nowrap;font-size:10px;font-family:var(--mono)">${(row.last_updated||'').slice(5,16)}</td>
-      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3);font-size:10px;font-family:var(--mono)" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
+      <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
+      <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
     </tr>`;
   }).join('');
 
@@ -4158,14 +4230,14 @@ async function _searchByMethod(method, showStep=true){
   if(showStep){
     stopAllAudio(); resetActivePreviewBtn();
     goToSearchStep(2);
-    document.getElementById('search-results').innerHTML='<div style="color:var(--text3);padding:16px 0;font-size:13px;text-align:center">Searching…</div>';
+    document.getElementById('search-results').innerHTML='<div class="search-results-state">Searching…</div>';
     document.getElementById('sm-results-meta').textContent='';
   }
   const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
   const data=await r.json();
   if(!data.ok){
     if(showStep){
-      document.getElementById('search-results').innerHTML=`<div style="color:var(--red);padding:16px 0;font-size:13px">${data.error}</div>`;
+      document.getElementById('search-results').innerHTML=`<div class="search-results-state error">${data.error}</div>`;
       _setSearchFooter(2);
     }
     return null;
@@ -4196,18 +4268,18 @@ function _renderResults(results){
   const countEl=document.getElementById('sm-results-count');
   if(countEl) countEl.textContent=results.length?`${Math.min(results.length,10)} results`:'';
   if(!results.length){
-    el.innerHTML='<div style="color:var(--text3);padding:16px 0;font-size:13px;text-align:center">No results found.</div>';
+    el.innerHTML='<div class="search-results-state">No results found.</div>';
     return;
   }
   el.innerHTML=results.map((r,i)=>`
     <div class="search-result-card ${i===0?'recommended':''}">
       <div class="result-idx">${i+1}.</div>
-      <div style="flex:1;min-width:0">
+      <div class="search-result-main">
         ${i===0?`<div style="margin-bottom:4px"><span class="src-badge recommended">Best match</span></div>`:''}
-        <a href="${r.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--blue);text-decoration:none">${r.title.replace(/</g,'&lt;')} <span style="font-size:11px">↗</span></a>
+        <a href="${r.url}" target="_blank" rel="noopener" class="search-result-title">${r.title.replace(/</g,'&lt;')} <span style="font-size:11px">↗</span></a>
       </div>
-      <div style="display:flex;gap:8px;flex-shrink:0;align-items:center;flex-wrap:wrap;justify-content:flex-end">
-        <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">${r.duration||'—'}</span>
+      <div class="search-result-actions">
+        <span class="search-result-duration">${r.duration||'—'}</span>
         <button class="btn btn-ghost btn-xs" onclick="previewSearchResult('${r.url.replace(/'/g,"\\'")}',this)">▶ Preview</button>
         <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}',{skipPreview:false,sourceTitle:'${r.title.replace(/'/g,"\\'").replace(/</g,'&lt;')}'})">Select →</button>
       </div>
@@ -5052,7 +5124,7 @@ async function loadTaskHistoryList(){
   const items=await r.json();
   const el=document.getElementById('task-history-list');
   if(!el) return;
-  if(!items.length){ el.innerHTML='<div class="empty" style="padding:12px">No task history yet.</div>'; return; }
+  if(!items.length){ el.innerHTML='<div class="empty task-empty">No task history yet.</div>'; return; }
   const statusClass=(status)=>{
     const normalized=String(status||'info').toLowerCase();
     return ['success','error','stopped','info'].includes(normalized) ? normalized : 'info';
