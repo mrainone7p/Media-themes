@@ -1,959 +1,115 @@
 #!/usr/bin/env python3
-"""Media Tracks — Web GUI v3.2"""
+"""Media Tracks web application."""
 
-import atexit, hashlib, json, os, queue, re, signal, subprocess, sys, threading, time as _time
-import csv
-from datetime import datetime
+from __future__ import annotations
+
+import signal
+import subprocess
+import sys
 from pathlib import Path
 
-import requests as http_requests
-import yaml
-from flask import (Flask, Response, jsonify, render_template_string,
-                   request, stream_with_context, send_file, abort)
+from flask import Flask, Response, abort, jsonify, request, send_file, stream_with_context
+
+import integrations
+import logic
+from logic import RUN_MANAGER
+from storage import (
+    MANUAL_STATUS_TRANSITIONS,
+    STATUS_ORDER,
+    ledger_path_for,
+    load_ledger_rows as load_ledger,
+    now_str,
+    save_ledger_rows as save_ledger,
+)
 
 app = Flask(__name__)
 
-UI_TERMINOLOGY_PATH = os.environ.get("UI_TERMINOLOGY_PATH", "/app/web/ui_terminology.yaml")
-LOGS_DIR    = Path("/app/logs")
-RUNS_DIR    = LOGS_DIR / "runs"
-TASKS_FILE  = LOGS_DIR / "task_history.jsonl"
-EXPORTS_DIR = LOGS_DIR / "exports"
-SCRIPT_PATH = "/app/script/media_tracks.py"
-RUNS_DIR.mkdir(parents=True, exist_ok=True)
-EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
-
-# ── Shared storage (SQLite) ───────────────────────────────────────────────────
-_SHARED = "/app/shared"
-if _SHARED not in sys.path:
-    sys.path.insert(0, _SHARED)
-from storage import (
-    CONFIG_PATH,
-    LEDGER_HEADERS,
-    ffprobe_duration,
-    get_db_path,
-    ledger_path_for,
-    load_ledger_rows as load_ledger,
-    MANUAL_STATUS_TRANSITIONS,
-    normalize_golden_source_url,
-    now_str,
-    read_golden_source_text,
-    save_ledger_rows as save_ledger,
-    STATUS_ORDER,
-    status_after_clearing_source,
-    sync_theme_cache,
-    validate_manual_status_transition,
-)
-
-EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
-
-CONFIG_DEFAULTS = {
-    "plex_url": "",
-    "plex_token": "",
-    "tmdb_api_key": "",
-    "ui_token": "",
-    "media_roots": ["/media"],
-    "libraries": [],
-    "audio_format": "mp3",
-    "quality_profile": "high",
-    "theme_filename": "theme.mp3",
-    "max_theme_duration": 45,
-    "mode": "manual",
-    "golden_source_url": "",
-    "golden_source_cache_ttl_sec": 1800,
-    "golden_source_resolve_tmdb": False,
-    "cron_schedule": "0 3 * * *",
-    "schedule_enabled": False,
-    "schedule_libraries": [],
-    "schedule_step1": True,
-    "schedule_step2": True,
-    "schedule_step3": True,
-    "schedule_test_limit": 0,
-    "auto_approve": False,
-    "auto_approve_manual": False,
-    "search_mode": "playlist",
-    "search_query_playlist": "{title} {year} soundtrack playlist",
-    "search_query_direct": "{title} {year} theme song",
-    "search_fallback": True,
-    "search_fuzzy": False,
-    "search_only_golden": False,
-    "refresh_golden_source_each_run": True,
-    "cookies_file": "",
-    "max_retries": 3,
-    "download_delay_seconds": 5,
-    "test_limit": 0,
-    "resolve_retry_limit": 3,
-}
-
-CONFIG_BOOL_FIELDS = {
-    "schedule_enabled",
-    "schedule_step1",
-    "schedule_step2",
-    "schedule_step3",
-    "auto_approve",
-    "auto_approve_manual",
-    "search_fallback",
-    "search_fuzzy",
-    "search_only_golden",
-    "refresh_golden_source_each_run",
-    "golden_source_resolve_tmdb",
-}
-
-CONFIG_ENUM_FIELDS = {
-    "audio_format": {"mp3", "m4a", "flac", "opus"},
-    "quality_profile": {"low", "medium", "high"},
-    "search_mode": {"playlist", "direct"},
-    "mode": {"manual", "auto", "cron"},
-}
-
-CONFIG_NUMERIC_FIELDS = {
-    "max_theme_duration": {"type": "int", "min": 0, "max": 3600},
-    "golden_source_cache_ttl_sec": {"type": "int", "min": 0, "max": 604800},
-    "max_retries": {"type": "int", "min": 0, "max": 20},
-    "download_delay_seconds": {"type": "float", "min": 0, "max": 3600},
-    "test_limit": {"type": "int", "min": 0, "max": 100000},
-    "schedule_test_limit": {"type": "int", "min": 0, "max": 100000},
-    "resolve_retry_limit": {"type": "int", "min": 0, "max": 1000},
-}
-
-LIBRARY_TYPE_ALIASES = {
-    "movie": "movie",
-    "movies": "movie",
-    "film": "movie",
-    "films": "movie",
-    "show": "show",
-    "shows": "show",
-    "tv": "show",
-    "series": "show",
-    "tvshow": "show",
-    "tvshows": "show",
-    "": "",
-}
-
-_CRON_FIELD_RE = re.compile(r"^[^\s]+$")
-_FILENAME_INVALID_CHARS_RE = re.compile(r"[\\/]")
-
-
-def _row_has_theme(row):
-    return str(row.get("theme_exists", "") or "") == "1"
-
-
-def _status_after_clearing_source(row):
-    return status_after_clearing_source(
-        row.get("status", ""),
-        has_theme=_row_has_theme(row),
-    )
-
-
-def _clear_source_urls_for_rows(rows, *, keys=None, note, now):
-    key_filter = set(str(k) for k in (keys or []))
-    summary = {
-        "requested": len(key_filter) if keys is not None else len(rows),
-        "matched": 0,
-        "cleared": 0,
-        "updated": 0,
-        "preserved_available": 0,
-        "reset_missing": 0,
-        "preserved_failed": 0,
-        "preserved_unmonitored": 0,
-        "skipped_without_url": 0,
-    }
-    for row in rows:
-        rating_key = str(row.get("rating_key", "") or "")
-        if key_filter and rating_key not in key_filter:
-            continue
-        summary["matched"] += 1
-        had_url = bool(str(row.get("url", "") or "").strip())
-        if not had_url:
-            summary["skipped_without_url"] += 1
-            continue
-        next_status, bucket = _status_after_clearing_source(row)
-        previous_status = str(row.get("status", "") or "").upper()
-        row["url"] = ""
-        row["source_origin"] = "unknown"
-        row["status"] = next_status
-        row["last_updated"] = now
-        row["notes"] = note
-        summary["cleared"] += 1
-        summary[bucket] += 1
-        if previous_status != next_status:
-            summary["updated"] += 1
-    return summary
-
-
-def _status_validation_error(row, attempted_status):
-    return validate_manual_status_transition(
-        row.get("status", ""),
-        attempted_status,
-        has_url=bool(str(row.get("url", "") or "").strip()),
-        has_theme=_row_has_theme(row),
-    )
-
-
-def _ledger_row_response(row):
-    return {header: str(row.get(header, "") or "") for header in LEDGER_HEADERS}
-
-
-def _save_ledger_row_updates(row, updates, *, default_notes=None):
-    attempted_status = None
-    candidate_row = dict(row)
-    for key, value in updates.items():
-        if key not in EDITABLE_LEDGER_FIELDS:
-            continue
-        normalized = str(value or "")
-        if key == "status":
-            attempted_status = normalized.upper()
-            candidate_row[key] = attempted_status
-        else:
-            candidate_row[key] = normalized
-
-    if attempted_status:
-        err = _status_validation_error(candidate_row, attempted_status)
-        if err:
-            err["rating_key"] = str(row.get("rating_key", "") or "")
-            err["title"] = row.get("title") or row.get("plex_title") or ""
-            return None, err
-
-    for key, value in updates.items():
-        if key not in EDITABLE_LEDGER_FIELDS:
-            continue
-        normalized = str(value or "")
-        row[key] = attempted_status if key == "status" and attempted_status else normalized
-
-    if "url" in updates:
-        row["source_origin"] = "manual" if str(updates.get("url") or "").strip() else "unknown"
-    row["last_updated"] = now_str()
-    if "notes" not in updates and default_notes is not None:
-        row["notes"] = default_notes
-    return row, None
-
-_run_lock    = threading.Lock()
-_run_active  = False
-_run_clients = []
-_run_proc    = None
-_run_stop_requested = False
-_run_started_at = None
-_run_last_line = ""
-_run_pass = 0
-_run_scope_label = ""
-_run_libraries = []
-_poster_cache  = {}
-_media_cache   = {}
-_stream_cache  = {}
-_STREAM_TTL    = 600
-_STREAM_MAX    = 200
-_tmdb_poster_cache = {}
-_TMDB_POSTER_TTL   = 86400
-_tmdb_lookup_cache = {}
-_TMDB_LOOKUP_TTL   = 86400
-_bio_cache = {}
-_BIO_TTL   = 86400
-_GOLDEN_CACHE_DIR = LOGS_DIR / "golden_source_cache"
-_GOLDEN_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-def _broadcast(msg):
-    is_progress = msg.startswith("@@PROGRESS@@")
-    dead = []
-    for q in _run_clients:
-        try:
-            q.put_nowait(msg)
-        except Exception:
-            if is_progress:
-                try:
-                    q.get_nowait()
-                    q.put_nowait(msg)
-                except Exception:
-                    pass
-            else:
-                try:
-                    q.get_nowait()
-                    q.put_nowait(msg)
-                except Exception:
-                    dead.append(q)
-    for q in dead:
-        try: _run_clients.remove(q)
-        except: pass
-
-def _parse_run_stats(lines):
-    stats = {}
-    for line in lines:
-        if "Pass 1 complete" in line:
-            m = re.search(r"Total:\s*(\d+)\s*Have theme:\s*(\d+)\s*Missing:\s*(\d+)\s*Staged:\s*(\d+)\s*Approved:\s*(\d+)\s*New:\s*(\d+)\s*Removed:\s*(\d+)", line)
-            if m:
-                stats["pass1"] = {"total":int(m.group(1)),"has_theme":int(m.group(2)),"missing":int(m.group(3)),
-                                   "staged":int(m.group(4)),"approved":int(m.group(5)),"new":int(m.group(6)),"removed":int(m.group(7))}
-        if "Pass 2 complete" in line:
-            m = re.search(r"Staged:\s*(\d+)\s*Missing:\s*(\d+)\s*Failed:\s*(\d+)", line)
-            if m: stats["pass2"] = {"staged":int(m.group(1)),"missing":int(m.group(2)),"failed":int(m.group(3))}
-        if "Pass 3 complete" in line:
-            m = re.search(r"Available:\s*(\d+)\s*Failed:\s*(\d+)\s*Skipped:\s*(\d+)", line)
-            if m: stats["pass3"] = {"available":int(m.group(1)),"failed":int(m.group(2)),"skipped":int(m.group(3))}
-    return stats
-
-def _record_task(task_name, status="success", scope="", summary="", details=None, duration_seconds=None):
-    normalized_status = str(status or "success")
-    entry = {
-        "time": now_str(),
-        "task": str(task_name or "Task"),
-        "status": normalized_status,
-        "outcome": normalized_status,
-        "scope": str(scope or ""),
-        "summary": str(summary or ""),
-        "details": details or {},
-        "duration_seconds": float(duration_seconds or 0),
-    }
-    try:
-        with open(TASKS_FILE, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
-
-def _load_task_entries(limit=250):
-    entries = []
-    if TASKS_FILE.exists():
-        for line in TASKS_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                entries.append(json.loads(line))
-            except Exception:
-                continue
-    run_entries = []
-    for f in sorted(RUNS_DIR.glob("*.json")):
-        try:
-            run = json.loads(f.read_text(encoding="utf-8"))
-            run_status = str(run.get("status") or run.get("outcome") or "success")
-            run_entries.append({
-                "time": run.get("time", ""),
-                "task": {1: "Scan Libraries", 2: "Find Sources", 3: "Download Themes"}.get(run.get("pass"), "Pipeline Run"),
-                "status": run_status,
-                "outcome": run_status,
-                "scope": "",
-                "summary": run.get("summary", ""),
-                "details": {
-                    "pass": run.get("pass", 0),
-                    "stats": run.get("stats", {}),
-                    "return_code": run.get("return_code"),
-                    "stop_requested": bool(run.get("stop_requested")),
-                },
-                "duration_seconds": run.get("duration_seconds") or 0,
-                "is_run_history": True,
-            })
-        except Exception:
-            continue
-    all_entries = sorted(entries + run_entries, key=lambda e: e.get("time", ""), reverse=True)
-    return all_entries[:max(1, int(limit or 250))]
-
-def _config_error(field, code, message, value=None):
-    err = {"field": field, "code": code, "message": message}
-    if value is not None:
-        err["value"] = value
-    return err
-
-
-def _coerce_config_bool(field, value, errors):
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)) and value in (0, 1):
-        return bool(value)
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if normalized in {"1", "true", "yes", "on"}:
-            return True
-        if normalized in {"0", "false", "no", "off"}:
-            return False
-    errors.append(_config_error(field, "invalid_boolean", "Expected a boolean value.", value))
-    return None
-
-
-def _coerce_config_number(field, value, spec, errors):
-    if isinstance(value, bool):
-        errors.append(_config_error(field, "invalid_number", "Expected a numeric value.", value))
-        return None
-    raw = value.strip() if isinstance(value, str) else value
-    if raw in ("", None):
-        raw = 0 if spec["min"] == 0 else None
-    try:
-        if spec["type"] == "int":
-            number = int(raw)
-        else:
-            number = float(raw)
-    except (TypeError, ValueError):
-        errors.append(_config_error(field, "invalid_number", "Expected a numeric value.", value))
-        return None
-    if number < spec["min"] or number > spec["max"]:
-        errors.append(
-            _config_error(
-                field,
-                "out_of_range",
-                f"Expected a value between {spec['min']} and {spec['max']}.",
-                value,
-            )
-        )
-        return None
-    return int(number) if spec["type"] == "int" else number
-
-
-def _normalize_config_enum(field, value, errors):
-    normalized = str(value or "").strip().lower()
-    if field == "quality_profile":
-        aliases = {"best": "high", "hq": "high", "standard": "medium", "balanced": "medium", "lq": "low"}
-        normalized = aliases.get(normalized, normalized)
-    elif field == "search_mode":
-        aliases = {"youtube": "playlist", "soundtrack": "playlist", "song": "direct", "theme": "direct"}
-        normalized = aliases.get(normalized, normalized)
-    elif field == "mode":
-        aliases = {"scheduled": "cron"}
-        normalized = aliases.get(normalized, normalized)
-    if normalized in CONFIG_ENUM_FIELDS[field]:
-        return normalized
-    errors.append(
-        _config_error(
-            field,
-            "invalid_choice",
-            f"Expected one of: {', '.join(sorted(CONFIG_ENUM_FIELDS[field]))}.",
-            value,
-        )
-    )
-    return None
-
-
-def _normalize_media_roots(raw_cfg, errors):
-    roots = raw_cfg.get("media_roots")
-    if roots is None and raw_cfg.get("media_root") is not None:
-        roots = [raw_cfg.get("media_root")]
-    if roots is None:
-        return list(CONFIG_DEFAULTS["media_roots"])
-    if not isinstance(roots, list):
-        errors.append(_config_error("media_roots", "invalid_type", "Expected media_roots to be an array.", roots))
-        return list(CONFIG_DEFAULTS["media_roots"])
-    normalized = []
-    for idx, root in enumerate(roots):
-        text = str(root or "").strip()
-        if not text:
-            continue
-        if text not in normalized:
-            normalized.append(text)
-        elif root not in ("", None):
-            errors.append(_config_error(f"media_roots[{idx}]", "duplicate", "Duplicate media root.", root))
-    return normalized or list(CONFIG_DEFAULTS["media_roots"])
-
-
-def _normalize_library_type(value, field, errors):
-    normalized = LIBRARY_TYPE_ALIASES.get(str(value or "").strip().lower())
-    if normalized is not None:
-        return normalized
-    errors.append(_config_error(field, "invalid_choice", "Library type must be movie, show, or blank.", value))
-    return ""
-
-
-def _normalize_libraries(raw_cfg, errors):
-    libs = raw_cfg.get("libraries")
-    if libs is None:
-        legacy_name = str(raw_cfg.get("plex_library_name", "") or "").strip()
-        if legacy_name:
-            return [{"name": legacy_name, "enabled": True, "type": ""}]
-        return []
-    if not isinstance(libs, list):
-        errors.append(_config_error("libraries", "invalid_type", "Expected libraries to be an array.", libs))
-        return []
-
-    normalized = []
-    seen = set()
-    for idx, item in enumerate(libs):
-        if isinstance(item, str):
-            name = item.strip()
-            item = {"name": name, "enabled": True}
-        elif not isinstance(item, dict):
-            errors.append(_config_error(f"libraries[{idx}]", "invalid_type", "Each library must be an object.", item))
-            continue
-
-        name = str(item.get("name", "") or "").strip()
-        if not name:
-            errors.append(_config_error(f"libraries[{idx}].name", "required", "Library name is required.", item.get("name")))
-            continue
-
-        enabled = _coerce_config_bool(f"libraries[{idx}].enabled", item.get("enabled", True), errors)
-        if enabled is None:
-            enabled = True
-        lib_type = _normalize_library_type(item.get("type", ""), f"libraries[{idx}].type", errors)
-        canonical = {"name": name, "enabled": enabled, "type": lib_type}
-        key = name.casefold()
-        if key in seen:
-            errors.append(_config_error(f"libraries[{idx}].name", "duplicate", "Duplicate library name.", name))
-            continue
-        seen.add(key)
-        normalized.append(canonical)
-    return normalized
-
-
-def _normalize_schedule_libraries(value, normalized_cfg, errors):
-    if value is None:
-        enabled = [lib["name"] for lib in normalized_cfg["libraries"] if lib.get("enabled", True)]
-        return enabled
-    if not isinstance(value, list):
-        errors.append(_config_error("schedule_libraries", "invalid_type", "Expected schedule_libraries to be an array.", value))
-        return []
-    available = {lib["name"] for lib in normalized_cfg["libraries"] if lib.get("enabled", True)}
-    selected = []
-    seen = set()
-    for idx, item in enumerate(value):
-        name = str(item or "").strip()
-        if not name:
-            continue
-        key = name.casefold()
-        if key in seen:
-            continue
-        seen.add(key)
-        if name not in available:
-            errors.append(
-                _config_error(
-                    f"schedule_libraries[{idx}]",
-                    "unknown_library",
-                    "Scheduled libraries must reference enabled configured libraries.",
-                    name,
-                )
-            )
-            continue
-        selected.append(name)
-    return selected
-
-
-def _normalize_cron_schedule(value, errors):
-    cron = str(value or "").strip()
-    if not cron:
-        return CONFIG_DEFAULTS["cron_schedule"]
-    parts = cron.split()
-    if len(parts) != 5 or any(not _CRON_FIELD_RE.match(part) for part in parts):
-        errors.append(
-            _config_error(
-                "cron_schedule",
-                "invalid_cron",
-                "Cron schedule must have five space-separated fields.",
-                value,
-            )
-        )
-        return CONFIG_DEFAULTS["cron_schedule"]
-    return " ".join(parts)
-
-
-def _normalize_theme_filename(value, errors):
-    filename = str(value or "").strip()
-    if not filename:
-        filename = CONFIG_DEFAULTS["theme_filename"]
-    if _FILENAME_INVALID_CHARS_RE.search(filename):
-        errors.append(
-            _config_error(
-                "theme_filename",
-                "invalid_filename",
-                "Theme filename must not include path separators.",
-                value,
-            )
-        )
-        return CONFIG_DEFAULTS["theme_filename"]
-    return filename
-
-
-def normalize_config(raw_cfg, *, for_save=False):
-    source = raw_cfg if isinstance(raw_cfg, dict) else {}
-    errors = []
-    normalized = dict(CONFIG_DEFAULTS)
-
-    for field, default in CONFIG_DEFAULTS.items():
-        if field in {"media_roots", "libraries", "schedule_libraries", "cron_schedule", "theme_filename"}:
-            continue
-        if field in CONFIG_BOOL_FIELDS:
-            value = source.get(field, default)
-            coerced = _coerce_config_bool(field, value, errors)
-            normalized[field] = default if coerced is None else coerced
-        elif field in CONFIG_ENUM_FIELDS:
-            value = source.get(field, default)
-            coerced = _normalize_config_enum(field, value, errors)
-            normalized[field] = default if coerced is None else coerced
-        elif field in CONFIG_NUMERIC_FIELDS:
-            value = source.get(field, default)
-            coerced = _coerce_config_number(field, value, CONFIG_NUMERIC_FIELDS[field], errors)
-            normalized[field] = default if coerced is None else coerced
-        else:
-            normalized[field] = str(source.get(field, default) or "").strip()
-
-    if "search_query" in source and "search_query_playlist" not in source:
-        normalized["search_query_playlist"] = str(source.get("search_query") or "").strip() or CONFIG_DEFAULTS["search_query_playlist"]
-
-    normalized["golden_source_url"] = normalize_golden_source_url(normalized["golden_source_url"])
-    normalized["media_roots"] = _normalize_media_roots(source, errors)
-    normalized["libraries"] = _normalize_libraries(source, errors)
-    normalized["schedule_libraries"] = _normalize_schedule_libraries(source.get("schedule_libraries"), normalized, errors)
-    normalized["cron_schedule"] = _normalize_cron_schedule(source.get("cron_schedule", CONFIG_DEFAULTS["cron_schedule"]), errors)
-    normalized["theme_filename"] = _normalize_theme_filename(source.get("theme_filename", CONFIG_DEFAULTS["theme_filename"]), errors)
-
-    if normalized["search_fuzzy"]:
-        normalized["search_fallback"] = False
-
-    if for_save and errors:
-        return normalized, errors
-    return normalized, []
-
-
-def _load_raw_config():
-    try:
-        with open(CONFIG_PATH, encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
-    except Exception:
-        return {}
-
-
-def load_config():
-    cfg, _ = normalize_config(_load_raw_config(), for_save=False)
-    return cfg
-
-
-def save_config(data):
-    normalized, errors = normalize_config(data, for_save=True)
-    if errors:
-        raise ValueError(errors)
-    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-        yaml.dump(normalized, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
-    return normalized
-
-def get_ui_token():
-    env_token = os.environ.get("UI_TOKEN", "").strip()
-    if env_token: return env_token
-    return str(load_config().get("ui_token", "") or "").strip()
 
 @app.before_request
 def _auth_guard():
-    if not request.path.startswith("/api/"): return
-    token = get_ui_token()
-    if not token: return
-    provided = request.headers.get("X-UI-Token") or request.args.get("token", "")
-    if provided != token:
+    if not logic.is_authorized_api_request(request.path, request.headers, request.args):
         return jsonify({"error": "unauthorized"}), 401
 
-def get_media_roots(cfg):
-    roots = cfg.get("media_roots")
-    if isinstance(roots, list) and roots:
-        return [str(r) for r in roots if str(r).strip()]
-    single = cfg.get("media_root")
-    if single: return [str(single)]
-    return ["/media"]
-
-def is_allowed_folder(folder, roots):
-    if not folder: return False
-    try:
-        fpath = Path(folder).resolve()
-    except Exception:
-        return False
-    for root in roots:
-        try:
-            rpath = Path(root).resolve()
-            if fpath == rpath or fpath.is_relative_to(rpath): return True
-        except Exception:
-            continue
-    return False
-
-
-def _find_row_by_identity(rows, rating_key="", folder="", tmdb_id=""):
-    """Find a ledger row using stable identity, preferring rating_key then folder."""
-    rk = str(rating_key or "").strip()
-    fd = str(folder or "").strip()
-    tid = str(tmdb_id or "").strip()
-    if rk:
-        row = next((r for r in rows if str(r.get("rating_key", "") or "").strip() == rk), None)
-        if row:
-            return row, "rating_key"
-    if fd:
-        row = next((r for r in rows if str(r.get("folder", "") or "").strip() == fd), None)
-        if row:
-            return row, "folder"
-    if tid:
-        row = next((r for r in rows if str(r.get("tmdb_id", "") or "").strip() == tid), None)
-        if row:
-            return row, "tmdb_id"
-    return None, ""
-
-def _prune_stream_cache(now=None):
-    now = now or _time.time()
-    expired = [k for k,(ts,_) in _stream_cache.items() if now-ts > _STREAM_TTL]
-    for k in expired: _stream_cache.pop(k, None)
-    if len(_stream_cache) > _STREAM_MAX:
-        oldest = sorted(_stream_cache.items(), key=lambda kv: kv[1][0])
-        for k,_ in oldest[:len(_stream_cache)-_STREAM_MAX]:
-            _stream_cache.pop(k, None)
-
-def _tmdb_poster_url(title, year, tmdb_key, size="w342"):
-    if not title or not tmdb_key: return None
-    size = size if size in {"w92","w154","w185","w342","w500","original"} else "w342"
-    key = f"{str(title).strip().lower()}|{str(year).strip()}|{size}"
-    now = _time.time()
-    cached = _tmdb_poster_cache.get(key)
-    if cached and now - cached[0] < _TMDB_POSTER_TTL: return cached[1]
-    params = {"api_key": tmdb_key, "query": title, "language": "en-US"}
-    if year: params["year"] = year
-    try:
-        sr = http_requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=8)
-        results = sr.json().get("results", []) if sr.status_code == 200 else []
-        if not results:
-            sr = http_requests.get("https://api.themoviedb.org/3/search/tv",
-                                   params={"api_key":tmdb_key,"query":title,"language":"en-US"}, timeout=8)
-            results = sr.json().get("results", []) if sr.status_code == 200 else []
-        poster_path = results[0].get("poster_path") if results else None
-        if not poster_path: return None
-        url = f"https://image.tmdb.org/t/p/{size}{poster_path}"
-        _tmdb_poster_cache[key] = (now, url)
-        return url
-    except Exception: return None
-
-def _tmdb_lookup(title, year, tmdb_key):
-    if not title or not tmdb_key: return None
-    key = f"{str(title).strip().lower()}|{str(year).strip()}"
-    now = _time.time()
-    cached = _tmdb_lookup_cache.get(key)
-    if cached and now - cached[0] < _TMDB_LOOKUP_TTL: return cached[1]
-    params = {"api_key": tmdb_key, "query": title, "language": "en-US"}
-    if year: params["year"] = year
-    try:
-        sr = http_requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=8)
-        results = sr.json().get("results", []) if sr.status_code == 200 else []
-        if results:
-            mid = results[0].get("id")
-            if mid:
-                data = {"id": mid, "media_type": "movie", "url": f"https://www.themoviedb.org/movie/{mid}"}
-                _tmdb_lookup_cache[key] = (now, data); return data
-        sr = http_requests.get("https://api.themoviedb.org/3/search/tv",
-                               params={"api_key":tmdb_key,"query":title,"language":"en-US"}, timeout=8)
-        results = sr.json().get("results", []) if sr.status_code == 200 else []
-        if results:
-            tid = results[0].get("id")
-            if tid:
-                data = {"id": tid, "media_type": "tv", "url": f"https://www.themoviedb.org/tv/{tid}"}
-                _tmdb_lookup_cache[key] = (now, data); return data
-    except Exception: return None
-    return None
-
-def get_libraries(cfg):
-    libs = cfg.get("libraries")
-    if libs and isinstance(libs, list): return libs
-    return [{"name": cfg.get("plex_library_name","Movies"), "enabled": True}]
-
-def _boolish(v):
-    if isinstance(v, bool): return v
-    return str(v).strip().lower() in {"1","true","yes","on"}
-
-def _parse_golden_source_csv(text):
-    reader = import_csv_reader(text)
-    if not reader.fieldnames:
-        raise ValueError("Golden Source CSV has no header row")
-    rows = []
-    for row in reader:
-        clean = {
-            str(k or "").strip().lower(): str(v or "").strip()
-            for k, v in row.items()
-        }
-        tmdb_id = clean.get("tmdb_id", "")
-        source_url = clean.get("source_url", "")
-        if not tmdb_id:
-            continue
-        clean["tmdb_id"] = tmdb_id
-        clean["source_url"] = source_url
-        clean["start_offset"] = clean.get("start_offset", "0") or "0"
-        clean["end_offset"] = clean.get("end_offset", "0") or "0"
-        # Backward compatibility: tolerate legacy Golden Source columns we no longer use.
-        clean.pop("verified", None)
-        rows.append(clean)
-    return rows
-
-
-def _fetch_golden_source_catalog(url, force_refresh=False, cache_ttl_sec=1800):
-    normalized, text, fetch_ms, fetch_mode = read_golden_source_text(
-        url,
-        cache_dir=_GOLDEN_CACHE_DIR,
-        force_refresh=force_refresh,
-        cache_ttl_sec=cache_ttl_sec,
-        allow_local_file=True,
-        cache_prefix="catalog_",
-    )
-    rows = _parse_golden_source_csv(text)
-    return normalized, rows, fetch_ms, fetch_mode
-
-def import_csv_reader(text):
-    return csv.DictReader(text.splitlines())
-
-def _resolve_row_tmdb_id(row, cfg):
-    tmdb_id = str(row.get("tmdb_id", "") or "").strip()
-    if tmdb_id: return tmdb_id
-    tmdb_key = cfg.get("tmdb_api_key", "")
-    if not tmdb_key: return ""
-    data = _tmdb_lookup(row.get("title","") or row.get("plex_title",""), row.get("year",""), tmdb_key)
-    if not data: return ""
-    if str(data.get("media_type","")) != "movie": return ""
-    return str(data.get("id","") or "").strip()
-
-# ─── Template ─────────────────────────────────────────────────────────────────
-_tpl_path = Path("/app/web/template.html")
-def _load_template():
-    if _tpl_path.exists(): return _tpl_path.read_text(encoding="utf-8")
-    local = Path(__file__).parent / "template.html"
-    if local.exists(): return local.read_text(encoding="utf-8")
-    return "<h1>Template not found</h1>"
-
-def load_ui_terminology():
-    try:
-        with open(UI_TERMINOLOGY_PATH, encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
-    except Exception:
-        local = Path(__file__).parent / "ui_terminology.yaml"
-        if local.exists():
-            try:
-                return yaml.safe_load(local.read_text(encoding="utf-8")) or {}
-            except Exception:
-                return {}
-    return {}
-
-# ─── Routes ───────────────────────────────────────────────────────────────────
 
 @app.route("/")
-def index(): return _load_template()
+def index():
+    return logic.load_template()
+
 
 @app.route("/api/config", methods=["GET"])
 def get_config():
-    cfg = load_config()
+    cfg = logic.load_config()
     cfg.pop("ui_token", None)
     return jsonify(cfg)
 
+
 @app.route("/api/config", methods=["POST"])
 def post_config():
-    incoming = request.json or {}
+    incoming = request.get_json(silent=True)
     if not isinstance(incoming, dict):
-        return jsonify({
-            "ok": False,
-            "error": "validation_failed",
-            "errors": [_config_error("body", "invalid_type", "Expected a JSON object.")],
-        }), 400
-    current = _load_raw_config()
+        return jsonify({"ok": False, "error": "validation_failed", "errors": [logic.config_error("body", "invalid_type", "Expected a JSON object.")]}), 400
+    current = logic.load_raw_config()
     current.update(incoming)
-    normalized, errors = normalize_config(current, for_save=True)
+    normalized, errors = logic.normalize_config(current, for_save=True)
     if errors:
-        return jsonify({
-            "ok": False,
-            "error": "validation_failed",
-            "errors": errors,
-        }), 400
-    save_config(normalized)
-    return jsonify({"ok": True, "config": {k: v for k, v in normalized.items() if k != "ui_token"}})
+        return jsonify({"ok": False, "error": "validation_failed", "errors": errors}), 400
+    logic.save_config(normalized)
+    return jsonify({"ok": True, "config": {key: value for key, value in normalized.items() if key != "ui_token"}})
+
 
 @app.route("/api/ui-terminology", methods=["GET"])
 def get_ui_terminology():
-    return jsonify(load_ui_terminology())
+    return jsonify(logic.load_ui_terminology())
 
 
 @app.route("/api/status-model", methods=["GET"])
 def get_status_model():
-    return jsonify(
-        {
-            "statuses": list(STATUS_ORDER),
-            "manual_transitions": {
-                status: list(MANUAL_STATUS_TRANSITIONS.get(status, ()))
-                for status in STATUS_ORDER
-            },
-            "manual_any": ["UNMONITORED"],
-        }
-    )
+    return jsonify({
+        "statuses": list(STATUS_ORDER),
+        "manual_transitions": {status: list(MANUAL_STATUS_TRANSITIONS.get(status, ())) for status in STATUS_ORDER},
+        "manual_any": ["UNMONITORED"],
+    })
+
 
 @app.route("/api/test/plex", methods=["POST"])
 def test_plex():
-    data = request.json or {}
-    url = data.get("url","").rstrip("/"); token = data.get("token","")
+    data = request.get_json(silent=True) or {}
     try:
-        r = http_requests.get(f"{url}/library/sections",
-                              headers={"X-Plex-Token":token,"Accept":"application/json"}, timeout=8)
-        r.raise_for_status()
-        libs = r.json().get("MediaContainer",{}).get("Directory",[])
-        return jsonify({"ok":True,"libraries":len(libs)})
-    except Exception as e:
-        return jsonify({"ok":False,"error":str(e)[:120]})
+        return jsonify(integrations.test_plex((data.get("url", "") or "").rstrip("/"), data.get("token", "")))
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)[:120]})
+
 
 @app.route("/api/plex/libraries", methods=["POST"])
 def plex_libraries():
-    data = request.json or {}
-    url = data.get("url","").rstrip("/"); token = data.get("token","")
+    data = request.get_json(silent=True) or {}
     try:
-        r = http_requests.get(f"{url}/library/sections",
-                              headers={"X-Plex-Token":token,"Accept":"application/json"}, timeout=8)
-        r.raise_for_status()
-        all_libs = r.json().get("MediaContainer",{}).get("Directory",[])
-        libs = [{"name":d["title"],"type":d.get("type","")} for d in all_libs if d.get("type") in ("movie","show")]
-        return jsonify({"ok":True,"libraries":libs})
-    except Exception as e:
-        return jsonify({"ok":False,"error":str(e)[:120]})
+        return jsonify({"ok": True, "libraries": integrations.list_plex_libraries((data.get("url", "") or "").rstrip("/"), data.get("token", ""))})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)[:120]})
+
 
 @app.route("/api/movie/bio")
 def movie_bio():
-    rating_key = request.args.get("key","")
-    lib = request.args.get("library","")
-    if not rating_key: return jsonify({"summary":""})
-    cache_key = f"{lib}:{rating_key}"
-    now = _time.time()
-    cached = _bio_cache.get(cache_key)
-    if cached and now - cached[0] < _BIO_TTL: return jsonify({"summary":cached[1]})
-    cfg = load_config()
-    tmdb_key = cfg.get("tmdb_api_key","")
-    plex_url = cfg.get("plex_url","").rstrip("/")
-    plex_token = cfg.get("plex_token","")
-    if tmdb_key:
-        try:
-            lpath = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-            rows = load_ledger(lpath)
-            row = next((r for r in rows if r.get("rating_key") == rating_key), None)
-            title = (row or {}).get("title") or (row or {}).get("plex_title","")
-            year = (row or {}).get("year","")
-            if title:
-                params = {"api_key":tmdb_key,"query":title,"language":"en-US"}
-                if year: params["year"] = year
-                sr = http_requests.get("https://api.themoviedb.org/3/search/movie", params=params, timeout=8)
-                if sr.status_code == 200:
-                    results = sr.json().get("results",[])
-                    if not results:
-                        sr2 = http_requests.get("https://api.themoviedb.org/3/search/tv",
-                                                params={"api_key":tmdb_key,"query":title,"language":"en-US"}, timeout=8)
-                        if sr2.status_code == 200: results = sr2.json().get("results",[])
-                    if results:
-                        overview = results[0].get("overview","")
-                        if overview:
-                            _bio_cache[cache_key] = (now, overview)
-                            return jsonify({"summary": overview})
-        except Exception: pass
-    if plex_url and plex_token:
-        try:
-            r = http_requests.get(f"{plex_url}/library/metadata/{rating_key}",
-                headers={"X-Plex-Token":plex_token,"Accept":"application/json"}, timeout=8)
-            if r.status_code == 200:
-                meta = r.json().get("MediaContainer",{}).get("Metadata",[{}])
-                summary = meta[0].get("summary","") if meta else ""
-                if summary:
-                    _bio_cache[cache_key] = (now, summary)
-                    return jsonify({"summary": summary})
-        except Exception: pass
-    return jsonify({"summary":""})
+    return jsonify(logic.movie_bio_payload(request.args.get("key", ""), request.args.get("library", "")))
+
 
 @app.route("/api/test/tmdb", methods=["POST"])
 def test_tmdb():
-    key = (request.json or {}).get("key","")
     try:
-        r = http_requests.get("https://api.themoviedb.org/3/configuration", params={"api_key":key}, timeout=8)
-        if r.status_code == 401: return jsonify({"ok":False,"error":"Invalid API key"})
-        r.raise_for_status(); return jsonify({"ok":True})
-    except Exception as e:
-        return jsonify({"ok":False,"error":str(e)[:120]})
+        return jsonify(integrations.test_tmdb_key((request.get_json(silent=True) or {}).get("key", "")))
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)[:120]})
+
 
 @app.route("/api/test/golden-source", methods=["POST"])
 def test_golden_source():
-    data = request.json or {}
-    url = data.get("url") or load_config().get("golden_source_url","")
+    data = request.get_json(silent=True) or {}
     try:
-        normalized_url, rows, fetch_ms, fetch_mode = _fetch_golden_source_catalog(url)
+        url = data.get("url") or logic.load_config().get("golden_source_url", "")
+        normalized_url, rows, fetch_ms, fetch_mode = logic.fetch_golden_source_catalog(url)
         if not rows:
-            return jsonify({"ok":False,"error":"CSV loaded but no usable rows found (need tmdb_id column)"})
+            return jsonify({"ok": False, "error": "CSV loaded but no usable rows found (need tmdb_id column)"})
         return jsonify({
             "ok": True,
             "source_url": normalized_url,
@@ -963,1303 +119,402 @@ def test_golden_source():
             "required_columns": ["tmdb_id", "source_url"],
             "optional_columns": ["title", "year", "start_offset", "updated_at", "notes"],
         })
-    except Exception as e:
-        return jsonify({"ok":False,"error":str(e)[:180]})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)[:180]})
+
 
 @app.route("/api/cookies")
 def list_cookies():
     config_dir = Path("/app/config")
-    files = [str(f) for f in config_dir.glob("*.txt")] if config_dir.exists() else []
+    files = [str(path) for path in config_dir.glob("*.txt")] if config_dir.exists() else []
     return jsonify({"files": files})
-
-
-def _next_cron_run(cron_expr):
-    """Compute the next run time for a 5-field cron expression (UTC).
-    Returns an ISO 8601 string or None on failure.
-    """
-    import math
-    try:
-        parts = cron_expr.strip().split()
-        if len(parts) != 5:
-            return None
-        minute_s, hour_s, dom_s, month_s, dow_s = parts
-
-        def _parse_field(s, lo, hi):
-            vals = set()
-            for chunk in s.split(","):
-                if chunk == "*":
-                    vals.update(range(lo, hi + 1))
-                elif "/" in chunk:
-                    base, step = chunk.split("/", 1)
-                    step = int(step)
-                    start = lo if base == "*" else int(base)
-                    vals.update(range(start, hi + 1, step))
-                elif "-" in chunk:
-                    a, b = chunk.split("-", 1)
-                    vals.update(range(int(a), int(b) + 1))
-                else:
-                    vals.add(int(chunk))
-            return sorted(v for v in vals if lo <= v <= hi)
-
-        minutes = _parse_field(minute_s, 0, 59)
-        hours   = _parse_field(hour_s,   0, 23)
-        months  = _parse_field(month_s,  1, 12)
-        dom     = _parse_field(dom_s,    1, 31) if dom_s != "*" else None
-        dow     = _parse_field(dow_s,    0,  6) if dow_s != "*" else None
-
-        from datetime import datetime, timezone, timedelta
-        now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
-        candidate = now + timedelta(minutes=1)
-        for _ in range(366 * 24 * 60):
-            if candidate.month not in months:
-                candidate += timedelta(minutes=1)
-                continue
-            day_ok = True
-            if dom is not None and dow is not None:
-                day_ok = (candidate.day in dom) or (candidate.weekday() % 7 in dow)
-            elif dom is not None:
-                day_ok = candidate.day in dom
-            elif dow is not None:
-                day_ok = candidate.weekday() % 7 in dow
-            if not day_ok:
-                candidate += timedelta(minutes=1)
-                continue
-            if candidate.hour not in hours:
-                candidate += timedelta(minutes=1)
-                continue
-            if candidate.minute not in minutes:
-                candidate += timedelta(minutes=1)
-                continue
-            return candidate.isoformat()
-        return None
-    except Exception:
-        return None
 
 
 @app.route("/api/health", methods=["GET"])
 def api_health():
-    """Return validated system health for each component."""
-    import shutil, sqlite3 as _sqlite3
-    cfg = load_config()
-    result = {}
+    return jsonify(logic.api_health_payload())
 
-    # ── Plex ──────────────────────────────────────────────────────────────────
-    plex_url   = (cfg.get("plex_url")   or "").strip().rstrip("/")
-    plex_token = (cfg.get("plex_token") or "").strip()
-    if not plex_url or not plex_token:
-        result["plex"] = {"state": "off", "label": "Not configured"}
-    else:
-        try:
-            r = http_requests.get(
-                f"{plex_url}/library/sections",
-                headers={"X-Plex-Token": plex_token, "Accept": "application/json"},
-                timeout=8,
-            )
-            r.raise_for_status()
-            libs = r.json().get("MediaContainer", {}).get("Directory", [])
-            result["plex"] = {"state": "ok", "label": "Connected", "detail": f"{len(libs)} libraries"}
-        except Exception as exc:
-            result["plex"] = {"state": "error", "label": "Connection failed", "detail": str(exc)[:100]}
-
-    # ── TMDB API ───────────────────────────────────────────────────────────────
-    tmdb_key = (cfg.get("tmdb_api_key") or "").strip()
-    if not tmdb_key:
-        result["tmdb"] = {"state": "off", "label": "Not configured"}
-    else:
-        try:
-            r = http_requests.get(
-                "https://api.themoviedb.org/3/configuration",
-                params={"api_key": tmdb_key},
-                timeout=8,
-            )
-            if r.status_code == 401:
-                result["tmdb"] = {"state": "error", "label": "Invalid key"}
-            elif r.ok:
-                result["tmdb"] = {"state": "ok", "label": "Connected"}
-            else:
-                result["tmdb"] = {"state": "warning", "label": "API error", "detail": f"HTTP {r.status_code}"}
-        except Exception as exc:
-            result["tmdb"] = {"state": "error", "label": "API error", "detail": str(exc)[:100]}
-
-    # ── Golden Source ──────────────────────────────────────────────────────────
-    gs_url = (cfg.get("golden_source_url") or "").strip()
-    if not gs_url:
-        result["golden_source"] = {"state": "off", "label": "Not configured"}
-    else:
-        try:
-            _, rows, _, _ = _fetch_golden_source_catalog(gs_url)
-            if not rows:
-                result["golden_source"] = {"state": "warning", "label": "Loaded: 0 rows", "detail": "No usable rows found"}
-            else:
-                result["golden_source"] = {"state": "ok", "label": f"Loaded: {len(rows):,} rows"}
-        except Exception as exc:
-            result["golden_source"] = {"state": "error", "label": "Load failed", "detail": str(exc)[:100]}
-
-    # ── Download Toolchain ─────────────────────────────────────────────────────
-    ytdlp_bin  = shutil.which("yt-dlp")
-    ffmpeg_bin = shutil.which("ffmpeg")
-    ytdlp_ver  = None
-    ffmpeg_ver = None
-    if ytdlp_bin:
-        try:
-            rv = subprocess.run(["yt-dlp", "--version"], capture_output=True, text=True, timeout=5)
-            ytdlp_ver = rv.stdout.strip()
-        except Exception:
-            pass
-    if ffmpeg_bin:
-        try:
-            rv = subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, timeout=5)
-            first = rv.stdout.splitlines()[0] if rv.stdout else ""
-            m = re.search(r"ffmpeg version (\S+)", first)
-            ffmpeg_ver = m.group(1) if m else "unknown"
-        except Exception:
-            pass
-    if ytdlp_bin and ffmpeg_bin:
-        parts = []
-        if ytdlp_ver:  parts.append(f"yt-dlp {ytdlp_ver}")
-        if ffmpeg_ver: parts.append(f"ffmpeg {ffmpeg_ver}")
-        result["toolchain"] = {"state": "ok", "label": "Ready", "detail": " · ".join(parts),
-                               "ytdlp_version": ytdlp_ver, "ffmpeg_version": ffmpeg_ver}
-    elif not ytdlp_bin and not ffmpeg_bin:
-        result["toolchain"] = {"state": "error", "label": "Dependency issue", "detail": "yt-dlp and ffmpeg not found"}
-    elif not ytdlp_bin:
-        result["toolchain"] = {"state": "error", "label": "yt-dlp missing",
-                               "detail": f"ffmpeg {ffmpeg_ver}" if ffmpeg_ver else "ffmpeg present"}
-    else:
-        result["toolchain"] = {"state": "error", "label": "ffmpeg missing",
-                               "detail": f"yt-dlp {ytdlp_ver}" if ytdlp_ver else "yt-dlp present"}
-
-    # ── Storage / Paths ────────────────────────────────────────────────────────
-    roots = get_media_roots(cfg)
-    missing_paths, readonly_paths = [], []
-    for root in roots:
-        p = Path(root)
-        if not p.exists():
-            missing_paths.append(root)
-        elif not os.access(str(p), os.W_OK):
-            readonly_paths.append(root)
-    if missing_paths:
-        result["storage"] = {"state": "error", "label": "Missing path",
-                             "detail": "; ".join(missing_paths[:2])}
-    elif readonly_paths:
-        result["storage"] = {"state": "warning", "label": "Read-only path",
-                             "detail": "; ".join(readonly_paths[:2])}
-    else:
-        result["storage"] = {"state": "ok", "label": "Writable",
-                             "detail": f"{len(roots)} path{'s' if len(roots) != 1 else ''} writable"}
-
-    # ── Database ───────────────────────────────────────────────────────────────
-    try:
-        db_path = Path(get_db_path())
-        if not db_path.exists():
-            result["database"] = {"state": "warning", "label": "Not initialized"}
-        else:
-            conn = _sqlite3.connect(str(db_path), timeout=5)
-            conn.execute("SELECT 1")
-            conn.close()
-            result["database"] = {"state": "ok", "label": "Healthy"}
-    except Exception as exc:
-        result["database"] = {"state": "error", "label": "DB error", "detail": str(exc)[:100]}
-
-    # ── Libraries ─────────────────────────────────────────────────────────────
-    all_libs   = [l for l in (cfg.get("libraries") or [])
-                  if not l.get("type") or l.get("type") in ("movie", "show")]
-    enabled    = [l for l in all_libs if l.get("enabled") is not False]
-    sched_names = set(cfg.get("schedule_libraries") or [l["name"] for l in enabled])
-    scheduled  = [l for l in enabled if l.get("name") in sched_names]
-    if not enabled:
-        result["libraries"] = {"state": "warning", "label": "No enabled libraries", "enabled": 0, "scheduled": 0}
-    else:
-        result["libraries"] = {"state": "ok", "label": f"{len(enabled)} enabled",
-                               "detail": f"{len(scheduled)} in scheduler",
-                               "enabled": len(enabled), "scheduled": len(scheduled)}
-
-    # ── Schedule ───────────────────────────────────────────────────────────────
-    sched_enabled = cfg.get("schedule_enabled", False)
-    cron_expr     = (cfg.get("cron_schedule") or "0 3 * * *").strip()
-    cron_parts    = cron_expr.split()
-    cron_valid    = len(cron_parts) == 5
-    next_run      = _next_cron_run(cron_expr) if cron_valid else None
-    sched_libs_count = len(scheduled)
-    if not cron_valid:
-        result["schedule"] = {"state": "error", "label": "Invalid cron", "cron": cron_expr,
-                              "next_run": None, "libraries": sched_libs_count}
-    elif not sched_enabled:
-        result["schedule"] = {"state": "off", "label": "Disabled", "cron": cron_expr,
-                              "next_run": None, "libraries": sched_libs_count}
-    elif not scheduled:
-        result["schedule"] = {"state": "warning", "label": "No libraries selected", "cron": cron_expr,
-                              "next_run": next_run, "libraries": 0}
-    else:
-        result["schedule"] = {"state": "ok", "label": "Enabled", "cron": cron_expr,
-                              "next_run": next_run, "libraries": sched_libs_count}
-
-    return jsonify(result)
 
 @app.route("/api/ledger", methods=["GET"])
 def get_ledger():
-    lib = request.args.get("library","")
-    path = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
+    library = request.args.get("library", "")
+    path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")
     return jsonify(load_ledger(path))
+
 
 @app.route("/api/ledger/<key>", methods=["PATCH"])
 def patch_ledger(key):
-    lib = request.args.get("library","")
-    path = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
+    library = request.args.get("library", "")
+    path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")
     rows = load_ledger(path)
     for row in rows:
         if row.get("rating_key") == key:
-            req = request.json or {}
-            saved_row, err = _save_ledger_row_updates(row, req, default_notes="Edited via web UI")
-            if err:
-                return jsonify(err), 400
+            saved_row, error = logic.save_ledger_row_updates(row, request.get_json(silent=True) or {}, default_notes="Edited via web UI")
+            if error:
+                return jsonify(error), 400
             save_ledger(path, rows)
-            return jsonify({"ok":True, "row": _ledger_row_response(saved_row)})
-    return jsonify({"error":"not found"}), 404
+            return jsonify({"ok": True, "row": logic.ledger_row_response(saved_row)})
+    return jsonify({"error": "not found"}), 404
+
 
 @app.route("/api/ledger/manual-source", methods=["POST"])
 def save_manual_source():
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
     key = str(data.get("rating_key", "") or "").strip()
-    lib = str(data.get("library", "") or "").strip()
-    if not key:
-        return jsonify({"ok": False, "error": "Missing rating_key"}), 400
-    if not lib:
-        return jsonify({"ok": False, "error": "Missing library"}), 400
+    library = str(data.get("library", "") or "").strip()
     url = str(data.get("url", "") or "").strip()
     target_status = str(data.get("target_status", data.get("status", "")) or "").strip().upper()
+    if not key:
+        return jsonify({"ok": False, "error": "Missing rating_key"}), 400
+    if not library:
+        return jsonify({"ok": False, "error": "Missing library"}), 400
     if not url:
         return jsonify({"ok": False, "error": "Missing url"}), 400
     if not target_status:
         return jsonify({"ok": False, "error": "Missing target_status"}), 400
 
-    path = ledger_path_for(lib)
+    path = ledger_path_for(library)
     rows = load_ledger(path)
-    row = next((r for r in rows if str(r.get("rating_key", "") or "").strip() == key), None)
+    row = next((item for item in rows if str(item.get("rating_key", "") or "").strip() == key), None)
     if not row:
         return jsonify({"ok": False, "error": "not found"}), 404
 
-    updates = {
+    saved_row, error = logic.save_ledger_row_updates(row, {
         "url": url,
         "start_offset": data.get("start_offset", "0"),
         "notes": data.get("notes", ""),
         "status": target_status,
-    }
-    saved_row, err = _save_ledger_row_updates(row, updates)
-    if err:
-        err["library"] = lib
-        return jsonify(err), 400
-
+    })
+    if error:
+        error["library"] = library
+        return jsonify(error), 400
     save_ledger(path, rows)
-    return jsonify({"ok": True, "row": _ledger_row_response(saved_row)})
+    return jsonify({"ok": True, "row": logic.ledger_row_response(saved_row)})
+
 
 @app.route("/api/ledger/bulk", methods=["POST"])
 def bulk_ledger():
-    lib = request.args.get("library","")
-    path = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-    data = request.json
-    keys = set(data.get("keys",[]))
-    status = str(data.get("status","") or "").upper()
-    rows = load_ledger(path); now = now_str(); count=0; skipped=0
+    library = request.args.get("library", "")
+    path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")
+    data = request.get_json(silent=True) or {}
+    keys = set(data.get("keys", []))
+    status = str(data.get("status", "") or "").upper()
+    rows = load_ledger(path)
+    count = 0
     for row in rows:
         if row.get("rating_key") in keys:
-            cur = str(row.get("status","")).upper()
-            err = _status_validation_error(row, status)
-            if err:
-                err["rating_key"] = row.get("rating_key", "")
-                err["title"] = row.get("title") or row.get("plex_title") or ""
-                err["requested_keys"] = len(keys)
-                return jsonify(err), 400
-            row["status"] = status; row["last_updated"] = now
-            row["notes"] = f"Bulk {cur}->{status} via web UI"; count += 1
+            current = str(row.get("status", "")).upper()
+            error = logic.status_validation_error(row, status)
+            if error:
+                error["rating_key"] = row.get("rating_key", "")
+                error["title"] = row.get("title") or row.get("plex_title") or ""
+                error["requested_keys"] = len(keys)
+                return jsonify(error), 400
+            row["status"] = status
+            row["last_updated"] = now_str()
+            row["notes"] = f"Bulk {current}->{status} via web UI"
+            count += 1
     save_ledger(path, rows)
-    skipped = len(keys) - count
-    return jsonify({"ok":True,"updated":count,"skipped":skipped})
+    return jsonify({"ok": True, "updated": count, "skipped": len(keys) - count})
+
 
 @app.route("/api/ledger/clear-sources", methods=["POST"])
 def clear_selected_sources():
-    data = request.json or {}
-    lib = (request.args.get("library", "") or data.get("library", "") or "").strip()
-    path = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-    keys = [str(k) for k in (data.get("keys", []) or []) if str(k).strip()]
+    data = request.get_json(silent=True) or {}
+    library = (request.args.get("library", "") or data.get("library", "") or "").strip()
+    path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")
+    keys = [str(key) for key in (data.get("keys", []) or []) if str(key).strip()]
     if not keys:
         return jsonify({"ok": False, "error": "No ledger rows selected"}), 400
     rows = load_ledger(path)
-    now = now_str()
-    summary = _clear_source_urls_for_rows(
-        rows,
-        keys=keys,
-        note="Source URL cleared via Theme Manager",
-        now=now,
-    )
+    summary = logic.clear_source_urls_for_rows(rows, keys=keys, note="Source URL cleared via Theme Manager", now=now_str())
     missing_keys = sorted(set(keys) - {str(row.get("rating_key", "") or "") for row in rows})
     if summary["cleared"]:
         save_ledger(path, rows)
     summary["missing_keys"] = missing_keys
-    summary["library"] = lib
+    summary["library"] = library
     return jsonify({"ok": True, "summary": summary})
+
 
 @app.route("/api/golden-source/import", methods=["POST"])
 def import_golden_source():
-    data = request.json or {}
-    lib = data.get("library","")
-    if not lib: return jsonify({"ok":False,"error":"Missing library"}), 400
-    cfg = load_config()
-    source_url = data.get("url") or cfg.get("golden_source_url","")
-    overwrite = _boolish(data.get("overwrite_existing", False))
-    auto_approve = _boolish(data.get("auto_approve", False))
-    force_refresh = _boolish(data.get("force_refresh", cfg.get("refresh_golden_source_each_run", True)))
-    cache_ttl_sec = int(cfg.get("golden_source_cache_ttl_sec", 1800) or 1800)
-    resolve_missing_tmdb = _boolish(data.get("resolve_missing_tmdb", cfg.get("golden_source_resolve_tmdb", False)))
-    t0_total = _time.perf_counter()
-    try:
-        normalized_url, catalog_rows, fetch_ms, fetch_mode = _fetch_golden_source_catalog(
-            source_url,
-            force_refresh=force_refresh,
-            cache_ttl_sec=cache_ttl_sec,
-        )
-    except Exception as e:
-        return jsonify({"ok":False,"error":f"Golden Source fetch failed: {str(e)[:180]}"}), 400
-    catalog = {str(r.get("tmdb_id","")).strip(): r for r in catalog_rows if str(r.get("tmdb_id","")).strip()}
-    if not catalog:
-        return jsonify({"ok":False,"error":"Golden Source CSV had no usable rows"}), 400
+    payload, status = logic.golden_source_import_summary(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-    def _norm_title(v):
-        v = re.sub(r"[^a-z0-9]+"," ",str(v or "").lower())
-        return re.sub(r"\s+"," ",v).strip()
-
-    catalog_title_year = {}
-    for r in catalog_rows:
-        title = _norm_title(r.get("title",""))
-        year = str(r.get("year","") or "").strip()
-        if title and year: catalog_title_year[f"{title}|{year}"] = r
-
-    path = ledger_path_for(lib)
-    rows = load_ledger(path)
-    now = now_str()
-    imported = skipped_existing = missing_tmdb = no_match = 0
-    tmdb_cache = {}
-    for row in rows:
-        cur = str(row.get("status","") or "").upper()
-        match = None
-        tmdb_id = str(row.get("tmdb_id","") or "").strip()
-        if tmdb_id: match = catalog.get(tmdb_id)
-        if not match and catalog_title_year:
-            title_key = _norm_title(row.get("title","") or row.get("plex_title",""))
-            year_key = str(row.get("year","") or "").strip()
-            if title_key and year_key:
-                match = catalog_title_year.get(f"{title_key}|{year_key}")
-                if match and not tmdb_id:
-                    tmdb_id = str(match.get("tmdb_id","") or "").strip()
-        if not match and resolve_missing_tmdb:
-            key = str(row.get("rating_key","") or "")
-            cached = tmdb_cache.get(key)
-            if cached is None:
-                cached = _resolve_row_tmdb_id(row, cfg); tmdb_cache[key] = cached
-            tmdb_id = tmdb_id or cached
-            if tmdb_id:
-                match = catalog.get(str(tmdb_id))
-
-        if not match:
-            if tmdb_id:
-                no_match += 1
-            else:
-                missing_tmdb += 1
-            continue
-        existing_url = str(row.get("url","") or "").strip()
-        if existing_url and not overwrite:
-            skipped_existing += 1
-            if tmdb_id: row["tmdb_id"] = tmdb_id
-            continue
-        row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id","") or "").strip()
-        incoming_url = str(match.get("source_url", "") or "").strip()
-        row["url"] = incoming_url
-        row["golden_source_url"] = incoming_url
-        row["golden_source_offset"] = match.get("start_offset","0") or "0"
-        row["end_offset"] = match.get("end_offset","0") or "0"
-        row["source_origin"] = "golden_source" if incoming_url else "unknown"
-        if cur == "UNMONITORED":
-            pass
-        elif not incoming_url and cur != "AVAILABLE":
-            row["status"] = "MISSING"
-        elif cur != "AVAILABLE":
-            row["status"] = "APPROVED" if auto_approve else "STAGED"
-        row["last_updated"] = now
-        if incoming_url:
-            row["notes"] = f"Imported from Golden Source ({Path(normalized_url).name})"
-        else:
-            row["notes"] = f"Golden Source cleared source URL ({Path(normalized_url).name})"
-        imported += 1
-    save_ledger(path, rows)
-    total_ms = round((_time.perf_counter()-t0_total)*1000, 1)
-    return jsonify({
-        "ok": True,
-        "source_url": normalized_url,
-        "catalog_rows": len(catalog_rows),
-        "matched": imported + skipped_existing,
-        "imported": imported,
-        "skipped_existing": skipped_existing,
-        "missing_tmdb": missing_tmdb,
-        "no_match": no_match,
-        "fetch_ms": fetch_ms,
-        "fetch_mode": fetch_mode,
-        "cache_ttl_sec": cache_ttl_sec,
-        "resolve_missing_tmdb": resolve_missing_tmdb,
-        "total_ms": total_ms,
-    })
 
 @app.route("/api/theme/info")
 def theme_info():
-    folder = request.args.get("folder","")
-    cfg = load_config(); filename = cfg.get("theme_filename","theme.mp3"); roots = get_media_roots(cfg)
-    if not is_allowed_folder(folder, roots): return jsonify({"error":"forbidden"}), 403
-    path = Path(folder) / filename
-    if not path.exists(): return jsonify({"error":"not found"}), 404
-    dur = ffprobe_duration(path); size = path.stat().st_size
-    return jsonify({
-        "duration": dur,
-        "size": size,
-        "size_kb": round(size/1024, 1),
-        "folder": folder,
-        "filename": filename,
-        "path": str(path),
-    })
+    payload, status = logic.theme_info_payload(request.args.get("folder", ""))
+    return jsonify(payload), status
+
 
 @app.route("/api/theme/trim", methods=["POST"])
 def trim_theme():
-    data = request.json or {}
-    lib = data.get("library",""); key = data.get("rating_key","")
-    s_off = int(data.get("start_offset",0)); e_off = int(data.get("end_offset",0))
-    cfg = load_config(); filename = cfg.get("theme_filename","theme.mp3")
-    roots = get_media_roots(cfg); audio_fmt = cfg.get("audio_format","mp3")
-    max_dur = int(cfg.get("max_theme_duration",0))
-    path_ledger = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-    rows = load_ledger(path_ledger)
-    row = next((r for r in rows if str(r.get("rating_key","")) == str(key)), None)
-    if not row:
-        return jsonify({"ok":False,"error":f"Not found in ledger — key={key}"})
-    folder = row.get("folder","")
-    if not is_allowed_folder(folder, roots): return jsonify({"ok":False,"error":"Folder not allowed"}), 403
-    theme_path = Path(folder) / filename
-    if not theme_path.exists(): return jsonify({"ok":False,"error":f"Theme file not on disk: {theme_path}"})
-    try:
-        dur = ffprobe_duration(theme_path)
-        if dur <= 0: return jsonify({"ok":False,"error":"Could not read audio duration"})
-        start = max(0,s_off); end = dur - max(0,e_off) if e_off > 0 else dur
-        if max_dur > 0 and (end-start) > max_dur: end = start + max_dur
-        if start >= dur: return jsonify({"ok":False,"error":f"Start offset ({s_off}s) exceeds file duration ({dur:.1f}s)"})
-        if end <= start: return jsonify({"ok":False,"error":f"Nothing left after trimming"})
-        if start <= 0 and end >= dur:
-            row["start_offset"] = str(s_off); row["end_offset"] = str(e_off)
-            row["last_updated"] = now_str()
-            row["notes"] = f"No trim needed ({dur:.1f}s)"
-            save_ledger(path_ledger, rows)
-            return jsonify({"ok":True,"message":f"No trim needed — {dur:.1f}s","duration":dur})
-        tmp = theme_path.with_suffix(f".trim.{audio_fmt}")
-        trim_cmd = ["ffmpeg","-y","-i",str(theme_path),"-ss",str(start),"-to",str(end),"-c","copy",str(tmp)]
-        trim_result = subprocess.run(trim_cmd, capture_output=True, text=True, timeout=60)
-        if trim_result.returncode != 0:
-            tmp.unlink(missing_ok=True)
-            return jsonify({"ok":False,"error":f"ffmpeg error: {trim_result.stderr[:150]}"})
-        tmp.replace(theme_path); new_dur = ffprobe_duration(theme_path)
-        row["start_offset"] = str(s_off); row["end_offset"] = str(e_off)
-        row["last_updated"] = now_str()
-        row["notes"] = f"Trimmed: {dur:.1f}s → {new_dur:.1f}s"
-        row, _ = sync_theme_cache(row, filename, probe_duration=True)
-        save_ledger(path_ledger, rows)
-        return jsonify({"ok":True,"message":f"Trimmed {dur:.1f}s → {new_dur:.1f}s","duration":new_dur})
-    except Exception as e:
-        return jsonify({"ok":False,"error":str(e)[:200]})
+    payload, status = logic.trim_theme_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-# ── /api/theme/delete — BUG FIXES:
-#    1. Clears theme_exists/size/duration/mtime after deletion (was only clearing status).
-#    2. Much more informative error message when folder is not in allowed roots.
-#    3. Handles the case where the file is already gone cleanly.
+
 @app.route("/api/theme/delete", methods=["POST"])
 def delete_theme():
-    data = request.json or {}
-    lib = (data.get("library","") or "").strip()
-    key = str(data.get("rating_key","") or "").strip()
-    folder_hint = str(data.get("folder","") or "").strip()
+    payload, status = logic.delete_theme_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-    cfg = load_config()
-    filename = cfg.get("theme_filename","theme.mp3")
-    roots = get_media_roots(cfg)
-    allowed_names = {"theme.mp3","theme.m4a","theme.flac","theme.opus"}
-    if filename not in allowed_names:
-        return jsonify({"ok":False,"error":f"Unexpected theme filename: {filename}"})
-
-    # ── Find the row ──────────────────────────────────────────────────────────
-    path_ledger = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-    rows = load_ledger(path_ledger)
-    tmdb_id = str(data.get("tmdb_id", "") or "").strip()
-    row, matched_by = _find_row_by_identity(rows, key, folder_hint, tmdb_id)
-
-    # Cross-library fallback
-    if not row:
-        for lib_entry in load_config().get("libraries", []):
-            lib_name = lib_entry.get("name","")
-            if not lib_name or lib_name == lib: continue
-            alt_path = ledger_path_for(lib_name)
-            alt_rows = load_ledger(alt_path)
-            row, matched_by = _find_row_by_identity(alt_rows, key, folder_hint, tmdb_id)
-            if row:
-                path_ledger = alt_path
-                rows = alt_rows
-                break
-
-    # ── Resolve folder ────────────────────────────────────────────────────────
-    folder = (row.get("folder","") if row else None) or folder_hint
-
-    if not folder:
-        detail = f"key={key!r}, lib={lib!r}, folder_hint={folder_hint!r}, ledger_size={len(rows)}"
-        return jsonify({"ok":False,"error":f"Media item not found in ledger and no folder provided. ({detail})"})
-
-    if not is_allowed_folder(folder, roots):
-        return jsonify({
-            "ok": False,
-            "error": (
-                f"Folder is not inside an allowed media root. "
-                f"folder={folder!r} — roots={roots}. "
-                f"Check that media_roots in config.yaml matches the path Plex uses for this library inside the container."
-            )
-        }), 403
-
-    theme_path = Path(folder) / filename
-    if theme_path.name != filename:
-        return jsonify({"ok":False,"error":"Path mismatch — refusing to delete"})
-
-    # ── Clear theme metadata helper ───────────────────────────────────────────
-    def _clear_theme_metadata(r):
-        r["status"]         = "MISSING"
-        r["theme_exists"]   = 0
-        r["theme_duration"] = 0.0
-        r["theme_size"]     = 0
-        r["theme_mtime"]    = 0.0
-        r["last_updated"]   = now_str()
-
-    if not theme_path.exists():
-        if row:
-            _clear_theme_metadata(row)
-            row["notes"] = "Theme file already missing — status reset"
-            save_ledger(path_ledger, rows)
-        return jsonify({"ok":True,"message":"File already gone — status reset to Missing","matched_by":matched_by or "folder_hint"})
-
-    try:
-        theme_path.unlink()
-        if row:
-            _clear_theme_metadata(row)
-            row["notes"] = "Theme deleted via Theme manager"
-            save_ledger(path_ledger, rows)
-            return jsonify({"ok":True,"message":f"Deleted {filename} — status reset to Missing","matched_by":matched_by or "folder_hint"})
-        return jsonify({"ok":True,"message":f"Deleted {filename} (ledger row not found — status not updated)","matched_by":matched_by or "folder_hint"})
-    except PermissionError:
-        return jsonify({"ok":False,"error":f"Permission denied deleting {theme_path}. Check file ownership."})
-    except Exception as e:
-        return jsonify({"ok":False,"error":str(e)[:200]})
 
 @app.route("/api/theme/download-now", methods=["POST"])
 def download_now():
-    """Immediately download the source URL for a single row."""
-    data = request.json or {}
-    lib = (data.get("library","") or "").strip()
-    key = str(data.get("rating_key","") or "").strip()
-    folder_hint = str(data.get("folder","") or "").strip()
-    tmdb_id = str(data.get("tmdb_id","") or "").strip()
-    if not key and not folder_hint:
-        return jsonify({"ok":False,"error":"Missing identity: provide rating_key or folder"}), 400
-    cfg = load_config()
-    filename = cfg.get("theme_filename","theme.mp3")
-    roots = get_media_roots(cfg)
-    cookies_file = cfg.get("cookies_file","") or None
-    audio_format = cfg.get("audio_format","mp3")
-    quality_profile = cfg.get("quality_profile","high")
-    max_dur = int(cfg.get("max_theme_duration",0) or 0)
-    path_ledger = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-    rows = load_ledger(path_ledger)
-    row, matched_by = _find_row_by_identity(rows, key, folder_hint, tmdb_id)
-    if not row:
-        return jsonify({"ok":False,"error":f"Not found in ledger for library '{lib}'"}), 404
-    url = (row.get("url","") or "").strip()
-    if not url: return jsonify({"ok":False,"error":"No source URL on this row — add a source first"}), 400
-    folder = row.get("folder","")
-    if not is_allowed_folder(folder, roots):
-        return jsonify({"ok":False,"error":f"Folder not allowed: {folder!r} — check media_roots in config.yaml"}), 403
-    theme_path = Path(folder) / filename
-    replaced_existing = False
-    if theme_path.exists():
-        try:
-            theme_path.unlink(missing_ok=True)
-            replaced_existing = True
-        except Exception as e:
-            return jsonify({"ok":False,"error":f"Failed to replace existing theme file: {str(e)[:160]}"}), 500
-    quality_map = {"high":"bestaudio","balanced":"bestaudio[abr<=192]/bestaudio",
-                   "small":"bestaudio[abr<=128]/bestaudio","smallest":"bestaudio[abr<=96]/bestaudio"}
-    fmt_str = quality_map.get(quality_profile,"bestaudio")
-    ext = audio_format if audio_format in {"mp3","m4a","flac","opus"} else "mp3"
-    slug = re.sub(r"[^a-z0-9]","",key.lower())[:8] or "dl"
-    tmp_template = str(Path(folder) / f"mt_tmp_{slug}.%(ext)s")
-    cmd = ["yt-dlp","--no-warnings","-x","--audio-format",ext,"--audio-quality","0",
-           "-f",fmt_str,"-o",tmp_template,"--playlist-items","1"]
-    if cookies_file and Path(cookies_file).exists():
-        cmd += ["--cookies", cookies_file]
-    cmd.append(url)
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
-        if result.returncode != 0:
-            err = (result.stderr or result.stdout or "yt-dlp error").strip()[:300]
-            return jsonify({"ok":False,"error":f"Download failed: {err}"})
-        downloaded = next(Path(folder).glob(f"mt_tmp_{slug}.*"), None)
-        if not downloaded or not downloaded.exists():
-            return jsonify({"ok":False,"error":"yt-dlp succeeded but output file not found"})
-        start_offset = int(row.get("start_offset",0) or 0)
-        end_offset = int(row.get("end_offset",0) or 0)
-        dur = ffprobe_duration(downloaded)
-        if dur > 0 and (start_offset > 0 or end_offset > 0 or (max_dur > 0 and dur > max_dur)):
-            start = max(0, start_offset)
-            end = dur - max(0, end_offset) if end_offset > 0 else dur
-            if max_dur > 0 and (end - start) > max_dur: end = start + max_dur
-            if 0 < start < dur and end > start:
-                tmp_trim = Path(folder) / f"mt_trim_{slug}.{ext}"
-                trim_cmd = ["ffmpeg","-y","-i",str(downloaded),"-ss",str(start),"-to",str(end),"-c","copy",str(tmp_trim)]
-                trim_result = subprocess.run(trim_cmd, capture_output=True, text=True, timeout=60)
-                if trim_result.returncode == 0:
-                    downloaded.unlink(missing_ok=True); downloaded = tmp_trim
-        downloaded.rename(theme_path)
-        row["status"] = "AVAILABLE"
-        row["last_updated"] = now_str()
-        row["notes"] = "Downloaded via manual download (replaced existing local theme)" if replaced_existing else "Downloaded via manual download"
-        row, _ = sync_theme_cache(row, filename, probe_duration=True)
-        save_ledger(path_ledger, rows)
-        msg = f"Downloaded and replaced existing {filename}" if replaced_existing else f"Downloaded and saved as {filename}"
-        return jsonify({"ok":True,"message":msg,"matched_by":matched_by or "rating_key","replaced_existing":replaced_existing})
-    except subprocess.TimeoutExpired:
-        for f in Path(folder).glob(f"mt_tmp_{slug}.*"): f.unlink(missing_ok=True)
-        return jsonify({"ok":False,"error":"Download timed out (180s)"})
-    except Exception as e:
-        for f in Path(folder).glob(f"mt_tmp_{slug}.*"): f.unlink(missing_ok=True)
-        return jsonify({"ok":False,"error":str(e)[:200]})
+    payload, status = logic.download_now_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-# ── NEW: sync theme file metadata for a library without a full Plex scan ──────
+
 @app.route("/api/library/sync-themes", methods=["POST"])
 def sync_library_themes():
-    """
-    Refreshes theme_exists / theme_duration / theme_size / theme_mtime for every
-    row without needing a full Plex scan (Pass 1).
-    Useful after manual file operations or to reconcile stale status.
-    """
-    data = request.json or {}
-    lib = (data.get("library","") or "").strip()
-    if not lib:
-        return jsonify({"ok": False, "error": "Missing library"}), 400
-    cfg = load_config()
-    filename = cfg.get("theme_filename", "theme.mp3")
-    path = ledger_path_for(lib)
-    rows = load_ledger(path)
-    updated = found = missing = promoted = 0
-    now = now_str()
-    for row in rows:
-        new_row, changed = sync_theme_cache(row, filename, probe_duration=False)
-        if changed:
-            row.update(new_row)
-            updated += 1
-        new_exists = int(row.get("theme_exists", 0) or 0)
-        if new_exists:
-            found += 1
-            # Promote status if file is present but status doesn't reflect it.
-            if str(row.get("status", "") or "").upper() != "AVAILABLE":
-                row["status"] = "AVAILABLE"
-                row["last_updated"] = now
-                row["notes"] = "Promoted to Available — theme file detected on disk"
-                updated += 1
-                promoted += 1
-        else:
-            missing += 1
-            # Reset status if file is gone but status still claims availability.
-            if str(row.get("status", "") or "").upper() == "AVAILABLE":
-                row["status"] = "MISSING"
-                row["last_updated"] = now
-                row["notes"] = "Reset to Missing — theme file no longer on disk"
-                updated += 1
-    if updated:
-        save_ledger(path, rows)
-    return jsonify({
-        "ok": True,
-        "library": lib,
-        "total": len(rows),
-        "updated": updated,
-        "themes_found": found,
-        "themes_missing": missing,
-        "promoted": promoted,
-    })
+    payload, status = logic.sync_library_themes_payload((request.get_json(silent=True) or {}).get("library", ""))
+    return jsonify(payload), status
+
 
 @app.route("/api/theme")
 def serve_theme():
-    folder = request.args.get("folder","")
-    cfg = load_config(); filename = cfg.get("theme_filename","theme.mp3"); roots = get_media_roots(cfg)
-    if not is_allowed_folder(folder, roots): return jsonify({"error":"forbidden"}), 403
-    path = Path(folder) / filename
-    if not path.exists(): return jsonify({"error":"not found"}), 404
+    folder = request.args.get("folder", "")
+    cfg = logic.load_config()
+    if not logic.is_allowed_folder(folder, logic.get_media_roots(cfg)):
+        return jsonify({"error": "forbidden"}), 403
+    path = Path(folder) / cfg.get("theme_filename", "theme.mp3")
+    if not path.exists():
+        return jsonify({"error": "not found"}), 404
     return send_file(str(path), mimetype="audio/mpeg", conditional=True)
+
 
 @app.route("/api/poster")
 def serve_poster():
-    rk = request.args.get("key","")
-    if rk in _poster_cache:
-        data, ct = _poster_cache[rk]; return Response(data, mimetype=ct)
-    cfg = load_config(); plex_url = cfg.get("plex_url","").rstrip("/"); plex_token = cfg.get("plex_token","")
-    if not plex_url or not plex_token: return "",404
+    rating_key = request.args.get("key", "")
+    cfg = logic.load_config()
+    plex_url = cfg.get("plex_url", "").rstrip("/")
+    plex_token = cfg.get("plex_token", "")
+    if not plex_url or not plex_token:
+        return "", 404
     try:
-        r = http_requests.get(f"{plex_url}/library/metadata/{rk}/thumb",
-                              headers={"X-Plex-Token":plex_token}, timeout=8)
-        if r.status_code == 200:
-            ct = r.headers.get("Content-Type","image/jpeg")
-            if len(_poster_cache) > 500: _poster_cache.clear()
-            _poster_cache[rk] = (r.content, ct)
-            return Response(r.content, mimetype=ct)
-    except Exception: pass
-    return "",404
+        poster = integrations.fetch_plex_poster(rating_key, plex_url, plex_token)
+        if not poster:
+            return "", 404
+        data, content_type = poster
+        return Response(data, mimetype=content_type)
+    except Exception:
+        return "", 404
+
 
 @app.route("/api/poster/tmdb")
 def tmdb_poster():
-    title = (request.args.get("title","") or "").strip()
-    year = (request.args.get("year","") or "").strip()
-    size = (request.args.get("size","") or "w342").strip()
-    if not title: return "",404
-    cfg = load_config(); tmdb_key = cfg.get("tmdb_api_key","")
-    if not tmdb_key: return "",404
-    url = _tmdb_poster_url(title, year, tmdb_key, size=size)
-    if not url: return "",404
-    return "",302,{"Location":url,"Cache-Control":"public, max-age=86400"}
+    title = (request.args.get("title", "") or "").strip()
+    year = (request.args.get("year", "") or "").strip()
+    size = (request.args.get("size", "") or "w342").strip()
+    if not title:
+        return "", 404
+    tmdb_key = logic.load_config().get("tmdb_api_key", "")
+    if not tmdb_key:
+        return "", 404
+    url = integrations.tmdb_poster_url(title, year, tmdb_key, size=size)
+    if not url:
+        return "", 404
+    return "", 302, {"Location": url, "Cache-Control": "public, max-age=86400"}
+
 
 @app.route("/api/tmdb/lookup")
 def tmdb_lookup():
-    title = (request.args.get("title","") or "").strip()
-    year = (request.args.get("year","") or "").strip()
-    if not title: return jsonify({"ok":False,"error":"missing title"}), 400
-    cfg = load_config(); tmdb_key = cfg.get("tmdb_api_key","")
-    if not tmdb_key: return jsonify({"ok":False,"error":"missing tmdb key"}), 400
-    data = _tmdb_lookup(title, year, tmdb_key)
-    if not data: return jsonify({"ok":False,"error":"not found"}), 404
-    return jsonify({"ok":True,**data})
+    title = (request.args.get("title", "") or "").strip()
+    year = (request.args.get("year", "") or "").strip()
+    if not title:
+        return jsonify({"ok": False, "error": "missing title"}), 400
+    tmdb_key = logic.load_config().get("tmdb_api_key", "")
+    if not tmdb_key:
+        return jsonify({"ok": False, "error": "missing tmdb key"}), 400
+    data = integrations.tmdb_lookup(title, year, tmdb_key)
+    if not data:
+        return jsonify({"ok": False, "error": "not found"}), 404
+    return jsonify({"ok": True, **data})
+
 
 @app.route("/api/media")
 def get_media():
-    lib = request.args.get("library",""); show = request.args.get("show","with_theme")
-    nocache = request.args.get("nocache","")
-    cache_key = f"{lib}:{show}"
-    if not nocache and cache_key in _media_cache:
-        ts, cached = _media_cache[cache_key]
-        if _time.time() - ts < 30: return jsonify(cached)
-    cfg = load_config(); filename = cfg.get("theme_filename","theme.mp3")
-    path = ledger_path_for(lib) if lib else str(LOGS_DIR/"theme_log.csv")
-    rows = load_ledger(path); media = []
-    for row in rows:
-        status = row.get("status","")
-        theme_path = Path(row.get("folder","")) / filename
-        has_theme = theme_path.exists()
-        dur = ffprobe_duration(theme_path) if has_theme else 0
-        if show == "with_theme" and not has_theme: continue
-        if show == "without_theme" and has_theme: continue
-        media.append({"rating_key":row.get("rating_key",""),"title":row.get("title",""),
-                      "plex_title":row.get("plex_title",""),"year":row.get("year",""),
-                      "folder":row.get("folder",""),"url":row.get("url",""),
-                      "start_offset":row.get("start_offset","0"),"end_offset":row.get("end_offset","0"),
-                      "duration":dur,"has_theme":has_theme,"status":status,
-                      "last_updated":row.get("last_updated","")})
-    media.sort(key=lambda r: r.get("title","").lower())
-    _media_cache[cache_key] = (_time.time(), media)
-    return jsonify(media)
+    return jsonify(logic.media_payload(request.args.get("library", ""), request.args.get("show", "with_theme"), nocache=bool(request.args.get("nocache", ""))))
+
 
 @app.route("/api/youtube/search", methods=["POST"])
 def youtube_search():
-    data = request.json or {}; query = data.get("query","")
-    if not query: return jsonify({"ok":False,"error":"No query"})
-    cfg = load_config(); cookies_file = cfg.get("cookies_file","") or None
-    flags = ["yt-dlp","--no-warnings","--quiet"]
-    if cookies_file and Path(cookies_file).exists():
-        flags += ["--cookies", cookies_file]
-    import urllib.parse
-    search_url = "https://www.youtube.com/results?search_query=" + urllib.parse.quote(query)
+    data = request.get_json(silent=True) or {}
+    query = data.get("query", "")
+    if not query:
+        return jsonify({"ok": False, "error": "No query"})
     try:
-        result = subprocess.run(
-            flags + ["--flat-playlist","--print","%(title)s\t%(url)s\t%(duration_string)s",
-                     "--playlist-items","1:10", search_url],
-            capture_output=True, text=True, timeout=30)
-        results = []
-        for line in result.stdout.strip().splitlines():
-            parts = line.split("\t")
-            if len(parts) >= 2 and parts[1].startswith("https://"):
-                results.append({"title":parts[0],"url":parts[1],"duration":parts[2] if len(parts)>2 else ""})
-        return jsonify({"ok":True,"results":results})
-    except Exception as e:
-        return jsonify({"ok":False,"error":str(e)[:150]})
+        cfg = logic.load_config()
+        return jsonify({"ok": True, "results": integrations.youtube_search(query, cfg.get("cookies_file", "") or None)})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)[:150]})
+
 
 @app.route("/api/preview", methods=["POST"])
 def preview_url():
-    data = request.json or {}; url = data.get("url","")
-    if not url: return jsonify({"ok":False,"error":"No URL provided"})
-    cfg = load_config(); cookies_file = cfg.get("cookies_file","") or None
-    flags = ["yt-dlp","--no-warnings","--quiet"]
-    if cookies_file and Path(cookies_file).exists():
-        flags += ["--cookies", cookies_file]
-    cmd = flags + ["--format","bestaudio","--get-url","--playlist-items","1","--yes-playlist", url]
+    data = request.get_json(silent=True) or {}
+    url = data.get("url", "")
+    if not url:
+        return jsonify({"ok": False, "error": "No URL provided"})
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        if result.returncode != 0:
-            return jsonify({"ok":False,"error":(result.stderr or "yt-dlp error")[:150]})
-        stream_url = result.stdout.strip().splitlines()[0] if result.stdout.strip() else ""
-        if not stream_url: return jsonify({"ok":False,"error":"Could not extract stream URL"})
-        key = hashlib.md5(url.encode()).hexdigest()[:12]
-        _stream_cache[key] = (_time.time(), stream_url); _prune_stream_cache()
-        return jsonify({"ok":True,"audio_url":f"/api/preview/proxy/{key}"})
+        cfg = logic.load_config()
+        stream_url = integrations.preview_stream_url(url, cfg.get("cookies_file", "") or None)
+        key = integrations.cache_preview_stream(url, stream_url)
+        return jsonify({"ok": True, "audio_url": f"/api/preview/proxy/{key}"})
     except subprocess.TimeoutExpired:
-        return jsonify({"ok":False,"error":"URL extraction timed out"})
-    except Exception as e:
-        return jsonify({"ok":False,"error":str(e)[:150]})
+        return jsonify({"ok": False, "error": "URL extraction timed out"})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)[:150]})
+
 
 @app.route("/api/preview/proxy/<key>")
 def proxy_preview(key):
-    _prune_stream_cache()
-    if key not in _stream_cache: return jsonify({"error":"no stream"}), 404
-    stream_url = _stream_cache[key][1]
+    stream_url = integrations.get_cached_preview_stream(key)
+    if not stream_url:
+        return jsonify({"error": "no stream"}), 404
     try:
-        r = http_requests.get(stream_url, stream=True, timeout=30,
-                              headers={"Range": request.headers.get("Range","")})
-        headers = {"Content-Type":r.headers.get("Content-Type","audio/webm"),"Accept-Ranges":"bytes"}
-        if "Content-Length" in r.headers: headers["Content-Length"] = r.headers["Content-Length"]
-        if "Content-Range" in r.headers: headers["Content-Range"] = r.headers["Content-Range"]
-        return Response(r.iter_content(chunk_size=8192), status=r.status_code, headers=headers)
-    except Exception as e:
-        return jsonify({"error":str(e)[:150]}), 500
+        response = integrations.stream_remote_audio(stream_url, request.headers.get("Range", ""))
+        headers = {"Content-Type": response.headers.get("Content-Type", "audio/webm"), "Accept-Ranges": "bytes"}
+        if "Content-Length" in response.headers:
+            headers["Content-Length"] = response.headers["Content-Length"]
+        if "Content-Range" in response.headers:
+            headers["Content-Range"] = response.headers["Content-Range"]
+        return Response(response.iter_content(chunk_size=8192), status=response.status_code, headers=headers)
+    except Exception as exc:
+        return jsonify({"error": str(exc)[:150]}), 500
+
 
 @app.route("/api/run/pass/<int:pass_num>", methods=["POST"])
 def trigger_pass(pass_num):
     if pass_num not in (1, 2, 3):
         return jsonify({"error": "pass must be 1, 2, or 3"}), 400
-    global _run_active
     data = request.get_json(silent=True) or {}
     libraries = data.get("libraries")
-    library = str(data.get("library") or "").strip()
     if libraries is not None and not isinstance(libraries, list):
         return jsonify({"error": "libraries must be an array"}), 400
     explicit_libraries = [str(name).strip() for name in (libraries or []) if str(name).strip()]
+    library = str(data.get("library") or "").strip()
     if library:
         explicit_libraries = [library]
-    scope_label = str(data.get("scope_label") or "").strip()
-    with _run_lock:
-        if _run_active: return jsonify({"error":"run in progress"}), 409
-        _run_active = True
-    threading.Thread(target=_do_run, args=(pass_num, explicit_libraries, scope_label), daemon=True).start()
-    return jsonify({"ok":True})
+    if not RUN_MANAGER.start(force_pass=pass_num, explicit_libraries=explicit_libraries, scope_label=str(data.get("scope_label") or "").strip()):
+        return jsonify({"error": "run in progress"}), 409
+    return jsonify({"ok": True})
+
 
 @app.route("/api/run/schedule-now", methods=["POST"])
 def trigger_schedule_now():
-    global _run_active
     data = request.get_json(silent=True) or {}
-    cfg = load_config()
-    enabled_libraries = [
-        str(lib.get("name") or "").strip()
-        for lib in cfg.get("libraries", [])
-        if str(lib.get("name") or "").strip() and lib.get("enabled", True)
-    ]
-    configured = [
-        str(name).strip()
-        for name in (cfg.get("schedule_libraries") or [])
-        if str(name).strip()
-    ]
+    cfg = logic.load_config()
+    enabled_libraries = [str(lib.get("name") or "").strip() for lib in cfg.get("libraries", []) if str(lib.get("name") or "").strip() and lib.get("enabled", True)]
+    configured = [str(name).strip() for name in (cfg.get("schedule_libraries") or []) if str(name).strip()]
     explicit_libraries = [name for name in configured if name in enabled_libraries] or enabled_libraries
-    scope_label = str(data.get("scope_label") or "").strip() or (
-        explicit_libraries[0] if len(explicit_libraries) == 1
-        else f"{len(explicit_libraries)} scheduled libraries" if explicit_libraries
-        else "scheduled libraries"
-    )
-    with _run_lock:
-        if _run_active:
-            return jsonify({"error":"run in progress"}), 409
-        _run_active = True
-    threading.Thread(
-        target=_do_run,
-        kwargs={
-            "force_pass": 0,
-            "explicit_libraries": explicit_libraries,
-            "scope_label": scope_label,
-            "allow_schedule_disabled": True,
-        },
-        daemon=True,
-    ).start()
-    return jsonify({"ok":True, "libraries": explicit_libraries})
+    scope_label = str(data.get("scope_label") or "").strip() or (explicit_libraries[0] if len(explicit_libraries) == 1 else f"{len(explicit_libraries)} scheduled libraries" if explicit_libraries else "scheduled libraries")
+    if not RUN_MANAGER.start(force_pass=0, explicit_libraries=explicit_libraries, scope_label=scope_label, allow_schedule_disabled=True):
+        return jsonify({"error": "run in progress"}), 409
+    return jsonify({"ok": True, "libraries": explicit_libraries})
+
 
 @app.route("/api/run/scan", methods=["POST"])
 def trigger_scan():
-    global _run_active
     data = request.get_json(silent=True) or {}
     libraries = data.get("libraries")
-    library = str(data.get("library") or "").strip()
     if libraries is not None and not isinstance(libraries, list):
         return jsonify({"error": "libraries must be an array"}), 400
     explicit_libraries = [str(name).strip() for name in (libraries or []) if str(name).strip()]
+    library = str(data.get("library") or "").strip()
     if library:
         explicit_libraries = [library]
-    scope_label = str(data.get("scope_label") or "").strip()
-    with _run_lock:
-        if _run_active: return jsonify({"error":"run in progress"}), 409
-        _run_active = True
-    threading.Thread(target=_do_run, args=(1, explicit_libraries, scope_label), daemon=True).start()
-    return jsonify({"ok":True})
+    if not RUN_MANAGER.start(force_pass=1, explicit_libraries=explicit_libraries, scope_label=str(data.get("scope_label") or "").strip()):
+        return jsonify({"error": "run in progress"}), 409
+    return jsonify({"ok": True})
+
 
 @app.route("/api/run/stop", methods=["POST"])
 def stop_run():
-    global _run_proc, _run_stop_requested
-    if _run_proc and _run_proc.poll() is None:
-        _run_stop_requested = True
-        try: _run_proc.send_signal(signal.SIGTERM); _broadcast("[STOP] Graceful stop requested…")
-        except Exception: _run_proc.kill()
-        return jsonify({"ok":True})
-    return jsonify({"ok":False,"error":"No run in progress"})
+    if RUN_MANAGER.stop():
+        return jsonify({"ok": True})
+    return jsonify({"ok": False, "error": "No run in progress"})
 
-def _do_run(force_pass=0, explicit_libraries=None, scope_label="", allow_schedule_disabled=False):
-    global _run_active, _run_proc, _run_stop_requested, _run_started_at, _run_last_line, _run_pass, _run_scope_label, _run_libraries
-    run_log = []; timestamp = now_str(); run_pass = force_pass or 0
-    proc = None
-    return_code = None
-    stop_requested = False
-    outcome = "error"
-    explicit_libraries = [str(name).strip() for name in (explicit_libraries or []) if str(name).strip()]
-    resolved_scope = scope_label or "unknown"
-    try:
-        resolved_scope = scope_label or (
-            explicit_libraries[0] if len(explicit_libraries) == 1
-            else f"{len(explicit_libraries)} selected libraries" if explicit_libraries
-            else "scheduled libraries"
-        )
-        _run_started_at = _time.time(); _run_last_line = ""; _run_pass = run_pass; _run_stop_requested = False
-        _run_scope_label = resolved_scope
-        _run_libraries = list(explicit_libraries)
-        env = {**os.environ, "CONFIG_PATH": CONFIG_PATH}
-        if force_pass: env["FORCE_PASS"] = str(force_pass)
-        else: env.pop("FORCE_PASS", None)
-        if allow_schedule_disabled:
-            env["RUN_SCHEDULE_NOW"] = "1"
-        else:
-            env.pop("RUN_SCHEDULE_NOW", None)
-        if explicit_libraries:
-            env["RUN_LIBRARIES"] = json.dumps(explicit_libraries)
-        else:
-            env.pop("RUN_LIBRARIES", None)
-        proc = subprocess.Popen([sys.executable, SCRIPT_PATH],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
-        _run_proc = proc
-        for line in proc.stdout:
-            line = line.rstrip(); run_log.append(line); _broadcast(line)
-            _run_last_line = line
-            if "Pass 1" in line: run_pass = max(run_pass, 1)
-            if "Pass 2" in line: run_pass = max(run_pass, 2)
-            if "Pass 3" in line: run_pass = max(run_pass, 3)
-            _run_pass = run_pass
-        return_code = proc.wait()
-    except Exception as e:
-        msg = f"[ERROR] {e}"; run_log.append(msg); _broadcast(msg)
-    finally:
-        stop_requested = _run_stop_requested
-        if return_code == 0 and not stop_requested:
-            outcome = "success"
-        elif stop_requested:
-            outcome = "stopped"
-        elif return_code is not None:
-            outcome = "error"
-        elif any("[ERROR]" in line for line in run_log):
-            outcome = "error"
-        _run_proc = None; _run_stop_requested = False; _broadcast("__DONE__"); _run_active = False
-        duration = _time.time() - _run_started_at if _run_started_at else None
-        summary = next((l for l in reversed(run_log) if any(k in l for k in
-            ["complete","caught up","nothing to do","processed","STOP","ERROR"])),"No output")
-        stats = _parse_run_stats(run_log)
-        fname = timestamp.replace(":","-").replace(" ","_")+".json"
-        with open(RUNS_DIR/fname,"w") as f:
-            json.dump({
-                "time": timestamp,
-                "pass": run_pass,
-                "scope": resolved_scope,
-                "libraries": explicit_libraries,
-                "summary": summary,
-                "status": outcome,
-                "outcome": outcome,
-                "log": "\n".join(run_log),
-                "duration_seconds": duration,
-                "stats": stats,
-                "return_code": return_code,
-                "stop_requested": stop_requested,
-            }, f)
-        _record_task(
-            {1:'Run Scan Now',2:'Run Find Sources Now',3:'Run Download Themes Now'}.get(run_pass, 'Run Pipeline'),
-            outcome,
-            resolved_scope,
-            summary,
-            {'pass': run_pass, 'stats': stats, 'return_code': return_code, 'stop_requested': stop_requested, 'libraries': explicit_libraries},
-            duration,
-        )
-        _run_started_at = None
-        _run_scope_label = ""
-        _run_libraries = []
 
 @app.route("/api/run/stream")
 def run_stream():
-    q = queue.Queue(maxsize=8000); _run_clients.append(q)
-    def gen():
-        try:
-            while True:
-                msg = q.get(timeout=30); yield f"data: {msg}\n\n"
-                if msg == "__DONE__": break
-        except: yield "data: __DONE__\n\n"
-        finally:
-            try: _run_clients.remove(q)
-            except: pass
-    return Response(stream_with_context(gen()), mimetype="text/event-stream",
-                    headers={"Cache-Control":"no-cache","X-Accel-Buffering":"no"})
+    return Response(stream_with_context(RUN_MANAGER.event_stream()), mimetype="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
 
 @app.route("/api/history")
 def get_history():
-    runs = []
-    for f in sorted(RUNS_DIR.glob("*.json")):
-        try:
-            with open(f) as fh: runs.append(json.load(fh))
-        except: pass
-    return jsonify(runs)
+    return jsonify(RUN_MANAGER.history())
 
-@app.route('/api/tasks/history')
+
+@app.route("/api/tasks/history")
 def tasks_history():
-    limit = int(request.args.get('limit', 250) or 250)
-    return jsonify(_load_task_entries(limit=limit))
+    return jsonify(logic.load_task_entries(limit=int(request.args.get("limit", 250) or 250)))
 
-@app.route('/api/tasks/export-golden-source', methods=['POST'])
+
+@app.route("/api/tasks/export-golden-source", methods=["POST"])
 def export_golden_source_csv():
-    t0 = _time.perf_counter()
-    data = request.json or {}
-    lib = (data.get('library', '') or '').strip()
-    cfg = load_config()
-    libs = [l.get('name','').strip() for l in cfg.get('libraries',[]) if l.get('name')]
-    target_libs = [lib] if lib else libs
-    if not target_libs:
-        return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
-    out_rows = []
-    now = now_str()
-    for target_lib in target_libs:
-        rows = load_ledger(ledger_path_for(target_lib))
-        for r in rows:
-            url = str(r.get('url', '') or '').strip()
-            if not url:
-                continue
-            updated = str(r.get('last_updated', '') or '').strip() or now
-            out_rows.append({
-                'tmdb_id': str(r.get('tmdb_id', '') or '').strip(),
-                'title': str(r.get('title', '') or r.get('plex_title', '') or '').strip(),
-                'year': str(r.get('year', '') or '').strip(),
-                'source_url': url,
-                'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
-                'updated_at': updated,
-                'notes': str(r.get('notes', '') or '').strip(),
-            })
-    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    scope_name = lib or 'all_libraries'
-    fname = f'golden_source_export_{re.sub(r"[^a-z0-9]+", "_", scope_name.lower()).strip("_") or "library"}_{stamp}.csv'
-    fpath = EXPORTS_DIR / fname
-    with open(fpath, 'w', newline='', encoding='utf-8') as fh:
-        w = csv.DictWriter(fh, fieldnames=['tmdb_id','title','year','source_url','start_offset','updated_at','notes'])
-        w.writeheader()
-        w.writerows(out_rows)
-    _record_task('Export Golden Source CSV', 'success', lib or 'all libraries', f'Exported {len(out_rows)} rows',
-                 {'library': lib or '', 'libraries_exported': len(target_libs), 'rows_exported': len(out_rows), 'file': fname}, _time.perf_counter()-t0)
-    return jsonify({'ok': True, 'rows_exported': len(out_rows), 'file': fname, 'download_url': f'/api/tasks/download/{fname}'})
+    payload, status = logic.export_golden_source_csv_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-@app.route('/api/tasks/export-candidate-csv', methods=['POST'])
+
+@app.route("/api/tasks/export-candidate-csv", methods=["POST"])
 def export_candidate_csv():
-    t0 = _time.perf_counter()
-    data = request.json or {}
-    lib = (data.get('library', '') or '').strip()
-    cfg = load_config()
-    libs = [l.get('name','').strip() for l in cfg.get('libraries',[]) if l.get('name')]
-    target_libs = [lib] if lib else libs
-    if not target_libs:
-        return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
-    out_rows = []
-    for target_lib in target_libs:
-        rows = load_ledger(ledger_path_for(target_lib))
-        for r in rows:
-            url = str(r.get('url', '') or '').strip()
-            tmdb_id = str(r.get('tmdb_id', '') or '').strip()
-            if not url or not tmdb_id:
-                continue
-            gs_url = str(r.get('golden_source_url', '') or '').strip()
-            if gs_url:
-                continue
-            out_rows.append({
-                'tmdb_id': tmdb_id,
-                'source_url': url,
-                'start_offset': str(r.get('start_offset', '0') or '0').strip() or '0',
-            })
-    stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    scope_name = lib or 'all_libraries'
-    fname = f'candidate_export_{re.sub(r"[^a-z0-9]+", "_", scope_name.lower()).strip("_") or "library"}_{stamp}.csv'
-    fpath = EXPORTS_DIR / fname
-    with open(fpath, 'w', newline='', encoding='utf-8') as fh:
-        w = csv.DictWriter(fh, fieldnames=['tmdb_id','source_url','start_offset'])
-        w.writeheader()
-        w.writerows(out_rows)
-    _record_task('Export Candidate CSV', 'success', lib or 'all libraries', f'Exported {len(out_rows)} candidate rows',
-                 {'library': lib or '', 'libraries_exported': len(target_libs), 'rows_exported': len(out_rows), 'file': fname}, _time.perf_counter()-t0)
-    return jsonify({'ok': True, 'rows_exported': len(out_rows), 'file': fname, 'download_url': f'/api/tasks/download/{fname}'})
+    payload, status = logic.export_candidate_csv_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-@app.route('/api/tasks/download/<path:filename>')
+
+@app.route("/api/tasks/download/<path:filename>")
 def download_task_file(filename):
     safe = Path(filename).name
-    fpath = EXPORTS_DIR / safe
-    if not fpath.exists():
+    path = logic.EXPORTS_DIR / safe
+    if not path.exists():
         abort(404)
-    return send_file(str(fpath), as_attachment=True)
+    return send_file(str(path), as_attachment=True)
 
-@app.route('/api/tasks/cleanup-logs', methods=['POST'])
+
+@app.route("/api/tasks/cleanup-logs", methods=["POST"])
 def cleanup_logs():
-    data = request.json or {}
-    keep_days = int(data.get('keep_days', 14) or 14)
-    cutoff = _time.time() - (keep_days * 86400)
-    deleted = 0
-    for f in LOGS_DIR.glob('*.log'):
-        try:
-            if f.stat().st_mtime < cutoff:
-                f.unlink(missing_ok=True)
-                deleted += 1
-        except Exception:
-            pass
-    _record_task('Clean Up Logs', 'success', '', f'Removed {deleted} log files', {'keep_days': keep_days, 'deleted': deleted})
-    return jsonify({'ok': True, 'deleted': deleted, 'keep_days': keep_days})
+    payload, status = logic.cleanup_logs_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-@app.route('/api/tasks/prune-history', methods=['POST'])
+
+@app.route("/api/tasks/prune-history", methods=["POST"])
 def prune_task_history():
-    data = request.json or {}
-    keep_runs = int(data.get('keep_runs', 100) or 100)
-    run_files = sorted(RUNS_DIR.glob('*.json'))
-    removed_runs = 0
-    for f in run_files[:-max(1, keep_runs)]:
-        try:
-            f.unlink(missing_ok=True)
-            removed_runs += 1
-        except Exception:
-            pass
-    task_entries = []
-    if TASKS_FILE.exists():
-        for line in TASKS_FILE.read_text(encoding='utf-8', errors='ignore').splitlines():
-            try:
-                task_entries.append(json.loads(line))
-            except Exception:
-                pass
-    kept = task_entries[-max(1, keep_runs):]
-    with open(TASKS_FILE, 'w', encoding='utf-8') as fh:
-        for entry in kept:
-            fh.write(json.dumps(entry, ensure_ascii=False) + '\n')
-    _record_task('Prune Task History', 'success', '', f'Removed {removed_runs} run entries', {'removed_runs': removed_runs, 'kept_entries': len(kept)})
-    return jsonify({'ok': True, 'removed_runs': removed_runs, 'kept_task_entries': len(kept)})
+    payload, status = logic.prune_task_history_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-@app.route('/api/tasks/refresh-themes', methods=['POST'])
+
+@app.route("/api/tasks/refresh-themes", methods=["POST"])
 def tasks_refresh_themes():
-    data = request.json or {}
-    lib = (data.get('library', '') or '').strip()
-    if not lib:
-        return jsonify({'ok': False, 'error': 'Missing library'}), 400
-    result = sync_library_themes()
-    payload = result.get_json() if hasattr(result, 'get_json') else {'ok': False}
-    _record_task('Refresh Local Theme Detection', 'success' if payload.get('ok') else 'error', lib,
-                 f"Updated {payload.get('updated', 0)} rows",
-                 {'library': lib, **payload})
-    return result
+    library = (request.get_json(silent=True) or {}).get("library", "")
+    payload, status = logic.sync_library_themes_payload(library)
+    logic.record_task("Refresh Local Theme Detection", "success" if payload.get("ok") else "error", library, f"Updated {payload.get('updated', 0)} rows", {"library": library, **payload})
+    return jsonify(payload), status
 
-@app.route('/api/tasks/sqlite-maintenance', methods=['POST'])
+
+@app.route("/api/tasks/sqlite-maintenance", methods=["POST"])
 def sqlite_maintenance():
-    data = request.json or {}
-    do_backup = bool(data.get('backup', True))
-    do_vacuum = bool(data.get('vacuum', True))
-    db_path = Path(get_db_path())
-    if not db_path.exists():
-        return jsonify({'ok': False, 'error': f'Database not found: {db_path}'}), 404
-    backup_file = ''
-    if do_backup:
-        stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        backup_file = f'media_tracks_backup_{stamp}.db'
-        (EXPORTS_DIR / backup_file).write_bytes(db_path.read_bytes())
-    if do_vacuum:
-        import sqlite3
-        conn = sqlite3.connect(str(db_path), timeout=60)
-        try:
-            conn.execute('VACUUM')
-            conn.commit()
-        finally:
-            conn.close()
-    _record_task('SQLite Maintenance', 'success', '', 'Backup/Vacuum completed', {'backup_file': backup_file, 'vacuum': do_vacuum})
-    return jsonify({'ok': True, 'backup_file': backup_file, 'download_url': f'/api/tasks/download/{backup_file}' if backup_file else ''})
+    payload, status = logic.sqlite_maintenance_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
 
-@app.route('/api/tasks/clear-source-urls', methods=['POST'])
+
+@app.route("/api/tasks/clear-source-urls", methods=["POST"])
 def clear_all_source_urls():
-    data = request.json or {}
-    lib = (data.get('library', '') or '').strip()
-    cfg = load_config()
-    libs = [l.get('name','').strip() for l in cfg.get('libraries',[]) if l.get('name')]
-    target_libs = [lib] if lib else libs
-    if not target_libs:
-        return jsonify({'ok': False, 'error': 'No libraries configured'}), 400
-    now = now_str()
-    total_summary = {
-        'requested': 0,
-        'matched': 0,
-        'cleared': 0,
-        'updated': 0,
-        'preserved_available': 0,
-        'reset_missing': 0,
-        'preserved_failed': 0,
-        'preserved_unmonitored': 0,
-        'skipped_without_url': 0,
-    }
-    changed_libs = 0
-    for target_lib in target_libs:
-        rows = load_ledger(ledger_path_for(target_lib))
-        summary = _clear_source_urls_for_rows(
-            rows,
-            note='Source URL cleared via Tasks maintenance',
-            now=now,
-        )
-        for key, value in summary.items():
-            total_summary[key] += value
-        if summary['cleared']:
-            save_ledger(ledger_path_for(target_lib), rows)
-            changed_libs += 1
-    _record_task(
-        'Clear All Source URLs',
-        'success',
-        lib or 'all libraries',
-        f"Cleared {total_summary['cleared']} URLs",
-        {
-            'library': lib or '',
-            'libraries_cleared': changed_libs,
-            **total_summary,
-        },
-    )
-    return jsonify({'ok': True, 'library': lib, 'libraries_cleared': changed_libs, **total_summary})
+    payload, status = logic.clear_all_source_urls_payload(request.get_json(silent=True) or {})
+    return jsonify(payload), status
+
 
 @app.route("/api/run/status")
 def run_status():
-    return jsonify({"active":_run_active,"started_at":_run_started_at,
-                    "pass":_run_pass,"last_line":_run_last_line,
-                    "scope":_run_scope_label,"libraries":_run_libraries})
+    return jsonify(RUN_MANAGER.status())
 
-def _cleanup():
-    global _run_proc
-    if _run_proc and _run_proc.poll() is None:
-        _run_proc.terminate()
-        try: _run_proc.wait(timeout=5)
-        except: _run_proc.kill()
 
-atexit.register(_cleanup)
 def _sig_handler(sig, frame):
-    _cleanup(); sys.exit(0)
+    RUN_MANAGER.cleanup()
+    sys.exit(0)
+
+
 signal.signal(signal.SIGTERM, _sig_handler)
 
 if __name__ == "__main__":
