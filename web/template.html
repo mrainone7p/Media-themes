@@ -150,8 +150,8 @@ body.nav-collapsed main{margin-left:48px}
 }
 .offset-input{width:110px;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;text-align:center}
 .offset-input:focus{border-color:var(--purple)}
-.offset-steps{display:flex;flex-direction:column;gap:4px}
-.offset-step{width:28px;height:20px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.offset-steps{display:flex;align-items:center;gap:4px}
+.offset-step{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
 .offset-step:hover{border-color:var(--purple);color:var(--purple)}
 .toggle{position:relative;width:34px;height:20px;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0;position:absolute}
@@ -543,6 +543,18 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .source-editor-link{display:inline-flex;align-items:center;gap:4px;color:var(--blue);text-decoration:none;font-size:12px;font-family:var(--mono);word-break:break-all}
 .source-editor-link:hover{text-decoration:underline}
 .source-editor-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.source-summary-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.source-summary-meta{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.source-summary-title{font-size:13px;font-weight:700;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-summary-url{font-size:11px;color:var(--text2);font-family:var(--mono);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-summary-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.source-edit-wrap{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.source-edit-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.source-edit-note{font-size:11px;color:var(--text3)}
+.search-method-input.is-muted{background:color-mix(in srgb, var(--surface) 70%, transparent);border-color:color-mix(in srgb, var(--border) 78%, transparent);color:var(--text2)}
+.search-method-input.is-muted:focus{background:var(--surface);border-color:var(--amber);color:var(--text)}
+.offset-inline-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.offset-inline-label{font-size:11px;color:var(--text2);font-weight:600}
 .source-editor-slider-wrap{position:relative}
 .trim-window{position:absolute;left:0;right:0;top:50%;height:6px;transform:translateY(-50%);pointer-events:none}
 .trim-shade{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.24)}
@@ -1844,23 +1856,28 @@ th.resizable .col-resize.dragging{background:var(--amber)}
             <div class="trim-window-meta"><span id="se-trim-start-label">Start 0:00</span><span id="se-trim-end-label">End —</span></div>
           </div>
         </div>
-        <div class="clip-summary-card" id="se-result-summary">
-          <div class="clip-summary-label">Resulting clip</div>
-          <div class="clip-summary-main" id="se-result-main">Length — · Offset 0:00</div>
-          <div class="clip-summary-sub" id="se-result-sub">Load a preview to confirm the kept portion.</div>
-          <div class="clip-summary-warning" id="se-result-warning"></div>
-        </div>
         <audio id="se-audio" style="display:none"></audio>
         <div class="modal-status-txt" id="se-info" style="padding-left:0;padding-top:3px">Select a result or paste a URL to preview</div>
       </div>
 
       <div class="modal-section" style="padding-top:8px;padding-bottom:0">
         <div class="source-editor-card">
-          <div class="source-editor-title">Selected Source &amp; URL</div>
-          <div id="se-source-title" class="source-editor-value">—</div>
-          <div class="source-editor-row" style="margin-top:8px">
-          <input id="se-url" class="search-method-input" style="flex:1;margin-top:0;background:var(--surface2)" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
-          <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Refresh</button>
+          <div class="source-editor-title">Selected Source</div>
+          <div class="source-summary-row">
+            <div class="source-summary-meta">
+              <div id="se-source-title" class="source-summary-title">—</div>
+              <div id="se-source-url-summary" class="source-summary-url">No source URL selected</div>
+            </div>
+            <div class="source-summary-actions">
+              <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Refresh</button>
+              <button class="btn btn-ghost btn-sm" id="se-copy-btn" onclick="seCopyUrl()">⧉ Copy</button>
+              <button class="btn btn-ghost btn-sm" id="se-open-btn" onclick="seOpenUrl()">↗ Open</button>
+            </div>
+          </div>
+          <div class="source-edit-wrap">
+            <label class="source-edit-label" for="se-url">Edit full URL only if needed</label>
+            <input id="se-url" class="search-method-input is-muted" style="flex:1;margin-top:0" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
+            <div class="source-edit-note">The full URL stays editable here, but the compact summary above is the primary reference.</div>
           </div>
         </div>
       </div>
@@ -1869,11 +1886,12 @@ th.resizable .col-resize.dragging{background:var(--amber)}
       <div class="modal-section" style="padding-top:0;padding-bottom:16px">
         <div class="source-editor-card" style="margin-bottom:0">
         <div class="source-editor-title">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
-        <div class="source-editor-row">
+        <div class="offset-inline-row">
+          <span class="offset-inline-label">Start</span>
           <input type="text" id="se-offset" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="seUpdateTrim()" onblur="normalizeOffsetInput(this)">
           <div class="offset-steps">
-            <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),1)">▲</button>
-            <button class="offset-step" onclick="adjustOffset(document.getElementById('se-offset'),-1)">▼</button>
+            <button class="offset-step" type="button" aria-label="Decrease offset" onclick="adjustOffset(document.getElementById('se-offset'),-1)">−</button>
+            <button class="offset-step" type="button" aria-label="Increase offset" onclick="adjustOffset(document.getElementById('se-offset'),1)">+</button>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ Play from offset</button>
           <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
@@ -3022,6 +3040,35 @@ function _htmlAttr(s){
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
+function _truncateSourceUrl(url, max=70){
+  const raw=String(url||'').trim();
+  if(!raw) return 'No source URL selected';
+  return raw.length>max ? raw.slice(0, max-1)+'…' : raw;
+}
+
+function _renderSelectedSourceSummary(url, title){
+  const sourceEl=document.getElementById('se-source-title');
+  const summaryEl=document.getElementById('se-source-url-summary');
+  const copyBtn=document.getElementById('se-copy-btn');
+  const openBtn=document.getElementById('se-open-btn');
+  const cleanUrl=String(url||'').trim();
+  const cleanTitle=String(title||'').trim()||_sourceTitleFromUrl(cleanUrl)||'—';
+  if(sourceEl) sourceEl.textContent=cleanTitle;
+  if(summaryEl){
+    summaryEl.textContent=_truncateSourceUrl(cleanUrl);
+    summaryEl.title=cleanUrl||'';
+  }
+  if(copyBtn) copyBtn.disabled=!cleanUrl;
+  if(openBtn) openBtn.disabled=!cleanUrl;
+}
+
+function _manualSaveTargetStatus(){
+  const key=_seKey||_searchKey;
+  const row=_rowMap[key]||_rows.find(r=>String(r.rating_key)===String(key));
+  const isAvailable=row && ['AVAILABLE'].includes(String(row.status||'').toUpperCase());
+  return (isAvailable || !_autoApproveManual) ? 'STAGED' : 'APPROVED';
+}
+
 function _recommendedAction(row){
   if(row.rating_key) return {label:'Manage', cls:'btn btn-blue btn-xs row-primary-action', fn:'_playTheme'};
   return {label:'Manage', cls:'btn btn-ghost btn-xs row-primary-action', fn:'_manualSearch'};
@@ -4009,11 +4056,10 @@ function _resetSourceEditorDraft(){
   _selectedSourceTitle='';
   const urlEl=document.getElementById('se-url');
   const offsetEl=document.getElementById('se-offset');
-  const sourceEl=document.getElementById('se-source-title');
   const loadBtn=document.getElementById('se-load-btn');
   if(urlEl) urlEl.value='';
   if(offsetEl) offsetEl.value='0:00';
-  if(sourceEl) sourceEl.textContent='—';
+  _renderSelectedSourceSummary('','');
   if(loadBtn){ loadBtn.textContent='↺ Refresh'; loadBtn.disabled=false; }
   _sourceEditorAudio.cleanup();
   const trimWindow=document.getElementById('se-trim-window');
@@ -4022,7 +4068,6 @@ function _resetSourceEditorDraft(){
   if(trimWindow) trimWindow.style.display='none';
   if(startLabel) startLabel.textContent='Start 0:00';
   if(endLabel) endLabel.textContent='End —';
-  _setClipSummary('se-result-summary','se-result-main','se-result-sub','se-result-warning',0,'0:00',_maxDur,'preview');
   const infoEl=document.getElementById('se-info');
   if(infoEl) infoEl.textContent='Select a result or paste a URL to preview';
 }
@@ -4198,7 +4243,7 @@ function _setSearchFooter(step){
   } else if(step===3){
     back.style.display='';
     primary.style.display='';
-    primary.textContent=_autoApproveManual?'Approve + Save':'Stage Source';
+    primary.textContent=_manualSaveTargetStatus()==='APPROVED'?'Approve + Save':'Save for Review';
     primary.className='btn btn-amber';
     primary.onclick=saveSourceEditor;
     dlnow.style.display='';
@@ -4249,7 +4294,6 @@ async function openSearchModal(rk,title,year,lib){
   const existingOffset=fmt(parseTrim(existingRow?.start_offset||'0:00'));
   const urlEl=document.getElementById('se-url');
   const offsetEl=document.getElementById('se-offset');
-  const sourceEl=document.getElementById('se-source-title');
   const pasteEl=document.getElementById('search-paste-url');
   const infoEl=document.getElementById('se-info');
   const hasSameItemDraft=sameItem && !!((urlEl?.value||'').trim() || _step3PreparedUrl || (pasteEl?.value||'').trim());
@@ -4258,16 +4302,12 @@ async function openSearchModal(rk,title,year,lib){
     if(urlEl) urlEl.value=existingUrl;
     if(offsetEl) offsetEl.value=existingOffset;
     _step3PreparedUrl=existingUrl||'';
-    _selectedSourceTitle='';
-    if(sourceEl){
-      sourceEl.innerHTML=existingUrl
-        ? `<a class="source-editor-link" href="${existingUrl.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${_sourceTitleFromUrl(existingUrl).replace(/</g,'&lt;')} <span>↗</span></a>`
-        : '—';
-    }
+    _selectedSourceTitle=_sourceTitleFromUrl(existingUrl)||'';
+    _renderSelectedSourceSummary(existingUrl,_selectedSourceTitle);
     if(infoEl) infoEl.textContent=existingUrl?'Existing source loaded — click Refresh to preview':'Select a result or paste a URL to preview';
   } else {
     _step3PreparedUrl=(urlEl?.value||'').trim()||_step3PreparedUrl||existingUrl||'';
-    if(sourceEl && (urlEl?.value||'').trim()) seUrlChanged();
+    if((urlEl?.value||'').trim()) seUrlChanged();
   }
   const goldenCard=document.getElementById('sm-card-golden');
   const goldenDesc=document.getElementById('sm-golden-desc');
@@ -4523,7 +4563,6 @@ function goToStep3(url, opts={}){
   document.getElementById('se-cur').textContent='0:00';
   document.getElementById('se-dur').textContent='—';
   document.getElementById('se-slider').value=0;
-  _setClipSummary('se-result-summary','se-result-main','se-result-sub','se-result-warning',0,document.getElementById('se-offset').value||'0',_maxDur,'preview');
   document.getElementById('se-trim-start-label').textContent='Start 0:00';
   document.getElementById('se-trim-end-label').textContent='End —';
   const trimWindow=document.getElementById('se-trim-window');
@@ -4531,12 +4570,7 @@ function goToStep3(url, opts={}){
   document.getElementById('se-info').textContent='Loading preview…';
   _step3PreparedUrl=url||'';
   _selectedSourceTitle=(opts.sourceTitle||_selectedSourceTitle||_sourceTitleFromUrl(url||''));
-  const sourceEl=document.getElementById('se-source-title');
-  if(sourceEl){
-    sourceEl.innerHTML=url
-      ? `<a class="source-editor-link" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${(_selectedSourceTitle||'—').replace(/</g,'&lt;')} <span>↗</span></a>`
-      : (_selectedSourceTitle||'—');
-  }
+  _renderSelectedSourceSummary(url,_selectedSourceTitle);
   const loadBtn=document.getElementById('se-load-btn');
   if(loadBtn){ loadBtn.textContent='Loading…'; loadBtn.disabled=true; }
   _sourceEditorAudio.setPlaying(false);
@@ -4568,13 +4602,25 @@ function backToSearch(){
 
 function seUrlChanged(){
   const u=(document.getElementById('se-url').value||'').trim();
-  const sourceEl=document.getElementById('se-source-title');
-  const label=u?_sourceTitleFromUrl(u):(_selectedSourceTitle||'—');
-  if(sourceEl){
-    sourceEl.innerHTML=u
-      ? `<a class="source-editor-link" href="${u.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">${label.replace(/</g,'&lt;')} <span>↗</span></a>`
-      : label;
+  if(u) _selectedSourceTitle=_sourceTitleFromUrl(u);
+  _renderSelectedSourceSummary(u, u?_selectedSourceTitle:(_selectedSourceTitle||'—'));
+}
+
+async function seCopyUrl(){
+  const url=(document.getElementById('se-url')?.value||'').trim();
+  if(!url) return;
+  try{
+    await navigator.clipboard.writeText(url);
+    toast('Source URL copied','ok');
+  }catch(_e){
+    toast('Copy failed','err');
   }
+}
+
+function seOpenUrl(){
+  const url=(document.getElementById('se-url')?.value||'').trim();
+  if(!url) return;
+  window.open(url,'_blank','noopener');
 }
 
 async function seLoadPreview(){
@@ -4641,11 +4687,15 @@ function seUpdateTrim(){
   const endLabel=document.getElementById('se-trim-end-label');
   const offsetValue=document.getElementById('se-offset')?.value||'0';
   const duration=audio?.duration||0;
-  _setClipSummary('se-result-summary','se-result-main','se-result-sub','se-result-warning',duration,offsetValue,_maxDur,'preview');
+  const infoEl=document.getElementById('se-info');
   if(!trimWindow || !audio || !audio.duration){
     if(trimWindow) trimWindow.style.display='none';
     if(startLabel) startLabel.textContent='Start 0:00';
     if(endLabel) endLabel.textContent='End —';
+    if(infoEl){
+      const offsetFmt=_normalizedOffsetValue(offsetValue);
+      infoEl.textContent=`Offset ${offsetFmt} — load a preview to confirm the kept portion`;
+    }
     return;
   }
   const meta=_clipWindowMeta(duration, offsetValue, _maxDur);
@@ -4658,6 +4708,11 @@ function seUpdateTrim(){
   endMarker.style.left=`${endPct}%`;
   if(startLabel) startLabel.textContent=`Start ${fmt(meta.start)}`;
   if(endLabel) endLabel.textContent=`End ${fmt(meta.end)}`;
+  if(infoEl){
+    const clipLen=Math.max(0, meta.end-meta.start);
+    const offsetFmt=_normalizedOffsetValue(offsetValue);
+    infoEl.textContent=`Preview ${fmt(duration)} total · keeping ${fmt(clipLen)} from ${offsetFmt}`;
+  }
 }
 
 function sePreviewFromOffset(){
@@ -4675,9 +4730,7 @@ async function saveSourceEditor(skipClose=false){
   const offset=parseTrim(document.getElementById('se-offset').value||'0');
   if(!url){ toast('Please enter a URL','info'); return; }
   const lib=_seLib||_searchLib||_activeLib||'';
-  const row=_rowMap[key]||_rows.find(r=>String(r.rating_key)===String(key));
-  const isAvailable=row && ['AVAILABLE'].includes(String(row.status||'').toUpperCase());
-  const status=(isAvailable || !_autoApproveManual)?'STAGED':'APPROVED';
+  const status=_manualSaveTargetStatus();
   const notes=status==='APPROVED'?'Manual source auto-approved':'URL set via manual search — moved to Staged for approval';
 
   const saveResp=await fetch('/api/ledger/manual-source',{
