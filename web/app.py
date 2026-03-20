@@ -360,6 +360,6 @@ def _sig_handler(sig, frame):
 signal.signal(signal.SIGTERM, _sig_handler)
 
 if __name__ == "__main__":
-    APP_LOG.info("Container/web startup: config_path=%s web_port=%s scheduler_authority=%s startup_scan_disabled=%s", services.CONFIG_PATH, WEB_PORT, services.SCHEDULER_AUTHORITY, True)
+    APP_LOG.info("Container/web startup: config_path=%s web_port=%s startup_scan_disabled=%s", services.CONFIG_PATH, WEB_PORT, True)
     APP_LOG.info("HTTP logging tuned for signal over noise: chatty status, preview, and search endpoints now log only on failure or unusually slow responses.")
     app.run(host="0.0.0.0", port=WEB_PORT, threaded=True)
