@@ -1586,6 +1586,10 @@ class RunManager:
     current_pass: int = 0
     scope_label: str = ""
     libraries: list[str] = field(default_factory=list)
+    last_outcome: str | None = None
+    last_return_code: int | None = None
+    last_summary: str = ""
+    completed_at: float | None = None
 
     def broadcast(self, message: str):
         dead = []
@@ -1644,9 +1648,11 @@ class RunManager:
         try:
             while True:
                 try:
-                    message = client.get(timeout=30)
-                except Exception:
-                    yield "data: __DONE__\n\n"
+                    message = client.get(timeout=5)
+                except queue.Empty:
+                    if self.active:
+                        yield ": heartbeat\n\n"
+                        continue
                     break
                 yield f"data: {message}\n\n"
                 if message == "__DONE__":
@@ -1667,7 +1673,18 @@ class RunManager:
         return runs
 
     def status(self):
-        return {"active": self.active, "started_at": self.started_at, "pass": self.current_pass, "last_line": self.last_line, "scope": self.scope_label, "libraries": self.libraries}
+        return {
+            "active": self.active,
+            "started_at": self.started_at,
+            "pass": self.current_pass,
+            "last_line": self.last_line,
+            "scope": self.scope_label,
+            "libraries": self.libraries,
+            "outcome": self.last_outcome,
+            "return_code": self.last_return_code,
+            "summary": self.last_summary,
+            "completed_at": self.completed_at,
+        }
 
     def _do_run(self, *, force_pass=0, explicit_libraries=None, scope_label="", allow_schedule_disabled=False):
         run_log = []
@@ -1681,11 +1698,15 @@ class RunManager:
         )
         try:
             self.started_at = time.time()
+            self.completed_at = None
             self.last_line = ""
             self.current_pass = run_pass
             self.stop_requested = False
             self.scope_label = resolved_scope
             self.libraries = list(explicit_libraries)
+            self.last_outcome = None
+            self.last_return_code = None
+            self.last_summary = ""
             env = {**os.environ, "CONFIG_PATH": CONFIG_PATH}
             if force_pass:
                 env["FORCE_PASS"] = str(force_pass)
@@ -1727,11 +1748,15 @@ class RunManager:
             else:
                 outcome = "error"
             self.proc = None
+            duration = time.time() - self.started_at if self.started_at else None
+            summary = next((line for line in reversed(run_log) if any(marker in line for marker in ["complete", "caught up", "nothing to do", "processed", "STOP", "ERROR"])), "No output")
+            self.last_outcome = outcome
+            self.last_return_code = return_code
+            self.last_summary = summary
+            self.completed_at = time.time()
             self.stop_requested = False
             self.broadcast("__DONE__")
             self.active = False
-            duration = time.time() - self.started_at if self.started_at else None
-            summary = next((line for line in reversed(run_log) if any(marker in line for marker in ["complete", "caught up", "nothing to do", "processed", "STOP", "ERROR"])), "No output")
             stats = parse_run_stats(run_log)
             run_file = RUNS_DIR / (timestamp.replace(":", "-").replace(" ", "_") + ".json")
             run_file.write_text(json.dumps({
