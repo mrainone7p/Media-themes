@@ -25,17 +25,12 @@ RUN mkdir -p /app/script /app/config /app/logs /app/web /app/shared /app/logs/ru
 # App files
 COPY script/media_tracks.py  /app/script/media_tracks.py
 COPY script/entrypoint.sh    /app/script/entrypoint.sh
-COPY web/app.py              /app/web/app.py
-COPY web/logic.py            /app/web/logic.py
-COPY web/integrations.py     /app/web/integrations.py
-COPY web/config_logic.py     /app/web/config_logic.py
+COPY web/*.py                /app/web/
 COPY web/template.html       /app/web/template.html
 COPY web/ui_terminology.yaml /app/web/ui_terminology.yaml
 COPY web/static/             /app/web/static/
-COPY shared/storage.py       /app/shared/storage.py
-COPY shared/yt_dlp_utils.py  /app/shared/yt_dlp_utils.py
-COPY shared/file_utils.py    /app/shared/file_utils.py
-COPY shared/golden_source_csv.py /app/shared/golden_source_csv.py
+COPY shared/*.py             /app/shared/
+RUN PYTHONPATH="/app/web:/app/shared" python3 -c "import logic; print(f'logic import smoke ok: {logic.__file__}')"
 RUN chmod +x /app/script/entrypoint.sh
 
 ENV CONFIG_PATH=/app/config/config.yaml
