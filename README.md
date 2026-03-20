@@ -163,6 +163,8 @@ Notes:
 
 ## Building locally
 
+`Dockerfile` is the only supported build definition in this repository. `Dockerfile.txt` is intentionally not used or shipped.
+
 ```bash
 git clone https://github.com/mrainone7p/Media-themes.git -b beta
 cd Media-themes
@@ -181,7 +183,7 @@ python -m script.media_tracks
 ## Project structure
 
 ```
-├── Dockerfile             # canonical container build file
+├── Dockerfile             # canonical and only supported container build file
 ├── script/
 │   ├── __init__.py        # worker package marker for python -m
 │   ├── entrypoint.sh      # container startup
