@@ -185,7 +185,13 @@
     <!-- Row 5: System Health + Recent Activity (side by side) -->
     <div class="dash-split-row mb-16">
       <div class="card dashboard-card">
-        <div class="card-title mb-10">System Health</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+          <div>
+            <div class="card-title mb-0">System Health</div>
+            <div id="dashboard-health-note" style="font-size:11px;color:var(--text3);margin-top:4px">Quick status loads automatically. Validate runs the full health check.</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="dashboard-health-refresh" onclick="dashboardRefreshHealth(true)">Validate</button>
+        </div>
         <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
       </div>
       <div class="card dashboard-card">

@@ -806,9 +806,9 @@ def list_cookies_payload():
     return {"files": files}
 
 
-def api_health_payload():
+def api_health_payload(mode: str = "lite"):
     _, tasks, _ = _logic_modules()
-    return tasks.api_health_payload()
+    return tasks.api_health_payload(mode=mode)
 
 
 def get_ledger_payload(library: str):
