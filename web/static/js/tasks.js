@@ -1,82 +1,4 @@
-function openRunResults(pass){
-  const map={1:'MISSING',2:'STAGED',3:'AVAILABLE'};
-  const st=map[pass]||'';
-  showPage('theme-manager');
-  setTimeout(()=>{
-    if(st) filterByStatus(st);
-    const search=document.getElementById('db-search');
-    if(search) search.value='';
-    toast(st?`Showing ${displayStatus(st)} rows from completed pass ${pass}.`:'Showing run rows.','info');
-  },350);
-}
-
-function _activityMetricChips(stats={}, cls='hcard-chip metric'){
-  const s1=stats?.pass1||null;
-  const s2=stats?.pass2||null;
-  const s3=stats?.pass3||null;
-  const chips=[];
-  const add=(label, value)=>{
-    if(value===undefined || value===null || value==='' || Number.isNaN(Number(value))) return;
-    chips.push(`<span class="${cls}">${label} · ${value}</span>`);
-  };
-  if(s1){
-    add('Added', s1.new);
-    add('Missing', s1.missing);
-    add('Already available', s1.has_theme);
-    if(!s2 && s1.staged) add('Staged', s1.staged);
-    if(!s3 && s1.approved) add('Approved', s1.approved);
-  }
-  if(s2){
-    add('Staged', s2.staged);
-    add('Still missing', s2.missing);
-    add('Failed', s2.failed);
-  }
-  if(s3){
-    add('Downloaded', s3.available);
-    add('Failed', s3.failed);
-    add('Skipped', s3.skipped);
-  }
-  return chips;
-}
-
-async function loadSchedulerHistory(){
-  const el=document.getElementById('scheduler-run-history');
-  if(!el) return;
-  const r=await fetch('/api/history');
-  const runs=await r.json();
-  if(!runs.length){
-    el.innerHTML='<div class="empty">No Scheduler run history yet.</div>';
-    return;
-  }
-  const PASS_LABELS={0:'Automated Scheduler Run',1:'Step 1 — Scan Libraries',2:'Step 2 — Find Theme Sources',3:'Step 3 — Download Themes'};
-  const OUTCOME_BADGES={success:'pb-3 Success',error:'pb-e Error',stopped:'pb-2 Stopped'};
-  el.innerHTML=runs.reverse().map((run,i)=>{
-    const outcome=(run.outcome||run.status||'success').toLowerCase();
-    const bc=OUTCOME_BADGES[outcome] || 'pb-e Error';
-    const [cls,...parts]=bc.split(' ');
-    const passLabel=PASS_LABELS[run.pass]||'Pipeline Run';
-    const summary=(run.summary||'No summary recorded.').replace(/</g,'&lt;');
-    const scope=(run.scope||'').replace(/</g,'&lt;');
-    const metricChips=_activityMetricChips(run.stats||{});
-    const meta=[
-      scope?`<span class="hcard-chip">Scope · ${scope}</span>`:'',
-      run.duration_seconds?`<span class="hcard-chip">Duration · ${Math.round(run.duration_seconds)}s</span>`:'',
-      ...metricChips
-    ].filter(Boolean).join('');
-    return `<div class="hcard">
-      <div class="hcard-head" onclick="document.getElementById('scheduler-log-${i}').classList.toggle('open')">
-        <div>
-          <div class="hcard-time">${(run.time||'').replace(/</g,'&lt;')}</div>
-          <div class="hcard-sum">${passLabel} · ${summary}</div>
-          ${meta?`<div class="hcard-meta">${meta}</div>`:''}
-          <div style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openRunResults(${run.pass||0})">Open filtered rows</button></div>
-        </div>
-        <span class="pass-badge ${cls}"><span class="status-label">${parts.join(' ')}</span></span>
-      </div>
-      <div class="hcard-body" id="scheduler-log-${i}">${(run.log||'').replace(/</g,'&lt;')}</div>
-    </div>`;
-  }).join('');
-}
+// Consolidated tasks/history/export/maintenance actions.
 
 const TASK_CARD_CONFIG={
   runPipeline:[
@@ -406,4 +328,3 @@ async function taskClearAllSources(){
     reloadDatabase:true
   });
 }
-
