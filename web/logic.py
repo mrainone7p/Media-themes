@@ -14,6 +14,7 @@ import json
 import os
 import queue
 import re
+import secrets
 import signal
 import sqlite3
 import subprocess
@@ -72,6 +73,46 @@ for path in (RUNS_DIR, EXPORTS_DIR, GOLDEN_CACHE_DIR):
     path.mkdir(parents=True, exist_ok=True)
 
 EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
+
+
+def _sibling_temp_path(target_path: str | Path, *, prefix: str) -> Path:
+    target = Path(target_path)
+    token = secrets.token_hex(6)
+    return target.with_name(f"{prefix}{token}{target.suffix}")
+
+
+def _validate_audio_ready(audio_path: str | Path) -> float:
+    path = Path(audio_path)
+    if not path.exists():
+        raise RuntimeError(f"Prepared audio file missing: {path.name}")
+    duration = ffprobe_duration(path)
+    if duration <= 0:
+        raise RuntimeError(f"Prepared audio file is not valid audio: {path.name}")
+    return duration
+
+
+def _atomic_replace_theme_file(prepared_path: str | Path, theme_path: str | Path) -> bool:
+    prepared = Path(prepared_path)
+    destination = Path(theme_path)
+    if prepared.parent != destination.parent:
+        raise RuntimeError("Prepared audio must be in the same folder as the destination")
+
+    backup_path = None
+    replaced_existing = destination.exists()
+    if replaced_existing:
+        backup_path = _sibling_temp_path(destination, prefix=f"{destination.stem}.bak.")
+        destination.replace(backup_path)
+
+    try:
+        prepared.replace(destination)
+    except Exception:
+        if backup_path and backup_path.exists():
+            backup_path.replace(destination)
+        raise
+    else:
+        if backup_path:
+            backup_path.unlink(missing_ok=True)
+    return replaced_existing
 
 CONFIG_DEFAULTS = {
     "plex_url": "",
@@ -1021,10 +1062,10 @@ def trim_theme_payload(data: dict):
             row["notes"] = f"No trim needed ({duration:.1f}s)"
             save_ledger(path, rows)
             return {"ok": True, "message": f"No trim needed — {duration:.1f}s", "duration": duration}, 200
-        tmp = theme_path.with_suffix(f".trim.{audio_format}")
+        tmp = _sibling_temp_path(theme_path, prefix=f"{theme_path.stem}.trim.")
         integrations.trim_audio_copy(theme_path, tmp, start=start, end=end, timeout=60)
-        tmp.replace(theme_path)
-        new_duration = ffprobe_duration(theme_path)
+        new_duration = _validate_audio_ready(tmp)
+        _atomic_replace_theme_file(tmp, theme_path)
         row["start_offset"] = str(start_offset)
         row["end_offset"] = str(end_offset)
         row["last_updated"] = now_str()
@@ -1033,6 +1074,8 @@ def trim_theme_payload(data: dict):
         save_ledger(path, rows)
         return {"ok": True, "message": f"Trimmed {duration:.1f}s → {new_duration:.1f}s", "duration": new_duration}, 200
     except Exception as exc:
+        if 'tmp' in locals():
+            Path(tmp).unlink(missing_ok=True)
         return {"ok": False, "error": str(exc)[:200]}, 500
 
 
@@ -1134,17 +1177,11 @@ def download_now_payload(data: dict):
         return {"ok": False, "error": f"Folder not allowed: {folder!r} — check media_roots in config.yaml"}, 403
 
     theme_path = theme_file_path(row, cfg, library_type=library_type_for_name(cfg, library))
-    replaced_existing = False
-    if theme_path.exists():
-        try:
-            theme_path.unlink(missing_ok=True)
-            replaced_existing = True
-        except Exception as exc:
-            return {"ok": False, "error": f"Failed to replace existing theme file: {str(exc)[:160]}"}, 500
-
     audio_format = cfg.get("audio_format", "mp3") if cfg.get("audio_format", "mp3") in {"mp3", "m4a", "flac", "opus"} else "mp3"
     quality_profile = cfg.get("quality_profile", "high")
     slug = re.sub(r"[^a-z0-9]", "", rating_key.lower())[:8] or "dl"
+    replaced_existing = False
+    prepared_duration = 0.0
 
     try:
         downloaded = integrations.download_audio(
@@ -1155,21 +1192,22 @@ def download_now_payload(data: dict):
             quality_profile=quality_profile,
             cookies_file=cfg.get("cookies_file", "") or None,
         )
+        prepared_duration = _validate_audio_ready(downloaded)
         start_offset = int(row.get("start_offset", 0) or 0)
         end_offset = int(row.get("end_offset", 0) or 0)
-        duration = ffprobe_duration(downloaded)
         max_duration = int(cfg.get("max_theme_duration", 0) or 0)
-        if duration > 0 and (start_offset > 0 or end_offset > 0 or (max_duration > 0 and duration > max_duration)):
+        if prepared_duration > 0 and (start_offset > 0 or end_offset > 0 or (max_duration > 0 and prepared_duration > max_duration)):
             start = max(0, start_offset)
-            end = duration - max(0, end_offset) if end_offset > 0 else duration
+            end = prepared_duration - max(0, end_offset) if end_offset > 0 else prepared_duration
             if max_duration > 0 and (end - start) > max_duration:
                 end = start + max_duration
-            if 0 < start < duration and end > start:
-                tmp_trim = Path(folder) / f"mt_trim_{slug}.{audio_format}"
+            if 0 <= start < prepared_duration and end > start and (start > 0 or end < prepared_duration):
+                tmp_trim = _sibling_temp_path(theme_path, prefix=f"{theme_path.stem}.trim.")
                 integrations.trim_audio_copy(downloaded, tmp_trim, start=start, end=end, timeout=60)
                 downloaded.unlink(missing_ok=True)
                 downloaded = tmp_trim
-        downloaded.rename(theme_path)
+                prepared_duration = _validate_audio_ready(downloaded)
+        replaced_existing = _atomic_replace_theme_file(downloaded, theme_path)
         row["status"] = "AVAILABLE"
         row["last_updated"] = now_str()
         row["notes"] = "Downloaded via manual download (replaced existing local theme)" if replaced_existing else "Downloaded via manual download"
@@ -1182,6 +1220,10 @@ def download_now_payload(data: dict):
         return {"ok": False, "error": "Download timed out (180s)"}, 500
     except Exception as exc:
         integrations.cleanup_temp_downloads(folder, slug)
+        if 'downloaded' in locals():
+            Path(downloaded).unlink(missing_ok=True)
+        if 'tmp_trim' in locals():
+            Path(tmp_trim).unlink(missing_ok=True)
         return {"ok": False, "error": str(exc)[:200]}, 500
 
 

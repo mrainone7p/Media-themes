@@ -52,6 +52,7 @@ import json
 import logging
 import os
 import re
+import secrets
 import subprocess
 import sys
 import time
@@ -97,6 +98,36 @@ _yt_cache: dict = {}
 
 def _retry_sleep(attempt: int, base: float = 1.0):
     time.sleep(base * (2 ** attempt))
+
+
+def _sibling_temp_path(target_path: str | Path, *, prefix: str) -> Path:
+    target = Path(target_path)
+    token = secrets.token_hex(6)
+    return target.with_name(f"{prefix}{token}{target.suffix}")
+
+
+def atomic_replace_file(prepared_path: str | Path, destination_path: str | Path) -> bool:
+    prepared = Path(prepared_path)
+    destination = Path(destination_path)
+    if prepared.parent != destination.parent:
+        raise RuntimeError("Prepared file must be in the same folder as the destination")
+
+    backup_path = None
+    replaced_existing = destination.exists()
+    if replaced_existing:
+        backup_path = _sibling_temp_path(destination, prefix=f"{destination.stem}.bak.")
+        destination.replace(backup_path)
+
+    try:
+        prepared.replace(destination)
+    except Exception:
+        if backup_path and backup_path.exists():
+            backup_path.replace(destination)
+        raise
+    else:
+        if backup_path:
+            backup_path.unlink(missing_ok=True)
+    return replaced_existing
 
 
 # ─── Progress ─────────────────────────────────────────────────────────────────
@@ -594,7 +625,7 @@ def trim_audio(filepath: Path, start_offset: int, end_offset: int,
         return True, "No trimming needed"
     if dur <= (end - start) and start <= 0:
         return True, f"File already {dur:.1f}s, no trim needed"
-    tmp = filepath.with_suffix(f".trim.{audio_format}")
+    tmp = _sibling_temp_path(filepath, prefix=f"{filepath.stem}.trim.")
     cmd = ["ffmpeg", "-y", "-i", str(filepath),
            "-ss", str(start), "-to", str(end), "-c", "copy", str(tmp)]
     try:
@@ -602,7 +633,10 @@ def trim_audio(filepath: Path, start_offset: int, end_offset: int,
         if result.returncode != 0:
             tmp.unlink(missing_ok=True)
             return False, f"ffmpeg trim failed: {result.stderr[:120]}"
-        tmp.replace(filepath)
+        ok, msg = validate_audio_file(tmp)
+        if not ok:
+            return False, msg
+        atomic_replace_file(tmp, filepath)
         new_dur = ffprobe_duration(filepath)
         return True, f"Trimmed to {new_dur:.1f}s (was {dur:.1f}s)"
     except Exception as e:
@@ -618,7 +652,11 @@ def download_track(url: str, output_path: str, audio_format: str, max_retries: i
     if cookies_file and Path(cookies_file).exists():
         flags += ["--cookies", cookies_file]
 
-    Path(output_path).unlink(missing_ok=True)
+    output = Path(output_path)
+    folder = output.parent
+    slug = re.sub(r"[^a-z0-9]", "", output.stem.lower())[:16] or "theme"
+    tmp_output = folder / f"mt_tmp_{slug}.{audio_format}"
+    tmp_output.unlink(missing_ok=True)
     quality_map   = {"high": "0", "balanced": "3", "small": "5", "smallest": "7"}
     audio_quality = quality_map.get(str(quality_profile or "high").lower(), "0")
 
@@ -628,7 +666,7 @@ def download_track(url: str, output_path: str, audio_format: str, max_retries: i
         "--audio-quality",  audio_quality,
         "--playlist-items", "1",
         "--yes-playlist",
-        "--output",         output_path,
+        "--output",         str(tmp_output),
         "--retries",        str(max_retries),
         url,
     ]
@@ -643,18 +681,26 @@ def download_track(url: str, output_path: str, audio_format: str, max_retries: i
     if result.returncode != 0:
         return False, (result.stderr or "yt-dlp error").strip()[:150]
 
-    ok, msg = validate_audio_file(Path(output_path))
+    ok, msg = validate_audio_file(tmp_output)
     if not ok:
         return False, msg
 
     if start_offset > 0 or end_offset > 0 or max_duration > 0:
         trim_ok, trim_msg = trim_audio(
-            Path(output_path), start_offset, end_offset, max_duration, audio_format,
+            tmp_output, start_offset, end_offset, max_duration, audio_format,
         )
         if not trim_ok:
             return False, trim_msg
         log.info(f"  {trim_msg}")
-        return validate_audio_file(Path(output_path))
+        ok, msg = validate_audio_file(tmp_output)
+        if not ok:
+            return False, msg
+
+    try:
+        atomic_replace_file(tmp_output, output)
+    except Exception as exc:
+        tmp_output.unlink(missing_ok=True)
+        return False, f"Replace failed: {exc}"
 
     return ok, msg
 
