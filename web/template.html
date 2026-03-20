@@ -5146,19 +5146,24 @@ async function startScheduledRun(){
   if(terminal) terminal.innerHTML='';
   const libraries=_selectedRunLibraries();
   if(!libraries.length){ toast('Select at least one scheduled library','err'); return; }
-  const scopeLabel=_formatScopeLabel(libraries,'scheduled libraries');
-  _lastRunRequest.run={mode:'schedule',pass:0,libraries:[...libraries],scopeLabel};
-  const ctx={scope:'run',pass:0,stoppedByUser:false,libraries,scopeLabel};
+  const requestedScopeLabel=_formatScopeLabel(libraries,'scheduled libraries');
+  _lastRunRequest.run={mode:'schedule',pass:0,libraries:[...libraries],scopeLabel:requestedScopeLabel};
+  const ctx={scope:'run',pass:0,stoppedByUser:false,libraries:[...libraries],scopeLabel:requestedScopeLabel};
   _activeRunContext=ctx;
   _dbLastProgress=Date.now();
   _applyContextStart(ctx);
-  const r=await fetch('/api/run/schedule-now',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({scope_label:scopeLabel})});
+  const r=await fetch('/api/run/schedule-now',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({libraries,scope_label:requestedScopeLabel})});
+  const d=await r.json().catch(()=>({}));
   if(!r.ok){
-    const d=await r.json().catch(()=>({}));
     _applyContextFinish(ctx,'error',d.error||'Unable to start scheduled run.');
     _activeRunContext=null;
     return;
   }
+  const actualLibraries=(d.libraries||[]).map(v=>String(v||'').trim()).filter(Boolean);
+  if(actualLibraries.length) ctx.libraries=[...actualLibraries];
+  ctx.scopeLabel=String(d.scope_label||'').trim() || _formatScopeLabel(ctx.libraries,'scheduled libraries');
+  _lastRunRequest.run={mode:'schedule',pass:0,libraries:[...ctx.libraries],scopeLabel:ctx.scopeLabel};
+  _applyContextStart(ctx);
   _connectRunStream(ctx);
   _dbStartPoll();
 }
