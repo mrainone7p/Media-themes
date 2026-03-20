@@ -8,6 +8,7 @@ import os
 import signal
 import sys
 import time
+from collections.abc import Mapping
 from flask import Flask, Response, abort, g, jsonify, request, send_file, stream_with_context
 
 from shared.logging_utils import get_project_logger
@@ -18,6 +19,17 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 APP_LOG = get_project_logger("web.app")
 REQUEST_LOG = get_project_logger("web.request")
 WEB_PORT = int(os.environ.get("WEB_PORT", "8182"))
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on", "debug"}
+
+
+REQUEST_DEBUG_LOGGING_ENABLED = _env_flag("WEB_DEBUG_REQUEST_LOGGING")
+
 
 _QUIET_REQUEST_RULES = {
     "/api/run/status": {"success_ms": None, "label": "Run status poll"},
@@ -33,10 +45,48 @@ _QUIET_REQUEST_RULES = {
 }
 
 
+_REQUEST_DEBUG_PATHS = {
+    "/api/ledger",
+    "/api/tasks/history",
+    "/api/health",
+    "/api/run/status",
+}
+
+
 def _request_log_rule(path: str) -> dict | None:
     for prefix, rule in _QUIET_REQUEST_RULES.items():
         if path == prefix or path.startswith(f"{prefix}/"):
             return rule
+    return None
+
+
+def _response_size_bytes(response: Response) -> int | None:
+    content_length = response.calculate_content_length()
+    if content_length is not None:
+        return int(content_length)
+    header_value = response.headers.get("Content-Length")
+    if header_value is None:
+        return None
+    try:
+        return int(header_value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _set_request_debug_stats(**stats):
+    current = dict(getattr(g, "_request_debug_stats", {}) or {})
+    current.update({key: value for key, value in stats.items() if value is not None})
+    g._request_debug_stats = current
+
+
+def _infer_row_count(payload) -> int | None:
+    if isinstance(payload, list):
+        return len(payload)
+    if isinstance(payload, Mapping):
+        for key in ("rows", "items", "history", "entries", "tasks"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return len(value)
     return None
 
 
@@ -52,6 +102,32 @@ def _log_request(response: Response):
     started_at = getattr(g, "_request_started_at", None)
     elapsed_ms = (time.perf_counter() - started_at) * 1000 if started_at is not None else 0.0
     path = request.path or "/"
+    response_size = _response_size_bytes(response)
+    debug_stats = dict(getattr(g, "_request_debug_stats", {}) or {})
+    if response_size is not None:
+        debug_stats.setdefault("response_bytes", response_size)
+
+    if REQUEST_DEBUG_LOGGING_ENABLED and path in _REQUEST_DEBUG_PATHS:
+        stat_parts = []
+        row_count = debug_stats.get("row_count")
+        if row_count is not None:
+            stat_parts.append(f"rows={row_count}")
+        if response_size is not None:
+            stat_parts.append(f"bytes={response_size}")
+        if debug_stats.get("component_count") is not None:
+            stat_parts.append(f"components={debug_stats['component_count']}")
+        if debug_stats.get("library_count") is not None:
+            stat_parts.append(f"libraries={debug_stats['library_count']}")
+        if debug_stats.get("mode"):
+            stat_parts.append(f"mode={debug_stats['mode']}")
+        if debug_stats.get("limit") is not None:
+            stat_parts.append(f"limit={debug_stats['limit']}")
+        if debug_stats.get("active") is not None:
+            stat_parts.append(f"active={str(bool(debug_stats['active'])).lower()}")
+        stats_suffix = f" [{' '.join(stat_parts)}]" if stat_parts else ""
+        REQUEST_LOG.info("Request debug %s %s -> %s in %.1fms%s", request.method, path, response.status_code, elapsed_ms, stats_suffix)
+        return response
+
     rule = _request_log_rule(path)
     is_mutating = request.method not in {"GET", "HEAD", "OPTIONS"}
     if response.status_code >= 400:
@@ -128,7 +204,11 @@ def list_cookies():
 
 @app.route("/api/health", methods=["GET"])
 def api_health():
-    return jsonify(services.api_health_payload(request.args.get("mode", "lite")))
+    mode = request.args.get("mode", "lite")
+    payload = services.api_health_payload(mode)
+    if REQUEST_DEBUG_LOGGING_ENABLED:
+        _set_request_debug_stats(component_count=len(payload), mode=mode)
+    return jsonify(payload)
 
 
 @app.route("/api/dashboard/summary", methods=["GET"])
@@ -148,7 +228,10 @@ def get_ledger():
     library, error_response = _required_library_arg(request.args.get("library", ""))
     if error_response:
         return error_response
-    return jsonify(services.get_ledger_payload(library))
+    payload = services.get_ledger_payload(library)
+    if REQUEST_DEBUG_LOGGING_ENABLED:
+        _set_request_debug_stats(row_count=_infer_row_count(payload))
+    return jsonify(payload)
 
 
 @app.route("/api/ledger/<key>", methods=["PATCH"])
@@ -300,7 +383,11 @@ def get_history():
 
 @app.route("/api/tasks/history")
 def tasks_history():
-    return jsonify(services.tasks_history_payload(limit=int(request.args.get("limit", 250) or 250)))
+    limit = int(request.args.get("limit", 250) or 250)
+    payload = services.tasks_history_payload(limit=limit)
+    if REQUEST_DEBUG_LOGGING_ENABLED:
+        _set_request_debug_stats(row_count=_infer_row_count(payload), limit=limit)
+    return jsonify(payload)
 
 
 @app.route("/api/tasks/export-golden-source", methods=["POST"])
@@ -355,7 +442,10 @@ def clear_all_source_urls():
 
 @app.route("/api/run/status")
 def run_status():
-    return jsonify(services.run_status_payload())
+    payload = services.run_status_payload()
+    if REQUEST_DEBUG_LOGGING_ENABLED:
+        _set_request_debug_stats(active=payload.get("active"), library_count=len(payload.get("libraries") or []))
+    return jsonify(payload)
 
 
 def _sig_handler(sig, frame):
@@ -366,6 +456,8 @@ def _sig_handler(sig, frame):
 signal.signal(signal.SIGTERM, _sig_handler)
 
 if __name__ == "__main__":
-    APP_LOG.info("Container/web startup: config_path=%s web_port=%s startup_scan_disabled=%s", services.CONFIG_PATH, WEB_PORT, True)
+    APP_LOG.info("Container/web startup: config_path=%s web_port=%s startup_scan_disabled=%s request_debug_logging=%s", services.CONFIG_PATH, WEB_PORT, True, REQUEST_DEBUG_LOGGING_ENABLED)
     APP_LOG.info("HTTP logging tuned for signal over noise: chatty status, preview, and search endpoints now log only on failure or unusually slow responses.")
+    if REQUEST_DEBUG_LOGGING_ENABLED:
+        APP_LOG.info("Per-request debug logging enabled for /api/ledger, /api/tasks/history, /api/health, and /api/run/status via WEB_DEBUG_REQUEST_LOGGING.")
     app.run(host="0.0.0.0", port=WEB_PORT, threaded=True)
