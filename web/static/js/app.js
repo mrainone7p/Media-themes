@@ -358,14 +358,18 @@ function formatNextRunFull(isoStr){
 let _countdownInterval=null;
 let _countdownTargetDt=null;
 let _globalRunStatusInterval=null;
-const _liveRunStatusPages=new Set(['dashboard','theme-manager','tasks','scheduler']);
 const _countdownPages=new Set(['dashboard','scheduler']);
 function _activePageName(){
   const active=document.querySelector('.page.active');
   return active ? String(active.id||'').replace(/^page-/,'') : '';
 }
+function _hasActiveRunContext(){
+  return typeof _activeRunContext!=='undefined' && !!_activeRunContext;
+}
 function _pageNeedsLiveRunState(page=_activePageName()){
-  return _liveRunStatusPages.has(page);
+  if(page==='scheduler') return true;
+  if(page!=='dashboard') return false;
+  return _wasRunning || _dashRunActive || _hasActiveRunContext();
 }
 function _pageNeedsCountdown(page=_activePageName()){
   return _countdownPages.has(page);
