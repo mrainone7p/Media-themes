@@ -31,26 +31,34 @@ fi
 log_info "Container/web startup: config_path=${CONFIG_FILE} web_port=${WEB_PORT} scheduler_authority=${SCHEDULER_AUTHORITY} startup_scan_disabled=${STARTUP_SCAN_DISABLED}"
 log_info "Scheduler bootstrap begin: authority=${SCHEDULER_AUTHORITY} cron_file=${MEDIA_TRACKS_CRON_FILE:-/etc/cron.d/media-tracks}"
 
-SCHEDULER_BOOTSTRAP=$(PYTHONPATH="/app${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
+BOOTSTRAP_PAYLOAD_FILE=$(mktemp)
+cleanup_bootstrap_payload() {
+    rm -f "$BOOTSTRAP_PAYLOAD_FILE"
+}
+trap cleanup_bootstrap_payload EXIT
+
+PYTHONPATH="/app${PYTHONPATH:+:$PYTHONPATH}" BOOTSTRAP_PAYLOAD_FILE="$BOOTSTRAP_PAYLOAD_FILE" python3 - <<'PY'
 import json
+import os
 import web.logic as logic
 
 cfg = logic.load_config()
 result = logic.refresh_scheduler(cfg)
-print(json.dumps({
+payload = {
     "ok": bool(result.get("ok")),
     "cron": result.get("active_cron") or result.get("configured_cron") or cfg.get("cron_schedule", "0 3 * * *"),
     "detail": result.get("detail", ""),
     "error": result.get("error", ""),
     "authority": result.get("authority", "cron"),
-}))
+}
+with open(os.environ["BOOTSTRAP_PAYLOAD_FILE"], "w", encoding="utf-8") as fh:
+    json.dump(payload, fh)
 PY
-)
 
-CRON_SCHEDULE=$(printf '%s' "$SCHEDULER_BOOTSTRAP" | python3 -c "import json,sys; print((json.load(sys.stdin).get('cron') or '0 3 * * *'))")
-BOOTSTRAP_OK=$(printf '%s' "$SCHEDULER_BOOTSTRAP" | python3 -c "import json,sys; print('1' if json.load(sys.stdin).get('ok') else '0')")
-BOOTSTRAP_DETAIL=$(printf '%s' "$SCHEDULER_BOOTSTRAP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('detail',''))")
-BOOTSTRAP_ERROR=$(printf '%s' "$SCHEDULER_BOOTSTRAP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('error',''))")
+CRON_SCHEDULE=$(BOOTSTRAP_PAYLOAD_FILE="$BOOTSTRAP_PAYLOAD_FILE" python3 -c 'import json, os; print((json.load(open(os.environ["BOOTSTRAP_PAYLOAD_FILE"], encoding="utf-8")).get("cron") or "0 3 * * *"))')
+BOOTSTRAP_OK=$(BOOTSTRAP_PAYLOAD_FILE="$BOOTSTRAP_PAYLOAD_FILE" python3 -c 'import json, os; print("1" if json.load(open(os.environ["BOOTSTRAP_PAYLOAD_FILE"], encoding="utf-8")).get("ok") else "0")')
+BOOTSTRAP_DETAIL=$(BOOTSTRAP_PAYLOAD_FILE="$BOOTSTRAP_PAYLOAD_FILE" python3 -c 'import json, os; print(json.load(open(os.environ["BOOTSTRAP_PAYLOAD_FILE"], encoding="utf-8")).get("detail", ""))')
+BOOTSTRAP_ERROR=$(BOOTSTRAP_PAYLOAD_FILE="$BOOTSTRAP_PAYLOAD_FILE" python3 -c 'import json, os; print(json.load(open(os.environ["BOOTSTRAP_PAYLOAD_FILE"], encoding="utf-8")).get("error", ""))')
 
 echo "============================================="
 echo "  Media Tracks"
