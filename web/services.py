@@ -347,6 +347,7 @@ SCRIPT_MODULE = "script.media_tracks"
 TASK_ACTIVITY_MAX_ENTRIES = 1000
 _TASK_ACTIVITY_LOCK = threading.Lock()
 DASHBOARD_STATUS_KEYS = ("MISSING", "STAGED", "APPROVED", "AVAILABLE", "FAILED", "UNMONITORED")
+_DASHBOARD_SUMMARY_CACHE = {"key": None, "payload": None}
 
 for path in (RUNS_DIR,):
     path.mkdir(parents=True, exist_ok=True)
@@ -561,6 +562,22 @@ def _dashboard_recent_activity_summary(entries: list[dict]) -> dict:
     }
 
 
+def _dashboard_summary_cache_key(enabled_names: list[str], scheduled_names: list[str]) -> tuple:
+    ledger_versions = []
+    for library_name in enabled_names:
+        path = Path(ledger_path_for(library_name))
+        try:
+            mtime_ns = path.stat().st_mtime_ns
+        except OSError:
+            mtime_ns = -1
+        ledger_versions.append((library_name, mtime_ns))
+    try:
+        task_summary_mtime_ns = TASK_ACTIVITY_SUMMARY_FILE.stat().st_mtime_ns
+    except OSError:
+        task_summary_mtime_ns = -1
+    return tuple(enabled_names), tuple(scheduled_names), tuple(ledger_versions), task_summary_mtime_ns
+
+
 def dashboard_summary_payload() -> dict:
     cfg = load_config()
     all_libraries = [
@@ -571,6 +588,9 @@ def dashboard_summary_payload() -> dict:
     enabled_names = [str(lib.get("name", "") or "").strip() for lib in enabled_libraries]
     scheduled_pool = {str(item or "").strip() for item in (cfg.get("schedule_libraries") or enabled_names) if str(item or "").strip()}
     scheduled_names = [name for name in enabled_names if name in scheduled_pool]
+    cache_key = _dashboard_summary_cache_key(enabled_names, scheduled_names)
+    if _DASHBOARD_SUMMARY_CACHE["payload"] is not None and _DASHBOARD_SUMMARY_CACHE["key"] == cache_key:
+        return dict(_DASHBOARD_SUMMARY_CACHE["payload"])
 
     counts_by_library = {}
     overall_counts = _empty_dashboard_status_counts()
@@ -582,7 +602,7 @@ def dashboard_summary_payload() -> dict:
             overall_counts[status] += value
 
     entries = load_task_entries(limit=100)
-    return {
+    payload = {
         "counts_by_status": overall_counts,
         "counts_by_library": counts_by_library,
         "recent_activity": _dashboard_recent_activity_summary(entries),
@@ -593,6 +613,9 @@ def dashboard_summary_payload() -> dict:
             "scheduled_count": len(scheduled_names),
         },
     }
+    _DASHBOARD_SUMMARY_CACHE["key"] = cache_key
+    _DASHBOARD_SUMMARY_CACHE["payload"] = dict(payload)
+    return payload
 
 
 def _normalize_caller_surface(value: object, *, default: str) -> str:

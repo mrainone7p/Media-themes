@@ -357,7 +357,10 @@ function formatNextRunFull(isoStr){
 // Live countdown wiring
 let _countdownInterval=null;
 let _countdownTargetDt=null;
-let _globalRunStatusInterval=null;
+let _globalRunStatusTimer=null;
+let _globalRunStatusInFlight=false;
+const _idleRunStatusPollMs=30000;
+const _activeRunStatusPollMs=4000;
 const _liveRunStatusPages=new Set(['dashboard','theme-manager','tasks','scheduler']);
 const _countdownPages=new Set(['dashboard','scheduler']);
 function _activePageName(){
@@ -412,11 +415,20 @@ function _stopCountdownDisplay(){
 function _syncGlobalRunStatusPolling({immediate=false}={}){
   const shouldPoll=_pageNeedsLiveRunState() || _wasRunning;
   if(!shouldPoll){
-    if(_globalRunStatusInterval){clearInterval(_globalRunStatusInterval);_globalRunStatusInterval=null;}
+    if(_globalRunStatusTimer){clearTimeout(_globalRunStatusTimer);_globalRunStatusTimer=null;}
     return;
   }
-  if(immediate) updateGlobalRunStatus();
-  if(!_globalRunStatusInterval) _globalRunStatusInterval=setInterval(updateGlobalRunStatus,4000);
+  const nextDelay=_wasRunning ? _activeRunStatusPollMs : _idleRunStatusPollMs;
+  if(immediate){
+    if(_globalRunStatusTimer){clearTimeout(_globalRunStatusTimer);_globalRunStatusTimer=null;}
+    updateGlobalRunStatus();
+    return;
+  }
+  if(_globalRunStatusTimer) return;
+  _globalRunStatusTimer=setTimeout(()=>{
+    _globalRunStatusTimer=null;
+    updateGlobalRunStatus();
+  }, nextDelay);
 }
 function openThemeManagerFiltered(status=''){
   showPage('theme-manager');
@@ -1145,6 +1157,8 @@ function removeItemDetailsPanel(){
 let _wasRunning=false;
 let _dashRunActive=false;
 async function updateGlobalRunStatus(){
+  if(_globalRunStatusInFlight) return;
+  _globalRunStatusInFlight=true;
   try{
     const r=await fetch('/api/run/status');
     const d=await r.json();
@@ -1175,6 +1189,7 @@ async function updateGlobalRunStatus(){
     }
   }catch(e){}
   finally{
+    _globalRunStatusInFlight=false;
     _syncGlobalRunStatusPolling();
   }
 }
