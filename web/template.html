@@ -65,41 +65,41 @@
 
     <!-- Row 1: How it Works? (always starts collapsed, ephemeral) -->
     <div style="position:relative;margin-bottom:16px">
-      <div class="card dashboard-card" id="dash-pipeline-help" style="margin-bottom:0">
+      <div class="card dashboard-card mb-0" id="dash-pipeline-help">
         <button type="button" id="dash-how-toggle" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:0;margin:0;background:none;border:none;color:inherit;width:100%;text-align:left" onclick="toggleHowItWorks()" aria-expanded="false" aria-controls="dash-how-content">
-          <div class="card-title" style="margin-bottom:0">How it Works?</div>
+          <div class="card-title mb-0">How it Works?</div>
           <span class="settings-chev" id="dash-pipeline-help-chev" style="transform:rotate(180deg)">∧</span>
         </button>
         <div id="dash-how-content" style="display:none;margin-top:14px">
           <div class="dashboard-grid">
             <div class="span-7">
-              <div class="card-title" style="margin-bottom:10px">Pipeline Steps</div>
+              <div class="card-title mb-10">Pipeline Steps</div>
               <div class="dash-pipeline-steps">
                 <div class="dash-pipeline-step">
-                  <div class="dash-pipeline-step-num" style="color:var(--blue)">Step 1</div>
+                  <div class="dash-pipeline-step-num text-blue">Step 1</div>
                   <div>
                     <div style="font-size:12px;font-weight:700;margin-bottom:2px">⟳ Scan Libraries</div>
-                    <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <strong style="color:var(--red)">Missing</strong> or <strong style="color:var(--green)">Available</strong>.</div>
+                    <div class="dash-pipeline-step-desc text-red text-green">Connects to Plex, checks each folder for a local theme file, and marks items <strong>Missing</strong> or <strong>Available</strong>.</div>
                   </div>
                 </div>
                 <div class="dash-pipeline-step">
-                  <div class="dash-pipeline-step-num" style="color:var(--purple)">Step 2</div>
+                  <div class="dash-pipeline-step-num text-purple">Step 2</div>
                   <div>
                     <div style="font-size:12px;font-weight:700;margin-bottom:2px">⚡ Find Sources</div>
-                    <div class="dash-pipeline-step-desc">Searches for sources for <strong style="color:var(--red)">Missing</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong style="color:var(--purple)">Staged</strong> for manual review and <strong style="color:var(--yellow)">Approval</strong>.</div>
+                    <div class="dash-pipeline-step-desc text-red text-purple text-yellow">Searches for sources for <strong>Missing</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong>Staged</strong> for manual review and <strong>Approval</strong>.</div>
                   </div>
                 </div>
                 <div class="dash-pipeline-step">
-                  <div class="dash-pipeline-step-num" style="color:var(--green)">Step 3</div>
+                  <div class="dash-pipeline-step-num text-green">Step 3</div>
                   <div>
                     <div style="font-size:12px;font-weight:700;margin-bottom:2px">↓ Download Approved</div>
-                    <div class="dash-pipeline-step-desc">Downloads theme files for <strong style="color:var(--yellow)">Approved</strong> items using yt-dlp and ffmpeg, then marks them <strong style="color:var(--green)">Available</strong>.</div>
+                    <div class="dash-pipeline-step-desc text-yellow text-green">Downloads theme files for <strong>Approved</strong> items using yt-dlp and ffmpeg, then marks them <strong>Available</strong>.</div>
                   </div>
                 </div>
               </div>
             </div>
             <div class="span-5">
-              <div class="card-title" style="margin-bottom:10px">Status Key</div>
+              <div class="card-title mb-10">Status Key</div>
               <div class="dash-status-key">
                 <div class="dash-status-key-row">
                   <span class="badge s-MISSING"><span class="si"></span>Missing</span>
@@ -133,15 +133,15 @@
     </div>
 
     <!-- Row 2: KPI Cards -->
-    <div class="card dashboard-card" style="margin-bottom:16px">
+    <div class="card dashboard-card mb-16">
       <div class="dashboard-stat-grid" id="dashboard-pipeline-overview"></div>
     </div>
 
     <!-- Row 3: Library Overview + Processing History (moved above Needs Attention) -->
-    <div class="card dashboard-card" style="margin-bottom:16px">
+    <div class="card dashboard-card mb-16">
       <!-- Header row -->
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:0">Theme Library Overview</div>
+        <div class="card-title mb-0">Theme Library Overview</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
           <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
@@ -171,26 +171,26 @@
     </div>
 
     <!-- Row 4: Needs Attention + Action Station -->
-    <div class="dashboard-grid" style="margin-bottom:16px">
+    <div class="dashboard-grid mb-16">
       <div class="card dashboard-card span-7 dash-attention-card">
         <div class="card-title">Needs Attention</div>
         <div id="dashboard-needs-attention"></div>
       </div>
       <div class="card dashboard-card span-5">
         <div class="card-title">Action Station</div>
-        <div id="dashboard-action-station"><div class="dash-skeleton" style="margin-bottom:8px"></div><div class="dash-skeleton" style="margin-bottom:8px"></div><div class="dash-skeleton"></div></div>
+        <div id="dashboard-action-station"><div class="dash-skeleton mb-8"></div><div class="dash-skeleton"></div><div class="dash-skeleton"></div></div>
       </div>
     </div>
 
     <!-- Row 5: System Health + Recent Activity (side by side) -->
-    <div class="dash-split-row" style="margin-bottom:16px">
+    <div class="dash-split-row mb-16">
       <div class="card dashboard-card">
-        <div class="card-title" style="margin-bottom:10px">System Health</div>
+        <div class="card-title mb-10">System Health</div>
         <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
       </div>
       <div class="card dashboard-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="card-title" style="margin-bottom:0">Recent Activity</div>
+          <div class="card-title mb-0">Recent Activity</div>
           <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
         </div>
         <div id="dashboard-recent-activity"></div>
@@ -211,7 +211,7 @@
   <div class="page-body"><div class="content">
     <details class="card settings-section" open id="config-section-connections">
       <summary>
-        <div class="card-title" style="margin-bottom:0">
+        <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="18" cy="18" r="2"/></svg>
           CONNECTIONS
         </div>
@@ -234,7 +234,7 @@
                   <input id="cfg-plex_token" type="password" placeholder="your-plex-token" autocomplete="off">
                   <button type="button" class="field-secret-toggle" onclick="toggleSecretField(this)" aria-label="Toggle visibility" title="Show / hide token">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-off-icon" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-off-icon hidden"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                   </button>
                 </div>
               </div>
@@ -253,7 +253,7 @@
                 <input id="cfg-tmdb_api_key" type="password" placeholder="your-tmdb-key" autocomplete="off">
                 <button type="button" class="field-secret-toggle" onclick="toggleSecretField(this)" aria-label="Toggle visibility" title="Show / hide API key">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-icon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-off-icon" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eye-off-icon hidden"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                 </button>
               </div>
             </div>
@@ -268,7 +268,7 @@
 
     <details class="card settings-section" open id="config-section-libraries">
       <summary>
-        <div class="card-title" style="margin-bottom:0">
+        <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
           MEDIA LIBRARIES
         </div>
@@ -287,7 +287,7 @@
 
     <details class="card settings-section" open>
       <summary>
-        <div class="card-title" style="margin-bottom:0">
+        <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
           SOURCE DISCOVERY
         </div>
@@ -333,7 +333,7 @@
               <span class="toggle-track"></span>
             </label>
             <div class="settings-toggle-content">
-              <label class="toggle-title" id="lbl-search-fallback" style="cursor:pointer" onclick="document.getElementById('cfg-search_fallback').click()">Fallback Search</label>
+              <label class="toggle-title cursor-pointer" id="lbl-search-fallback" onclick="document.getElementById('cfg-search_fallback').click()">Fallback Search</label>
               <div class="toggle-note">If the primary search mode finds no valid strict match, try the other mode once.</div>
             </div>
             </div>
@@ -343,7 +343,7 @@
               <span class="toggle-track"></span>
             </label>
             <div class="settings-toggle-content">
-              <label class="toggle-title" style="cursor:pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
+              <label class="toggle-title cursor-pointer" onclick="document.getElementById('cfg-auto_approve_manual').click()">Auto-approve manual picks</label>
               <div class="toggle-note">Manual search selections skip <span class="status-term status-tone-STAGED">Staged</span> and go straight to <span class="status-term status-tone-APPROVED">Approved</span>.</div>
             </div>
             </div>
@@ -371,7 +371,7 @@
 
     <details class="card settings-section" open>
       <summary>
-        <div class="card-title" style="margin-bottom:0">
+        <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M8 7h8M8 17h8"/><circle cx="6" cy="7" r="1"/><circle cx="18" cy="17" r="1"/></svg>
           CURATED SOURCE DISCOVERY
         </div>
@@ -398,22 +398,22 @@
             <div class="subcard-intro">Use only the curated list when you want quality themes with faster, more controlled matching however coverage may be limited.</div>
             <div class="settings-toggle-list settings-toggle-list-golden">
               <div class="settings-toggle-row golden-row">
-              <label class="toggle" style="margin-top:2px">
+              <label class="toggle mt-2">
                 <input type="checkbox" id="cfg-search_only_golden">
                 <span class="toggle-track"></span>
               </label>
               <div class="settings-toggle-content">
-                <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
+                <label class="toggle-title golden cursor-pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
                 <div class="toggle-note golden">Disables YouTube source discovery and only matches against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
               </div>
               </div>
               <div class="settings-toggle-row golden-row">
-              <label class="toggle" style="margin-top:2px">
+              <label class="toggle mt-2">
                 <input type="checkbox" id="cfg-refresh_golden_source_each_run">
                 <span class="toggle-track"></span>
               </label>
               <div class="settings-toggle-content">
-                <label class="toggle-title golden" style="cursor:pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
+                <label class="toggle-title golden cursor-pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
                 <div class="toggle-note golden">Refreshes the Golden Source list before each source-matching run.</div>
               </div>
               </div>
@@ -425,7 +425,7 @@
 
     <details class="card settings-section" open>
       <summary>
-        <div class="card-title" style="margin-bottom:0">
+        <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
           DOWNLOAD OUTPUT &amp; PERFORMANCE
         </div>
@@ -549,8 +549,8 @@
         <div class="progress-copy" id="db-progress-label">Queued — waiting to start.</div>
         <div class="progress-actions">
           <span class="progress-state" id="db-progress-state">Queued</span>
-          <button class="btn btn-red btn-xs" id="db-progress-stop" onclick="stopRun('db')" style="display:none">Stop</button>
-          <button class="btn btn-ghost btn-xs" id="db-progress-retry" onclick="retryRun('db')" style="display:none">Retry</button>
+          <button class="btn btn-red btn-xs hidden" id="db-progress-stop" onclick="stopRun('db')">Stop</button>
+          <button class="btn btn-ghost btn-xs hidden" id="db-progress-retry" onclick="retryRun('db')">Retry</button>
         </div>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="db-progress-fill"></div></div>
@@ -640,7 +640,7 @@
       </table>
     </div>
     <div class="pag" id="db-pag"></div>
-    <div class="empty" id="db-empty" style="display:none">No titles match your filter.</div>
+    <div class="empty hidden" id="db-empty">No titles match your filter.</div>
   </div>
 </div>
 
@@ -663,7 +663,7 @@
           <div class="schedule-master-title" data-ui="schedule.master.title">Automated Schedule</div>
           <div class="schedule-master-desc" data-ui="schedule.master.description">Turn automated scheduling on or off. You can still run the saved Scheduler configuration on demand.</div>
         </div>
-        <label class="toggle" style="margin-top:2px">
+        <label class="toggle mt-2">
           <input type="checkbox" id="sched-enabled" onchange="applyScheduleEnabledState();saveRunSchedule()">
           <span class="toggle-track"></span>
         </label>
@@ -676,7 +676,7 @@
         <div class="section-intro" style="margin-bottom:14px">Run your saved Scheduler setup right now using the currently included libraries and enabled steps below.</div>
         <div class="dashboard-actions">
           <button class="btn btn-amber" id="btn-schedule-run" onclick="startScheduledRun()">▶ Run Automated Schedule Now</button>
-          <button class="btn btn-red" id="btn-schedule-stop" onclick="stopRun('run')" style="display:none">■ Stop Run</button>
+          <button class="btn btn-red hidden" id="btn-schedule-stop" onclick="stopRun('run')">■ Stop Run</button>
         </div>
         <div class="field-hint" id="run-schedule-summary" style="margin-top:10px">Uses your current Scheduler library selection and enabled steps.</div>
       </div>
@@ -714,11 +714,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           <span data-ui="schedule.cards.pipeline_steps.title">PIPELINE STEPS</span>
         </div>
-        <div class="field-hint" style="margin-bottom:16px" data-ui="schedule.cards.pipeline_steps.description">Choose which parts of the automated pipeline should run when the Scheduler configuration is triggered.</div>
+        <div class="field-hint mb-16" data-ui="schedule.cards.pipeline_steps.description">Choose which parts of the automated pipeline should run when the Scheduler configuration is triggered.</div>
 
         <!-- Step 1 -->
         <div class="pipeline-step">
-          <label class="toggle" style="margin-top:2px">
+          <label class="toggle mt-2">
             <input type="checkbox" id="sched-step1" onchange="saveRunSchedule()">
             <span class="toggle-track"></span>
           </label>
@@ -727,13 +727,13 @@
               <span class="pipeline-step-index scan">Step 1</span>
               <span class="pipeline-step-title">Scan Libraries</span>
             </div>
-            <div class="status-copy body-copy" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked <strong style="color:var(--red)">Missing</strong>. Items with a theme are marked <strong style="color:var(--green)">Available</strong>. Uses Plex only. Fast.</div>
+            <div class="status-copy body-copy text-red text-green" data-ui="schedule.cards.pipeline_steps.step1.description">Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked <strong>Missing</strong>. Items with a theme are marked <strong>Available</strong>. Uses Plex only. Fast.</div>
           </div>
         </div>
 
         <!-- Step 2 -->
         <div class="pipeline-step">
-          <label class="toggle" style="margin-top:2px">
+          <label class="toggle mt-2">
             <input type="checkbox" id="sched-step2" onchange="saveRunSchedule()">
             <span class="toggle-track"></span>
           </label>
@@ -742,7 +742,7 @@
               <span class="pipeline-step-index find">Step 2</span>
               <span class="pipeline-step-title">Find Theme Sources</span>
             </div>
-            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <strong style="color:var(--red)">Missing</strong> item using the configured search logic. When a source is found, the item moves to <strong style="color:var(--purple)">Staged</strong> for manual review and <strong style="color:var(--yellow)">Approval</strong>. Items marked <strong style="color:var(--text3)">Unmonitored</strong> or <strong style="color:var(--red)">Failed</strong> are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
+            <div class="status-copy body-copy mb-8 text-red text-purple" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <strong>Missing</strong> item using the configured search logic. When a source is found, the item moves to <strong>Staged</strong> for manual review and <strong class="text-yellow">Approval</strong>. Items marked <strong class="text-muted2">Unmonitored</strong> or <strong class="text-red">Failed</strong> are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
             <div class="schedule-step2-options">
               <div class="pipeline-step-option golden">
                 <label class="toggle" style="transform:scale(.85)">
@@ -757,7 +757,7 @@
               <div class="pipeline-step-option">
                 <div>
                   <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step2.limit.title">Missing Titles Per Run</span>
-                  <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many <strong style="color:var(--red)">Missing</strong> items are processed per run. 0 = unlimited.</div>
+                  <div class="status-copy body-copy compact text-red" data-ui="schedule.cards.pipeline_steps.step2.limit.description">Limits how many <strong>Missing</strong> items are processed per run. 0 = unlimited.</div>
                 </div>
                 <input id="run-schedule-limit" class="pipeline-step-input" type="number" min="0" onblur="saveRunSchedule()">
               </div>
@@ -767,7 +767,7 @@
 
         <!-- Step 3 -->
         <div class="pipeline-step">
-          <label class="toggle" style="margin-top:2px">
+          <label class="toggle mt-2">
             <input type="checkbox" id="sched-step3" onchange="saveRunSchedule()">
             <span class="toggle-track"></span>
           </label>
@@ -776,7 +776,7 @@
               <span class="pipeline-step-index download">Step 3</span>
               <span class="pipeline-step-title">Download Themes</span>
             </div>
-            <div class="status-copy body-copy" style="margin-bottom:8px" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each <strong style="color:var(--yellow)">Approved</strong> item, saves the theme file into the media folder, and moves the item to <strong style="color:var(--green)">Available</strong>. Items marked <strong style="color:var(--text3)">Unmonitored</strong> or <strong style="color:var(--red)">Failed</strong> are ignored. Uses yt-dlp and ffmpeg.</div>
+            <div class="status-copy body-copy mb-8 text-yellow" data-ui="schedule.cards.pipeline_steps.step3.description">Downloads themes for each <strong>Approved</strong> item, saves the theme file into the media folder, and moves the item to <strong class="text-green">Available</strong>. Items marked <strong class="text-muted2">Unmonitored</strong> or <strong class="text-red">Failed</strong> are ignored. Uses yt-dlp and ffmpeg.</div>
             <div class="pipeline-step-option">
               <label class="toggle" style="transform:scale(.85)">
                 <input type="checkbox" id="sched-autoapprove" onchange="saveRunSchedule()">
@@ -784,7 +784,7 @@
               </label>
               <div>
                 <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.title">Auto-Approve Staged Items</span>
-                <div class="status-copy body-copy compact" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move <strong style="color:var(--purple)">Staged</strong> items to <strong style="color:var(--yellow)">Approved</strong> before downloading for a fully hands-off pipeline.</div>
+                <div class="status-copy body-copy compact text-purple text-yellow" data-ui="schedule.cards.pipeline_steps.step3.auto_approve.description">Automatically move <strong>Staged</strong> items to <strong>Approved</strong> before downloading for a fully hands-off pipeline.</div>
               </div>
             </div>
           </div>
@@ -799,8 +799,8 @@
         <div class="progress-copy" id="run-progress-label">Queued — waiting to start.</div>
         <div class="progress-actions">
           <span class="progress-state" id="run-progress-state">Queued</span>
-          <button class="btn btn-red btn-xs" id="run-progress-stop" onclick="stopRun('run')" style="display:none">Stop</button>
-          <button class="btn btn-ghost btn-xs" id="run-progress-retry" onclick="retryRun('run')" style="display:none">Retry</button>
+          <button class="btn btn-red btn-xs hidden" id="run-progress-stop" onclick="stopRun('run')">Stop</button>
+          <button class="btn btn-ghost btn-xs hidden" id="run-progress-retry" onclick="retryRun('run')">Retry</button>
         </div>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="run-progress-fill"></div></div>
@@ -856,8 +856,8 @@
         <div class="progress-copy" id="tasks-progress-label">Queued — waiting to start.</div>
         <div class="progress-actions">
           <span class="progress-state" id="tasks-progress-state">Queued</span>
-          <button class="btn btn-red btn-xs" id="tasks-progress-stop" onclick="stopRun('tasks')" style="display:none">Stop</button>
-          <button class="btn btn-ghost btn-xs" id="tasks-progress-retry" onclick="retryRun('tasks')" style="display:none">Retry</button>
+          <button class="btn btn-red btn-xs hidden" id="tasks-progress-stop" onclick="stopRun('tasks')">Stop</button>
+          <button class="btn btn-ghost btn-xs hidden" id="tasks-progress-retry" onclick="retryRun('tasks')">Retry</button>
         </div>
       </div>
       <div class="progress-bar"><div class="progress-fill" id="tasks-progress-fill"></div></div>
@@ -876,7 +876,7 @@
 
 </main>
 <div id="toast"></div>
-<audio id="global-audio" style="display:none"></audio>
+<audio class="hidden" id="global-audio"></audio>
 
 <!-- YouTube Preview Modal (Database page — ▶ Preview on staged rows) -->
 <div class="modal-overlay" id="yt-modal">
@@ -884,7 +884,7 @@
 
     <!-- Movie header -->
     <div class="modal-header">
-      <img class="modal-poster" id="yt-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
+      <img class="modal-poster hidden" id="yt-modal-poster" src="" onerror="this.style.display='none'">
       <div class="modal-movie-info">
         <div class="modal-movie-title" id="yt-modal-title">YouTube Preview</div>
         <div class="modal-movie-meta">
@@ -909,12 +909,12 @@
           <div class="modal-time-row"><span id="yt-modal-cur">0:00</span><span id="yt-modal-dur">—</span></div>
         </div>
       </div>
-      <audio id="yt-modal-audio" style="display:none"></audio>
+      <audio class="hidden" id="yt-modal-audio"></audio>
       <div class="modal-status-txt modal-status-inline" id="yt-modal-status">Resolving stream…</div>
     </div>
 
     <!-- Bio -->
-    <div class="modal-bio" id="yt-modal-bio" style="display:none"></div>
+    <div class="modal-bio hidden" id="yt-modal-bio"></div>
 
     <!-- Section heading -->
     <div class="modal-subsection">
@@ -939,7 +939,7 @@
     <!-- Footer -->
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeYtModal()">Close</button>
-      <button class="btn btn-amber" id="yt-modal-save" onclick="ytModalSave()" style="display:none">Save Offset</button>
+      <button class="btn btn-amber hidden" id="yt-modal-save" onclick="ytModalSave()">Save Offset</button>
     </div>
   </div>
 </div>
@@ -951,16 +951,16 @@
       <div class="icon-badge">★</div>
       <div class="modal-movie-info">
         <div class="modal-movie-title" style="font-size:16px">Import Golden Source</div>
-        <div class="modal-movie-meta" id="gs-modal-lib-label" style="color:var(--text2)">—</div>
+        <div class="modal-movie-meta text-muted" id="gs-modal-lib-label">—</div>
       </div>
     </div>
     <div class="modal-section-divider"></div>
     <div class="modal-section" style="padding-top:16px;padding-bottom:0">
-      <div class="modal-copy" style="margin-bottom:16px">Match your library against the curated Golden Source CSV using TMDB IDs. Only rows with a <code>tmdb_id</code> and <code>source_url</code> will be imported.</div>
+      <div class="modal-copy mb-16">Match your library against the curated Golden Source CSV using TMDB IDs. Only rows with a <code>tmdb_id</code> and <code>source_url</code> will be imported.</div>
 
-      <div class="modal-info-card" style="margin-bottom:16px">
+      <div class="modal-info-card mb-16">
         <div class="toggle-card clickable" onclick="document.getElementById('gs-overwrite').click()">
-          <label class="toggle" style="pointer-events:none">
+          <label class="toggle pointer-events-none">
             <input type="checkbox" id="gs-overwrite">
             <span class="toggle-track"></span>
           </label>
@@ -970,7 +970,7 @@
           </div>
         </div>
         <div class="toggle-card clickable" onclick="document.getElementById('gs-approve').click()">
-          <label class="toggle" style="pointer-events:none">
+          <label class="toggle pointer-events-none">
             <input type="checkbox" id="gs-approve">
             <span class="toggle-track"></span>
           </label>
@@ -1001,8 +1001,8 @@
     </div>
     <div class="modal-section-divider"></div>
     <div class="modal-section" style="padding-top:16px;padding-bottom:0">
-      <div class="modal-copy" style="margin-bottom:16px">Share your exported candidate CSV with the community for possible inclusion in the official Golden Source catalog. Submissions are reviewed manually before being approved.</div>
-      <div class="submission-steps" style="margin-bottom:16px">
+      <div class="modal-copy mb-16">Share your exported candidate CSV with the community for possible inclusion in the official Golden Source catalog. Submissions are reviewed manually before being approved.</div>
+      <div class="submission-steps mb-16">
         <div class="submission-step"><span class="submission-step-num">1</span> Export your candidate CSV from this page</div>
         <div class="submission-step"><span class="submission-step-num">2</span> Open the community submission page</div>
         <div class="submission-step"><span class="submission-step-num">3</span> Attach or upload your CSV</div>
@@ -1040,13 +1040,13 @@
 
     <!-- Movie header -->
     <div class="modal-header" style="flex-shrink:0">
-      <img class="modal-poster" id="search-modal-poster" src="" onerror="this.style.display='none'" style="display:none">
+      <img class="modal-poster hidden" id="search-modal-poster" src="" onerror="this.style.display='none'">
       <div class="modal-movie-info">
         <div class="inline-wrap spread" style="align-items:flex-start">
           <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
           <div class="modal-movie-links" id="search-modal-links" style="margin-top:0"></div>
         </div>
-        <div class="modal-movie-meta"><span id="search-modal-year-meta" style="color:var(--text2)"></span></div>
+        <div class="modal-movie-meta text-muted"><span id="search-modal-year-meta"></span></div>
         <div class="modal-bio" id="search-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0;max-width:none"></div>
       </div>
     </div>
@@ -1195,7 +1195,7 @@
           <div class="modal-scrubber-wrap">
             <div class="source-editor-slider-wrap">
               <input type="range" class="modal-slider" id="se-slider" min="0" max="100" value="0" oninput="seSeek(this.value)">
-              <div class="trim-window" id="se-trim-window" style="display:none">
+              <div class="trim-window hidden" id="se-trim-window">
                 <div class="trim-shade" id="se-trim-left"></div>
                 <div class="trim-marker" id="se-trim-start"></div>
                 <div class="trim-marker end" id="se-trim-end"></div>
@@ -1206,7 +1206,7 @@
             <div class="trim-window-meta"><span id="se-trim-start-label">Start 0:00</span><span id="se-trim-end-label">End —</span></div>
           </div>
         </div>
-        <audio id="se-audio" style="display:none"></audio>
+        <audio class="hidden" id="se-audio"></audio>
         <div class="modal-status-txt" id="se-info" style="padding-left:0;padding-top:3px">Select a result or paste a URL to preview</div>
       </div>
 
@@ -1234,7 +1234,7 @@
 
       <!-- Start Offset -->
       <div class="modal-section" style="padding-top:0;padding-bottom:16px">
-        <div class="source-editor-card" style="margin-bottom:0">
+        <div class="source-editor-card mb-0">
         <div class="source-editor-title">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
         <div class="offset-inline-row">
           <span class="offset-inline-label">Start</span>
@@ -1256,7 +1256,7 @@
       <div class="modal-actions-row footer-action-group">
         <button class="btn btn-ghost" onclick="closeSearchModal()">Cancel</button>
         <button class="btn btn-amber" id="search-modal-primary" onclick="searchModalPrimary()">🔍 Search</button>
-        <button class="btn btn-green" id="search-modal-download-now" style="display:none" onclick="searchModalDownloadNow()">Download Now</button>
+        <button class="btn btn-green hidden" id="search-modal-download-now" onclick="searchModalDownloadNow()">Download Now</button>
       </div>
     </div>
   </div>
@@ -1276,7 +1276,7 @@
         </div>
         <div class="modal-movie-meta">
           <span id="theme-modal-year"></span>
-          <span id="theme-modal-dur-meta" style="color:var(--green)"></span>
+          <span class="text-green" id="theme-modal-dur-meta"></span>
           <div class="modal-movie-links" id="theme-modal-links"></div>
         </div>
       </div>
@@ -1296,7 +1296,7 @@
     <div class="review-card" id="theme-local-card">
       <div class="review-card-header">
         <div class="review-card-heading">
-          <div class="modal-section-label" style="margin-bottom:0">Local Theme</div>
+          <div class="modal-section-label mb-0">Local Theme</div>
           <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
         </div>
       </div>
@@ -1304,13 +1304,13 @@
         <div class="simple-line" id="theme-modal-file">File path: —</div>
         <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
       </div>
-      <div class="review-empty" id="theme-local-missing" style="display:none">No local theme file is saved right now.</div>
+      <div class="review-empty hidden" id="theme-local-missing">No local theme file is saved right now.</div>
       <div class="modal-actions-row" style="margin-top:10px" id="theme-local-actions">
         <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim</button>
         <button class="btn btn-amber btn-sm" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace</button>
         <button class="btn btn-danger-ghost btn-sm" id="theme-modal-delete-btn" onclick="themeModalDelete()">Delete</button>
       </div>
-      <div id="theme-local-player" style="display:none">
+      <div class="hidden" id="theme-local-player">
         <div class="modal-player-row">
           <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
             <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -1322,19 +1322,19 @@
             <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
           </div>
         </div>
-        <audio id="theme-modal-audio" style="display:none"></audio>
+        <audio class="hidden" id="theme-modal-audio"></audio>
       </div>
     </div>
 
     <div class="review-card" id="theme-source-card">
       <div class="review-card-header">
         <div class="review-card-heading">
-          <div class="modal-section-label" style="margin-bottom:0">Source Details</div>
+          <div class="modal-section-label mb-0">Source Details</div>
           <div class="review-card-subtitle" id="theme-modal-source-summary">Theme used for download and the details applied to it.</div>
         </div>
         <div class="ui-pill review-source-pill is-unknown" id="theme-modal-source-pill">Unknown</div>
       </div>
-      <div class="review-empty" id="theme-source-empty" style="display:none">No source is attached right now.</div>
+      <div class="review-empty hidden" id="theme-source-empty">No source is attached right now.</div>
       <details class="surface-panel compact theme-source-details" id="theme-source-details">
         <summary>
           <span class="theme-source-summary-text">Source metadata</span>
@@ -1374,8 +1374,8 @@
     <!-- Footer -->
     <div class="modal-footer">
       <div class="review-footer-actions footer-action-group">
-        <button class="btn btn-ghost" id="theme-next-step-btn" style="display:none" onclick="themeModalRunNextStep()">Next Step</button>
-        <button class="btn btn-amber" id="theme-find-btn" style="display:none" onclick="themeModalOpenManualSearch()">Find Theme</button>
+        <button class="btn btn-ghost hidden" id="theme-next-step-btn" onclick="themeModalRunNextStep()">Next Step</button>
+        <button class="btn btn-amber hidden" id="theme-find-btn" onclick="themeModalOpenManualSearch()">Find Theme</button>
         <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
       </div>
     </div>
@@ -1425,7 +1425,7 @@
         <div class="clip-summary-sub" id="trim-modal-summary-sub">Adjust the offset to choose what portion will be kept.</div>
         <div class="clip-summary-warning" id="trim-modal-summary-warning"></div>
       </div>
-      <audio id="trim-modal-audio" style="display:none"></audio>
+      <audio class="hidden" id="trim-modal-audio"></audio>
     </div>
 
     <!-- ── Start Offset — inline ── -->
@@ -1492,7 +1492,7 @@
 <div class="modal-overlay" id="delete-modal">
   <div class="modal" style="max-width:420px;position:relative">
     <div class="modal-title">Delete Theme</div>
-    <div class="modal-copy" style="margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b style="color:var(--red)">Missing</b> status.</div>
+    <div class="modal-copy" style="margin:12px 0">This will permanently delete the theme file from disk. The media item will be set back to <b class="text-red">Missing</b> status.</div>
     <div class="task-title" style="margin-bottom:4px" id="delete-modal-name"></div>
     <div class="db-cell-mono" style="margin-bottom:16px;word-break:break-all" id="delete-modal-path"></div>
     <div class="modal-actions">

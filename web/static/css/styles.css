@@ -1088,3 +1088,20 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   #toast{right:12px;left:12px;bottom:82px;max-width:none}
 }
 
+/* ── Utility classes ──────────────────────────────────────────────────────── */
+.hidden{display:none}
+.mb-0{margin-bottom:0}
+.mb-8{margin-bottom:8px}
+.mb-10{margin-bottom:10px}
+.mb-16{margin-bottom:16px}
+.mt-2{margin-top:2px}
+.text-red{color:var(--red)}
+.text-green{color:var(--green)}
+.text-yellow{color:var(--yellow)}
+.text-purple{color:var(--purple)}
+.text-blue{color:var(--blue)}
+.text-muted{color:var(--text2)}
+.text-muted2{color:var(--text3)}
+.cursor-pointer{cursor:pointer}
+.pointer-events-none{pointer-events:none}
+
