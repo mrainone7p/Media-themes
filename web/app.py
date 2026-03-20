@@ -20,6 +20,7 @@ from flask import Flask, Response, abort, g, jsonify, request, send_file, stream
 
 import integrations
 import logic
+from golden_source_csv import GOLDEN_SOURCE_OPTIONAL_COLUMNS, GOLDEN_SOURCE_REQUIRED_COLUMNS
 from logic import RUN_MANAGER
 from storage import (
     MANUAL_STATUS_TRANSITIONS,
@@ -213,8 +214,8 @@ def test_golden_source():
             "rows": len(rows),
             "fetch_ms": fetch_ms,
             "fetch_mode": fetch_mode,
-            "required_columns": ["tmdb_id", "source_url"],
-            "optional_columns": ["title", "year", "start_offset", "updated_at", "notes"],
+            "required_columns": list(GOLDEN_SOURCE_REQUIRED_COLUMNS),
+            "optional_columns": list(GOLDEN_SOURCE_OPTIONAL_COLUMNS),
         })
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)[:180]})

@@ -9,7 +9,6 @@ API/subprocess integrations live in `web.integrations`.
 from __future__ import annotations
 
 import atexit
-import csv
 import json
 import os
 import queue
@@ -35,6 +34,7 @@ if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
 import integrations
+from golden_source_csv import parse_golden_source_csv_rows
 from storage import (
     CONFIG_PATH,
     LEDGER_HEADERS,
@@ -789,25 +789,8 @@ def theme_file_path(row: dict, cfg: dict, *, library_type: str = "") -> Path:
 
 # ── Golden Source helpers ────────────────────────────────────────────────────
 
-def import_csv_reader(text: str):
-    return csv.DictReader(text.splitlines())
-
-
 def parse_golden_source_csv(text: str) -> list[dict]:
-    reader = import_csv_reader(text)
-    if not reader.fieldnames:
-        raise ValueError("Golden Source CSV has no header row")
-    rows = []
-    for row in reader:
-        clean = {str(key or "").strip().lower(): str(value or "").strip() for key, value in row.items()}
-        tmdb_id = clean.get("tmdb_id", "")
-        if not tmdb_id:
-            continue
-        clean["start_offset"] = clean.get("start_offset", "0") or "0"
-        clean["end_offset"] = clean.get("end_offset", "0") or "0"
-        clean.pop("verified", None)
-        rows.append(clean)
-    return rows
+    return parse_golden_source_csv_rows(text)
 
 
 def fetch_golden_source_catalog(url: str, *, force_refresh: bool = False, cache_ttl_sec: int = 1800):

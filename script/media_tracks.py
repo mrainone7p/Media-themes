@@ -47,7 +47,6 @@ sidecar file for every movie in your media library.
   {"pass":1,"current":5,"total":100,"title":"Movie Name","action":"scanning"}
 """
 
-import csv
 import json
 import logging
 import os
@@ -69,6 +68,7 @@ SHARED_DIR = Path(__file__).resolve().parents[1] / "shared"
 if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
+from golden_source_csv import parse_golden_source_csv_map
 from storage import (
     CONFIG_PATH,
     LEDGER_HEADERS,
@@ -540,41 +540,8 @@ def _pick_youtube_source(query: str, search_title: str, year: str, mode: str,
 
 # ─── Golden Source ────────────────────────────────────────────────────────────
 
-GOLDEN_SOURCE_EXPECTED_COLUMNS = [
-    "tmdb_id", "title", "year", "source_url",
-    "start_offset", "updated_at", "notes",
-]
-GOLDEN_SOURCE_REQUIRED_COLUMNS = ["tmdb_id", "source_url"]
-
-
 def _parse_golden_source_text(text: str) -> dict:
-    reader = csv.DictReader(text.splitlines())
-    if not reader.fieldnames:
-        raise ValueError("Golden Source CSV has no header row")
-    fieldnames = [str(f or "").strip() for f in reader.fieldnames]
-    missing = [c for c in GOLDEN_SOURCE_REQUIRED_COLUMNS if c not in fieldnames]
-    if missing:
-        raise ValueError(
-            "Golden Source CSV is missing required column(s): " + ", ".join(missing)
-        )
-    rows = {}
-    for row in reader:
-        clean = {str(k or "").strip(): str(v or "").strip() for k, v in row.items()}
-        tmdb_id = clean.get("tmdb_id", "")
-        source_url = clean.get("source_url", "")
-        if not tmdb_id or not source_url:
-            continue
-        # Backward compatibility: tolerate legacy Golden Source columns (e.g. verified) and ignore them.
-        clean.pop("verified", None)
-        rows[str(tmdb_id)] = {
-            "source_url": source_url,
-            "start_offset": clean.get("start_offset", "0") or "0",
-            "updated_at": clean.get("updated_at", ""),
-            "notes": clean.get("notes", ""),
-            "title": clean.get("title", ""),
-            "year": clean.get("year", ""),
-        }
-    return rows
+    return parse_golden_source_csv_map(text, require_source_url=True)
 
 
 def _fetch_golden_source_catalog(url: str, force_refresh: bool = True, cache_ttl_sec: int = 1800) -> tuple:
