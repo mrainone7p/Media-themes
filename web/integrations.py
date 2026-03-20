@@ -26,6 +26,7 @@ if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
 from storage import TMDB_GUID_RE as _TMDB_GUID_RE
+from yt_dlp_utils import yt_dlp_base_flags as _yt_dlp_base_flags
 
 # ── TMDB / Plex caches ───────────────────────────────────────────────────────
 
@@ -65,14 +66,6 @@ def get_json(url: str, *, headers: dict | None = None, params: dict | None = Non
     response.raise_for_status()
     return response.json()
 
-
-def _yt_dlp_base_flags(cookies_file: str | None = None, *, quiet: bool = True) -> list[str]:
-    flags = ["yt-dlp", "--no-warnings"]
-    if quiet:
-        flags.append("--quiet")
-    if cookies_file and Path(cookies_file).exists():
-        flags += ["--cookies", cookies_file]
-    return flags
 
 
 # ── Plex helpers ─────────────────────────────────────────────────────────────

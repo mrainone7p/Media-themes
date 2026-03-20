@@ -15,7 +15,7 @@ if str(ROOT / "web") not in sys.path:
 if str(ROOT / "shared") not in sys.path:
     sys.path.insert(0, str(ROOT / "shared"))
 
-import logic
+import file_utils
 
 
 class AtomicThemeReplaceTests(unittest.TestCase):
@@ -27,7 +27,7 @@ class AtomicThemeReplaceTests(unittest.TestCase):
             destination.write_text("old")
             prepared.write_text("new")
 
-            replaced_existing = logic._atomic_replace_theme_file(prepared, destination)
+            replaced_existing = file_utils.atomic_replace_file(prepared, destination)
 
             self.assertTrue(replaced_existing)
             self.assertEqual("new", destination.read_text())
@@ -41,7 +41,7 @@ class AtomicThemeReplaceTests(unittest.TestCase):
             destination.write_text("old")
 
             with self.assertRaises(FileNotFoundError):
-                logic._atomic_replace_theme_file(prepared, destination)
+                file_utils.atomic_replace_file(prepared, destination)
 
             self.assertTrue(destination.exists())
             self.assertEqual("old", destination.read_text())

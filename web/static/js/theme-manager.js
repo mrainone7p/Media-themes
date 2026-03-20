@@ -271,8 +271,6 @@ function sortTable(col){ if(_sortCol===col)_sortDir*=-1; else{_sortCol=col;_sort
 // ── Audio player ─────────────────────────────────────────────────────────────
 let _curAudio=null, _curKey=null;
 const _audioEl=()=>document.getElementById('global-audio');
-const PLAY_ICON_SVG='<svg class="icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-const PAUSE_ICON_SVG='<svg class="icon-pause" viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
 
 function _htmlAttr(s){
   if(s==null||s===undefined) return '';

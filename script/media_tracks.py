@@ -51,7 +51,6 @@ import json
 import logging
 import os
 import re
-import secrets
 import subprocess
 import sys
 import time
@@ -68,6 +67,7 @@ SHARED_DIR = Path(__file__).resolve().parents[1] / "shared"
 if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
+from file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
 from golden_source_csv import parse_golden_source_csv_map
 from storage import (
     CONFIG_PATH,
@@ -81,6 +81,7 @@ from storage import (
     save_ledger_map as save_ledger,
     sync_theme_cache,
 )
+from yt_dlp_utils import yt_dlp_base_flags
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 
@@ -99,35 +100,6 @@ _yt_cache: dict = {}
 def _retry_sleep(attempt: int, base: float = 1.0):
     time.sleep(base * (2 ** attempt))
 
-
-def _sibling_temp_path(target_path: str | Path, *, prefix: str) -> Path:
-    target = Path(target_path)
-    token = secrets.token_hex(6)
-    return target.with_name(f"{prefix}{token}{target.suffix}")
-
-
-def atomic_replace_file(prepared_path: str | Path, destination_path: str | Path) -> bool:
-    prepared = Path(prepared_path)
-    destination = Path(destination_path)
-    if prepared.parent != destination.parent:
-        raise RuntimeError("Prepared file must be in the same folder as the destination")
-
-    backup_path = None
-    replaced_existing = destination.exists()
-    if replaced_existing:
-        backup_path = _sibling_temp_path(destination, prefix=f"{destination.stem}.bak.")
-        destination.replace(backup_path)
-
-    try:
-        prepared.replace(destination)
-    except Exception:
-        if backup_path and backup_path.exists():
-            backup_path.replace(destination)
-        raise
-    else:
-        if backup_path:
-            backup_path.unlink(missing_ok=True)
-    return replaced_existing
 
 
 # ─── Progress ─────────────────────────────────────────────────────────────────
@@ -460,9 +432,7 @@ def _normalize_result_url(url: str) -> str:
 
 def _search_youtube_candidates(query: str, mode: str, cookies_file: Optional[str],
                                 max_results: int = 10) -> list:
-    flags = ["yt-dlp", "--no-warnings", "--quiet", "--flat-playlist"]
-    if cookies_file and Path(cookies_file).exists():
-        flags += ["--cookies", cookies_file]
+    flags = yt_dlp_base_flags(cookies_file) + ["--flat-playlist"]
     if mode == "playlist":
         target = ("https://www.youtube.com/results?search_query="
                   + urllib.parse.quote(query) + "&sp=EgIQAw%3D%3D")
@@ -496,12 +466,9 @@ def _search_youtube_candidates(query: str, mode: str, cookies_file: Optional[str
 
 
 def _resolve_playlist_first_track(playlist_url: str, cookies_file: Optional[str]) -> Optional[str]:
-    flags = ["yt-dlp", "--no-warnings", "--quiet"]
-    if cookies_file and Path(cookies_file).exists():
-        flags += ["--cookies", cookies_file]
     out = _run_yt_dlp(
-        flags + ["--playlist-items", "1", "--print", "webpage_url",
-                 "--yes-playlist", playlist_url]
+        yt_dlp_base_flags(cookies_file) + ["--playlist-items", "1", "--print", "webpage_url",
+                                           "--yes-playlist", playlist_url]
     )
     if out is None:
         return None
@@ -557,26 +524,6 @@ def _fetch_golden_source_catalog(url: str, force_refresh: bool = True, cache_ttl
 
 # ─── Audio helpers ────────────────────────────────────────────────────────────
 
-def validate_audio_file(filepath: Path) -> tuple:
-    if not filepath.exists():
-        return False, "File missing after download"
-    size = filepath.stat().st_size
-    if size < 10_000:
-        filepath.unlink(missing_ok=True)
-        return False, f"File too small ({size} bytes)"
-    result = subprocess.run(
-        ["ffprobe", "-v", "error", "-select_streams", "a:0",
-         "-show_entries", "stream=codec_type",
-         "-of", "default=noprint_wrappers=1:nokey=1", str(filepath)],
-        capture_output=True, text=True, timeout=30,
-    )
-    if result.returncode != 0 or "audio" not in result.stdout:
-        filepath.unlink(missing_ok=True)
-        return False, f"ffprobe rejected: {result.stderr.strip()[:120]}"
-    dur = ffprobe_duration(filepath)
-    return True, f"{size / 1024:.1f} KB, {dur:.1f}s"
-
-
 def trim_audio(filepath: Path, start_offset: int, end_offset: int,
                max_duration: int, audio_format: str) -> tuple:
     if start_offset <= 0 and end_offset <= 0 and max_duration <= 0:
@@ -592,7 +539,7 @@ def trim_audio(filepath: Path, start_offset: int, end_offset: int,
         return True, "No trimming needed"
     if dur <= (end - start) and start <= 0:
         return True, f"File already {dur:.1f}s, no trim needed"
-    tmp = _sibling_temp_path(filepath, prefix=f"{filepath.stem}.trim.")
+    tmp = sibling_temp_path(filepath, prefix=f"{filepath.stem}.trim.")
     cmd = ["ffmpeg", "-y", "-i", str(filepath),
            "-ss", str(start), "-to", str(end), "-c", "copy", str(tmp)]
     try:
@@ -615,9 +562,7 @@ def download_track(url: str, output_path: str, audio_format: str, max_retries: i
                    cookies_file: Optional[str], start_offset: int = 0,
                    end_offset: int = 0, max_duration: int = 0,
                    quality_profile: str = "high") -> tuple:
-    flags = ["yt-dlp", "--no-warnings", "--quiet"]
-    if cookies_file and Path(cookies_file).exists():
-        flags += ["--cookies", cookies_file]
+    flags = yt_dlp_base_flags(cookies_file)
 
     output = Path(output_path)
     folder = output.parent

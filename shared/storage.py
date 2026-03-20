@@ -9,12 +9,15 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import logging
 import os
 import re
 import sqlite3
 import subprocess
 import threading
 import time
+
+_log = logging.getLogger("media-tracks.storage")
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Tuple
@@ -428,6 +431,12 @@ def _import_csv_if_needed(conn: sqlite3.Connection, path: str, slug: str):
     rows = _csv_load_rows(path)
     if not rows:
         return
+    _log.warning(
+        "DEPRECATED: Importing %d rows from legacy CSV file '%s' for library '%s'. "
+        "This one-shot migration path will be removed in a future version. "
+        "If you see this repeatedly, please report it at https://github.com/mrainone7p/Media-themes/issues",
+        len(rows), path, slug,
+    )
     _ensure_library(conn, slug, path)
     now = _now_str()
     for row in rows:
