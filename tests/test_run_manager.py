@@ -16,6 +16,7 @@ if str(ROOT / "shared") not in sys.path:
     sys.path.insert(0, str(ROOT / "shared"))
 
 import logic
+import run_logic
 
 
 class _FakeQueue:
@@ -40,9 +41,9 @@ class _FakeQueue:
 class RunManagerTests(unittest.TestCase):
     def test_event_stream_emits_heartbeat_while_run_is_active(self):
         manager = logic.RunManager(active=True)
-        fake_queue = _FakeQueue([logic.queue.Empty(), "__DONE__"])
+        fake_queue = _FakeQueue([run_logic.queue.Empty(), "__DONE__"])
 
-        with mock.patch.object(logic.queue, "Queue", return_value=fake_queue):
+        with mock.patch.object(run_logic.queue, "Queue", return_value=fake_queue):
             stream = manager.event_stream()
             self.assertEqual(": heartbeat\n\n", next(stream))
             self.assertEqual("data: __DONE__\n\n", next(stream))
@@ -51,9 +52,9 @@ class RunManagerTests(unittest.TestCase):
 
     def test_event_stream_stops_after_timeout_once_run_is_inactive(self):
         manager = logic.RunManager(active=False)
-        fake_queue = _FakeQueue([logic.queue.Empty()])
+        fake_queue = _FakeQueue([run_logic.queue.Empty()])
 
-        with mock.patch.object(logic.queue, "Queue", return_value=fake_queue):
+        with mock.patch.object(run_logic.queue, "Queue", return_value=fake_queue):
             stream = manager.event_stream()
             with self.assertRaises(StopIteration):
                 next(stream)
