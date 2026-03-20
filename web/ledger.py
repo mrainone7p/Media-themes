@@ -18,7 +18,7 @@ from shared.storage import (
     status_after_clearing_source,
     validate_manual_status_transition,
 )
-from web import integrations
+import web.integrations as integrations
 from web.services import load_config
 
 LOGS_DIR = Path("/app/logs")

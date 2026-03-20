@@ -8,7 +8,7 @@ from pathlib import Path
 
 from shared.file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
 from shared.storage import ffprobe_duration, ledger_path_for, load_ledger_rows as load_ledger, now_str, save_ledger_rows as save_ledger, sync_theme_cache
-from web import integrations
+import web.integrations as integrations
 from web.ledger import (
     find_row_by_identity,
     get_media_roots,

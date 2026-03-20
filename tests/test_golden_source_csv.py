@@ -7,9 +7,9 @@ import unittest
 sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **kwargs: {}, safe_dump=lambda *args, **kwargs: ""))
 sys.modules.setdefault("requests", types.SimpleNamespace(get=lambda *args, **kwargs: None, post=lambda *args, **kwargs: None))
 
-from script import media_tracks
-from shared import golden_source_csv
-from web import logic
+import script.media_tracks as media_tracks
+import shared.golden_source_csv as golden_source_csv
+import web.logic as logic
 
 
 class GoldenSourceSharedParserTests(unittest.TestCase):

@@ -7,7 +7,7 @@ import unittest
 sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **kwargs: {}, safe_dump=lambda *args, **kwargs: ""))
 sys.modules.setdefault("requests", types.SimpleNamespace(get=lambda *args, **kwargs: None, post=lambda *args, **kwargs: None))
 
-from web import logic
+import web.logic as logic
 
 
 class SaveLedgerRowUpdatesTests(unittest.TestCase):

@@ -8,7 +8,8 @@ from unittest import mock
 sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **kwargs: {}, safe_dump=lambda *args, **kwargs: ""))
 sys.modules.setdefault("requests", types.SimpleNamespace(get=lambda *args, **kwargs: None, post=lambda *args, **kwargs: None))
 
-from web import logic, run_logic
+import web.logic as logic
+import web.run_logic as run_logic
 
 
 class _FakeQueue:

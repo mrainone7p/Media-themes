@@ -16,7 +16,7 @@ fi
 
 SCHEDULER_BOOTSTRAP=$(PYTHONPATH="/app${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
 import json
-from web import logic
+import web.logic as logic
 
 cfg = logic.load_config()
 result = logic.refresh_scheduler(cfg)

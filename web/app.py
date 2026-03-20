@@ -10,7 +10,7 @@ import sys
 import time
 from flask import Flask, Response, abort, g, jsonify, request, send_file, stream_with_context
 
-from web import services
+import web.services as services
 
 app = Flask(__name__)
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
