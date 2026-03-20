@@ -56,12 +56,18 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
         self.assertNotIn('path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")', self.app_source)
 
     def test_scan_route_delegates_to_canonical_pass_handler(self):
-        self.assertIn('@app.route("/api/run/scan", methods=["POST"])\ndef trigger_scan():\n    return trigger_pass(1)', self.app_source)
+        self.assertIn('@app.route("/api/run/scan", methods=["POST"])', self.app_source)
+        self.assertIn('def trigger_scan():\n    # Legacy compatibility alias for older clients that still invoke scan directly.\n    return trigger_pass(1)', self.app_source)
         self.assertNotIn("def trigger_scan_payload(", self.services_source)
 
     def test_legacy_theme_routes_removed_from_app(self):
         self.assertNotIn('@app.route("/api/theme/info")', self.app_source)
         self.assertNotIn('@app.route("/api/media")', self.app_source)
+
+    def test_removed_legacy_theme_routes_have_no_repo_consumers(self):
+        for legacy_path in ("/api/theme/info", "/api/media"):
+            self.assertNotIn(legacy_path, self.app_source)
+            self.assertNotIn(legacy_path, self.services_source)
 
 
 if __name__ == "__main__":
