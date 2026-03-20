@@ -16,7 +16,7 @@ from pathlib import Path
 import yaml
 
 from shared.storage import CONFIG_PATH, get_db_path, ledger_path_for, load_ledger_rows as load_ledger, now_str, save_ledger_rows as save_ledger
-from web import integrations
+import web.integrations as integrations
 from web.ledger import clear_source_urls_for_rows, fetch_golden_source_catalog, get_media_roots
 from web.services import CONFIG_DEFAULTS, RUNS_DIR, TASKS_FILE, _CRON_ENTRY_RE, _normalize_cron_schedule, load_config, normalize_config, record_task
 

@@ -35,7 +35,7 @@ from shared.storage import (
     now_str,
     save_ledger_rows as save_ledger,
 )
-from web import integrations
+import web.integrations as integrations
 
 # ── Configuration helpers ────────────────────────────────────────────────────
 
@@ -672,7 +672,9 @@ atexit.register(RUN_MANAGER.cleanup)
 
 
 def _logic_modules():
-    from web import ledger, tasks, themes
+    import web.ledger as ledger
+    import web.tasks as tasks
+    import web.themes as themes
 
     return ledger, tasks, themes
 

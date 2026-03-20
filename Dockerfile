@@ -31,7 +31,7 @@ COPY web/template.html       /app/web/template.html
 COPY web/ui_terminology.yaml /app/web/ui_terminology.yaml
 COPY web/static/             /app/web/static/
 COPY shared/*.py             /app/shared/
-RUN PYTHONPATH="/app" python3 -c "from web import logic; print(f'logic import smoke ok: {logic.__file__}')"
+RUN PYTHONPATH="/app" python3 -c "import web.logic as logic; print(f'logic import smoke ok: {logic.__file__}')"
 RUN chmod +x /app/script/entrypoint.sh
 
 ENV CONFIG_PATH=/app/config/config.yaml

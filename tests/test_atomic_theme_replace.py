@@ -9,7 +9,7 @@ from pathlib import Path
 sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **kwargs: {}, safe_dump=lambda *args, **kwargs: ""))
 sys.modules.setdefault("requests", types.SimpleNamespace(get=lambda *args, **kwargs: None, post=lambda *args, **kwargs: None))
 
-from shared import file_utils
+import shared.file_utils as file_utils
 
 
 class AtomicThemeReplaceTests(unittest.TestCase):
