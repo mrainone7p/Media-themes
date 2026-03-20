@@ -149,8 +149,27 @@ def refresh_scheduler(config: dict | None = None) -> dict:
         TASK_LOG.info("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
         _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
         return details
+
     contents = _render_cron_file(schedule_enabled, cron_schedule)
+    existing_contents = None
     try:
+        if CRON_FILE_PATH.exists():
+            existing_contents = CRON_FILE_PATH.read_text(encoding="utf-8")
+
+        if schedule_enabled and existing_contents == contents:
+            details["active_cron"] = cron_schedule
+            details["schedule_enabled"] = True
+            details["detail"] = "Cron already up to date."
+            TASK_LOG.info("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
+            return details
+
+        if not schedule_enabled and existing_contents == contents:
+            details["active_cron"] = None
+            details["schedule_enabled"] = False
+            details["detail"] = "Scheduler disabled, cron entry cleared."
+            TASK_LOG.info("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
+            return details
+
         CRON_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=str(CRON_FILE_PATH.parent), delete=False) as tmp:
             tmp.write(contents)
@@ -158,26 +177,24 @@ def refresh_scheduler(config: dict | None = None) -> dict:
         os.chmod(temp_path, 0o644)
         os.replace(temp_path, CRON_FILE_PATH)
         completed = subprocess.run(["crontab", str(CRON_FILE_PATH)], check=True, capture_output=True, text=True)
-        active = active_scheduler_source()
-        details["active_cron"] = active.get("active_cron")
-        details["schedule_enabled"] = bool(active.get("schedule_enabled"))
-        details["detail"] = active.get("detail") or ("Cron schedule reloaded." if schedule_enabled else "Cron schedule cleared.")
+        details["active_cron"] = cron_schedule if schedule_enabled else None
+        details["schedule_enabled"] = schedule_enabled
+        details["detail"] = "Cron installed/updated." if schedule_enabled else "Scheduler disabled, cron entry cleared."
         stderr = (completed.stderr or "").strip()
         if stderr:
             details["detail"] = f"{details['detail']} ({stderr})"
-        TASK_LOG.info("Scheduler cron refresh result: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
-        _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
+        TASK_LOG.info("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
         return details
     except subprocess.CalledProcessError as exc:
         details["ok"] = False
         details["error"] = (exc.stderr or exc.stdout or str(exc)).strip() or str(exc)
-        details["detail"] = "Failed to reload cron schedule."
-        TASK_LOG.warning("Scheduler cron refresh failed: authority=%s cron_file=%s error=%s", details["authority"], details["cron_file"], details["error"])
+        details["detail"] = f"Bootstrap failed: {details['error']}"
+        TASK_LOG.warning("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
     except Exception as exc:
         details["ok"] = False
         details["error"] = str(exc)
-        details["detail"] = "Failed to rewrite cron schedule."
-        TASK_LOG.error("Scheduler cron refresh errored: authority=%s cron_file=%s error=%s", details["authority"], details["cron_file"], details["error"])
+        details["detail"] = f"Bootstrap failed: {details['error']}"
+        TASK_LOG.error("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
     finally:
         temp_candidate = locals().get("temp_path")
         if isinstance(temp_candidate, Path) and temp_candidate.exists():
@@ -186,7 +203,6 @@ def refresh_scheduler(config: dict | None = None) -> dict:
             except OSError:
                 pass
         _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
-    TASK_LOG.info("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
     return details
 
 
