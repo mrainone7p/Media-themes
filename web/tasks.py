@@ -24,7 +24,6 @@ from web.services import (
     RUNS_DIR,
     TASKS_FILE,
     TASK_ACTIVITY_SUMMARY_FILE,
-    _CRON_ENTRY_RE,
     _normalize_cron_schedule,
     _normalize_task_entry,
     _trim_summary_entries,
@@ -32,6 +31,8 @@ from web.services import (
     normalize_config,
     record_task,
 )
+
+_CRON_ENTRY_RE = re.compile(r"^(?P<cron>\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+(?P<command>.+)$")
 
 UI_TERMINOLOGY_PATH = os.environ.get("UI_TERMINOLOGY_PATH", "/app/web/ui_terminology.yaml")
 WEB_DIR = Path(__file__).resolve().parent
@@ -464,7 +465,8 @@ def api_health_payload(mode: str = "lite") -> dict:
     return result
 
 
-def export_golden_source_csv_payload(data: dict):
+def _export_ledger_csv(data, *, prefix, task_label, fieldnames, row_filter, row_mapper):
+    """Shared CSV export: resolve libraries, filter/map rows, write CSV, record task."""
     started = time.perf_counter()
     library = (data.get("library", "") or "").strip()
     cfg = load_config()
@@ -472,60 +474,60 @@ def export_golden_source_csv_payload(data: dict):
     if not target_libraries:
         return {"ok": False, "error": "No libraries configured"}, 400
     output_rows = []
-    current_time = now_str()
     for target in target_libraries:
         rows = load_ledger(ledger_path_for(target))
         for row in rows:
-            url = str(row.get("url", "") or "").strip()
-            if not url:
-                continue
-            output_rows.append({
-                "tmdb_id": str(row.get("tmdb_id", "") or "").strip(),
-                "title": str(row.get("title", "") or row.get("plex_title", "") or "").strip(),
-                "year": str(row.get("year", "") or "").strip(),
-                "source_url": url,
-                "start_offset": str(row.get("start_offset", "0") or "0").strip() or "0",
-                "updated_at": str(row.get("last_updated", "") or "").strip() or current_time,
-                "notes": str(row.get("notes", "") or "").strip(),
-            })
+            if row_filter(row):
+                output_rows.append(row_mapper(row))
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     scope_name = library or "all_libraries"
-    filename = f"golden_source_export_{re.sub(r'[^a-z0-9]+', '_', scope_name.lower()).strip('_') or 'library'}_{stamp}.csv"
+    filename = f"{prefix}_{re.sub(r'[^a-z0-9]+', '_', scope_name.lower()).strip('_') or 'library'}_{stamp}.csv"
     path = EXPORTS_DIR / filename
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=["tmdb_id", "title", "year", "source_url", "start_offset", "updated_at", "notes"])
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(output_rows)
-    record_task("Export Golden Source CSV", "success", library or "all libraries", f"Exported {len(output_rows)} rows", {"library": library or "", "libraries_exported": len(target_libraries), "rows_exported": len(output_rows), "file": filename}, time.perf_counter() - started)
+    record_task(task_label, "success", library or "all libraries", f"Exported {len(output_rows)} rows", {"library": library or "", "libraries_exported": len(target_libraries), "rows_exported": len(output_rows), "file": filename}, time.perf_counter() - started)
     return {"ok": True, "rows_exported": len(output_rows), "file": filename, "download_url": f"/api/tasks/download/{filename}"}, 200
+
+
+def export_golden_source_csv_payload(data: dict):
+    current_time = now_str()
+    return _export_ledger_csv(
+        data,
+        prefix="golden_source_export",
+        task_label="Export Golden Source CSV",
+        fieldnames=["tmdb_id", "title", "year", "source_url", "start_offset", "updated_at", "notes"],
+        row_filter=lambda r: bool(str(r.get("url", "") or "").strip()),
+        row_mapper=lambda r: {
+            "tmdb_id": str(r.get("tmdb_id", "") or "").strip(),
+            "title": str(r.get("title", "") or r.get("plex_title", "") or "").strip(),
+            "year": str(r.get("year", "") or "").strip(),
+            "source_url": str(r.get("url", "") or "").strip(),
+            "start_offset": str(r.get("start_offset", "0") or "0").strip() or "0",
+            "updated_at": str(r.get("last_updated", "") or "").strip() or current_time,
+            "notes": str(r.get("notes", "") or "").strip(),
+        },
+    )
 
 
 def export_candidate_csv_payload(data: dict):
-    started = time.perf_counter()
-    library = (data.get("library", "") or "").strip()
-    cfg = load_config()
-    target_libraries = [library] if library else [lib.get("name", "").strip() for lib in cfg.get("libraries", []) if lib.get("name")]
-    if not target_libraries:
-        return {"ok": False, "error": "No libraries configured"}, 400
-    output_rows = []
-    for target in target_libraries:
-        rows = load_ledger(ledger_path_for(target))
-        for row in rows:
-            url = str(row.get("url", "") or "").strip()
-            tmdb_id = str(row.get("tmdb_id", "") or "").strip()
-            if not url or not tmdb_id or str(row.get("golden_source_url", "") or "").strip():
-                continue
-            output_rows.append({"tmdb_id": tmdb_id, "source_url": url, "start_offset": str(row.get("start_offset", "0") or "0").strip() or "0"})
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    scope_name = library or "all_libraries"
-    filename = f"candidate_export_{re.sub(r'[^a-z0-9]+', '_', scope_name.lower()).strip('_') or 'library'}_{stamp}.csv"
-    path = EXPORTS_DIR / filename
-    with open(path, "w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=["tmdb_id", "source_url", "start_offset"])
-        writer.writeheader()
-        writer.writerows(output_rows)
-    record_task("Export Candidate CSV", "success", library or "all libraries", f"Exported {len(output_rows)} candidate rows", {"library": library or "", "libraries_exported": len(target_libraries), "rows_exported": len(output_rows), "file": filename}, time.perf_counter() - started)
-    return {"ok": True, "rows_exported": len(output_rows), "file": filename, "download_url": f"/api/tasks/download/{filename}"}, 200
+    return _export_ledger_csv(
+        data,
+        prefix="candidate_export",
+        task_label="Export Candidate CSV",
+        fieldnames=["tmdb_id", "source_url", "start_offset"],
+        row_filter=lambda r: bool(
+            str(r.get("url", "") or "").strip()
+            and str(r.get("tmdb_id", "") or "").strip()
+            and not str(r.get("golden_source_url", "") or "").strip()
+        ),
+        row_mapper=lambda r: {
+            "tmdb_id": str(r.get("tmdb_id", "") or "").strip(),
+            "source_url": str(r.get("url", "") or "").strip(),
+            "start_offset": str(r.get("start_offset", "0") or "0").strip() or "0",
+        },
+    )
 
 
 def cleanup_logs_payload(data: dict):
