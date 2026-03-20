@@ -31,6 +31,7 @@ COPY web/integrations.py     /app/web/integrations.py
 COPY web/template.html       /app/web/template.html
 COPY web/ui_terminology.yaml /app/web/ui_terminology.yaml
 COPY shared/storage.py       /app/shared/storage.py
+COPY shared/yt_dlp_utils.py  /app/shared/yt_dlp_utils.py
 RUN chmod +x /app/script/entrypoint.sh
 
 ENV CONFIG_PATH=/app/config/config.yaml
