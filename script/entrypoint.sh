@@ -65,9 +65,9 @@ log_info "Starting web UI on port ${WEB_PORT}"
 PYTHONPATH="/app${PYTHONPATH:+:$PYTHONPATH}" python3 -m web.app >> /proc/1/fd/1 2>> /proc/1/fd/2 &
 
 if [ "$BOOTSTRAP_OK" = "1" ]; then
-    log_info "Scheduler bootstrap end: ok=true detail=$BOOTSTRAP_DETAIL"
+    log_info "Scheduler bootstrap: $BOOTSTRAP_DETAIL"
 else
-    log_error "Scheduler bootstrap end: ok=false error=$BOOTSTRAP_ERROR"
+    log_error "Scheduler bootstrap failed: $BOOTSTRAP_ERROR"
     exit 1
 fi
 
