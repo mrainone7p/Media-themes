@@ -63,6 +63,7 @@ services:
 
     environment:
       CONFIG_PATH: /app/config/config.yaml
+      WEB_PORT: 8182
 
     volumes:
       - /your/path/media-tracks/config:/app/config
@@ -81,7 +82,7 @@ docker compose up -d
 
 Open `http://your-host:8182` in a browser.
 
-If you need a different internal listen port, set `WEB_PORT` in the container environment and match the right-hand side of the port mapping to that same value.
+The container listens on `WEB_PORT`, which defaults to `8182`. Keep the right-hand side of the port mapping aligned with that value. For example, if you change `WEB_PORT` to `9000`, update the mapping to `"8182:9000"` (or choose another host port if preferred) and open `http://your-host:9000`.
 
 ---
 

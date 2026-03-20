@@ -5,6 +5,7 @@
 set -e
 
 CONFIG_FILE="${CONFIG_PATH:-/app/config/config.yaml}"
+WEB_PORT="${WEB_PORT:-8182}"
 
 # RUN_ONCE mode — used for one-shot Docker runs / testing
 if [ "${RUN_ONCE}" = "true" ]; then
@@ -39,11 +40,11 @@ echo "  Media Tracks"
 echo "============================================="
 echo "  Config   : $CONFIG_FILE"
 echo "  Schedule : $CRON_SCHEDULE"
-echo "  Web UI   : http://localhost:8080"
+echo "  Web UI   : http://localhost:${WEB_PORT}"
 echo "============================================="
 
 # Start Flask web UI in background (log to container stdout)
-echo "[INFO] Starting web UI on port 8080..."
+echo "[INFO] Starting web UI on port ${WEB_PORT}..."
 python3 /app/web/app.py >> /proc/1/fd/1 2>> /proc/1/fd/2 &
 
 if [ "$BOOTSTRAP_OK" = "1" ]; then
