@@ -4666,7 +4666,19 @@ function renderTable(){
 
 function goPage(p){ _page=p; renderTable(); window.scrollTo(0,0); }
 
+function requireLibraryContext(lib, actionLabel='perform this action'){
+  const library=String(lib||'').trim();
+  if(library) return library;
+  toast(`Select a library before you ${actionLabel}`,'info');
+  return '';
+}
+
 async function updateRow(key,field,value,selEl){
+  const library=requireLibraryContext(_activeLib,'save changes');
+  if(!library){
+    renderTable();
+    return;
+  }
   const row=_rows.find(r=>r.rating_key===key);
   const prevValue=row?row[field]:undefined;
   if(field==='status' && row){
@@ -4681,7 +4693,7 @@ async function updateRow(key,field,value,selEl){
     row[field]=value;
     if(_rowMap[key]) _rowMap[key][field]=value; // keep map in sync
   }
-  const {ok,data}=await patchJson('/api/ledger/'+key+'?library='+encodeURIComponent(_activeLib),{[field]:value});
+  const {ok,data}=await patchJson('/api/ledger/'+key+'?library='+encodeURIComponent(library),{[field]:value});
   if(ok){
     toast('Saved','ok');
     renderChips();
@@ -4709,9 +4721,11 @@ async function saveOffsetInput(key, el){
 }
 
 async function bulkApprove(){
+  const library=requireLibraryContext(_activeLib,'run bulk approve');
+  if(!library) return;
   const staged=_rows.filter(r=>r.status==='STAGED');
   if(!staged.length){ toast('No Staged items','info'); return; }
-  const {ok,data}=await postJson('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{keys:staged.map(r=>r.rating_key),status:'APPROVED'});
+  const {ok,data}=await postJson('/api/ledger/bulk?library='+encodeURIComponent(library),{keys:staged.map(r=>r.rating_key),status:'APPROVED'});
   if(ok){
     staged.forEach(row=>{ row.status='APPROVED'; if(_rowMap[row.rating_key]) _rowMap[row.rating_key].status='APPROVED'; });
     const updated=data.updated ?? staged.length;
@@ -4735,6 +4749,8 @@ async function importGoldenSource(){
 }
 
 async function downloadNow(rk, title, lib){
+  const library=requireLibraryContext(lib||_activeLib,'download a theme');
+  if(!library) return;
   const row = _rows.find(r=>r.rating_key===rk);
   if(!row){ toast('Row not found','err'); return; }
   if(!row.url){ toast('No source URL on this row — add a source first','info'); return; }
@@ -4748,7 +4764,7 @@ async function downloadNow(rk, title, lib){
   dbProgressSet(35,'Preparing download…');
   const r = await fetch('/api/theme/download-now',{
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({rating_key:rk, library:lib||_activeLib, folder:row.folder||'', tmdb_id:row.tmdb_id||''})
+    body: JSON.stringify({rating_key:rk, library, folder:row.folder||'', tmdb_id:row.tmdb_id||''})
   });
   const data = await r.json();
   if(data.ok){
@@ -4826,9 +4842,11 @@ function updateBulkBar(){
 function clearSelection(){ _selectedKeys.clear(); _lastDbCheckIndex=null; renderTable(); updateBulkBar(); }
 
 async function bulkSetStatus2(status){
+  const library=requireLibraryContext(_activeLib,'run a bulk status update');
+  if(!library) return;
   if(!_selectedKeys.size){ toast('Nothing selected','info'); return; }
   const keys=[..._selectedKeys];
-  const {ok,data:d}=await postJson('/api/ledger/bulk?library='+encodeURIComponent(_activeLib),{keys,status});
+  const {ok,data:d}=await postJson('/api/ledger/bulk?library='+encodeURIComponent(library),{keys,status});
   if(ok){
     keys.forEach(key=>{
       const row=_rows.find(r=>r.rating_key===key);
@@ -4850,6 +4868,8 @@ async function bulkSetStatus2(status){
 }
 
 async function clearSourcesSelected(){
+  const library=requireLibraryContext(_activeLib,'clear source URLs');
+  if(!library) return;
   const keys=[..._selectedKeys];
   const rows=_rows.filter(r=>keys.includes(r.rating_key));
   if(!rows.length){ toast('Nothing selected','info'); return; }
@@ -4857,7 +4877,7 @@ async function clearSourcesSelected(){
     text:`Clear source URLs for ${rows.length} selected items?`
   }, 'Clear URLs');
   if(!confirmed) return;
-  const {ok,data:d}=await postJson(apiUrl('/api/ledger/clear-sources?library='+encodeURIComponent(_activeLib||'')),{keys});
+  const {ok,data:d}=await postJson(apiUrl('/api/ledger/clear-sources?library='+encodeURIComponent(library)),{keys});
   if(!ok){
     toast(d.error||'Failed to clear source URLs','err');
     await loadDatabase(false);
@@ -5264,7 +5284,8 @@ async function confirmDelete(){
   // Capture values BEFORE closeDeleteModal() zeroes them out
   const key    = _deleteKey    || '';
   const folder = _deleteFolder || '';
-  const lib    = _deleteLib    || _activeLib || '';
+  const lib    = requireLibraryContext(_deleteLib || _activeLib,'delete a theme');
+  if(!lib) return;
   closeDeleteModal();
   toast('Deleting…','info');
   const r=await fetch('/api/theme/delete',{
@@ -6230,8 +6251,10 @@ function closeTrimModal(){
 }
 async function applyTrimFromModal(){
   if(!_trimRk) return;
+  const library=requireLibraryContext(_activeLib,'trim a theme');
+  if(!library) return;
   const start=parseTrim(document.getElementById('trim-modal-offset').value||'0');
-  const r=await fetch('/api/theme/trim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library:_activeLib||'',rating_key:_trimRk,start_offset:start,end_offset:0})});
+  const r=await fetch('/api/theme/trim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library,rating_key:_trimRk,start_offset:start,end_offset:0})});
   const d=await r.json().catch(()=>({ok:false,error:'Trim failed'}));
   if(!r.ok || d.ok===false) return toast(d.error||'Trim failed','err');
   toast(d.message||'Trim applied','ok');
@@ -7161,9 +7184,11 @@ function themeModalRunNextStep(){
   }
 }
 async function themeModalDownloadApproved(){
+  const library=requireLibraryContext(_activeLib,'download a theme');
+  if(!library) return;
   const row=_themeModalContext?.row||{};
   if(String(row?.status||'').toUpperCase()!=='APPROVED') return;
-  const {ok,data}=await postJson('/api/theme/download-now',{library:_activeLib||'',rating_key:_themeModalContext?.rk||'',folder:_themeModalContext?.folder||'',tmdb_id:_themeModalContext?.row?.tmdb_id||''});
+  const {ok,data}=await postJson('/api/theme/download-now',{library,rating_key:_themeModalContext?.rk||'',folder:_themeModalContext?.folder||'',tmdb_id:_themeModalContext?.row?.tmdb_id||''});
   if(!ok){
     toast(data.error||'Download failed','err');
     return;
