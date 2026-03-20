@@ -181,16 +181,45 @@ python -m script.media_tracks
 ## Project structure
 
 ```
-├── Dockerfile
+├── Dockerfile             # canonical container build file
 ├── script/
-│   ├── __init__.py         # worker package marker for python -m
-│   ├── media_tracks.py    # three-pass pipeline worker
-│   └── entrypoint.sh      # container startup
+│   ├── __init__.py        # worker package marker for python -m
+│   ├── entrypoint.sh      # container startup
+│   └── media_tracks.py    # worker pipeline: scan, source discovery, downloads
+├── shared/
+│   ├── __init__.py        # shared package marker
+│   ├── file_utils.py      # filesystem helpers for atomic writes/replaces
+│   ├── golden_source_csv.py # Golden Source CSV parsing/validation helpers
+│   ├── storage.py         # SQLite/database access, ledger persistence, status rules
+│   └── yt_dlp_utils.py    # yt-dlp command helpers shared by worker/web code
 ├── web/
 │   ├── __init__.py        # web package marker
-│   ├── app.py             # Flask API + web server
-│   └── template.html      # single-file frontend
-└── shared/
-    ├── __init__.py        # shared package marker
-    └── storage.py         # shared SQLite storage layer
+│   ├── app.py             # Flask app and canonical API route definitions
+│   ├── services.py        # service layer for config, run orchestration, and API payloads
+│   ├── tasks.py           # scheduler, maintenance, exports, health, and UI helper services
+│   ├── ledger.py          # library ledger/theme state operations and Golden Source helpers
+│   ├── integrations.py    # Plex, TMDB, and external integration helpers
+│   ├── themes.py          # theme file operations such as trim/delete/download-now helpers
+│   ├── logic.py           # legacy compatibility wrapper around consolidated services
+│   ├── config_logic.py    # compatibility wrapper for older config imports
+│   ├── run_logic.py       # compatibility wrapper for older run imports
+│   ├── template.html      # single HTML shell for the frontend pages/navigation
+│   ├── ui_terminology.yaml # centralized user-facing labels/copy
+│   └── static/js/
+│       ├── app.js         # shared frontend bootstrapping and Configuration page behavior
+│       ├── library.js     # Library page interactions
+│       ├── schedule.js    # Schedule/Run page interactions and progress UI
+│       └── tasks.js       # Tasks page interactions, exports, and maintenance UI
+├── tests/
+│   └── ...                # regression coverage for storage, worker, and run behavior
+└── docs/
+    └── ...                # workflow/status design notes
 ```
+
+Ownership after the simplification is:
+
+- **Routes:** `web/app.py`
+- **Services / orchestration:** `web/services.py`
+- **Worker logic:** `script/media_tracks.py`
+- **Storage / ledger persistence:** `shared/storage.py`
+- **Frontend pages:** `web/template.html` with page-specific behavior in `web/static/js/app.js`, `web/static/js/library.js`, `web/static/js/schedule.js`, and `web/static/js/tasks.js`
