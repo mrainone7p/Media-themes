@@ -12,6 +12,10 @@ import web.services as services
 
 
 class DashboardSummaryPayloadTests(unittest.TestCase):
+    def setUp(self):
+        services._DASHBOARD_SUMMARY_CACHE["key"] = None
+        services._DASHBOARD_SUMMARY_CACHE["payload"] = None
+
     def test_dashboard_summary_aggregates_enabled_libraries_and_recent_activity(self):
         config = {
             "libraries": [
@@ -70,6 +74,41 @@ class DashboardSummaryPayloadTests(unittest.TestCase):
         self.assertEqual("Find Sources", payload["recent_activity"]["discover"]["task"])
         self.assertEqual("Download Themes", payload["recent_activity"]["download"]["task"])
         self.assertEqual("Download Themes", payload["recent_activity"]["task"]["task"])
+
+    def test_dashboard_summary_reuses_cached_payload_until_inputs_change(self):
+        config = {
+            "libraries": [
+                {"name": "Movies", "type": "movie", "enabled": True},
+            ],
+            "schedule_libraries": ["Movies"],
+        }
+        entries = [{"task": "Scan Libraries", "status": "success", "time": "2026-03-20 10:00:00", "details": {"pass": 1}, "summary": "Scanned libraries"}]
+
+        stat_sequence = iter([
+            mock.Mock(st_mtime_ns=100),
+            mock.Mock(st_mtime_ns=200),
+            mock.Mock(st_mtime_ns=100),
+            mock.Mock(st_mtime_ns=200),
+            mock.Mock(st_mtime_ns=100),
+            mock.Mock(st_mtime_ns=201),
+        ])
+
+        with (
+            mock.patch("web.services.load_config", return_value=config),
+            mock.patch("web.services.ledger_path_for", return_value="/tmp/movies.sqlite"),
+            mock.patch("web.services.load_ledger", side_effect=[[{"status": "AVAILABLE"}], [{"status": "FAILED"}]]) as load_ledger,
+            mock.patch("web.services.load_task_entries", return_value=entries) as load_task_entries,
+            mock.patch("pathlib.Path.stat", side_effect=lambda: next(stat_sequence)),
+        ):
+            first = services.dashboard_summary_payload()
+            second = services.dashboard_summary_payload()
+            third = services.dashboard_summary_payload()
+
+        self.assertEqual(2, load_ledger.call_count)
+        self.assertEqual(2, load_task_entries.call_count)
+        self.assertEqual(1, first["counts_by_status"]["AVAILABLE"])
+        self.assertEqual(1, second["counts_by_status"]["AVAILABLE"])
+        self.assertEqual(1, third["counts_by_status"]["FAILED"])
 
 
 if __name__ == "__main__":
