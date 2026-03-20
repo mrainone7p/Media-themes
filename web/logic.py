@@ -29,6 +29,8 @@ import yaml
 
 WEB_DIR = Path(__file__).resolve().parent
 SHARED_DIR = WEB_DIR.parent / "shared"
+if str(WEB_DIR) not in sys.path:
+    sys.path.insert(0, str(WEB_DIR))
 if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 
