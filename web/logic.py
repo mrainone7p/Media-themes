@@ -75,6 +75,24 @@ for path in (RUNS_DIR, EXPORTS_DIR, GOLDEN_CACHE_DIR):
 EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
 
 
+def require_library_name(library: str) -> str:
+    library_name = str(library or "").strip()
+    if not library_name:
+        raise ValueError("Missing library")
+    return library_name
+
+
+def legacy_theme_log_path() -> str:
+    """Legacy single-ledger fallback used only for read-only backward compatibility.
+
+    Older installs could keep all rows in logs/theme_log.csv before per-library
+    ledgers existed. Mutating endpoints now require an explicit library so writes
+    stay scoped correctly, but a couple of read-only payload builders still allow
+    this fallback for older callers that do not yet send a library name.
+    """
+    return str(LOGS_DIR / "theme_log.csv")
+
+
 def _sibling_temp_path(target_path: str | Path, *, prefix: str) -> Path:
     target = Path(target_path)
     token = secrets.token_hex(6)
@@ -939,7 +957,8 @@ def golden_source_import_summary(data: dict):
 def media_payload(library: str, show: str, *, nocache: bool = False):
     cfg = load_config()
     filename = cfg.get("theme_filename", "theme.mp3")
-    path = ledger_path_for(library) if library else str(LOGS_DIR / "theme_log.csv")
+    # Backward-compatible read-only fallback for legacy single-ledger installs.
+    path = ledger_path_for(library) if library else legacy_theme_log_path()
     rows = load_ledger(path)
     media = []
     for row in rows:
@@ -978,7 +997,8 @@ def movie_bio_payload(rating_key: str, library: str) -> dict:
 
     if tmdb_key:
         try:
-            path = ledger_path_for(library) if library else str(LOGS_DIR / "theme_log.csv")
+            # Backward-compatible read-only fallback for legacy single-ledger installs.
+            path = ledger_path_for(library) if library else legacy_theme_log_path()
             rows = load_ledger(path)
             row = next((row for row in rows if row.get("rating_key") == rating_key), None)
             title = (row or {}).get("title") or (row or {}).get("plex_title", "")
@@ -1020,7 +1040,10 @@ def theme_info_payload(folder: str):
 
 
 def trim_theme_payload(data: dict):
-    library = data.get("library", "")
+    try:
+        library = require_library_name(data.get("library", ""))
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}, 400
     rating_key = data.get("rating_key", "")
     try:
         start_offset = int(data.get("start_offset", 0))
@@ -1032,7 +1055,7 @@ def trim_theme_payload(data: dict):
     filename = cfg.get("theme_filename", "theme.mp3")
     audio_format = cfg.get("audio_format", "mp3")
     max_duration = int(cfg.get("max_theme_duration", 0))
-    path = ledger_path_for(library) if library else str(LOGS_DIR / "theme_log.csv")
+    path = ledger_path_for(library)
     rows = load_ledger(path)
     row = next((row for row in rows if str(row.get("rating_key", "")) == str(rating_key)), None)
     if not row:
@@ -1080,7 +1103,10 @@ def trim_theme_payload(data: dict):
 
 
 def delete_theme_payload(data: dict):
-    library = (data.get("library", "") or "").strip()
+    try:
+        library = require_library_name(data.get("library", ""))
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}, 400
     rating_key = str(data.get("rating_key", "") or "").strip()
     folder_hint = str(data.get("folder", "") or "").strip()
     tmdb_id = str(data.get("tmdb_id", "") or "").strip()
@@ -1091,21 +1117,9 @@ def delete_theme_payload(data: dict):
     if filename not in {"theme.mp3", "theme.m4a", "theme.flac", "theme.opus"}:
         return {"ok": False, "error": f"Unexpected theme filename: {filename}"}, 400
 
-    path = ledger_path_for(library) if library else str(LOGS_DIR / "theme_log.csv")
+    path = ledger_path_for(library)
     rows = load_ledger(path)
     row, matched_by = find_row_by_identity(rows, rating_key, folder_hint, tmdb_id)
-    if not row:
-        for lib_entry in load_config().get("libraries", []):
-            lib_name = lib_entry.get("name", "")
-            if not lib_name or lib_name == library:
-                continue
-            alt_path = ledger_path_for(lib_name)
-            alt_rows = load_ledger(alt_path)
-            row, matched_by = find_row_by_identity(alt_rows, rating_key, folder_hint, tmdb_id)
-            if row:
-                path = alt_path
-                rows = alt_rows
-                break
 
     folder = (row.get("folder", "") if row else None) or folder_hint
     if not folder:
@@ -1154,7 +1168,10 @@ def delete_theme_payload(data: dict):
 
 
 def download_now_payload(data: dict):
-    library = (data.get("library", "") or "").strip()
+    try:
+        library = require_library_name(data.get("library", ""))
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}, 400
     rating_key = str(data.get("rating_key", "") or "").strip()
     folder_hint = str(data.get("folder", "") or "").strip()
     tmdb_id = str(data.get("tmdb_id", "") or "").strip()
@@ -1163,7 +1180,7 @@ def download_now_payload(data: dict):
 
     cfg = load_config()
     roots = get_media_roots(cfg)
-    path = ledger_path_for(library) if library else str(LOGS_DIR / "theme_log.csv")
+    path = ledger_path_for(library)
     rows = load_ledger(path)
     row, matched_by = find_row_by_identity(rows, rating_key, folder_hint, tmdb_id)
     if not row:

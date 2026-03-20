@@ -232,17 +232,28 @@ def api_health():
     return jsonify(logic.api_health_payload())
 
 
+def _required_library_arg(value: str):
+    try:
+        return logic.require_library_name(value), None
+    except ValueError as exc:
+        return "", (jsonify({"ok": False, "error": str(exc)}), 400)
+
+
 @app.route("/api/ledger", methods=["GET"])
 def get_ledger():
-    library = request.args.get("library", "")
-    path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")
+    library, error_response = _required_library_arg(request.args.get("library", ""))
+    if error_response:
+        return error_response
+    path = ledger_path_for(library)
     return jsonify(load_ledger(path))
 
 
 @app.route("/api/ledger/<key>", methods=["PATCH"])
 def patch_ledger(key):
-    library = request.args.get("library", "")
-    path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")
+    library, error_response = _required_library_arg(request.args.get("library", ""))
+    if error_response:
+        return error_response
+    path = ledger_path_for(library)
     rows = load_ledger(path)
     for row in rows:
         if row.get("rating_key") == key:
@@ -291,8 +302,10 @@ def save_manual_source():
 
 @app.route("/api/ledger/bulk", methods=["POST"])
 def bulk_ledger():
-    library = request.args.get("library", "")
-    path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")
+    library, error_response = _required_library_arg(request.args.get("library", ""))
+    if error_response:
+        return error_response
+    path = ledger_path_for(library)
     data = request.get_json(silent=True) or {}
     keys = set(data.get("keys", []))
     status = str(data.get("status", "") or "").upper()
@@ -318,8 +331,10 @@ def bulk_ledger():
 @app.route("/api/ledger/clear-sources", methods=["POST"])
 def clear_selected_sources():
     data = request.get_json(silent=True) or {}
-    library = (request.args.get("library", "") or data.get("library", "") or "").strip()
-    path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")
+    library, error_response = _required_library_arg(request.args.get("library", "") or data.get("library", ""))
+    if error_response:
+        return error_response
+    path = ledger_path_for(library)
     keys = [str(key) for key in (data.get("keys", []) or []) if str(key).strip()]
     if not keys:
         return jsonify({"ok": False, "error": "No ledger rows selected"}), 400
