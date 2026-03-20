@@ -29,37 +29,6 @@ def _validate_audio_ready(audio_path: str | Path) -> float:
     return ffprobe_duration(Path(audio_path))
 
 
-def media_payload(library: str, show: str, *, nocache: bool = False):
-    _ = nocache
-    cfg = load_config()
-    path = ledger_path_for(library) if library else legacy_theme_log_path()
-    rows = load_ledger(path)
-    media = []
-    for row in rows:
-        has_theme = int(row.get("theme_exists", 0) or 0) == 1
-        duration = float(row.get("theme_duration", 0) or 0)
-        if show == "with_theme" and not has_theme:
-            continue
-        if show == "without_theme" and has_theme:
-            continue
-        media.append({
-            "rating_key": row.get("rating_key", ""),
-            "title": row.get("title", ""),
-            "plex_title": row.get("plex_title", ""),
-            "year": row.get("year", ""),
-            "folder": row.get("folder", ""),
-            "url": row.get("url", ""),
-            "start_offset": row.get("start_offset", "0"),
-            "end_offset": row.get("end_offset", "0"),
-            "duration": duration,
-            "has_theme": has_theme,
-            "status": row.get("status", ""),
-            "last_updated": row.get("last_updated", ""),
-        })
-    media.sort(key=lambda row: row.get("title", "").lower())
-    return media
-
-
 def movie_bio_payload(rating_key: str, library: str) -> dict:
     if not rating_key:
         return {"summary": ""}
@@ -91,25 +60,6 @@ def movie_bio_payload(rating_key: str, library: str) -> dict:
         except Exception:
             pass
     return {"summary": ""}
-
-
-def theme_info_payload(folder: str):
-    cfg = load_config()
-    roots = get_media_roots(cfg)
-    if not is_allowed_folder(folder, roots):
-        return {"error": "forbidden"}, 403
-    path = Path(folder) / cfg.get("theme_filename", "theme.mp3")
-    if not path.exists():
-        return {"error": "not found"}, 404
-    size = path.stat().st_size
-    return {
-        "duration": ffprobe_duration(path),
-        "size": size,
-        "size_kb": round(size / 1024, 1),
-        "folder": folder,
-        "filename": cfg.get("theme_filename", "theme.mp3"),
-        "path": str(path),
-    }, 200
 
 
 def trim_theme_payload(data: dict):

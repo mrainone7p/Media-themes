@@ -190,12 +190,6 @@ def import_golden_source():
     return jsonify(payload), status
 
 
-@app.route("/api/theme/info")
-def theme_info():
-    payload, status = services.theme_info_payload(request.args.get("folder", ""))
-    return jsonify(payload), status
-
-
 @app.route("/api/theme/trim", methods=["POST"])
 def trim_theme():
     payload, status = services.trim_theme_payload(request.get_json(silent=True) or {})
@@ -251,11 +245,6 @@ def tmdb_lookup():
     return jsonify(payload), status
 
 
-@app.route("/api/media")
-def get_media():
-    return jsonify(services.media_payload(request.args.get("library", ""), request.args.get("show", "with_theme"), nocache=bool(request.args.get("nocache", ""))))
-
-
 @app.route("/api/youtube/search", methods=["POST"])
 def youtube_search():
     return jsonify(services.youtube_search_payload(request.get_json(silent=True) or {}))
@@ -288,8 +277,7 @@ def trigger_schedule_now():
 
 @app.route("/api/run/scan", methods=["POST"])
 def trigger_scan():
-    payload, status = services.trigger_scan_payload(request.get_json(silent=True) or {})
-    return jsonify(payload), status
+    return trigger_pass(1)
 
 
 @app.route("/api/run/stop", methods=["POST"])
