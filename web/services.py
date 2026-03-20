@@ -339,26 +339,89 @@ def load_config() -> dict:
 LOGS_DIR = Path("/app/logs")
 RUNS_DIR = LOGS_DIR / "runs"
 TASKS_FILE = LOGS_DIR / "task_history.jsonl"
+TASK_ACTIVITY_SUMMARY_FILE = LOGS_DIR / "task_activity_summary.jsonl"
 SCRIPT_MODULE = "script.media_tracks"
+TASK_ACTIVITY_MAX_ENTRIES = 1000
+_TASK_ACTIVITY_LOCK = threading.Lock()
 
 for path in (RUNS_DIR,):
     path.mkdir(parents=True, exist_ok=True)
 
 
-def record_task(task_name, status="success", scope="", summary="", details=None, duration_seconds=None):
-    entry = {
+def _normalize_task_entry(entry: dict, *, is_run_history: bool = False) -> dict:
+    details = entry.get("details")
+    normalized_details = details if isinstance(details, dict) else {}
+    normalized = {
         "time": now_str(),
-        "task": str(task_name or "Task"),
-        "status": str(status or "success"),
-        "outcome": str(status or "success"),
-        "scope": str(scope or ""),
-        "summary": str(summary or ""),
-        "details": details or {},
-        "duration_seconds": float(duration_seconds or 0),
+        "task": "Task",
+        "status": "success",
+        "outcome": "success",
+        "scope": "",
+        "summary": "",
+        "details": normalized_details,
+        "duration_seconds": 0.0,
     }
+    normalized.update(entry or {})
+    normalized["task"] = str(normalized.get("task") or "Task")
+    normalized["status"] = str(normalized.get("status") or "success")
+    normalized["outcome"] = str(normalized.get("outcome") or normalized["status"])
+    normalized["scope"] = str(normalized.get("scope") or "")
+    normalized["summary"] = str(normalized.get("summary") or "")
+    normalized["details"] = normalized_details
+    try:
+        normalized["duration_seconds"] = float(normalized.get("duration_seconds") or 0)
+    except Exception:
+        normalized["duration_seconds"] = 0.0
+    if is_run_history:
+        normalized["is_run_history"] = True
+    else:
+        normalized.pop("is_run_history", None)
+    return normalized
+
+
+def _trim_summary_entries(entries: list[dict], max_entries: int = TASK_ACTIVITY_MAX_ENTRIES) -> list[dict]:
+    capped = max(1, int(max_entries or TASK_ACTIVITY_MAX_ENTRIES))
+    return entries[-capped:]
+
+
+def _append_task_activity_summary(entry: dict):
+    normalized = _normalize_task_entry(entry, is_run_history=bool(entry.get("is_run_history")))
+    with _TASK_ACTIVITY_LOCK:
+        summary_entries = []
+        if TASK_ACTIVITY_SUMMARY_FILE.exists():
+            for line in TASK_ACTIVITY_SUMMARY_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    summary_entries.append(json.loads(line))
+                except Exception:
+                    continue
+        summary_entries.append(normalized)
+        trimmed_entries = _trim_summary_entries(summary_entries)
+        with open(TASK_ACTIVITY_SUMMARY_FILE, "w", encoding="utf-8") as fh:
+            for item in trimmed_entries:
+                fh.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+
+def record_task(task_name, status="success", scope="", summary="", details=None, duration_seconds=None):
+    entry = _normalize_task_entry({
+        "time": now_str(),
+        "task": task_name,
+        "status": status,
+        "outcome": status,
+        "scope": scope,
+        "summary": summary,
+        "details": details,
+        "duration_seconds": duration_seconds,
+    })
     try:
         with open(TASKS_FILE, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+    try:
+        _append_task_activity_summary(entry)
     except Exception:
         pass
 
@@ -383,7 +446,7 @@ def _run_history_entry(run: dict) -> dict:
     run_pass = int(run.get("pass") or 0)
     run_status = str(run.get("status") or run.get("outcome") or "success")
     libraries = [str(name).strip() for name in (run.get("libraries") or []) if str(name).strip()]
-    return {
+    return _normalize_task_entry({
         "time": run.get("time", ""),
         "task": _task_name_for_pass(run_pass),
         "status": run_status,
@@ -399,7 +462,7 @@ def _run_history_entry(run: dict) -> dict:
         },
         "duration_seconds": run.get("duration_seconds") or 0,
         "is_run_history": True,
-    }
+    }, is_run_history=True)
 
 
 def _is_legacy_run_task_entry(entry: dict) -> bool:
@@ -411,7 +474,23 @@ def _is_legacy_run_task_entry(entry: dict) -> bool:
     )
 
 
-def load_task_entries(limit=250):
+def _read_summary_entries() -> list[dict]:
+    entries = []
+    if not TASK_ACTIVITY_SUMMARY_FILE.exists():
+        return entries
+    for line in TASK_ACTIVITY_SUMMARY_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+            entries.append(_normalize_task_entry(entry, is_run_history=bool(entry.get("is_run_history"))))
+        except Exception:
+            continue
+    return entries
+
+
+def _rebuild_task_activity_summary():
     entries = []
     if TASKS_FILE.exists():
         for line in TASKS_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
@@ -420,19 +499,32 @@ def load_task_entries(limit=250):
                 continue
             try:
                 entry = json.loads(line)
-                if _is_legacy_run_task_entry(entry):
-                    continue
-                entries.append(entry)
             except Exception:
                 continue
-    run_entries = []
+            if _is_legacy_run_task_entry(entry):
+                continue
+            entries.append(_normalize_task_entry(entry))
     for run_file in sorted(RUNS_DIR.glob("*.json")):
         try:
             run = json.loads(run_file.read_text(encoding="utf-8"))
-            run_entries.append(_run_history_entry(run))
+            entries.append(_run_history_entry(run))
         except Exception:
             continue
-    return sorted(entries + run_entries, key=lambda entry: entry.get("time", ""), reverse=True)[: max(1, int(limit or 250))]
+    trimmed_entries = _trim_summary_entries(sorted(entries, key=lambda entry: entry.get("time", "")))
+    with _TASK_ACTIVITY_LOCK:
+        with open(TASK_ACTIVITY_SUMMARY_FILE, "w", encoding="utf-8") as fh:
+            for entry in trimmed_entries:
+                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def load_task_entries(limit=250):
+    if not TASK_ACTIVITY_SUMMARY_FILE.exists():
+        _rebuild_task_activity_summary()
+    entries = _read_summary_entries()
+    if not entries and (TASKS_FILE.exists() or any(RUNS_DIR.glob("*.json"))):
+        _rebuild_task_activity_summary()
+        entries = _read_summary_entries()
+    return sorted(entries, key=lambda entry: entry.get("time", ""), reverse=True)[: max(1, int(limit or 250))]
 
 
 def parse_run_stats(lines: Iterable[str]) -> dict:
@@ -637,7 +729,7 @@ class RunManager:
             self.active = False
             stats = parse_run_stats(run_log)
             run_file = RUNS_DIR / (timestamp.replace(":", "-").replace(" ", "_") + ".json")
-            run_file.write_text(json.dumps({
+            run_record = {
                 "time": timestamp,
                 "pass": run_pass,
                 "scope": resolved_scope,
@@ -650,7 +742,12 @@ class RunManager:
                 "stats": stats,
                 "return_code": return_code,
                 "stop_requested": stop_requested,
-            }))
+            }
+            run_file.write_text(json.dumps(run_record))
+            try:
+                _append_task_activity_summary(_run_history_entry(run_record))
+            except Exception:
+                pass
             self.started_at = None
             self.scope_label = ""
             self.libraries = []

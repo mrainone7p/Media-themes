@@ -18,7 +18,19 @@ import yaml
 from shared.storage import CONFIG_PATH, get_db_path, ledger_path_for, load_ledger_rows as load_ledger, now_str, save_ledger_rows as save_ledger
 import web.integrations as integrations
 from web.ledger import clear_source_urls_for_rows, fetch_golden_source_catalog, get_media_roots
-from web.services import CONFIG_DEFAULTS, RUNS_DIR, TASKS_FILE, _CRON_ENTRY_RE, _normalize_cron_schedule, load_config, normalize_config, record_task
+from web.services import (
+    CONFIG_DEFAULTS,
+    RUNS_DIR,
+    TASKS_FILE,
+    TASK_ACTIVITY_SUMMARY_FILE,
+    _CRON_ENTRY_RE,
+    _normalize_cron_schedule,
+    _normalize_task_entry,
+    _trim_summary_entries,
+    load_config,
+    normalize_config,
+    record_task,
+)
 
 UI_TERMINOLOGY_PATH = os.environ.get("UI_TERMINOLOGY_PATH", "/app/web/ui_terminology.yaml")
 WEB_DIR = Path(__file__).resolve().parent
@@ -524,8 +536,23 @@ def prune_task_history_payload(data: dict):
     with open(TASKS_FILE, "w", encoding="utf-8") as fh:
         for entry in kept_entries:
             fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    summary_entries = []
+    if TASK_ACTIVITY_SUMMARY_FILE.exists():
+        for line in TASK_ACTIVITY_SUMMARY_FILE.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+            except Exception:
+                continue
+            summary_entries.append(_normalize_task_entry(entry, is_run_history=bool(entry.get("is_run_history"))))
+    kept_summary_entries = _trim_summary_entries(summary_entries, max_entries=keep_runs)
+    with open(TASK_ACTIVITY_SUMMARY_FILE, "w", encoding="utf-8") as fh:
+        for entry in kept_summary_entries:
+            fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
     record_task("Prune Task History", "success", "", f"Removed {removed_runs} run entries", {"removed_runs": removed_runs, "kept_entries": len(kept_entries)})
-    return {"ok": True, "removed_runs": removed_runs, "kept_task_entries": len(kept_entries)}, 200
+    return {"ok": True, "removed_runs": removed_runs, "kept_task_entries": len(kept_entries), "kept_summary_entries": len(kept_summary_entries)}, 200
 
 
 def sqlite_maintenance_payload(data: dict):
