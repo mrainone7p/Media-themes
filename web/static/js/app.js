@@ -508,7 +508,7 @@ function renderDashboardSystemHealth(health){
   if(noteEl){
     noteEl.textContent=validation.detail || (_dashboardHealthMode==='full'
       ? 'All dashboard integrations were checked live.'
-      : 'Quick status loads automatically. Validate runs the full health check.');
+      : 'Cached or placeholder status is shown until you run Validate.');
   }
   const refreshBtn=document.getElementById('dashboard-health-refresh');
   if(refreshBtn){
@@ -529,9 +529,24 @@ function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
   renderHistStatusFilters();
   renderProcessingHistory();
   renderPieChart();
-  const healthEl=document.getElementById('dashboard-system-health');
-  if(healthEl){
-    healthEl.innerHTML='<div class="dashboard-empty">Quick status is loading. Use Validate for the full live health check.</div>';
+  const healthCache=readDashboardHealthCache();
+  if(healthCache){
+    _dashboardHealthMode=healthCache?.validation?.mode || 'lite';
+    renderDashboardSystemHealth(healthCache);
+    renderDashboardSchedule(healthCache);
+  }else{
+    _dashboardHealthMode='lite';
+    const healthEl=document.getElementById('dashboard-system-health');
+    if(healthEl){
+      healthEl.innerHTML='<div class="dashboard-empty">No live health check has run yet. Use Validate to fetch the latest system health.</div>';
+    }
+    const noteEl=document.getElementById('dashboard-health-note');
+    if(noteEl) noteEl.textContent='Cached or placeholder status is shown until you run Validate.';
+    const refreshBtn=document.getElementById('dashboard-health-refresh');
+    if(refreshBtn){
+      refreshBtn.disabled=false;
+      refreshBtn.textContent='Validate';
+    }
   }
 }
 function renderDashboardNeedsAttention(cfg, counts, enabledLibs){
@@ -754,6 +769,24 @@ let _dashboardLoadSeq=0;
 let _dashboardHealthRequestSeq=0;
 let _dashboardHealthMode='lite';
 let _dashboardHealthLoading=false;
+const _dashboardHealthStorageKey='dashboard.health.cache';
+function readDashboardHealthCache(){
+  try{
+    const raw=window.localStorage ? window.localStorage.getItem(_dashboardHealthStorageKey) : null;
+    if(!raw) return null;
+    const parsed=JSON.parse(raw);
+    return parsed && typeof parsed==='object' ? parsed : null;
+  }catch(_err){
+    return null;
+  }
+}
+function writeDashboardHealthCache(health){
+  try{
+    if(window.localStorage && health && typeof health==='object'){
+      window.localStorage.setItem(_dashboardHealthStorageKey, JSON.stringify(health));
+    }
+  }catch(_err){}
+}
 
 function emptyDashboardCounts(){
   return {MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0,UNMONITORED:0};
@@ -1015,6 +1048,7 @@ async function dashboardRefreshHealth(full=false){
     if(requestSeq!==_dashboardHealthRequestSeq) return;
     if(health && typeof health==='object'){
       _dashboardHealthMode=health?.validation?.mode || mode;
+      writeDashboardHealthCache(health);
       renderDashboardSystemHealth(health);
       renderDashboardSchedule(health);
     }
@@ -1047,7 +1081,6 @@ async function loadDashboard(force=false){
   renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs);
   renderDashboardActionStationFromConfig(cfg, scheduledLibs);
   loadDashboardDeferredData(seq, cfg, enabledLibs).catch(err=>console.warn('Dashboard deferred load failed', err));
-  dashboardRefreshHealth(false).catch(err=>console.warn('Dashboard quick health failed', err));
 }
 function setPendingTestBadge(elId, label='Working…'){
   const el=document.getElementById(elId);
