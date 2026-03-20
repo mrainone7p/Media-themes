@@ -61,15 +61,9 @@ from typing import Optional
 import requests
 import yaml
 
-# ─── Shared storage ───────────────────────────────────────────────────────────
-
-SHARED_DIR = Path(__file__).resolve().parents[1] / "shared"
-if str(SHARED_DIR) not in sys.path:
-    sys.path.insert(0, str(SHARED_DIR))
-
-from file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
-from golden_source_csv import parse_golden_source_csv_map
-from storage import (
+from shared.file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
+from shared.golden_source_csv import parse_golden_source_csv_map
+from shared.storage import (
     CONFIG_PATH,
     LEDGER_HEADERS,
     TMDB_GUID_RE,
@@ -81,7 +75,7 @@ from storage import (
     save_ledger_map as save_ledger,
     sync_theme_cache,
 )
-from yt_dlp_utils import yt_dlp_base_flags
+from shared.yt_dlp_utils import yt_dlp_base_flags
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 

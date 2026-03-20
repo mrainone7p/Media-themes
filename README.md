@@ -169,16 +169,28 @@ cd Media-themes
 docker build -t media-tracks:local .
 ```
 
+## Python entrypoints
+
+Use package-style startup from the repository root so local runs, tests, and Docker all resolve imports the same way:
+
+```bash
+python -m web.app
+python -m script.media_tracks
+```
+
 ## Project structure
 
 ```
 ├── Dockerfile
 ├── script/
+│   ├── __init__.py         # worker package marker for python -m
 │   ├── media_tracks.py    # three-pass pipeline worker
 │   └── entrypoint.sh      # container startup
 ├── web/
+│   ├── __init__.py        # web package marker
 │   ├── app.py             # Flask API + web server
 │   └── template.html      # single-file frontend
 └── shared/
+    ├── __init__.py        # shared package marker
     └── storage.py         # shared SQLite storage layer
 ```

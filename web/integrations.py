@@ -15,18 +15,11 @@ import subprocess
 import threading
 import time
 import urllib.parse
-import sys
-from pathlib import Path
 
 import requests as http_requests
 
-WEB_DIR = Path(__file__).resolve().parent
-SHARED_DIR = WEB_DIR.parent / "shared"
-if str(SHARED_DIR) not in sys.path:
-    sys.path.insert(0, str(SHARED_DIR))
-
-from storage import TMDB_GUID_RE as _TMDB_GUID_RE
-from yt_dlp_utils import yt_dlp_base_flags as _yt_dlp_base_flags
+from shared.storage import TMDB_GUID_RE as _TMDB_GUID_RE
+from shared.yt_dlp_utils import yt_dlp_base_flags as _yt_dlp_base_flags
 
 # ── TMDB / Plex caches ───────────────────────────────────────────────────────
 

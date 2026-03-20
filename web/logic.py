@@ -13,23 +13,16 @@ import os
 import re
 import sqlite3
 import subprocess
-import sys
 import tempfile
 import threading
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
 import yaml
 
-WEB_DIR = Path(__file__).resolve().parent
-SHARED_DIR = WEB_DIR.parent / "shared"
-if str(WEB_DIR) not in sys.path:
-    sys.path.insert(0, str(WEB_DIR))
-if str(SHARED_DIR) not in sys.path:
-    sys.path.insert(0, str(SHARED_DIR))
-
-import integrations
-from config_logic import (
+from web import integrations
+from web.config_logic import (
     CONFIG_BOOL_FIELDS,
     CONFIG_DEFAULTS,
     CONFIG_ENUM_FIELDS,
@@ -46,20 +39,9 @@ from config_logic import (
     load_raw_config,
     normalize_config,
 )
-from file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
-from golden_source_csv import parse_golden_source_csv_rows
-from run_logic import (
-    RUN_MANAGER,
-    RUNS_DIR,
-    SCRIPT_PATH,
-    TASKS_FILE,
-    RunManager,
-    _task_name_for_pass,
-    load_task_entries,
-    parse_run_stats,
-    record_task,
-)
-from storage import (
+from shared.file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
+from shared.golden_source_csv import parse_golden_source_csv_rows
+from shared.storage import (
     CONFIG_PATH,
     LEDGER_HEADERS,
     MANUAL_STATUS_TRANSITIONS,
@@ -76,6 +58,16 @@ from storage import (
     sync_theme_cache,
     validate_manual_status_transition,
 )
+from web.run_logic import (
+    RUN_MANAGER,
+    RUNS_DIR,
+    TASKS_FILE,
+    RunManager,
+    _task_name_for_pass,
+    load_task_entries,
+    parse_run_stats,
+    record_task,
+)
 
 # ── Runtime paths and constants ──────────────────────────────────────────────
 
@@ -87,7 +79,7 @@ TEMPLATE_PATH = Path("/app/web/template.html")
 _HEALTH_CACHE_TTL = 30
 _health_cache: dict[str, object] = {"ts": 0.0, "key": None, "payload": None}
 CRON_FILE_PATH = Path(os.environ.get("MEDIA_TRACKS_CRON_FILE", "/etc/cron.d/media-tracks"))
-CRON_COMMAND = "python3 /app/script/media_tracks.py >> /proc/1/fd/1 2>> /proc/1/fd/2"
+CRON_COMMAND = "python3 -m script.media_tracks >> /proc/1/fd/1 2>> /proc/1/fd/2"
 SCHEDULER_AUTHORITY = os.environ.get("MEDIA_TRACKS_SCHEDULER_AUTHORITY", "cron").strip().lower() or "cron"
 
 for path in (RUNS_DIR, EXPORTS_DIR, GOLDEN_CACHE_DIR):

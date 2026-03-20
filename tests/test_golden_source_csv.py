@@ -3,19 +3,13 @@ from __future__ import annotations
 import sys
 import types
 import unittest
-from pathlib import Path
 
 sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **kwargs: {}, safe_dump=lambda *args, **kwargs: ""))
 sys.modules.setdefault("requests", types.SimpleNamespace(get=lambda *args, **kwargs: None, post=lambda *args, **kwargs: None))
 
-ROOT = Path(__file__).resolve().parents[1]
-for path in (ROOT / "web", ROOT / "shared", ROOT / "script"):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
-
-import golden_source_csv
-import logic
-import media_tracks
+from script import media_tracks
+from shared import golden_source_csv
+from web import logic
 
 
 class GoldenSourceSharedParserTests(unittest.TestCase):
