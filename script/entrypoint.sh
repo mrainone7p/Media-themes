@@ -45,7 +45,7 @@ echo "============================================="
 
 # Start Flask web UI in background (log to container stdout)
 echo "[INFO] Starting web UI on port ${WEB_PORT}..."
-python3 /app/web/app.py >> /proc/1/fd/1 2>> /proc/1/fd/2 &
+PYTHONPATH="/app/web:/app/shared${PYTHONPATH:+:$PYTHONPATH}" python3 /app/web/app.py >> /proc/1/fd/1 2>> /proc/1/fd/2 &
 
 if [ "$BOOTSTRAP_OK" = "1" ]; then
     echo "[INFO] Scheduler bootstrap complete: $BOOTSTRAP_DETAIL"
