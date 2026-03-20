@@ -10,19 +10,14 @@ import sys
 import time
 from flask import Flask, Response, abort, g, jsonify, request, send_file, stream_with_context
 
+from shared.logging_utils import get_project_logger
 import web.services as services
 
 app = Flask(__name__)
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
-REQUEST_LOG = logging.getLogger("media_tracks.web")
+APP_LOG = get_project_logger("web.app")
+REQUEST_LOG = get_project_logger("web.request")
 WEB_PORT = int(os.environ.get("WEB_PORT", "8182"))
-
-if not REQUEST_LOG.handlers:
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    REQUEST_LOG.addHandler(handler)
-REQUEST_LOG.setLevel(logging.INFO)
-REQUEST_LOG.propagate = False
 
 _QUIET_REQUEST_RULES = {
     "/api/run/status": {"success_ms": None, "label": "Run status poll"},
@@ -365,5 +360,6 @@ def _sig_handler(sig, frame):
 signal.signal(signal.SIGTERM, _sig_handler)
 
 if __name__ == "__main__":
-    REQUEST_LOG.info("HTTP logging tuned for signal over noise: chatty status, preview, and search endpoints now log only on failure or unusually slow responses.")
+    APP_LOG.info("Container/web startup: config_path=%s web_port=%s scheduler_authority=%s startup_scan_disabled=%s", services.CONFIG_PATH, WEB_PORT, services.SCHEDULER_AUTHORITY, True)
+    APP_LOG.info("HTTP logging tuned for signal over noise: chatty status, preview, and search endpoints now log only on failure or unusually slow responses.")
     app.run(host="0.0.0.0", port=WEB_PORT, threaded=True)

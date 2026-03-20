@@ -15,6 +15,7 @@ from pathlib import Path
 
 import yaml
 
+from shared.logging_utils import get_project_logger
 from shared.storage import CONFIG_PATH, get_db_path, ledger_path_for, load_ledger_rows as load_ledger, now_str, save_ledger_rows as save_ledger
 import web.integrations as integrations
 from web.ledger import clear_source_urls_for_rows, fetch_golden_source_catalog, get_media_roots
@@ -46,6 +47,7 @@ CRON_FILE_PATH = Path(os.environ.get("MEDIA_TRACKS_CRON_FILE", "/etc/cron.d/medi
 CRON_COMMAND = "python3 -m script.media_tracks >> /proc/1/fd/1 2>> /proc/1/fd/2"
 SCHEDULER_AUTHORITY = os.environ.get("MEDIA_TRACKS_SCHEDULER_AUTHORITY", "cron").strip().lower() or "cron"
 _template_cache: str | None = None
+TASK_LOG = get_project_logger("web.tasks")
 
 for path in (RUNS_DIR, EXPORTS_DIR):
     path.mkdir(parents=True, exist_ok=True)
@@ -141,8 +143,10 @@ def refresh_scheduler(config: dict | None = None) -> dict:
         "detail": "",
         "error": None,
     }
+    TASK_LOG.info("Scheduler bootstrap begin: authority=%s configured_cron=%s schedule_enabled=%s cron_file=%s", SCHEDULER_AUTHORITY, cron_schedule, schedule_enabled, CRON_FILE_PATH)
     if not scheduler_managed_via_cron():
         details["detail"] = "Scheduler is managed inside the Flask process; no cron refresh needed."
+        TASK_LOG.info("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
         _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
         return details
     contents = _render_cron_file(schedule_enabled, cron_schedule)
@@ -161,16 +165,19 @@ def refresh_scheduler(config: dict | None = None) -> dict:
         stderr = (completed.stderr or "").strip()
         if stderr:
             details["detail"] = f"{details['detail']} ({stderr})"
+        TASK_LOG.info("Scheduler cron refresh result: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
         _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
         return details
     except subprocess.CalledProcessError as exc:
         details["ok"] = False
         details["error"] = (exc.stderr or exc.stdout or str(exc)).strip() or str(exc)
         details["detail"] = "Failed to reload cron schedule."
+        TASK_LOG.warning("Scheduler cron refresh failed: authority=%s cron_file=%s error=%s", details["authority"], details["cron_file"], details["error"])
     except Exception as exc:
         details["ok"] = False
         details["error"] = str(exc)
         details["detail"] = "Failed to rewrite cron schedule."
+        TASK_LOG.error("Scheduler cron refresh errored: authority=%s cron_file=%s error=%s", details["authority"], details["cron_file"], details["error"])
     finally:
         temp_candidate = locals().get("temp_path")
         if isinstance(temp_candidate, Path) and temp_candidate.exists():
@@ -179,6 +186,7 @@ def refresh_scheduler(config: dict | None = None) -> dict:
             except OSError:
                 pass
         _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
+    TASK_LOG.info("Scheduler bootstrap end: ok=%s authority=%s active_cron=%s detail=%s", details["ok"], details["authority"], details.get("active_cron") or "(none)", details["detail"])
     return details
 
 
@@ -324,9 +332,12 @@ def api_health_payload(mode: str = "lite") -> dict:
     )
     now = time.time()
     cache_bucket = _health_cache.setdefault(resolved_mode, dict(_HEALTH_CACHE_EMPTY))
-    if cache_bucket["payload"] is not None and cache_bucket["key"] == cache_key and now - float(cache_bucket["ts"] or 0.0) < _HEALTH_CACHE_TTL:
+    cache_age = now - float(cache_bucket["ts"] or 0.0)
+    if cache_bucket["payload"] is not None and cache_bucket["key"] == cache_key and cache_age < _HEALTH_CACHE_TTL:
+        TASK_LOG.info("Health check cache hit: mode=%s age_sec=%.1f", resolved_mode, cache_age)
         return dict(cache_bucket["payload"])
 
+    TASK_LOG.info("Health check live refresh: mode=%s cache_key_changed=%s age_sec=%.1f", resolved_mode, cache_bucket.get("key") != cache_key, cache_age)
     result = {}
     plex_url = (cfg.get("plex_url") or "").strip().rstrip("/")
     plex_token = (cfg.get("plex_token") or "").strip()

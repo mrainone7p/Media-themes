@@ -459,7 +459,7 @@ async function dashboardImportGoldenSource(){
 async function dashboardRunQuick(passNum){
   const libraries=dashboardQuickLibraries();
   if(!libraries.length) return toast('Enable at least one library first','err');
-  return startPipelineRun(passNum,'run',{libraries,scopeLabel:_formatScopeLabel(libraries,'enabled libraries')});
+  return startPipelineRun(passNum,'run',{libraries,scopeLabel:_formatScopeLabel(libraries,'enabled libraries'),callerSurface:'dashboard'});
 }
 function dashboardShowPipelineHelp(){
   document.getElementById('pipeline-help-modal').classList.add('open');
@@ -604,7 +604,7 @@ function renderDashboardActionStation(health){
   const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
   const runOrStopBtn=_dashRunActive
     ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')" style="background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))">Stop</button>`
-    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun()">Run Schedule</button>`;
+    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
   const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
   el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`;
 }
@@ -632,7 +632,7 @@ function _updateDashRunButton(){
     btn.textContent='Run Schedule';
     btn.className='btn btn-ghost btn-sm btn-action-run';
     btn.style.cssText='';
-    btn.onclick=function(){startScheduledRun();};
+    btn.onclick=function(){startScheduledRun('dashboard');};
   }
 }
 function dashboardLatestTask(entries, matcher){

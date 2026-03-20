@@ -25,6 +25,7 @@ from typing import Iterable
 import yaml
 
 from shared.golden_source_csv import GOLDEN_SOURCE_OPTIONAL_COLUMNS, GOLDEN_SOURCE_REQUIRED_COLUMNS
+from shared.logging_utils import get_project_logger, summarize_libraries
 from shared.storage import (
     CONFIG_PATH,
     MANUAL_STATUS_TRANSITIONS,
@@ -36,6 +37,8 @@ from shared.storage import (
     save_ledger_rows as save_ledger,
 )
 import web.integrations as integrations
+
+SERVICE_LOG = get_project_logger("web.services")
 
 # ── Configuration helpers ────────────────────────────────────────────────────
 
@@ -527,6 +530,11 @@ def load_task_entries(limit=250):
     return sorted(entries, key=lambda entry: entry.get("time", ""), reverse=True)[: max(1, int(limit or 250))]
 
 
+def _normalize_caller_surface(value: object, *, default: str) -> str:
+    normalized = str(value or "").strip().lower()
+    return normalized if normalized in {"dashboard", "scheduler", "tasks"} else default
+
+
 def parse_run_stats(lines: Iterable[str]) -> dict:
     stats = {}
     for line in lines:
@@ -583,7 +591,7 @@ class RunManager:
             except Exception:
                 pass
 
-    def start(self, *, force_pass: int = 0, explicit_libraries=None, scope_label: str = "", allow_schedule_disabled: bool = False):
+    def start(self, *, force_pass: int = 0, explicit_libraries=None, scope_label: str = "", allow_schedule_disabled: bool = False, caller_surface: str = "tasks"):
         explicit_libraries = [str(name).strip() for name in (explicit_libraries or []) if str(name).strip()]
         with self.lock:
             if self.active:
@@ -596,6 +604,7 @@ class RunManager:
                 "explicit_libraries": explicit_libraries,
                 "scope_label": scope_label,
                 "allow_schedule_disabled": allow_schedule_disabled,
+                "caller_surface": caller_surface,
             },
             daemon=True,
         )
@@ -605,6 +614,7 @@ class RunManager:
     def stop(self):
         if self.proc and self.proc.poll() is None:
             self.stop_requested = True
+            SERVICE_LOG.info("Run stop requested: pid=%s scope=%s libraries=%s", getattr(self.proc, "pid", None), self.scope_label or "(unspecified)", summarize_libraries(self.libraries))
             try:
                 self.proc.send_signal(signal.SIGTERM)
                 self.broadcast("[STOP] Graceful stop requested…")
@@ -657,7 +667,7 @@ class RunManager:
             "completed_at": self.completed_at,
         }
 
-    def _do_run(self, *, force_pass=0, explicit_libraries=None, scope_label="", allow_schedule_disabled=False):
+    def _do_run(self, *, force_pass=0, explicit_libraries=None, scope_label="", allow_schedule_disabled=False, caller_surface="tasks"):
         run_log = []
         timestamp = now_str()
         run_pass = force_pass or 0
@@ -690,8 +700,12 @@ class RunManager:
                 env["RUN_LIBRARIES"] = json.dumps(explicit_libraries)
             else:
                 env.pop("RUN_LIBRARIES", None)
+            env["RUN_CALLER_SURFACE"] = caller_surface
+            env["RUN_SCOPE_LABEL"] = resolved_scope
+            SERVICE_LOG.info("Run subprocess start: pass=%s caller_surface=%s scope_label=%s libraries=%s command=%s", force_pass or 0, caller_surface, resolved_scope, summarize_libraries(explicit_libraries), f"{sys.executable} -m {SCRIPT_MODULE}")
             proc = subprocess.Popen([sys.executable, "-m", SCRIPT_MODULE], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
             self.proc = proc
+            SERVICE_LOG.info("Run subprocess pid: pid=%s pass=%s caller_surface=%s scope_label=%s", proc.pid, force_pass or 0, caller_surface, resolved_scope)
             for line in proc.stdout:
                 line = line.rstrip()
                 run_log.append(line)
@@ -705,10 +719,12 @@ class RunManager:
                     run_pass = max(run_pass, 3)
                 self.current_pass = run_pass
             return_code = proc.wait()
+            SERVICE_LOG.info("Run subprocess exit: pid=%s return_code=%s", proc.pid, return_code)
         except Exception as exc:
             message = f"[ERROR] {exc}"
             run_log.append(message)
             self.broadcast(message)
+            SERVICE_LOG.error("Run subprocess failed before completion: pass=%s caller_surface=%s scope_label=%s error=%s", force_pass or 0, caller_surface, resolved_scope, exc)
         finally:
             stop_requested = self.stop_requested
             if return_code == 0 and not stop_requested:
@@ -717,6 +733,7 @@ class RunManager:
                 outcome = "stopped"
             else:
                 outcome = "error"
+            pid = getattr(self.proc, "pid", None)
             self.proc = None
             duration = time.time() - self.started_at if self.started_at else None
             summary = next((line for line in reversed(run_log) if any(marker in line for marker in ["complete", "caught up", "nothing to do", "processed", "STOP", "ERROR"])), "No output")
@@ -725,6 +742,7 @@ class RunManager:
             self.last_summary = summary
             self.completed_at = time.time()
             self.stop_requested = False
+            SERVICE_LOG.info("Run subprocess outcome: pid=%s pass=%s caller_surface=%s scope_label=%s return_code=%s duration_sec=%s outcome=%s", pid, force_pass or 0, caller_surface, resolved_scope, return_code, f"{duration:.3f}" if duration is not None else "n/a", outcome)
             self.broadcast("__DONE__")
             self.active = False
             stats = parse_run_stats(run_log)
@@ -1128,7 +1146,10 @@ def trigger_pass_payload(pass_num: int, data: dict):
     library = str(data.get("library") or "").strip()
     if library:
         explicit_libraries = [library]
-    if not RUN_MANAGER.start(force_pass=pass_num, explicit_libraries=explicit_libraries, scope_label=str(data.get("scope_label") or "").strip()):
+    caller_surface = _normalize_caller_surface(data.get("caller_surface"), default="tasks")
+    scope_label = str(data.get("scope_label") or "").strip()
+    SERVICE_LOG.info("Run request received: pass=%s libraries=%s scope_label=%s caller_surface=%s", pass_num, summarize_libraries(explicit_libraries), scope_label or "(auto)", caller_surface)
+    if not RUN_MANAGER.start(force_pass=pass_num, explicit_libraries=explicit_libraries, scope_label=scope_label, caller_surface=caller_surface):
         return {"error": "run in progress"}, 409
     return {"ok": True}, 200
 
@@ -1170,7 +1191,9 @@ def trigger_schedule_now_payload(data: dict):
     scope_label = str(data.get("scope_label") or "").strip() or (
         explicit_libraries[0] if len(explicit_libraries) == 1 else f"{len(explicit_libraries)} scheduled libraries"
     )
-    if not RUN_MANAGER.start(force_pass=0, explicit_libraries=explicit_libraries, scope_label=scope_label, allow_schedule_disabled=True):
+    caller_surface = _normalize_caller_surface(data.get("caller_surface"), default="scheduler")
+    SERVICE_LOG.info("Run request received: pass=%s libraries=%s scope_label=%s caller_surface=%s", 0, summarize_libraries(explicit_libraries), scope_label, caller_surface)
+    if not RUN_MANAGER.start(force_pass=0, explicit_libraries=explicit_libraries, scope_label=scope_label, allow_schedule_disabled=True, caller_surface=caller_surface):
         return {"error": "run in progress"}, 409
     return {"ok": True, "libraries": explicit_libraries, "scope_label": scope_label}, 200
 

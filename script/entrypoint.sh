@@ -6,13 +6,30 @@ set -e
 
 CONFIG_FILE="${CONFIG_PATH:-/app/config/config.yaml}"
 WEB_PORT="${WEB_PORT:-8182}"
+SCHEDULER_AUTHORITY="${MEDIA_TRACKS_SCHEDULER_AUTHORITY:-cron}"
+STARTUP_SCAN_DISABLED="true"
+
+log_info() {
+    echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [INFO] media_tracks.entrypoint: $*"
+}
+
+log_warn() {
+    echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [WARNING] media_tracks.entrypoint: $*"
+}
+
+log_error() {
+    echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [ERROR] media_tracks.entrypoint: $*"
+}
 
 # RUN_ONCE mode — used for one-shot Docker runs / testing
 if [ "${RUN_ONCE}" = "true" ]; then
-    echo "[INFO] RUN_ONCE=true — running once then exiting"
+    log_info "RUN_ONCE=true — running once then exiting"
     python3 -m script.media_tracks
     exit 0
 fi
+
+log_info "Container/web startup: config_path=${CONFIG_FILE} web_port=${WEB_PORT} scheduler_authority=${SCHEDULER_AUTHORITY} startup_scan_disabled=${STARTUP_SCAN_DISABLED}"
+log_info "Scheduler bootstrap begin: authority=${SCHEDULER_AUTHORITY} cron_file=${MEDIA_TRACKS_CRON_FILE:-/etc/cron.d/media-tracks}"
 
 SCHEDULER_BOOTSTRAP=$(PYTHONPATH="/app${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
 import json
@@ -44,17 +61,17 @@ echo "  Web UI   : http://localhost:${WEB_PORT}"
 echo "============================================="
 
 # Start Flask web UI in background (log to container stdout)
-echo "[INFO] Starting web UI on port ${WEB_PORT}..."
+log_info "Starting web UI on port ${WEB_PORT}"
 PYTHONPATH="/app${PYTHONPATH:+:$PYTHONPATH}" python3 -m web.app >> /proc/1/fd/1 2>> /proc/1/fd/2 &
 
 if [ "$BOOTSTRAP_OK" = "1" ]; then
-    echo "[INFO] Scheduler bootstrap complete: $BOOTSTRAP_DETAIL"
+    log_info "Scheduler bootstrap end: ok=true detail=$BOOTSTRAP_DETAIL"
 else
-    echo "[ERROR] Scheduler bootstrap failed: $BOOTSTRAP_ERROR"
+    log_error "Scheduler bootstrap end: ok=false error=$BOOTSTRAP_ERROR"
     exit 1
 fi
 
-echo "[INFO] Startup scan disabled — schedule changes are applied by the web backend when configuration is saved."
+log_info "Startup scan disabled — schedule changes are applied by the web backend when configuration is saved."
 
-echo "[INFO] Entering cron daemon mode..."
+log_info "Entering cron daemon mode"
 cron -f
