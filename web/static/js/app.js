@@ -357,14 +357,36 @@ function formatNextRunFull(isoStr){
 // Live countdown wiring
 let _countdownInterval=null;
 let _countdownTargetDt=null;
+let _globalRunStatusInterval=null;
+const _liveRunStatusPages=new Set(['dashboard','theme-manager','tasks','scheduler']);
+const _countdownPages=new Set(['dashboard','scheduler']);
+function _activePageName(){
+  const active=document.querySelector('.page.active');
+  return active ? String(active.id||'').replace(/^page-/,'') : '';
+}
+function _pageNeedsLiveRunState(page=_activePageName()){
+  return _liveRunStatusPages.has(page);
+}
+function _pageNeedsCountdown(page=_activePageName()){
+  return _countdownPages.has(page);
+}
+function _syncCountdownTimer(){
+  const shouldTick=!!_countdownTargetDt && _pageNeedsCountdown();
+  if(!shouldTick){
+    if(_countdownInterval){clearInterval(_countdownInterval);_countdownInterval=null;}
+    const schedWrap=document.getElementById('sched-cron-next');
+    if(schedWrap && _activePageName()!=='scheduler') schedWrap.style.display='none';
+    return;
+  }
+  _tickCountdowns();
+  if(!_countdownInterval) _countdownInterval=setInterval(_tickCountdowns,1000);
+}
 function _startCountdowns(isoStr){
-  if(_countdownInterval) clearInterval(_countdownInterval);
   if(!isoStr){_countdownTargetDt=null;_stopCountdownDisplay();return;}
   const dt=new Date(isoStr);
-  if(Number.isNaN(dt.getTime())){_stopCountdownDisplay();return;}
+  if(Number.isNaN(dt.getTime())){_countdownTargetDt=null;_stopCountdownDisplay();return;}
   _countdownTargetDt=dt;
-  _tickCountdowns();
-  _countdownInterval=setInterval(_tickCountdowns,1000);
+  _syncCountdownTimer();
 }
 function _tickCountdowns(){
   if(!_countdownTargetDt) return;
@@ -386,6 +408,15 @@ function _stopCountdownDisplay(){
   const schedWrap=document.getElementById('sched-cron-next');
   if(schedWrap) schedWrap.style.display='none';
   if(_countdownInterval){clearInterval(_countdownInterval);_countdownInterval=null;}
+}
+function _syncGlobalRunStatusPolling({immediate=false}={}){
+  const shouldPoll=_pageNeedsLiveRunState() || _wasRunning;
+  if(!shouldPoll){
+    if(_globalRunStatusInterval){clearInterval(_globalRunStatusInterval);_globalRunStatusInterval=null;}
+    return;
+  }
+  if(immediate) updateGlobalRunStatus();
+  if(!_globalRunStatusInterval) _globalRunStatusInterval=setInterval(updateGlobalRunStatus,4000);
 }
 function openThemeManagerFiltered(status=''){
   showPage('theme-manager');
@@ -1093,14 +1124,17 @@ function showPage(name) {
   if(resolved==='configuration') loadConfiguration();
   if(resolved==='scheduler') loadRunPage();
   removeItemDetailsPanel();
+  _syncCountdownTimer();
+  _syncGlobalRunStatusPolling({immediate:true});
 }
 
 function removeItemDetailsPanel(){
   try{
-    const nodes=[...document.querySelectorAll('h1,h2,h3,h4,div,span')].filter(el=>el.textContent.trim()==='Item details');
-    nodes.forEach(el=>{
-      const panel=el.closest('[data-item-details], .item-details, .details-panel, .right-panel, .side-panel, .panel, .card') || el.parentElement;
-      if(panel){ panel.style.display='none'; }
+    const page=document.getElementById('page-theme-manager');
+    if(!page) return;
+    page.querySelectorAll(':is([data-item-details], .item-details, .details-panel, .right-panel, .side-panel, .panel, .card)').forEach(panel=>{
+      const heading=panel.querySelector(':scope > :is(h1,h2,h3,h4,.card-title,.panel-title)');
+      if(heading && heading.textContent.trim()==='Item details') panel.remove();
     });
   }catch(e){}
 }
@@ -1137,6 +1171,9 @@ async function updateGlobalRunStatus(){
       loadDashboard(); loadDatabase(); loadTasksPage(); loadRunPage();
     }
   }catch(e){}
+  finally{
+    _syncGlobalRunStatusPolling();
+  }
 }
 
 
@@ -1486,8 +1523,7 @@ try{
     initSharedProgress();
     removeItemDetailsPanel();
     updateGlobalRunStatus();
-    setInterval(updateGlobalRunStatus, 4000);
-    setInterval(removeItemDetailsPanel, 2000);
+    _syncGlobalRunStatusPolling();
     const initial=((location.hash||'').replace(/^#/,'').trim());
     if(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial)){
       showPage(initial);

@@ -105,6 +105,7 @@ async function loadDatabase(syncPeer=true){
     document.getElementById('db-empty').style.display='block';
     document.getElementById('db-empty').textContent='No enabled libraries.';
     _refreshScopedRunLabels();
+    removeItemDetailsPanel();
     return;
   }
   if(!_activeLib || !libs.some(l=>l.name===_activeLib)) _activeLib=libs[0].name;
@@ -117,6 +118,7 @@ async function loadDatabase(syncPeer=true){
   if(!_activeLib) _activeLib=libs[0]?.name;
   _refreshScopedRunLabels();
   await loadLibRows(_activeLib);
+  removeItemDetailsPanel();
 }
 
 async function switchLib(name){
@@ -124,6 +126,7 @@ async function switchLib(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.textContent.trim().replace(' (off)','')===name));
   _refreshScopedRunLabels();
   await loadLibRows(name);
+  removeItemDetailsPanel();
 }
 
 async function loadLibRows(name){
