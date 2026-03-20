@@ -503,10 +503,36 @@ function renderDashboardSystemHealth(health){
       ${badge}
     </div>`;
   }).join('');
+  const noteEl=document.getElementById('dashboard-health-note');
+  const validation=health?.validation||{};
+  if(noteEl){
+    noteEl.textContent=validation.detail || (_dashboardHealthMode==='full'
+      ? 'All dashboard integrations were checked live.'
+      : 'Quick status loads automatically. Validate runs the full health check.');
+  }
+  const refreshBtn=document.getElementById('dashboard-health-refresh');
+  if(refreshBtn){
+    refreshBtn.textContent=_dashboardHealthLoading ? 'Validating…' : (validation.full ? 'Revalidate' : 'Validate');
+    refreshBtn.disabled=_dashboardHealthLoading;
+  }
 }
 function renderDashboardSchedule(health){
   // Schedule section replaced by Action Station — delegate to it
   renderDashboardActionStation(health);
+}
+function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
+  renderDashboardPipelineOverview({MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0});
+  renderDashboardNeedsAttention(cfg, {MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0}, enabledLibs);
+  renderDashboardRecentActivity([]);
+  renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs);
+  renderDashLibTabs(enabledLibs);
+  renderHistStatusFilters();
+  renderProcessingHistory();
+  renderPieChart();
+  const healthEl=document.getElementById('dashboard-system-health');
+  if(healthEl){
+    healthEl.innerHTML='<div class="dashboard-empty">Quick status is loading. Use Validate for the full live health check.</div>';
+  }
 }
 function renderDashboardNeedsAttention(cfg, counts, enabledLibs){
   const items=[];
@@ -581,6 +607,18 @@ function renderDashboardActionStation(health){
     :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun()">Run Schedule</button>`;
   const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
   el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`;
+}
+function renderDashboardActionStationFromConfig(cfg, scheduledLibs){
+  renderDashboardActionStation({
+    schedule:{
+      state:cfg.schedule_enabled ? (scheduledLibs.length ? 'ok' : 'warning') : 'off',
+      label:cfg.schedule_enabled ? (scheduledLibs.length ? 'Configured' : 'No libraries selected') : 'Disabled',
+      next_run:null,
+      detail:cfg.schedule_enabled
+        ? `Scheduled for ${scheduledLibs.length} librar${scheduledLibs.length===1?'y':'ies'}. Quick status will calculate the next run shortly.`
+        : 'Enable automation in Scheduler to run this pipeline automatically.',
+    }
+  });
 }
 function _updateDashRunButton(){
   const btn=document.getElementById('dash-run-btn');
@@ -705,6 +743,10 @@ let _dashLedgerByLib={};
 let _dashLedgerAll=[];
 let _dashSelectedLib='all';
 let _dashHistStatusFilter='all';
+let _dashboardLoadSeq=0;
+let _dashboardHealthRequestSeq=0;
+let _dashboardHealthMode='lite';
+let _dashboardHealthLoading=false;
 
 function _getHistRows(){return _dashSelectedLib==='all'?_dashLedgerAll:(_dashLedgerByLib[_dashSelectedLib]||[]);}
 
@@ -1030,18 +1072,7 @@ function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
     </div>`;
   }).join('')+`</div>`;
 }
-async function loadDashboard(force=false){
-  // Update last-updated timestamp
-  const tsEl=document.getElementById('dash-last-updated');
-  if(tsEl) tsEl.textContent='Updated '+new Date().toLocaleTimeString();
-  const cfg=await loadConfig(force);
-  const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
-  const enabledLibs=allLibs.filter(lib=>lib.enabled!==false);
-  const selectedNames=new Set((cfg.schedule_libraries&&cfg.schedule_libraries.length)?cfg.schedule_libraries:enabledLibs.map(lib=>lib.name));
-  const scheduledLibs=enabledLibs.filter(lib=>selectedNames.has(lib.name)).map(lib=>lib.name);
-  _dashboardLibraries={enabled:enabledLibs.map(lib=>lib.name), scheduled:scheduledLibs};
-
-  // Fast: counts + activity (can render without health)
+async function loadDashboardDeferredData(seq, cfg, enabledLibs){
   const [ledgerResults, historyResult] = await Promise.all([
     Promise.all(enabledLibs.map(async lib=>{
       const {data}=await requestJson('/api/ledger?library='+encodeURIComponent(lib.name));
@@ -1049,11 +1080,10 @@ async function loadDashboard(force=false){
     })),
     requestJson('/api/tasks/history?limit=100'),
   ]);
-  // Store per-lib rows for the library section
+  if(seq!==_dashboardLoadSeq) return;
   _dashLedgerByLib={};
   ledgerResults.forEach(r=>{ _dashLedgerByLib[r.name]=r.rows; });
   _dashLedgerAll=ledgerResults.flatMap(r=>r.rows);
-  // Reset selected lib if it no longer exists
   if(_dashSelectedLib!=='all' && !_dashLedgerByLib[_dashSelectedLib]) _dashSelectedLib='all';
 
   const counts={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};
@@ -1070,14 +1100,54 @@ async function loadDashboard(force=false){
   renderHistStatusFilters();
   renderProcessingHistory();
   renderPieChart();
-  _resetHowItWorks();
-
-  // Async: real health validation (may be slower)
-  const {data:health}=await requestJson('/api/health');
-  if(health && typeof health==='object'){
-    renderDashboardSystemHealth(health);
-    renderDashboardSchedule(health);
+}
+async function dashboardRefreshHealth(full=false){
+  const requestSeq=++_dashboardHealthRequestSeq;
+  _dashboardHealthLoading=true;
+  const refreshBtn=document.getElementById('dashboard-health-refresh');
+  if(refreshBtn){
+    refreshBtn.disabled=true;
+    refreshBtn.textContent=full ? 'Validating…' : 'Refreshing…';
   }
+  try{
+    const mode=full ? 'full' : 'lite';
+    const {data:health}=await requestJson('/api/health?mode='+encodeURIComponent(mode));
+    if(requestSeq!==_dashboardHealthRequestSeq) return;
+    if(health && typeof health==='object'){
+      _dashboardHealthMode=health?.validation?.mode || mode;
+      renderDashboardSystemHealth(health);
+      renderDashboardSchedule(health);
+    }
+  }finally{
+    if(requestSeq===_dashboardHealthRequestSeq){
+      _dashboardHealthLoading=false;
+      const currentBtn=document.getElementById('dashboard-health-refresh');
+      if(currentBtn){
+        currentBtn.disabled=false;
+        currentBtn.textContent=_dashboardHealthMode==='full' ? 'Revalidate' : 'Validate';
+      }
+    }
+  }
+}
+async function loadDashboard(force=false){
+  const seq=++_dashboardLoadSeq;
+  const tsEl=document.getElementById('dash-last-updated');
+  if(tsEl) tsEl.textContent='Updated '+new Date().toLocaleTimeString();
+  const cfg=await loadConfig(force);
+  if(seq!==_dashboardLoadSeq) return;
+  const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
+  const enabledLibs=allLibs.filter(lib=>lib.enabled!==false);
+  const selectedNames=new Set((cfg.schedule_libraries&&cfg.schedule_libraries.length)?cfg.schedule_libraries:enabledLibs.map(lib=>lib.name));
+  const scheduledLibs=enabledLibs.filter(lib=>selectedNames.has(lib.name)).map(lib=>lib.name);
+  _dashboardLibraries={enabled:enabledLibs.map(lib=>lib.name), scheduled:scheduledLibs};
+  _dashLedgerByLib={};
+  _dashLedgerAll=[];
+  if(_dashSelectedLib!=='all' && !_dashLedgerByLib[_dashSelectedLib]) _dashSelectedLib='all';
+  _resetHowItWorks();
+  renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs);
+  renderDashboardActionStationFromConfig(cfg, scheduledLibs);
+  loadDashboardDeferredData(seq, cfg, enabledLibs).catch(err=>console.warn('Dashboard deferred load failed', err));
+  dashboardRefreshHealth(false).catch(err=>console.warn('Dashboard quick health failed', err));
 }
 function setPendingTestBadge(elId, label='Working…'){
   const el=document.getElementById(elId);
@@ -1527,6 +1597,8 @@ try{
     const initial=((location.hash||'').replace(/^#/,'').trim());
     if(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial)){
       showPage(initial);
+    }else{
+      showPage('dashboard');
     }
   });
 }catch(e){}
@@ -1541,5 +1613,4 @@ registerModalLifecycle('theme-modal',{requestClose:closeThemeModal});
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 renderTaskCards();
-loadDashboard();
 bindOffsetWheel();

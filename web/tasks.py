@@ -25,7 +25,11 @@ WEB_DIR = Path(__file__).resolve().parent
 LOGS_DIR = Path("/app/logs")
 EXPORTS_DIR = LOGS_DIR / "exports"
 _HEALTH_CACHE_TTL = 30
-_health_cache: dict[str, object] = {"ts": 0.0, "key": None, "payload": None}
+_HEALTH_CACHE_EMPTY = {"ts": 0.0, "key": None, "payload": None}
+_health_cache: dict[str, dict[str, object]] = {
+    "lite": dict(_HEALTH_CACHE_EMPTY),
+    "full": dict(_HEALTH_CACHE_EMPTY),
+}
 CRON_FILE_PATH = Path(os.environ.get("MEDIA_TRACKS_CRON_FILE", "/etc/cron.d/media-tracks"))
 CRON_COMMAND = "python3 -m script.media_tracks >> /proc/1/fd/1 2>> /proc/1/fd/2"
 SCHEDULER_AUTHORITY = os.environ.get("MEDIA_TRACKS_SCHEDULER_AUTHORITY", "cron").strip().lower() or "cron"
@@ -42,7 +46,7 @@ def save_config(data: dict) -> dict:
         raise ValueError(errors)
     with open(CONFIG_PATH, "w", encoding="utf-8") as fh:
         yaml.dump(normalized, fh, default_flow_style=False, allow_unicode=True, sort_keys=False)
-    _health_cache = {"ts": 0.0, "key": None, "payload": None}
+    _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
     return normalized
 
 
@@ -127,7 +131,7 @@ def refresh_scheduler(config: dict | None = None) -> dict:
     }
     if not scheduler_managed_via_cron():
         details["detail"] = "Scheduler is managed inside the Flask process; no cron refresh needed."
-        _health_cache = {"ts": 0.0, "key": None, "payload": None}
+        _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
         return details
     contents = _render_cron_file(schedule_enabled, cron_schedule)
     try:
@@ -145,7 +149,7 @@ def refresh_scheduler(config: dict | None = None) -> dict:
         stderr = (completed.stderr or "").strip()
         if stderr:
             details["detail"] = f"{details['detail']} ({stderr})"
-        _health_cache = {"ts": 0.0, "key": None, "payload": None}
+        _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
         return details
     except subprocess.CalledProcessError as exc:
         details["ok"] = False
@@ -162,7 +166,7 @@ def refresh_scheduler(config: dict | None = None) -> dict:
                 temp_candidate.unlink()
             except OSError:
                 pass
-        _health_cache = {"ts": 0.0, "key": None, "payload": None}
+        _health_cache = {"lite": dict(_HEALTH_CACHE_EMPTY), "full": dict(_HEALTH_CACHE_EMPTY)}
     return details
 
 
@@ -282,11 +286,17 @@ def next_cron_run(cron_expr: str) -> str | None:
     return None
 
 
-def api_health_payload() -> dict:
+def _health_validation_state(label: str, detail: str) -> dict:
+    return {"state": "unknown", "label": label, "detail": detail}
+
+
+def api_health_payload(mode: str = "lite") -> dict:
     cfg = load_config()
+    resolved_mode = "full" if str(mode or "").strip().lower() == "full" else "lite"
     scheduler_source = active_scheduler_source()
     cache_key = json.dumps(
         {
+            "mode": resolved_mode,
             "plex_url": (cfg.get("plex_url") or "").strip(),
             "plex_token": bool((cfg.get("plex_token") or "").strip()),
             "tmdb_key": bool((cfg.get("tmdb_api_key") or "").strip()),
@@ -301,14 +311,17 @@ def api_health_payload() -> dict:
         sort_keys=True,
     )
     now = time.time()
-    if _health_cache["payload"] is not None and _health_cache["key"] == cache_key and now - float(_health_cache["ts"] or 0.0) < _HEALTH_CACHE_TTL:
-        return dict(_health_cache["payload"])
+    cache_bucket = _health_cache.setdefault(resolved_mode, dict(_HEALTH_CACHE_EMPTY))
+    if cache_bucket["payload"] is not None and cache_bucket["key"] == cache_key and now - float(cache_bucket["ts"] or 0.0) < _HEALTH_CACHE_TTL:
+        return dict(cache_bucket["payload"])
 
     result = {}
     plex_url = (cfg.get("plex_url") or "").strip().rstrip("/")
     plex_token = (cfg.get("plex_token") or "").strip()
     if not plex_url or not plex_token:
         result["plex"] = {"state": "off", "label": "Not configured"}
+    elif resolved_mode != "full":
+        result["plex"] = _health_validation_state("Ready to validate", "Click Validate to test the Plex connection.")
     else:
         try:
             libraries = integrations.plex_sections(plex_url, plex_token)
@@ -319,6 +332,8 @@ def api_health_payload() -> dict:
     tmdb_key = (cfg.get("tmdb_api_key") or "").strip()
     if not tmdb_key:
         result["tmdb"] = {"state": "off", "label": "Not configured"}
+    elif resolved_mode != "full":
+        result["tmdb"] = _health_validation_state("Ready to validate", "Click Validate to test the TMDB API key.")
     else:
         try:
             tmdb_result = integrations.test_tmdb_key(tmdb_key)
@@ -329,6 +344,8 @@ def api_health_payload() -> dict:
     golden_source_url = (cfg.get("golden_source_url") or "").strip()
     if not golden_source_url:
         result["golden_source"] = {"state": "off", "label": "Not configured"}
+    elif resolved_mode != "full":
+        result["golden_source"] = _health_validation_state("Ready to validate", "Click Validate to check the Golden Source feed.")
     else:
         try:
             _, rows, _, _ = fetch_golden_source_catalog(golden_source_url)
@@ -336,7 +353,11 @@ def api_health_payload() -> dict:
         except Exception as exc:
             result["golden_source"] = {"state": "error", "label": "Load failed", "detail": str(exc)[:100]}
 
-    result["toolchain"] = integrations.toolchain_status()
+    result["toolchain"] = (
+        integrations.toolchain_status()
+        if resolved_mode == "full"
+        else _health_validation_state("Ready to validate", "Click Validate to check yt-dlp and ffmpeg.")
+    )
 
     roots = get_media_roots(cfg)
     missing_paths = []
@@ -389,9 +410,18 @@ def api_health_payload() -> dict:
     else:
         result["schedule"] = {"state": "ok", "label": "Enabled", "cron": cron_expr, "configured_cron": (cfg.get("cron_schedule") or "0 3 * * *").strip(), "next_run": next_run, "libraries": len(scheduled), "source": scheduler_source, "detail": detail_suffix}
 
-    _health_cache["ts"] = now
-    _health_cache["key"] = cache_key
-    _health_cache["payload"] = dict(result)
+    result["validation"] = {
+        "mode": resolved_mode,
+        "full": resolved_mode == "full",
+        "label": "Validated now" if resolved_mode == "full" else "Quick status",
+        "detail": "External integrations are checked only when you run Validate."
+        if resolved_mode != "full"
+        else "All dashboard integrations were checked live.",
+    }
+
+    cache_bucket["ts"] = now
+    cache_bucket["key"] = cache_key
+    cache_bucket["payload"] = dict(result)
     return result
 
 

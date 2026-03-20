@@ -132,7 +132,7 @@ def list_cookies():
 
 @app.route("/api/health", methods=["GET"])
 def api_health():
-    return jsonify(services.api_health_payload())
+    return jsonify(services.api_health_payload(request.args.get("mode", "lite")))
 
 
 def _required_library_arg(value: str):
