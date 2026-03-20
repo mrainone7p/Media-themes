@@ -46,6 +46,7 @@ from config_logic import (
     _FILENAME_INVALID_CHARS_RE,
     _coerce_config_bool,
     _coerce_config_number,
+    _normalize_cron_schedule,
     config_error,
     load_config,
     load_raw_config,
