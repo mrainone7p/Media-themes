@@ -5024,8 +5024,42 @@ function _applyContextFinish(ctx,state,meta,pct=100){
   const copy=ctx.scopeLabel ? `${statusLabel} · ${_shortScopeLabel(ctx.scopeLabel)}` : statusLabel;
   setProgressState(ctx.scope,state,{copy,pct,showRetry:true,meta,showStop:false});
   if(ctx.scope==='db') _setDbButtons(false);
-  if(ctx.scope==='run') _setRunUiIdle(state==='success'?'Done · '+new Date().toLocaleTimeString():(state==='stopped'?'Stopped':'Error'), state==='success');
+  if(ctx.scope==='run') _setRunUiIdle(state==='success' ? 'Done · '+new Date().toLocaleTimeString() : (state==='stopped' ? 'Stopped by user' : 'Error — review logs'), state==='success');
   if(ctx.scope==='tasks'){}
+}
+
+function _normalizeRunOutcome(outcome=''){
+  const normalized=String(outcome||'').trim().toLowerCase();
+  return ['success','stopped','error'].includes(normalized) ? normalized : '';
+}
+
+function _runOutcomeMeta(state,payload={}){
+  const summary=String(payload.summary||payload.last_line||'').trim();
+  if(summary) return summary;
+  if(state==='success') return 'Run completed.';
+  if(state==='stopped') return 'Run stopped.';
+  return 'Run failed.';
+}
+
+async function _finishRunContext(ctx,payload=null){
+  if(!ctx || ctx.finishing) return;
+  ctx.finishing=true;
+  let d=payload;
+  if(!d){
+    try{
+      const r=await fetch('/api/run/status');
+      d=await r.json();
+    }catch(e){
+      d={};
+    }
+  }
+  if(d?.scope) ctx.scopeLabel=d.scope;
+  const state=_normalizeRunOutcome(d?.outcome) || (ctx.stoppedByUser ? 'stopped' : 'error');
+  const meta=_runOutcomeMeta(state,d||{});
+  _applyContextFinish(ctx,state,meta);
+  toast(meta,state==='success'?'ok':state==='stopped'?'info':'err');
+  loadDatabase(); loadTasksPage(); loadRunPage();
+  _activeRunContext=null;
 }
 
 function _handleProgressData(ctx,p){
@@ -5041,14 +5075,13 @@ function _handleProgressData(ctx,p){
 function _connectRunStream(ctx){
   if(_dbEvtSrc){ _dbEvtSrc.close(); }
   _dbEvtSrc=new EventSource(apiUrl('/api/run/stream'));
-  _dbEvtSrc.onmessage=e=>{
+  _dbEvtSrc.onmessage=async e=>{
     _dbLastProgress=Date.now();
     if(!_activeRunContext) return;
     if(e.data==='__DONE__'){
-      _dbEvtSrc.close(); _dbEvtSrc=null; _dbStopPoll();
-      _applyContextFinish(_activeRunContext,'success','Run completed.');
-      loadDatabase(); loadTasksPage();
-      _activeRunContext=null;
+      if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
+      _dbStopPoll();
+      await _finishRunContext(_activeRunContext);
       return;
     }
     if(e.data.startsWith('@@PROGRESS@@')){
@@ -5071,10 +5104,7 @@ function _dbStartPoll(){
       if(!d.active){
         _dbStopPoll();
         if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
-        const doneMeta=(_activeRunContext.stoppedByUser?'Stopped by user.':'Run completed.');
-        _applyContextFinish(_activeRunContext,_activeRunContext.stoppedByUser?'stopped':'success',doneMeta);
-        loadDatabase(); loadTasksPage();
-        _activeRunContext=null;
+        await _finishRunContext(_activeRunContext,d);
         return;
       }
       if(d.last_line && Date.now()-_dbLastProgress > 2500){
