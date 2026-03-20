@@ -1,7 +1,80 @@
 
 // ── Utils ────────────────────────────────────────────────────────────────────
+const PLAY_ICON_SVG='<svg class="icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+const PAUSE_ICON_SVG='<svg class="icon-pause" viewBox="0 0 24 24" fill="#000"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
 
 // ── SECTION: MODAL / AUDIO HELPERS ───────────────────────────────────────────
+
+/**
+ * Bind a set of DOM elements into a reusable audio player controller.
+ * Used by all modal audio players (YouTube search, theme preview, trim, source editor).
+ */
+function bindModalAudio({audioId, playBtnId, sliderId, curId, durId, statusId}){
+  const audio=document.getElementById(audioId);
+  const playBtn=document.getElementById(playBtnId);
+  const slider=document.getElementById(sliderId);
+  const curEl=document.getElementById(curId);
+  const durEl=document.getElementById(durId);
+  const statusEl=statusId?document.getElementById(statusId):null;
+  const setPlaying=(isPlaying)=>{ if(playBtn) playBtn.innerHTML=isPlaying?PAUSE_ICON_SVG:PLAY_ICON_SVG; };
+  const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+  const syncDuration=()=>{ if(durEl) durEl.textContent=audio.duration?fmt(audio.duration):'—'; };
+  const syncProgress=()=>{
+    const dur=audio.duration||0;
+    const cur=audio.currentTime||0;
+    if(slider && dur) slider.value=(cur/dur*100);
+    if(curEl) curEl.textContent=fmt(cur);
+  };
+  return {
+    audio,
+    setHandlers({onloadedmetadata, ontimeupdate, onended, onerror}={}){
+      audio.onloadedmetadata=()=>{ syncDuration(); if(typeof onloadedmetadata==='function') onloadedmetadata(audio); };
+      audio.ontimeupdate=()=>{ syncProgress(); if(typeof ontimeupdate==='function') ontimeupdate(audio); };
+      audio.onended=()=>{ setPlaying(false); if(typeof onended==='function') onended(audio); };
+      audio.onerror=()=>{ setPlaying(false); if(typeof onerror==='function') onerror(audio); };
+    },
+    toggle(){
+      if(audio.paused){
+        stopAllAudio(audioId);
+        audio.play().then(()=>setPlaying(true)).catch(()=>{});
+      }else{
+        audio.pause();
+        setPlaying(false);
+      }
+    },
+    play(){
+      stopAllAudio(audioId);
+      return audio.play().then(()=>setPlaying(true));
+    },
+    seek(val){
+      if(!audio.duration) return;
+      const pct=clamp(Number(val)||0,0,100);
+      audio.currentTime=pct/100*audio.duration;
+    },
+    skip(seconds){
+      if(!audio.duration) return;
+      audio.currentTime=clamp(audio.currentTime+seconds,0,audio.duration);
+    },
+    cleanup({clearSrc=true}={}){
+      audio.pause();
+      if(clearSrc) audio.src='';
+      audio.onloadedmetadata=null;
+      audio.ontimeupdate=null;
+      audio.onended=null;
+      audio.onerror=null;
+      if(slider) slider.value=0;
+      if(curEl) curEl.textContent='0:00';
+      if(durEl) durEl.textContent='—';
+      if(statusEl) statusEl.textContent='';
+      setPlaying(false);
+    },
+    syncDuration,
+    syncProgress,
+    setStatus(msg){ if(statusEl) statusEl.textContent=msg; },
+    setPlaying
+  };
+}
+
 let _confirmResolver=null;
 const _modalLifecycles={};
 
