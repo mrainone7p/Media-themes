@@ -232,15 +232,27 @@ function _dbStartPoll(){
   }, 2000);
 }
 
+function _runCallerSurface(scope, options={}){
+  const explicit=String(options.callerSurface||'').trim().toLowerCase();
+  if(['dashboard','scheduler','tasks'].includes(explicit)) return explicit;
+  if(typeof _activePageName==='function'){
+    const active=String(_activePageName()||'').trim().toLowerCase();
+    if(active==='dashboard') return 'dashboard';
+    if(active==='scheduler') return 'scheduler';
+  }
+  return scope==='tasks' ? 'tasks' : 'tasks';
+}
+
 async function startPipelineRun(passNum,scope='db',options={}){
   const libraries=(options.libraries||[]).map(v=>String(v||'').trim()).filter(Boolean);
   const scopeLabel=String(options.scopeLabel||'').trim() || _formatScopeLabel(libraries, scope==='db'?'selected library':'scheduled libraries');
+  const callerSurface=_runCallerSurface(scope, options);
   _lastRunRequest[scope]={mode:'pass',pass:passNum,libraries:[...libraries],scopeLabel};
   const ctx={scope,pass:passNum,stoppedByUser:false,libraries,scopeLabel};
   _activeRunContext=ctx;
   _dbLastProgress=Date.now();
   _applyContextStart(ctx);
-  const body={scope_label:scopeLabel};
+  const body={scope_label:scopeLabel,caller_surface:callerSurface};
   if(libraries.length===1) body.library=libraries[0];
   else if(libraries.length>1) body.libraries=libraries;
   const r=await fetch('/api/run/pass/'+passNum,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -258,7 +270,7 @@ function dbRunPass(passNum){
   if(!_activeLib){ toast('Select a library first','info'); return; }
   return startPipelineRun(passNum,'db',{libraries:[_activeLib],scopeLabel:`library "${_activeLib}"`});
 }
-async function startScheduledRun(){
+async function startScheduledRun(callerSurface='scheduler'){
   const terminal=document.getElementById('terminal');
   if(terminal) terminal.innerHTML='';
   const libraries=_selectedRunLibraries();
@@ -269,7 +281,7 @@ async function startScheduledRun(){
   _activeRunContext=ctx;
   _dbLastProgress=Date.now();
   _applyContextStart(ctx);
-  const r=await fetch('/api/run/schedule-now',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({libraries,scope_label:requestedScopeLabel})});
+  const r=await fetch('/api/run/schedule-now',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({libraries,scope_label:requestedScopeLabel,caller_surface:callerSurface})});
   const d=await r.json().catch(()=>({}));
   if(!r.ok){
     _applyContextFinish(ctx,'error',d.error||'Unable to start scheduled run.');

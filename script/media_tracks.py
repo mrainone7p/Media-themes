@@ -48,7 +48,6 @@ sidecar file for every movie in your media library.
 """
 
 import json
-import logging
 import os
 import re
 import subprocess
@@ -62,6 +61,7 @@ import requests
 import yaml
 
 from shared.file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
+from shared.logging_utils import get_project_logger, summarize_libraries
 from shared.golden_source_csv import parse_golden_source_csv_map
 from shared.storage import (
     CONFIG_PATH,
@@ -79,12 +79,7 @@ from shared.yt_dlp_utils import yt_dlp_base_flags
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
-log = logging.getLogger("media-tracks")
+log = get_project_logger("script.media_tracks")
 
 # Simple in-memory caches to reduce repeated calls per run
 _tmdb_cache: dict = {}
@@ -1176,6 +1171,11 @@ def main():
     if explicit_run_libraries:
         log.info(f"RUN_LIBRARIES override active — limiting this run to: {explicit_run_libraries}")
 
+    caller_surface = str(os.environ.get("RUN_CALLER_SURFACE", "tasks") or "tasks").strip().lower() or "tasks"
+    if caller_surface not in {"dashboard", "scheduler", "tasks"}:
+        caller_surface = "tasks"
+    requested_scope_label = str(os.environ.get("RUN_SCOPE_LABEL", "") or "").strip()
+
     schedule_enabled = cfg.get("schedule_enabled", True)
     manual_schedule_now = (os.environ.get("RUN_SCHEDULE_NOW", "").strip().lower() in {"1", "true", "yes", "on"})
     if force_pass == 0 and not schedule_enabled and not manual_schedule_now:
@@ -1188,6 +1188,7 @@ def main():
         return
 
     log.info("Media Tracks starting up")
+    log.info("Run context: pass=%s caller_surface=%s scope_label=%s libraries=%s", force_pass or 0, caller_surface, requested_scope_label or "(auto)", summarize_libraries([l["name"] for l in libraries]))
     log.info(f"Libraries: {[l['name'] for l in libraries]}")
     if force_pass in (2, 3):
         log.info("Skipping Plex connection — running from existing ledger")
