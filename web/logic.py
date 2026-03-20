@@ -1522,6 +1522,54 @@ def record_task(task_name, status="success", scope="", summary="", details=None,
         pass
 
 
+RUN_TASK_NAMES = {
+    "Run Pipeline",
+    "Run Scan Now",
+    "Run Find Sources Now",
+    "Run Download Themes Now",
+}
+
+
+def _task_name_for_pass(run_pass: int) -> str:
+    return {
+        1: "Scan Libraries",
+        2: "Find Sources",
+        3: "Download Themes",
+    }.get(run_pass, "Pipeline Run")
+
+
+def _run_history_entry(run: dict) -> dict:
+    run_pass = int(run.get("pass") or 0)
+    run_status = str(run.get("status") or run.get("outcome") or "success")
+    libraries = [str(name).strip() for name in (run.get("libraries") or []) if str(name).strip()]
+    return {
+        "time": run.get("time", ""),
+        "task": _task_name_for_pass(run_pass),
+        "status": run_status,
+        "outcome": run_status,
+        "scope": str(run.get("scope") or ""),
+        "summary": run.get("summary", ""),
+        "details": {
+            "pass": run_pass,
+            "stats": run.get("stats", {}),
+            "return_code": run.get("return_code"),
+            "stop_requested": bool(run.get("stop_requested")),
+            "libraries": libraries,
+        },
+        "duration_seconds": run.get("duration_seconds") or 0,
+        "is_run_history": True,
+    }
+
+
+def _is_legacy_run_task_entry(entry: dict) -> bool:
+    details = entry.get("details")
+    return (
+        isinstance(details, dict)
+        and int(details.get("pass") or 0) > 0
+        and str(entry.get("task") or "") in RUN_TASK_NAMES
+    )
+
+
 def load_task_entries(limit=250):
     entries = []
     if TASKS_FILE.exists():
@@ -1530,25 +1578,17 @@ def load_task_entries(limit=250):
             if not line:
                 continue
             try:
-                entries.append(json.loads(line))
+                entry = json.loads(line)
+                if _is_legacy_run_task_entry(entry):
+                    continue
+                entries.append(entry)
             except Exception:
                 continue
     run_entries = []
     for run_file in sorted(RUNS_DIR.glob("*.json")):
         try:
             run = json.loads(run_file.read_text(encoding="utf-8"))
-            run_status = str(run.get("status") or run.get("outcome") or "success")
-            run_entries.append({
-                "time": run.get("time", ""),
-                "task": {1: "Scan Libraries", 2: "Find Sources", 3: "Download Themes"}.get(run.get("pass"), "Pipeline Run"),
-                "status": run_status,
-                "outcome": run_status,
-                "scope": "",
-                "summary": run.get("summary", ""),
-                "details": {"pass": run.get("pass", 0), "stats": run.get("stats", {}), "return_code": run.get("return_code"), "stop_requested": bool(run.get("stop_requested"))},
-                "duration_seconds": run.get("duration_seconds") or 0,
-                "is_run_history": True,
-            })
+            run_entries.append(_run_history_entry(run))
         except Exception:
             continue
     return sorted(entries + run_entries, key=lambda entry: entry.get("time", ""), reverse=True)[: max(1, int(limit or 250))]
@@ -1773,14 +1813,6 @@ class RunManager:
                 "return_code": return_code,
                 "stop_requested": stop_requested,
             }))
-            record_task(
-                {1: "Run Scan Now", 2: "Run Find Sources Now", 3: "Run Download Themes Now"}.get(run_pass, "Run Pipeline"),
-                outcome,
-                resolved_scope,
-                summary,
-                {"pass": run_pass, "stats": stats, "return_code": return_code, "stop_requested": stop_requested, "libraries": explicit_libraries},
-                duration,
-            )
             self.started_at = None
             self.scope_label = ""
             self.libraries = []
