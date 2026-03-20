@@ -41,6 +41,7 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app_source = (ROOT / "web" / "app.py").read_text(encoding="utf-8")
+        cls.services_source = (ROOT / "web" / "services.py").read_text(encoding="utf-8")
 
     def test_ledger_routes_use_required_library_helper(self):
         for snippet in (
@@ -53,6 +54,14 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
 
     def test_web_app_no_longer_falls_back_to_theme_log_for_ledger_routes(self):
         self.assertNotIn('path = ledger_path_for(library) if library else str(logic.LOGS_DIR / "theme_log.csv")', self.app_source)
+
+    def test_scan_route_delegates_to_canonical_pass_handler(self):
+        self.assertIn('@app.route("/api/run/scan", methods=["POST"])\ndef trigger_scan():\n    return trigger_pass(1)', self.app_source)
+        self.assertNotIn("def trigger_scan_payload(", self.services_source)
+
+    def test_legacy_theme_routes_removed_from_app(self):
+        self.assertNotIn('@app.route("/api/theme/info")', self.app_source)
+        self.assertNotIn('@app.route("/api/media")', self.app_source)
 
 
 if __name__ == "__main__":

@@ -911,11 +911,6 @@ def import_golden_source_payload(data: dict):
     return ledger.golden_source_import_summary(data)
 
 
-def theme_info_payload(folder: str):
-    _, _, themes = _logic_modules()
-    return themes.theme_info_payload(folder)
-
-
 def trim_theme_payload(data: dict):
     _, _, themes = _logic_modules()
     return themes.trim_theme_payload(data)
@@ -980,12 +975,6 @@ def tmdb_lookup_payload(title: str, year: str):
     if not data:
         return {"ok": False, "error": "not found"}, 404
     return {"ok": True, **data}, 200
-
-
-def media_payload(library: str, show: str, *, nocache: bool = False):
-    _ = nocache
-    _, _, themes = _logic_modules()
-    return themes.media_payload(library, show, nocache=nocache)
 
 
 def youtube_search_payload(data: dict):
@@ -1085,10 +1074,6 @@ def trigger_schedule_now_payload(data: dict):
     if not RUN_MANAGER.start(force_pass=0, explicit_libraries=explicit_libraries, scope_label=scope_label, allow_schedule_disabled=True):
         return {"error": "run in progress"}, 409
     return {"ok": True, "libraries": explicit_libraries, "scope_label": scope_label}, 200
-
-
-def trigger_scan_payload(data: dict):
-    return trigger_pass_payload(1, data)
 
 
 def stop_run_payload():
