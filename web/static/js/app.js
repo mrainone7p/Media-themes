@@ -1,3 +1,5 @@
+// App bootstrap and shared helpers.
+
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 const PLAY_ICON_SVG='<svg class="icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
@@ -1474,3 +1476,122 @@ async function saveConfiguration(){
   } else toast(data?.message || data?.error || 'Save failed','err');
 }
 
+// ── Shared audio / input helpers ───────────────────────────────────────────
+let _curKey=null;
+const _audioEl=()=>document.getElementById('global-audio');
+
+function stopCurrentAudio(){
+  if(!_curKey) return;
+  const audio=_audioEl();
+  if(audio){
+    audio.pause();
+    audio.ontimeupdate=null;
+    audio.onended=null;
+  }
+  document.querySelectorAll('.play-btn').forEach(btn=>{
+    btn.innerHTML=PLAY_ICON_SVG;
+  });
+  const oldFill=document.getElementById('fill-'+_curKey);
+  if(oldFill) oldFill.style.width='0%';
+  const oldTime=document.getElementById('time-'+_curKey);
+  if(oldTime) oldTime.textContent='0:00';
+  _curKey=null;
+}
+
+function stopAllAudio(keepId){
+  stopCurrentAudio();
+  const ga=_audioEl();
+  if(ga) ga.pause();
+  const keep=new Set(Array.isArray(keepId) ? keepId : (keepId ? [keepId] : []));
+  ['yt-modal-audio','theme-modal-audio','trim-modal-audio','se-audio'].forEach(id=>{
+    if(keep.has(id)) return;
+    const audio=document.getElementById(id);
+    if(!audio) return;
+    audio.pause();
+    audio.onloadedmetadata=null;
+    audio.ontimeupdate=null;
+    audio.onended=null;
+    audio.onerror=null;
+    audio.src='';
+  });
+  if(typeof resetActivePreviewBtn==='function') resetActivePreviewBtn();
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) stopAllAudio();
+});
+window.addEventListener('blur',()=>{ stopAllAudio(); });
+
+function fmt(s){
+  const total=Math.max(0, Number(s)||0);
+  const m=Math.floor(total/60);
+  const sec=Math.floor(total%60);
+  return m+':'+(sec<10?'0':'')+sec;
+}
+
+function parseTrim(val){
+  if(typeof val==='number') return val;
+  const raw=String(val).trim();
+  if(raw.includes(':')){
+    const parts=raw.split(':');
+    return (parseInt(parts[0],10)||0)*60+(parseInt(parts[1],10)||0);
+  }
+  return parseInt(raw,10)||0;
+}
+
+function normalizeOffsetInput(el){
+  if(!el) return 0;
+  const s=parseTrim(el.value||'0');
+  el.value=fmt(Math.max(0,s));
+  return s;
+}
+
+function adjustOffset(el, delta){
+  if(!el) return;
+  const cur=parseTrim(el.value||0);
+  const next=Math.max(0, cur + (delta||0));
+  el.value=fmt(next);
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+}
+
+function bindOffsetWheel(){
+  if(window._offsetWheelBound) return;
+  window._offsetWheelBound=true;
+  document.addEventListener('wheel', (event)=>{
+    const el=event.target;
+    if(el && el.classList && el.classList.contains('offset-input')){
+      event.preventDefault();
+      adjustOffset(el, event.deltaY<0 ? 5 : -5);
+    }
+  }, {passive:false});
+}
+
+try{
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    await loadUiTerminology();
+    await loadStatusModel();
+    initSidebarNav();
+    initSharedProgress();
+    removeItemDetailsPanel();
+    updateGlobalRunStatus();
+    setInterval(updateGlobalRunStatus, 4000);
+    setInterval(removeItemDetailsPanel, 2000);
+    const initial=((location.hash||'').replace(/^#/,'').trim());
+    if(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial)){
+      showPage(initial);
+    }
+  });
+}catch(e){}
+
+registerModalLifecycle('confirm-modal',{requestClose:closeConfirmModal});
+registerModalLifecycle('delete-modal',{requestClose:closeDeleteModal});
+registerModalLifecycle('gs-modal',{requestClose:closeGoldenSourceModal});
+registerModalLifecycle('search-modal',{requestClose:closeSearchModal});
+registerModalLifecycle('trim-modal',{requestClose:closeTrimModal});
+registerModalLifecycle('yt-modal',{requestClose:closeYtModal});
+registerModalLifecycle('theme-modal',{requestClose:closeThemeModal});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+renderTaskCards();
+loadDashboard();
+bindOffsetWheel();

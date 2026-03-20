@@ -1,3 +1,5 @@
+// Tasks page history, export, and maintenance behavior.
+
 function openRunResults(pass){
   const map={1:'MISSING',2:'STAGED',3:'AVAILABLE'};
   const st=map[pass]||'';
@@ -406,4 +408,3 @@ async function taskClearAllSources(){
     reloadDatabase:true
   });
 }
-
