@@ -27,6 +27,7 @@ COPY script/__init__.py       /app/script/__init__.py
 COPY script/media_tracks.py  /app/script/media_tracks.py
 COPY script/entrypoint.sh    /app/script/entrypoint.sh
 COPY web/*.py                /app/web/
+COPY web/run_logic.py        /app/web/run_logic.py
 COPY web/template.html       /app/web/template.html
 COPY web/ui_terminology.yaml /app/web/ui_terminology.yaml
 COPY web/static/             /app/web/static/
