@@ -277,6 +277,7 @@ def trigger_schedule_now():
 
 @app.route("/api/run/scan", methods=["POST"])
 def trigger_scan():
+    # Legacy compatibility alias for older clients that still invoke scan directly.
     return trigger_pass(1)
 
 
