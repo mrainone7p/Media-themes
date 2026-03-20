@@ -150,17 +150,13 @@
       <!-- Processing History -->
       <div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
-          <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Processing History</div>
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Status Snapshot</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Dashboard stays lightweight; open Theme Manager for row-level ledger history.</div>
+          </div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
-            <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">Group
-              <select id="dash-hist-group" onchange="renderProcessingHistory()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:3px 7px;outline:none;cursor:pointer">
-                <option value="day">Day</option><option value="week">Week</option><option value="month" selected>Month</option><option value="year">Year</option>
-              </select>
-            </label>
-            <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">Show last
-              <input id="dash-hist-count" type="number" value="12" min="1" max="60" onchange="renderProcessingHistory()" style="width:50px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:3px 6px;outline:none;font-family:var(--mono);text-align:center">
-            </label>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('theme-manager')">Open Theme Manager</button>
           </div>
         </div>
         <div class="dash-chart-area">

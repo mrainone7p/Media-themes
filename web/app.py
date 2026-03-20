@@ -22,6 +22,7 @@ WEB_PORT = int(os.environ.get("WEB_PORT", "8182"))
 _QUIET_REQUEST_RULES = {
     "/api/run/status": {"success_ms": None, "label": "Run status poll"},
     "/api/health": {"success_ms": None, "label": "Health check"},
+    "/api/dashboard/summary": {"success_ms": None, "label": "Dashboard summary refresh"},
     "/api/tasks/history": {"success_ms": None, "label": "Task history refresh"},
     "/api/ledger": {"success_ms": None, "label": "Ledger refresh"},
     "/api/cookies": {"success_ms": None, "label": "Cookie inventory"},
@@ -128,6 +129,11 @@ def list_cookies():
 @app.route("/api/health", methods=["GET"])
 def api_health():
     return jsonify(services.api_health_payload(request.args.get("mode", "lite")))
+
+
+@app.route("/api/dashboard/summary", methods=["GET"])
+def dashboard_summary():
+    return jsonify(services.dashboard_summary_payload())
 
 
 def _required_library_arg(value: str):

@@ -346,6 +346,7 @@ TASK_ACTIVITY_SUMMARY_FILE = LOGS_DIR / "task_activity_summary.jsonl"
 SCRIPT_MODULE = "script.media_tracks"
 TASK_ACTIVITY_MAX_ENTRIES = 1000
 _TASK_ACTIVITY_LOCK = threading.Lock()
+DASHBOARD_STATUS_KEYS = ("MISSING", "STAGED", "APPROVED", "AVAILABLE", "FAILED", "UNMONITORED")
 
 for path in (RUNS_DIR,):
     path.mkdir(parents=True, exist_ok=True)
@@ -528,6 +529,70 @@ def load_task_entries(limit=250):
         _rebuild_task_activity_summary()
         entries = _read_summary_entries()
     return sorted(entries, key=lambda entry: entry.get("time", ""), reverse=True)[: max(1, int(limit or 250))]
+
+
+def _empty_dashboard_status_counts() -> dict:
+    return {status: 0 for status in DASHBOARD_STATUS_KEYS}
+
+
+def _dashboard_counts_for_rows(rows: list[dict]) -> dict:
+    counts = _empty_dashboard_status_counts()
+    for row in rows:
+        status = str(row.get("status", "") or "").upper()
+        if status in counts:
+            counts[status] += 1
+    return counts
+
+
+def _dashboard_latest_task(entries: list[dict], matcher) -> dict | None:
+    for entry in entries:
+        task_name = str(entry.get("task", "") or "")
+        if matcher(task_name, entry):
+            return entry
+    return None
+
+
+def _dashboard_recent_activity_summary(entries: list[dict]) -> dict:
+    return {
+        "scan": _dashboard_latest_task(entries, lambda task, entry: re.search(r"scan", task, re.I) or int((entry.get("details") or {}).get("pass") or 0) == 1),
+        "discover": _dashboard_latest_task(entries, lambda task, entry: re.search(r"find sources|source discovery", task, re.I) or int((entry.get("details") or {}).get("pass") or 0) == 2),
+        "download": _dashboard_latest_task(entries, lambda task, entry: re.search(r"download", task, re.I) or int((entry.get("details") or {}).get("pass") or 0) == 3),
+        "task": _dashboard_latest_task(entries, lambda _task, _entry: True),
+    }
+
+
+def dashboard_summary_payload() -> dict:
+    cfg = load_config()
+    all_libraries = [
+        lib for lib in (cfg.get("libraries") or [])
+        if str(lib.get("name", "") or "").strip() and (not lib.get("type") or lib.get("type") in {"movie", "show"})
+    ]
+    enabled_libraries = [lib for lib in all_libraries if lib.get("enabled") is not False]
+    enabled_names = [str(lib.get("name", "") or "").strip() for lib in enabled_libraries]
+    scheduled_pool = {str(item or "").strip() for item in (cfg.get("schedule_libraries") or enabled_names) if str(item or "").strip()}
+    scheduled_names = [name for name in enabled_names if name in scheduled_pool]
+
+    counts_by_library = {}
+    overall_counts = _empty_dashboard_status_counts()
+    for library_name in enabled_names:
+        rows = load_ledger(ledger_path_for(library_name))
+        library_counts = _dashboard_counts_for_rows(rows)
+        counts_by_library[library_name] = library_counts
+        for status, value in library_counts.items():
+            overall_counts[status] += value
+
+    entries = load_task_entries(limit=100)
+    return {
+        "counts_by_status": overall_counts,
+        "counts_by_library": counts_by_library,
+        "recent_activity": _dashboard_recent_activity_summary(entries),
+        "libraries": {
+            "enabled": enabled_names,
+            "scheduled": scheduled_names,
+            "enabled_count": len(enabled_names),
+            "scheduled_count": len(scheduled_names),
+        },
+    }
 
 
 def _normalize_caller_surface(value: object, *, default: str) -> str:

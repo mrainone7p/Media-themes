@@ -665,13 +665,20 @@ function formatRunSummary(entry){
   }
   return entry.summary||entry.task||'Completed';
 }
-function renderDashboardRecentActivity(entries){
-  const recent={
-    scan: dashboardLatestTask(entries, (task,entry)=>/scan/i.test(task)||entry?.details?.pass===1),
-    discover: dashboardLatestTask(entries, (task,entry)=>/find sources|source discovery/i.test(task)||entry?.details?.pass===2),
-    download: dashboardLatestTask(entries, (task,entry)=>/download/i.test(task)||entry?.details?.pass===3),
-    task: dashboardLatestTask(entries, ()=>true),
-  };
+function renderDashboardRecentActivity(activity){
+  const recent=Array.isArray(activity)
+    ? {
+      scan: dashboardLatestTask(activity, (task,entry)=>/scan/i.test(task)||entry?.details?.pass===1),
+      discover: dashboardLatestTask(activity, (task,entry)=>/find sources|source discovery/i.test(task)||entry?.details?.pass===2),
+      download: dashboardLatestTask(activity, (task,entry)=>/download/i.test(task)||entry?.details?.pass===3),
+      task: dashboardLatestTask(activity, ()=>true),
+    }
+    : {
+      scan: activity?.scan||null,
+      discover: activity?.discover||null,
+      download: activity?.download||null,
+      task: activity?.task||null,
+    };
   const items=[
     {label:'Last scan', entry:recent.scan},
     {label:'Source discovery', entry:recent.discover},
@@ -739,8 +746,8 @@ function _hideDashTooltip(){
   if(_dashTooltipEl) _dashTooltipEl.classList.remove('visible');
 }
 // ── Dashboard library section + processing history ────────────────────────────
-let _dashLedgerByLib={};
-let _dashLedgerAll=[];
+let _dashSummaryByLib={};
+let _dashSummaryOverall={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0,UNMONITORED:0};
 let _dashSelectedLib='all';
 let _dashHistStatusFilter='all';
 let _dashboardLoadSeq=0;
@@ -748,7 +755,13 @@ let _dashboardHealthRequestSeq=0;
 let _dashboardHealthMode='lite';
 let _dashboardHealthLoading=false;
 
-function _getHistRows(){return _dashSelectedLib==='all'?_dashLedgerAll:(_dashLedgerByLib[_dashSelectedLib]||[]);}
+function emptyDashboardCounts(){
+  return {MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0,UNMONITORED:0};
+}
+function dashboardCountsForLibrary(name){
+  if(name==='all') return {...emptyDashboardCounts(), ...(_dashSummaryOverall||{})};
+  return {...emptyDashboardCounts(), ...(_dashSummaryByLib[name]||{})};
+}
 
 // How it Works? panel — always starts collapsed, ephemeral state
 let _howItWorksOpen=false;
@@ -817,6 +830,7 @@ function renderHistStatusFilters(){
     {k:'STAGED',label:'Staged',c:'var(--purple)'},
     {k:'APPROVED',label:'Approved',c:'var(--yellow)'},
     {k:'FAILED',label:'Failed',c:'var(--red)'},
+    {k:'MISSING',label:'Missing',c:'var(--red)'},
   ];
   el.innerHTML=filters.map(f=>{
     const active=f.k===_dashHistStatusFilter;
@@ -828,7 +842,7 @@ function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();ren
 
 function switchDashLib(name){
   _dashSelectedLib=name;
-  renderDashLibTabs(Object.keys(_dashLedgerByLib).map(n=>({name:n})));
+  renderDashLibTabs(Object.keys(_dashSummaryByLib).map(n=>({name:n})));
   renderProcessingHistory();
   renderPieChart();
 }
@@ -836,15 +850,13 @@ function switchDashLib(name){
 function renderDashLibKpi(){
   const el=document.getElementById('dash-lib-kpi');
   if(!el) return;
-  const rows=_getHistRows();
-  const counts={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};
-  rows.forEach(row=>{const st=String(row.status||'').toUpperCase();if(st in counts) counts[st]++;});
+  const counts=dashboardCountsForLibrary(_dashSelectedLib);
   const items=[
-    {label:'Missing',sub:'Needs source',status:'MISSING',value:counts.MISSING,color:'var(--red)'},
-    {label:'Staged',sub:'Review queue',status:'STAGED',value:counts.STAGED,color:'var(--purple)'},
-    {label:'Approved',sub:'Ready to download',status:'APPROVED',value:counts.APPROVED,color:'var(--yellow)'},
-    {label:'Available',sub:'Already local',status:'AVAILABLE',value:counts.AVAILABLE,color:'var(--green)'},
-    {label:'Failed',sub:'Needs review',status:'FAILED',value:counts.FAILED,color:'var(--red)'},
+    {label:'Missing',sub:'Needs source',status:'MISSING',value:counts.MISSING||0,color:'var(--red)'},
+    {label:'Staged',sub:'Review queue',status:'STAGED',value:counts.STAGED||0,color:'var(--purple)'},
+    {label:'Approved',sub:'Ready to download',status:'APPROVED',value:counts.APPROVED||0,color:'var(--yellow)'},
+    {label:'Available',sub:'Already local',status:'AVAILABLE',value:counts.AVAILABLE||0,color:'var(--green)'},
+    {label:'Failed',sub:'Needs review',status:'FAILED',value:counts.FAILED||0,color:'var(--red)'},
   ];
   el.innerHTML=items.map(item=>`
     <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
@@ -854,156 +866,52 @@ function renderDashLibKpi(){
     </button>`).join('');
 }
 
-function _periodKey(isoStr, group){
-  if(!isoStr) return null;
-  const dt=new Date(String(isoStr).replace(' ','T'));
-  if(isNaN(dt)) return null;
-  if(group==='day') return dt.toISOString().slice(0,10);
-  if(group==='week'){const d=new Date(dt);d.setHours(0,0,0,0);d.setDate(d.getDate()-d.getDay());return d.toISOString().slice(0,10);}
-  if(group==='year') return String(dt.getFullYear());
-  return dt.toISOString().slice(0,7);
-}
-function _periodLabel(key, group){
-  if(!key) return '';
-  if(group==='year') return key;
-  if(group==='month'){const [y,m]=key.split('-');return new Date(+y,+m-1,1).toLocaleString([],{month:'short',year:'2-digit'});}
-  try{return new Date(key+'T00:00:00').toLocaleString([],{month:'short',day:'numeric'});}catch(e){return key;}
-}
-
-function _zeroFillPeriods(keys, group, showN){
-  // Generate continuous date buckets including zero-data periods
-  if(!keys.length) return keys;
-  const sorted=keys.slice().sort();
-  const first=sorted[0], last=sorted[sorted.length-1];
-  const all=[];
-  if(group==='year'){
-    for(let y=parseInt(first);y<=parseInt(last);y++) all.push(String(y));
-  } else if(group==='month'){
-    let [cy,cm]=first.split('-').map(Number);
-    const [ey,em]=last.split('-').map(Number);
-    while(cy<ey||(cy===ey&&cm<=em)){
-      all.push(`${cy}-${String(cm).padStart(2,'0')}`);
-      cm++; if(cm>12){cm=1;cy++;}
-    }
-  } else if(group==='week'||group==='day'){
-    const step=group==='week'?7:1;
-    let cur=new Date(first+'T00:00:00');
-    const end=new Date(last+'T00:00:00');
-    while(cur<=end){
-      all.push(cur.toISOString().slice(0,10));
-      cur.setDate(cur.getDate()+step);
-    }
-  }
-  return all.length?all.slice(-showN):sorted.slice(-showN);
-}
 function renderProcessingHistory(){
-  const group=document.getElementById('dash-hist-group')?.value||'month';
-  const showN=Math.max(1,parseInt(document.getElementById('dash-hist-count')?.value||'12',10)||12);
-  const rows=_getHistRows();
   const el=document.getElementById('dash-processing-chart');
   if(!el) return;
-
-  // Exclude MISSING from chart — only show processed statuses
-  const CHART_STATUSES=['AVAILABLE','APPROVED','STAGED','FAILED'];
-  const COLORS={STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252'};
-  const buckets={};
-  rows.forEach(row=>{
-    const key=_periodKey(row.last_updated||'', group);
-    if(!key) return;
-    if(!buckets[key]){buckets[key]={STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};}
-    const st=String(row.status||'').toUpperCase();
-    if(st in buckets[key]) buckets[key][st]++;
-  });
-
-  const rawKeys=Object.keys(buckets).sort();
-  const shown=_zeroFillPeriods(rawKeys, group, showN);
-  const displaySt=_dashHistStatusFilter==='all'?CHART_STATUSES:(_dashHistStatusFilter==='MISSING'?CHART_STATUSES:[_dashHistStatusFilter.toUpperCase()]);
-
-  if(!shown.length){
-    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;font-family:var(--mono)">No history data yet — items will appear here once processed</div>';
+  const counts=dashboardCountsForLibrary(_dashSelectedLib);
+  const items=[
+    {status:'AVAILABLE',label:'Available',color:'#2dd4a0'},
+    {status:'APPROVED',label:'Approved',color:'#f4b43f'},
+    {status:'STAGED',label:'Staged',color:'#bb86ff'},
+    {status:'FAILED',label:'Failed',color:'#f05252'},
+    {status:'MISSING',label:'Missing',color:'#f26d78'},
+    {status:'UNMONITORED',label:'Unmonitored',color:'#94a3b8'},
+  ].filter(item=>_dashHistStatusFilter==='all' || item.status===_dashHistStatusFilter);
+  const total=items.reduce((sum,item)=>sum+(counts[item.status]||0),0);
+  if(!total){
+    el.innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px"><div style="margin-bottom:8px">No dashboard summary data yet.</div><div>Open Theme Manager for item-level ledger details once titles have been scanned.</div></div>';
     return;
   }
-
-  const maxVal=Math.max(1,...shown.map(k=>displaySt.reduce((s,st)=>s+(buckets[k]?.[st]||0),0)));
-  const chartH=140;
-  const labelH=22;
-  const barW=Math.max(16,Math.min(52,Math.floor(560/shown.length)));
-  const gap=Math.max(3,Math.floor(barW*0.22));
-  const totalW=shown.length*(barW+gap)+gap;
-  const leftPad=34;
-
-  // Store bucket data for tooltip event handlers
-  const _histBuckets=buckets;
-  const _histGroup=group;
-  const _histDisplaySt=displaySt;
-  const _histColors=COLORS;
-  let bars='';
-  shown.forEach((key,i)=>{
-    const x=leftPad+gap+i*(barW+gap);
-    let yOff=0;
-    const totalForPeriod=displaySt.reduce((s,st)=>s+(buckets[key]?.[st]||0),0);
-    // Invisible hover target for the full bar column
-    bars+=`<rect x="${x}" y="0" width="${barW}" height="${chartH}" fill="transparent" data-hist-key="${key}" style="cursor:pointer"/>`;
-    displaySt.forEach(st=>{
-      const count=buckets[key]?.[st]||0;
-      if(!count) return;
-      const h=Math.max(2,Math.round((count/maxVal)*(chartH-6)));
-      const y=chartH-yOff-h;
-      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${COLORS[st]||'#888'}" opacity="0.82" rx="2" data-hist-key="${key}" style="cursor:pointer;pointer-events:none"/>`;
-      if(count>0&&h>12) bars+=`<text x="${x+barW/2}" y="${y+h/2+4}" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" opacity="0.9" style="pointer-events:none">${count}</text>`;
-      yOff+=h;
-    });
-    const lbl=_periodLabel(key,group);
-    bars+=`<text x="${x+barW/2}" y="${chartH+labelH-2}" text-anchor="middle" font-size="9" fill="var(--text3)" style="pointer-events:none">${lbl}</text>`;
-  });
-
-  // Dotted grid lines
-  let guides='';
-  [0,0.25,0.5,0.75,1].forEach(f=>{
-    const y=Math.round(chartH*(1-f));
-    const v=Math.round(maxVal*f);
-    guides+=`<line x1="${leftPad}" y1="${y}" x2="${leftPad+totalW+gap}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,4" stroke-opacity="0.6"/>`;
-    guides+=`<text x="${leftPad-5}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${v}</text>`;
-  });
-
-  // Legend — exclude Missing
-  let legend='';
-  const legendStatuses=displaySt.filter(st=>st!=='MISSING');
-  legendStatuses.forEach((st,i)=>{
-    legend+=`<g transform="translate(${leftPad+i*80},${chartH+labelH+10})"><rect width="10" height="10" rx="2" fill="${COLORS[st]||'#888'}" opacity="0.82"/><text x="14" y="9" font-size="9" fill="var(--text2)">${st[0]+st.slice(1).toLowerCase()}</text></g>`;
-  });
-
-  const svgH=chartH+labelH+(legendStatuses.length?26:4)+14;
-  el.innerHTML=`<div style="overflow-x:auto"><svg class="dash-chart-svg" viewBox="0 -8 ${leftPad+totalW+gap+16} ${svgH}" style="width:100%;min-width:${Math.min(leftPad+totalW+gap+16,340)}px;height:${svgH+8}px;display:block">${guides}${bars}${legend}</svg></div>`;
-  // Attach tooltip event handlers
-  el.querySelectorAll('rect[data-hist-key]').forEach(rect=>{
-    rect.addEventListener('mousemove',function(e){
-      const key=this.dataset.histKey;
-      const b=_histBuckets[key]||{};
-      const rows=_histDisplaySt.filter(s=>(b[s]||0)>0).map(s=>`<div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_histColors[s]||'#888'}"></span>${s[0]+s.slice(1).toLowerCase()}<span class="dash-chart-tooltip-val">${b[s]}</span></div>`);
-      const total=_histDisplaySt.reduce((sum,s)=>sum+(b[s]||0),0);
-      const html=`<div class="dash-chart-tooltip-title">${_periodLabel(key,_histGroup)}</div>${rows.join('')}<div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:3px;padding-top:3px;font-weight:700;color:var(--text)">Total<span class="dash-chart-tooltip-val">${total}</span></div>`;
-      _showDashTooltip(html,e);
-    });
-    rect.addEventListener('mouseleave',_hideDashTooltip);
-  });
+  const maxVal=Math.max(1,...items.map(item=>counts[item.status]||0));
+  el.innerHTML=`<div style="display:grid;gap:10px">${items.map(item=>{
+    const value=counts[item.status]||0;
+    const pct=Math.round(value/Math.max(total,1)*100);
+    const width=Math.max(value?6:0,Math.round(value/maxVal*100));
+    return `<div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:4px">
+        <span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:999px;background:${item.color};display:inline-block"></span>${item.label}</span>
+        <span style="color:var(--text3);font-family:var(--mono)">${value} · ${pct}%</span>
+      </div>
+      <div style="height:10px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;overflow:hidden">
+        <div style="height:100%;width:${width}%;background:${item.color};opacity:0.85"></div>
+      </div>
+    </div>`;
+  }).join('')}
+  <div style="font-size:11px;color:var(--text3);padding-top:4px">Dashboard history is now summary-only. Open Theme Manager for row-level ledger details.</div>
+  </div>`;
 }
 // Pie chart — shows composition of selected library
 function renderPieChart(){
   const el=document.getElementById('dash-pie-chart');
   if(!el) return;
-  const rows=_getHistRows();
+  const counts=dashboardCountsForLibrary(_dashSelectedLib);
   const PIE_STATUSES=['MISSING','STAGED','APPROVED','AVAILABLE','FAILED','UNMONITORED'];
   const COLORS={MISSING:'#f26d78',STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252',UNMONITORED:'#94a3b8'};
-  const counts={};
   let total=0;
-  PIE_STATUSES.forEach(st=>{counts[st]=0;});
-  rows.forEach(row=>{
-    const st=String(row.status||'').toUpperCase();
-    if(st in counts){counts[st]++;total++;}
-  });
+  PIE_STATUSES.forEach(st=>{ total+=(counts[st]||0); });
   if(!total){
-    el.innerHTML='<div class="dash-pie-empty">No processed data</div>';
+    el.innerHTML='<div class="dash-pie-empty">No summary data</div>';
     return;
   }
   const r=60, cx=70, cy=70;
@@ -1013,8 +921,8 @@ function renderPieChart(){
   const _pieTotal=total;
   const _pieColors=COLORS;
   PIE_STATUSES.forEach(st=>{
-    if(!counts[st]) return;
-    const pct=counts[st]/total;
+    if(!(counts[st]||0)) return;
+    const pct=(counts[st]||0)/total;
     const angle=pct*2*Math.PI;
     const endAngle=startAngle+angle;
     const largeArc=angle>Math.PI?1:0;
@@ -1045,7 +953,6 @@ function renderPieChart(){
 
 function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
   const allLibs=(cfg.libraries||[]).filter(lib=>(!lib.type||lib.type==='movie'||lib.type==='show'));
-  const disabledLibs=allLibs.filter(lib=>lib.enabled===false);
   const summaryEl=document.getElementById('dash-library-summary');
   const el=document.getElementById('dashboard-library-overview');
   if(summaryEl){
@@ -1073,29 +980,22 @@ function renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs){
   }).join('')+`</div>`;
 }
 async function loadDashboardDeferredData(seq, cfg, enabledLibs){
-  const [ledgerResults, historyResult] = await Promise.all([
-    Promise.all(enabledLibs.map(async lib=>{
-      const {data}=await requestJson('/api/ledger?library='+encodeURIComponent(lib.name));
-      return {name:lib.name, rows:Array.isArray(data)?data:[]};
-    })),
-    requestJson('/api/tasks/history?limit=100'),
-  ]);
+  const {data}=await requestJson('/api/dashboard/summary');
   if(seq!==_dashboardLoadSeq) return;
-  _dashLedgerByLib={};
-  ledgerResults.forEach(r=>{ _dashLedgerByLib[r.name]=r.rows; });
-  _dashLedgerAll=ledgerResults.flatMap(r=>r.rows);
-  if(_dashSelectedLib!=='all' && !_dashLedgerByLib[_dashSelectedLib]) _dashSelectedLib='all';
+  const summary=(data&&typeof data==='object')?data:{};
+  _dashSummaryByLib=(summary.counts_by_library&&typeof summary.counts_by_library==='object')?summary.counts_by_library:{};
+  _dashSummaryOverall={...emptyDashboardCounts(), ...((summary.counts_by_status&&typeof summary.counts_by_status==='object')?summary.counts_by_status:{})};
+  if(summary.libraries && typeof summary.libraries==='object'){
+    _dashboardLibraries={
+      enabled:Array.isArray(summary.libraries.enabled)?summary.libraries.enabled:enabledLibs.map(lib=>lib.name),
+      scheduled:Array.isArray(summary.libraries.scheduled)?summary.libraries.scheduled:(_dashboardLibraries.scheduled||[]),
+    };
+  }
+  if(_dashSelectedLib!=='all' && !_dashSummaryByLib[_dashSelectedLib]) _dashSelectedLib='all';
 
-  const counts={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0};
-  _dashLedgerAll.forEach(row=>{
-    const status=String(row.status||'').toUpperCase();
-    if(status in counts) counts[status]+=1;
-  });
-  const history=Array.isArray(historyResult.data)?historyResult.data:[];
-
-  renderDashboardPipelineOverview(counts);
-  renderDashboardNeedsAttention(cfg, counts, enabledLibs);
-  renderDashboardRecentActivity(history);
+  renderDashboardPipelineOverview(_dashSummaryOverall);
+  renderDashboardNeedsAttention(cfg, _dashSummaryOverall, enabledLibs);
+  renderDashboardRecentActivity(summary.recent_activity||{});
   renderDashLibTabs(enabledLibs);
   renderHistStatusFilters();
   renderProcessingHistory();
@@ -1140,9 +1040,9 @@ async function loadDashboard(force=false){
   const selectedNames=new Set((cfg.schedule_libraries&&cfg.schedule_libraries.length)?cfg.schedule_libraries:enabledLibs.map(lib=>lib.name));
   const scheduledLibs=enabledLibs.filter(lib=>selectedNames.has(lib.name)).map(lib=>lib.name);
   _dashboardLibraries={enabled:enabledLibs.map(lib=>lib.name), scheduled:scheduledLibs};
-  _dashLedgerByLib={};
-  _dashLedgerAll=[];
-  if(_dashSelectedLib!=='all' && !_dashLedgerByLib[_dashSelectedLib]) _dashSelectedLib='all';
+  _dashSummaryByLib={};
+  _dashSummaryOverall=emptyDashboardCounts();
+  if(_dashSelectedLib!=='all' && !_dashSummaryByLib[_dashSelectedLib]) _dashSelectedLib='all';
   _resetHowItWorks();
   renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs);
   renderDashboardActionStationFromConfig(cfg, scheduledLibs);
