@@ -10,13 +10,13 @@ WEB_PORT="${WEB_PORT:-8182}"
 # RUN_ONCE mode — used for one-shot Docker runs / testing
 if [ "${RUN_ONCE}" = "true" ]; then
     echo "[INFO] RUN_ONCE=true — running once then exiting"
-    python3 /app/script/media_tracks.py
+    python3 -m script.media_tracks
     exit 0
 fi
 
-SCHEDULER_BOOTSTRAP=$(PYTHONPATH="/app/web:/app/shared${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
+SCHEDULER_BOOTSTRAP=$(PYTHONPATH="/app${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
 import json
-import logic
+from web import logic
 
 cfg = logic.load_config()
 result = logic.refresh_scheduler(cfg)
@@ -45,7 +45,7 @@ echo "============================================="
 
 # Start Flask web UI in background (log to container stdout)
 echo "[INFO] Starting web UI on port ${WEB_PORT}..."
-PYTHONPATH="/app/web:/app/shared${PYTHONPATH:+:$PYTHONPATH}" python3 /app/web/app.py >> /proc/1/fd/1 2>> /proc/1/fd/2 &
+PYTHONPATH="/app${PYTHONPATH:+:$PYTHONPATH}" python3 -m web.app >> /proc/1/fd/1 2>> /proc/1/fd/2 &
 
 if [ "$BOOTSTRAP_OK" = "1" ]; then
     echo "[INFO] Scheduler bootstrap complete: $BOOTSTRAP_DETAIL"

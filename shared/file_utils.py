@@ -10,7 +10,7 @@ import secrets
 import subprocess
 from pathlib import Path
 
-from storage import ffprobe_duration
+from shared.storage import ffprobe_duration
 
 
 def sibling_temp_path(target_path: str | Path, *, prefix: str) -> Path:

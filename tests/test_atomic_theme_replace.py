@@ -9,13 +9,7 @@ from pathlib import Path
 sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **kwargs: {}, safe_dump=lambda *args, **kwargs: ""))
 sys.modules.setdefault("requests", types.SimpleNamespace(get=lambda *args, **kwargs: None, post=lambda *args, **kwargs: None))
 
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT / "web") not in sys.path:
-    sys.path.insert(0, str(ROOT / "web"))
-if str(ROOT / "shared") not in sys.path:
-    sys.path.insert(0, str(ROOT / "shared"))
-
-import file_utils
+from shared import file_utils
 
 
 class AtomicThemeReplaceTests(unittest.TestCase):

@@ -23,17 +23,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
-WEB_DIR = Path(__file__).resolve().parent
-SHARED_DIR = WEB_DIR.parent / "shared"
-if str(SHARED_DIR) not in sys.path:
-    sys.path.insert(0, str(SHARED_DIR))
-
-from storage import CONFIG_PATH, now_str
+from shared.storage import CONFIG_PATH, now_str
 
 LOGS_DIR = Path("/app/logs")
 RUNS_DIR = LOGS_DIR / "runs"
 TASKS_FILE = LOGS_DIR / "task_history.jsonl"
-SCRIPT_PATH = "/app/script/media_tracks.py"
+SCRIPT_MODULE = "script.media_tracks"
 
 for path in (RUNS_DIR,):
     path.mkdir(parents=True, exist_ok=True)
@@ -295,7 +290,7 @@ class RunManager:
                 env["RUN_LIBRARIES"] = json.dumps(explicit_libraries)
             else:
                 env.pop("RUN_LIBRARIES", None)
-            proc = subprocess.Popen([sys.executable, SCRIPT_PATH], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
+            proc = subprocess.Popen([sys.executable, "-m", SCRIPT_MODULE], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1, env=env)
             self.proc = proc
             for line in proc.stdout:
                 line = line.rstrip()

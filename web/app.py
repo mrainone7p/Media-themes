@@ -9,20 +9,10 @@ import signal
 import subprocess
 import sys
 import time
-from pathlib import Path
-
-WEB_DIR = Path(__file__).resolve().parent
-SHARED_DIR = WEB_DIR.parent / "shared"
-if str(SHARED_DIR) not in sys.path:
-    sys.path.insert(0, str(SHARED_DIR))
-
 from flask import Flask, Response, abort, g, jsonify, request, send_file, stream_with_context
 
-import integrations
-import logic
-from golden_source_csv import GOLDEN_SOURCE_OPTIONAL_COLUMNS, GOLDEN_SOURCE_REQUIRED_COLUMNS
-from logic import RUN_MANAGER
-from storage import (
+from shared.golden_source_csv import GOLDEN_SOURCE_OPTIONAL_COLUMNS, GOLDEN_SOURCE_REQUIRED_COLUMNS
+from shared.storage import (
     MANUAL_STATUS_TRANSITIONS,
     STATUS_ORDER,
     ledger_path_for,
@@ -30,6 +20,9 @@ from storage import (
     now_str,
     save_ledger_rows as save_ledger,
 )
+
+from web import integrations, logic
+from web.logic import RUN_MANAGER
 
 app = Flask(__name__)
 logging.getLogger("werkzeug").setLevel(logging.WARNING)

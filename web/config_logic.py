@@ -11,17 +11,10 @@ check cache (_health_cache), which is owned by the orchestration layer.
 from __future__ import annotations
 
 import re
-import sys
-from pathlib import Path
 
 import yaml
 
-WEB_DIR = Path(__file__).resolve().parent
-SHARED_DIR = WEB_DIR.parent / "shared"
-if str(SHARED_DIR) not in sys.path:
-    sys.path.insert(0, str(SHARED_DIR))
-
-from storage import CONFIG_PATH, normalize_golden_source_url
+from shared.storage import CONFIG_PATH, normalize_golden_source_url
 
 
 CONFIG_DEFAULTS = {
