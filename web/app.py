@@ -502,14 +502,43 @@ def trigger_pass(pass_num):
 @app.route("/api/run/schedule-now", methods=["POST"])
 def trigger_schedule_now():
     data = request.get_json(silent=True) or {}
+    libraries = data.get("libraries")
+    if libraries is not None and not isinstance(libraries, list):
+        return jsonify({"error": "libraries must be an array"}), 400
+
     cfg = logic.load_config()
-    enabled_libraries = [str(lib.get("name") or "").strip() for lib in cfg.get("libraries", []) if str(lib.get("name") or "").strip() and lib.get("enabled", True)]
-    configured = [str(name).strip() for name in (cfg.get("schedule_libraries") or []) if str(name).strip()]
-    explicit_libraries = [name for name in configured if name in enabled_libraries] or enabled_libraries
+    enabled_libraries = []
+    for lib in cfg.get("libraries", []):
+        name = str(lib.get("name") or "").strip()
+        if name and lib.get("enabled", True) and name not in enabled_libraries:
+            enabled_libraries.append(name)
+
+    requested_libraries = []
+    for name in (libraries or []):
+        normalized = str(name or "").strip()
+        if normalized and normalized not in requested_libraries:
+            requested_libraries.append(normalized)
+
+    invalid_libraries = [name for name in requested_libraries if name not in enabled_libraries]
+    if invalid_libraries:
+        return jsonify({"error": "Requested libraries must reference enabled configured libraries", "invalid_libraries": invalid_libraries}), 400
+
+    configured = []
+    for name in (cfg.get("schedule_libraries") or []):
+        normalized = str(name or "").strip()
+        if normalized and normalized not in configured:
+            configured.append(normalized)
+
+    explicit_libraries = list(requested_libraries)
+    if not explicit_libraries:
+        explicit_libraries = [name for name in configured if name in enabled_libraries] or list(enabled_libraries)
+    if not explicit_libraries:
+        return jsonify({"error": "No enabled libraries available for the scheduler", "libraries": []}), 400
+
     scope_label = str(data.get("scope_label") or "").strip() or (explicit_libraries[0] if len(explicit_libraries) == 1 else f"{len(explicit_libraries)} scheduled libraries" if explicit_libraries else "scheduled libraries")
     if not RUN_MANAGER.start(force_pass=0, explicit_libraries=explicit_libraries, scope_label=scope_label, allow_schedule_disabled=True):
         return jsonify({"error": "run in progress"}), 409
-    return jsonify({"ok": True, "libraries": explicit_libraries})
+    return jsonify({"ok": True, "libraries": explicit_libraries, "scope_label": scope_label})
 
 
 @app.route("/api/run/scan", methods=["POST"])
