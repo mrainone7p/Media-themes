@@ -49,6 +49,8 @@ _QUIET_REQUEST_RULES = {
 
 
 _REQUEST_DEBUG_PATHS = {
+    "/api/dashboard/summary",
+    "/api/history",
     "/api/ledger",
     "/api/tasks/history",
     "/api/health",
@@ -86,7 +88,7 @@ def _infer_row_count(payload) -> int | None:
     if isinstance(payload, list):
         return len(payload)
     if isinstance(payload, Mapping):
-        for key in ("rows", "items", "history", "entries", "tasks"):
+        for key in ("rows", "items", "history", "entries", "tasks", "runs"):
             value = payload.get(key)
             if isinstance(value, list):
                 return len(value)
@@ -216,7 +218,20 @@ def api_health():
 
 @app.route("/api/dashboard/summary", methods=["GET"])
 def dashboard_summary():
-    return jsonify(services.dashboard_summary_payload())
+    payload = services.dashboard_summary_payload()
+    if REQUEST_DEBUG_LOGGING_ENABLED:
+        counts_by_library = payload.get("counts_by_library") if isinstance(payload, Mapping) else None
+        row_count = None
+        if isinstance(counts_by_library, Mapping):
+            row_count = sum(
+                sum(int(value or 0) for value in library_counts.values())
+                for library_counts in counts_by_library.values()
+                if isinstance(library_counts, Mapping)
+            )
+        libraries = payload.get("libraries") if isinstance(payload, Mapping) else None
+        library_count = libraries.get("enabled_count") if isinstance(libraries, Mapping) else None
+        _set_request_debug_stats(library_count=library_count, row_count=row_count)
+    return jsonify(payload)
 
 
 def _required_library_arg(value: str):
@@ -384,7 +399,10 @@ def get_history():
     limit = request.args.get("limit", 50)
     offset = request.args.get("offset", 0)
     include_log = str(request.args.get("include_log", "") or "").strip().lower() in {"1", "true", "yes"}
-    return jsonify(services.history_payload(limit=limit, offset=offset, include_log=include_log))
+    payload = services.history_payload(limit=limit, offset=offset, include_log=include_log)
+    if REQUEST_DEBUG_LOGGING_ENABLED:
+        _set_request_debug_stats(row_count=_infer_row_count(payload), limit=payload.get("limit"))
+    return jsonify(payload)
 
 
 @app.route("/api/history/<path:run_id>")

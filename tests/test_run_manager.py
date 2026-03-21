@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import sys
+import tempfile
 import types
 import unittest
+from pathlib import Path
 from unittest import mock
 
 sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **kwargs: {}, safe_dump=lambda *args, **kwargs: ""))
@@ -52,6 +55,35 @@ class RunManagerTests(unittest.TestCase):
             with self.assertRaises(StopIteration):
                 next(stream)
 
+    def test_history_returns_full_run_payloads_from_run_files(self):
+        manager = logic.RunManager()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runs_dir = Path(tmpdir)
+            first_run = {
+                "time": "2026-03-20 10:00:00",
+                "summary": "First run",
+                "log": ["line 1"],
+                "stats": {"pass1": {"total": 1}},
+            }
+            second_run = {
+                "time": "2026-03-20 11:00:00",
+                "summary": "Second run",
+                "log": ["line 2"],
+                "stats": {"pass1": {"total": 2}},
+            }
+            (runs_dir / "20260320-100000.json").write_text(json.dumps(first_run), encoding="utf-8")
+            (runs_dir / "20260320-110000.json").write_text(json.dumps(second_run), encoding="utf-8")
+
+            with mock.patch.object(services, "RUNS_DIR", runs_dir):
+                payload = manager.history(include_log=True, limit=10, offset=0)
+
+        self.assertEqual(2, payload["total"])
+        self.assertEqual(2, len(payload["runs"]))
+        self.assertEqual("20260320-110000.json", payload["runs"][0]["id"])
+        self.assertEqual(["line 2"], payload["runs"][0]["log"])
+        self.assertEqual({"pass1": {"total": 2}}, payload["runs"][0]["stats"])
+        self.assertEqual(["line 1"], payload["runs"][1]["log"])
+
     def test_status_reports_last_outcome_details(self):
         manager = logic.RunManager(
             active=False,
@@ -78,6 +110,7 @@ class RunManagerTests(unittest.TestCase):
                 "return_code": 1,
                 "summary": "[ERROR] boom",
                 "completed_at": 33.0,
+                "client_count": 0,
             },
             manager.status(),
         )

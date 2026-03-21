@@ -96,7 +96,7 @@ class DashboardSummaryPayloadTests(unittest.TestCase):
         with (
             mock.patch("web.services.load_config", return_value=config),
             mock.patch("web.services.ledger_path_for", return_value="/tmp/movies.sqlite"),
-            mock.patch("web.services.load_ledger", side_effect=[[{"status": "AVAILABLE"}], [{"status": "FAILED"}]]) as load_ledger,
+            mock.patch("web.services.load_ledger", side_effect=[[{"status": "AVAILABLE"}], [{"status": "AVAILABLE"}], [{"status": "FAILED"}], [{"status": "FAILED"}]]) as load_ledger,
             mock.patch("web.services.load_task_entries", return_value=entries) as load_task_entries,
             mock.patch("pathlib.Path.stat", side_effect=lambda: next(stat_sequence)),
         ):
@@ -104,7 +104,7 @@ class DashboardSummaryPayloadTests(unittest.TestCase):
             second = services.dashboard_summary_payload()
             third = services.dashboard_summary_payload()
 
-        self.assertEqual(2, load_ledger.call_count)
+        self.assertEqual(4, load_ledger.call_count)
         self.assertEqual(2, load_task_entries.call_count)
         self.assertEqual(1, first["counts_by_status"]["AVAILABLE"])
         self.assertEqual(1, second["counts_by_status"]["AVAILABLE"])
