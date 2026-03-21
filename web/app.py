@@ -465,4 +465,4 @@ if __name__ == "__main__":
     APP_LOG.info("HTTP logging tuned for signal over noise: chatty status, preview, and search endpoints now log only on failure or unusually slow responses.")
     if REQUEST_DEBUG_LOGGING_ENABLED:
         APP_LOG.info("Per-request debug logging enabled for /api/ledger, /api/tasks/history, /api/health, and /api/run/status via WEB_DEBUG_REQUEST_LOGGING.")
-    serve(app, host="0.0.0.0", port=WEB_PORT, threads=4)
+    serve(app, host="0.0.0.0", port=WEB_PORT, threads=8)

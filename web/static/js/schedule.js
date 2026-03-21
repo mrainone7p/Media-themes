@@ -42,10 +42,46 @@ function dbProgressFail(label='Failed'){
 }
 
 let _dbEvtSrc=null, _dbPollTimer=null, _dbLastProgress=0;
+let _dbStreamWatchdog=null;
+const _dbStreamHealth={connected:false,lastEventAt:0,pollFallbackActive:false};
+const _dbStreamStaleMs=15000;
 let _activeRunContext=null;
 let _lastRunRequest={db:null,run:null,tasks:null};
 
 function _dbStopPoll(){ clearInterval(_dbPollTimer); _dbPollTimer=null; }
+function _dbStopStreamWatchdog(){ clearInterval(_dbStreamWatchdog); _dbStreamWatchdog=null; }
+function _dbMarkStreamHealthy(){
+  _dbStreamHealth.connected=true;
+  _dbStreamHealth.lastEventAt=Date.now();
+  _dbStreamHealth.pollFallbackActive=false;
+}
+function _dbStartPollFallback(reason='fallback'){
+  if(!_activeRunContext) return;
+  if(_dbPollTimer) return;
+  _dbStreamHealth.pollFallbackActive=true;
+  _dbStreamHealth.connected=false;
+  if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
+  _dbStopStreamWatchdog();
+  _dbStartPoll();
+  if(reason==='stale'){
+    const ctx=_activeRunContext;
+    const meta=ctx.scopeLabel ? `${ctx.scopeLabel} · Live updates paused, switching to status polling…` : 'Live updates paused, switching to status polling…';
+    setProgressState(ctx.scope,'running',{copy:_statusCopy(ctx.pass,ctx.scopeLabel),meta,showStop:true,pct:Math.min(98,parseInt(_progressEls(ctx.scope).fill?.style.width||'0',10)||10)});
+  }
+}
+function _dbStartStreamWatchdog(){
+  _dbStopStreamWatchdog();
+  _dbStreamWatchdog=setInterval(()=>{
+    if(!_activeRunContext || !_dbEvtSrc || !_dbStreamHealth.connected || _dbStreamHealth.pollFallbackActive) return;
+    if(Date.now()-_dbStreamHealth.lastEventAt > _dbStreamStaleMs) _dbStartPollFallback('stale');
+  }, Math.max(2000, Math.floor(_dbStreamStaleMs/3)));
+}
+function _dbResetStreamState(){
+  _dbStreamHealth.connected=false;
+  _dbStreamHealth.lastEventAt=0;
+  _dbStreamHealth.pollFallbackActive=false;
+  _dbStopStreamWatchdog();
+}
 
 function _passLabel(pass){
   return {0:'Automated Schedule',1:'Scan',2:'Find Sources',3:'Download'}[pass]||'Run';
@@ -174,6 +210,9 @@ async function _finishRunContext(ctx,payload=null){
   const state=_normalizeRunOutcome(d?.outcome) || (ctx.stoppedByUser ? 'stopped' : 'error');
   const meta=_runOutcomeMeta(state,d||{});
   _applyContextFinish(ctx,state,meta);
+  _dbStopPoll();
+  if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
+  _dbResetStreamState();
   toast(meta,state==='success'?'ok':state==='stopped'?'info':'err');
   loadDatabase(); loadTasksPage(); loadRunPage();
   _activeRunContext=null;
@@ -191,12 +230,20 @@ function _handleProgressData(ctx,p){
 
 function _connectRunStream(ctx){
   if(_dbEvtSrc){ _dbEvtSrc.close(); }
+  _dbResetStreamState();
   _dbEvtSrc=new EventSource(apiUrl('/api/run/stream'));
+  _dbEvtSrc.onopen=()=>{
+    if(_activeRunContext!==ctx) return;
+    _dbMarkStreamHealthy();
+    _dbStartStreamWatchdog();
+  };
   _dbEvtSrc.onmessage=async e=>{
     _dbLastProgress=Date.now();
+    _dbMarkStreamHealthy();
     if(!_activeRunContext) return;
     if(e.data==='__DONE__'){
       if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
+      _dbResetStreamState();
       _dbStopPoll();
       await _finishRunContext(_activeRunContext);
       return;
@@ -208,7 +255,10 @@ function _connectRunStream(ctx){
     const fallbackMeta=_activeRunContext.scopeLabel ? `${_activeRunContext.scopeLabel} · ${e.data.slice(0,140)}` : e.data.slice(0,140);
     setProgressState(_activeRunContext.scope,'running',{copy:_statusCopy(_activeRunContext.pass,_activeRunContext.scopeLabel),meta:fallbackMeta,pct:Math.min(98,parseInt(_progressEls(_activeRunContext.scope).fill?.style.width||'0',10)||0),showStop:true});
   };
-  _dbEvtSrc.onerror=()=>{ if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; } };
+  _dbEvtSrc.onerror=()=>{
+    if(!_activeRunContext) return;
+    _dbStartPollFallback('error');
+  };
 }
 
 function _dbStartPoll(){
@@ -221,6 +271,7 @@ function _dbStartPoll(){
       if(!d.active){
         _dbStopPoll();
         if(_dbEvtSrc){ _dbEvtSrc.close(); _dbEvtSrc=null; }
+        _dbResetStreamState();
         await _finishRunContext(_activeRunContext,d);
         return;
       }
@@ -263,7 +314,6 @@ async function startPipelineRun(passNum,scope='db',options={}){
     return;
   }
   _connectRunStream(ctx);
-  _dbStartPoll();
 }
 
 function dbRunPass(passNum){
@@ -294,7 +344,6 @@ async function startScheduledRun(callerSurface='scheduler'){
   _lastRunRequest.run={mode:'schedule',pass:0,libraries:[...ctx.libraries],scopeLabel:ctx.scopeLabel};
   _applyContextStart(ctx);
   _connectRunStream(ctx);
-  _dbStartPoll();
 }
 
 function retryRun(scope){
