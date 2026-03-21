@@ -487,9 +487,9 @@ function renderDashboardPipelineOverview(counts){
   const el=document.getElementById('dashboard-pipeline-overview');
   if(!el) return;
   el.innerHTML=items.map(item=>`
-    <button class="dashboard-stat" style="border-top-color:${item.color}" onclick="openThemeManagerFiltered('${item.status}')">
+    <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
-      <span class="dashboard-stat-label status-label status-tone-${item.status}" style="color:${item.color}">${displayStatus(item.status)}</span>
+      <span class="dashboard-stat-label"><span class="dashboard-stat-dot" style="background:${item.color}"></span>${displayStatus(item.status)}</span>
       <span class="dashboard-stat-sub">${item.sub}</span>
     </button>`).join('');
 }
@@ -505,7 +505,7 @@ function renderDashboardSystemHealth(health){
     {label:'Database', key:'database'},
     {label:'Libraries', key:'libraries'},
   ];
-  el.innerHTML=rows.map(row=>{
+  el.innerHTML='<div style="display:grid;gap:6px">'+rows.map(row=>{
     const h=health[row.key]||{state:'unknown',label:'Unknown'};
     const badge=dashboardStatusBadge(h.label, h.state);
     const detail=h.detail||'';
@@ -514,7 +514,7 @@ function renderDashboardSystemHealth(health){
       ${detail ? `<span class="dash-health-detail" title="${detail.replace(/"/g,'&quot;')}">${detail}</span>` : ''}
       ${badge}
     </div>`;
-  }).join('');
+  }).join('')+'</div>';
   const noteEl=document.getElementById('dashboard-health-note');
   const validation=health?.validation||{};
   if(noteEl){
@@ -539,7 +539,8 @@ function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
   renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs);
   renderDashLibTabs(enabledLibs);
   renderHistStatusFilters();
-  renderProcessingHistory();
+  renderBarTimeGroupTabs();
+  renderBarChart();
   renderPieChart();
   const healthCache=readDashboardHealthCache();
   if(healthCache){
@@ -584,7 +585,7 @@ function renderDashboardNeedsAttention(cfg, counts, enabledLibs){
         <div class="dashboard-main-copy">${item.title}</div>
         <div class="dashboard-sub-copy">${item.detail}</div>
       </div>
-      <button class="btn btn-amber btn-xs" style="flex-shrink:0" onclick='dashboardOpenTarget(${JSON.stringify(item.target)})'>${item.cta}</button>
+      <button class="btn btn-amber btn-sm" style="flex-shrink:0" onclick='dashboardOpenTarget(${JSON.stringify(item.target)})'>${item.cta}</button>
     </div>`).join('');
   const toggleHtml=hasMore?`
     <button class="btn btn-ghost btn-xs dash-attention-toggle" onclick="toggleDashboardAttention(this,${items.length})">View all ${items.length} issues</button>`:'';
@@ -630,8 +631,8 @@ function renderDashboardActionStation(health){
   }
   const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
   const runOrStopBtn=_dashRunActive
-    ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')" style="background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))">Stop</button>`
-    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
+    ?`<button class="btn btn-red btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
+    :`<button class="btn btn-green btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
   const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
   el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`;
 }
@@ -652,12 +653,12 @@ function _updateDashRunButton(){
   if(!btn) return;
   if(_dashRunActive){
     btn.textContent='Stop';
-    btn.className='btn btn-ghost btn-sm btn-action-stop';
-    btn.style.cssText='background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))';
+    btn.className='btn btn-red btn-sm btn-action-stop';
+    btn.style.cssText='';
     btn.onclick=function(){stopRun('run');};
   } else {
     btn.textContent='Run Schedule';
-    btn.className='btn btn-ghost btn-sm btn-action-run';
+    btn.className='btn btn-green btn-sm btn-action-run';
     btn.style.cssText='';
     btn.onclick=function(){startScheduledRun('dashboard');};
   }
@@ -883,12 +884,12 @@ function renderHistStatusFilters(){
   }).join('');
 }
 
-function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();renderProcessingHistory();renderPieChart();}
+function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();renderBarChart();renderPieChart();}
 
 function switchDashLib(name){
   _dashSelectedLib=name;
   renderDashLibTabs(Object.keys(_dashSummaryByLib).map(n=>({name:n})));
-  renderProcessingHistory();
+  renderBarChart();
   renderPieChart();
 }
 
@@ -911,60 +912,162 @@ function renderDashLibKpi(){
     </button>`).join('');
 }
 
-function renderProcessingHistory(){
-  const el=document.getElementById('dash-processing-chart');
+// ── Bar chart — activity over time ────────────────────────────────────────────
+let _dashTimelineData={};
+let _dashBarTimeGroup='month';
+const BAR_STATUSES=['AVAILABLE','APPROVED','STAGED','MISSING','FAILED'];
+
+function renderBarTimeGroupTabs(){
+  const el=document.getElementById('dash-bar-timegroup');
   if(!el) return;
-  const counts=dashboardCountsForLibrary(_dashSelectedLib);
-  const items=[
-    {status:'AVAILABLE',label:'Available',color:'#2dd4a0'},
-    {status:'APPROVED',label:'Approved',color:'#f4b43f'},
-    {status:'STAGED',label:'Staged',color:'#bb86ff'},
-    {status:'FAILED',label:'Failed',color:'#f05252'},
-    {status:'MISSING',label:'Missing',color:'#f26d78'},
-    {status:'UNMONITORED',label:'Unmonitored',color:'#94a3b8'},
-  ].filter(item=>_dashHistStatusFilter==='all' || item.status===_dashHistStatusFilter);
-  const total=items.reduce((sum,item)=>sum+(counts[item.status]||0),0);
-  if(!total){
-    el.innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px"><div style="margin-bottom:8px">No dashboard summary data yet.</div><div>Open Theme Manager for item-level ledger details once titles have been scanned.</div></div>';
+  const groups=['day','week','month','year'];
+  el.innerHTML=groups.map(g=>`<button class="dash-lib-tab${g===_dashBarTimeGroup?' active':''}" onclick="_setBarTimeGroup('${g}')">${g[0].toUpperCase()+g.slice(1)}</button>`).join('');
+}
+
+function _setBarTimeGroup(g){
+  _dashBarTimeGroup=g;
+  renderBarTimeGroupTabs();
+  renderBarChart();
+}
+
+function _aggregateTimeline(timeline, group, statusFilter){
+  const buckets={};
+  for(const [day, statuses] of Object.entries(timeline)){
+    let key=day;
+    if(group==='week'){
+      const d=new Date(day+'T00:00:00');
+      const jan1=new Date(d.getFullYear(),0,1);
+      const weekNum=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+      key=d.getFullYear()+'-W'+String(weekNum).padStart(2,'0');
+    } else if(group==='month'){
+      key=day.slice(0,7);
+    } else if(group==='year'){
+      key=day.slice(0,4);
+    }
+    if(!buckets[key]) buckets[key]={};
+    for(const [st,count] of Object.entries(statuses)){
+      if(statusFilter!=='all' && st!==statusFilter) continue;
+      if(!BAR_STATUSES.includes(st)) continue;
+      buckets[key][st]=(buckets[key][st]||0)+count;
+    }
+  }
+  return buckets;
+}
+
+function _formatBarLabel(key, group){
+  if(group==='day') return key.slice(5);
+  if(group==='week') return key;
+  if(group==='month'){
+    const parts=key.split('-');
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(parts[1],10)-1]+' '+parts[0].slice(2);
+  }
+  return key;
+}
+
+function renderBarChart(){
+  const el=document.getElementById('dash-bar-chart');
+  if(!el) return;
+  const timeline=_dashTimelineData||{};
+  if(!Object.keys(timeline).length){
+    el.innerHTML='<div class="dash-bar-empty">No activity data available yet. Status changes will appear here over time.</div>';
     return;
   }
-  const maxVal=Math.max(1,...items.map(item=>counts[item.status]||0));
-  el.innerHTML=`<div style="display:grid;gap:10px">${items.map(item=>{
-    const value=counts[item.status]||0;
-    const pct=Math.round(value/Math.max(total,1)*100);
-    const width=Math.max(value?6:0,Math.round(value/maxVal*100));
-    return `<div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:4px">
-        <span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:999px;background:${item.color};display:inline-block"></span>${item.label}</span>
-        <span style="color:var(--text3);font-family:var(--mono)">${value} · ${pct}%</span>
-      </div>
-      <div style="height:10px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;overflow:hidden">
-        <div style="height:100%;width:${width}%;background:${item.color};opacity:0.85"></div>
-      </div>
-    </div>`;
-  }).join('')}
-  <div style="font-size:11px;color:var(--text3);padding-top:4px">Dashboard history is now summary-only. Open Theme Manager for row-level ledger details.</div>
-  </div>`;
+  const buckets=_aggregateTimeline(timeline, _dashBarTimeGroup, _dashHistStatusFilter);
+  const sortedKeys=Object.keys(buckets).sort();
+  if(!sortedKeys.length){
+    el.innerHTML='<div class="dash-bar-empty">No matching data for the selected filters.</div>';
+    return;
+  }
+  // Limit to last N periods
+  const maxBars=_dashBarTimeGroup==='day'?30:_dashBarTimeGroup==='week'?16:_dashBarTimeGroup==='year'?10:12;
+  const keys=sortedKeys.slice(-maxBars);
+  // Calculate max stacked height
+  let maxTotal=0;
+  keys.forEach(k=>{
+    let t=0;
+    BAR_STATUSES.forEach(st=>{ t+=(buckets[k][st]||0); });
+    if(t>maxTotal) maxTotal=t;
+  });
+  if(!maxTotal){ el.innerHTML='<div class="dash-bar-empty">No data for selected period.</div>'; return; }
+  // SVG dimensions
+  const chartW=el.clientWidth||400;
+  const chartH=200;
+  const padL=40, padR=10, padT=10, padB=30;
+  const plotW=chartW-padL-padR;
+  const plotH=chartH-padT-padB;
+  const barW=Math.max(8,Math.min(40,Math.floor(plotW/keys.length)-4));
+  const gap=Math.max(2,(plotW-barW*keys.length)/(keys.length||1));
+  // Y-axis scale
+  const yScale=plotH/maxTotal;
+  // Build bars
+  let bars='';
+  let labels='';
+  keys.forEach((key,i)=>{
+    const x=padL+i*(barW+gap)+gap/2;
+    let y=padT+plotH;
+    BAR_STATUSES.forEach(st=>{
+      const val=buckets[key][st]||0;
+      if(!val) return;
+      const h=val*yScale;
+      y-=h;
+      bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${PIE_COLORS[st]}" opacity="0.85" rx="2" data-bar-key="${key}" data-bar-st="${st}" style="cursor:pointer"/>`;
+    });
+    // X label
+    const lbl=_formatBarLabel(key,_dashBarTimeGroup);
+    const showLabel=keys.length<=16||(i%Math.ceil(keys.length/12)===0);
+    if(showLabel){
+      labels+=`<text x="${x+barW/2}" y="${chartH-4}" text-anchor="middle" fill="var(--text3)" font-size="9" font-family="var(--mono)">${lbl}</text>`;
+    }
+  });
+  // Y-axis gridlines
+  let yLines='';
+  const ySteps=4;
+  for(let i=0;i<=ySteps;i++){
+    const yVal=Math.round(maxTotal/ySteps*i);
+    const yPos=padT+plotH-yVal*yScale;
+    yLines+=`<line x1="${padL}" y1="${yPos}" x2="${chartW-padR}" y2="${yPos}" stroke="var(--border)" stroke-width="0.5"/>`;
+    yLines+=`<text x="${padL-6}" y="${yPos+3}" text-anchor="end" fill="var(--text3)" font-size="9" font-family="var(--mono)">${yVal}</text>`;
+  }
+  el.innerHTML=`<svg width="100%" height="${chartH}" viewBox="0 0 ${chartW} ${chartH}" class="dash-bar-chart-svg">${yLines}${bars}${labels}</svg>`;
+  // Tooltips
+  el.querySelectorAll('[data-bar-key]').forEach(rect=>{
+    rect.addEventListener('mousemove',function(e){
+      const key=this.dataset.barKey;
+      const bucket=buckets[key]||{};
+      let total=0;
+      BAR_STATUSES.forEach(st=>{ total+=(bucket[st]||0); });
+      let rows='';
+      BAR_STATUSES.forEach(st=>{
+        const val=bucket[st]||0;
+        if(!val) return;
+        const label=st[0]+st.slice(1).toLowerCase();
+        rows+=`<div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${PIE_COLORS[st]}"></span>${label}<span class="dash-chart-tooltip-val">${val}</span></div>`;
+      });
+      const html=`<div class="dash-chart-tooltip-title">${_formatBarLabel(key,_dashBarTimeGroup)}</div>${rows}<div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;color:var(--text3)">Total: ${total}</div>`;
+      _showDashTooltip(html,e);
+    });
+    rect.addEventListener('mouseleave',_hideDashTooltip);
+  });
 }
 // Pie chart — shows composition of selected library
+const PIE_COLORS={MISSING:'#f26d78',STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252',UNMONITORED:'#94a3b8'};
 function renderPieChart(){
   const el=document.getElementById('dash-pie-chart');
   if(!el) return;
   const counts=dashboardCountsForLibrary(_dashSelectedLib);
-  const PIE_STATUSES=['MISSING','STAGED','APPROVED','AVAILABLE','FAILED','UNMONITORED'];
-  const COLORS={MISSING:'#f26d78',STAGED:'#bb86ff',APPROVED:'#f4b43f',AVAILABLE:'#2dd4a0',FAILED:'#f05252',UNMONITORED:'#94a3b8'};
+  const PIE_STATUSES=['AVAILABLE','APPROVED','STAGED','MISSING','FAILED','UNMONITORED'];
   let total=0;
   PIE_STATUSES.forEach(st=>{ total+=(counts[st]||0); });
   if(!total){
     el.innerHTML='<div class="dash-pie-empty">No summary data</div>';
     return;
   }
-  const r=60, cx=70, cy=70;
+  const r=90, cx=110, cy=110;
   let slices='', startAngle=-Math.PI/2;
   const legendItems=[];
   const _pieCounts=counts;
   const _pieTotal=total;
-  const _pieColors=COLORS;
   PIE_STATUSES.forEach(st=>{
     if(!(counts[st]||0)) return;
     const pct=(counts[st]||0)/total;
@@ -974,22 +1077,28 @@ function renderPieChart(){
     const x1=cx+r*Math.cos(startAngle), y1=cy+r*Math.sin(startAngle);
     const x2=cx+r*Math.cos(endAngle), y2=cy+r*Math.sin(endAngle);
     if(pct>=0.999){
-      slices+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS[st]}" opacity="0.85" data-pie-st="${st}" style="cursor:pointer"/>`;
+      slices+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${PIE_COLORS[st]}" opacity="0.85" data-pie-st="${st}" class="dash-pie-slice" style="cursor:pointer"/>`;
     } else {
-      slices+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${COLORS[st]}" opacity="0.85" data-pie-st="${st}" style="cursor:pointer"/>`;
+      slices+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${largeArc} 1 ${x2},${y2} Z" fill="${PIE_COLORS[st]}" opacity="0.85" data-pie-st="${st}" class="dash-pie-slice" style="cursor:pointer"/>`;
     }
     startAngle=endAngle;
-    legendItems.push(`<div class="dash-pie-legend-item"><span class="dash-pie-legend-dot" style="background:${COLORS[st]}"></span>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]}</div>`);
+    legendItems.push(`<div class="dash-pie-legend-item"><span class="dash-pie-legend-dot" style="background:${PIE_COLORS[st]}"></span>${st[0]+st.slice(1).toLowerCase()}: ${counts[st]}</div>`);
   });
-  el.innerHTML=`<svg width="140" height="140" viewBox="0 0 140 140">${slices}</svg><div class="dash-pie-legend">${legendItems.join('')}</div>`;
-  // Attach pie tooltip handlers
+  el.innerHTML=`<svg width="220" height="220" viewBox="0 0 220 220">${slices}</svg><div class="dash-pie-legend">${legendItems.join('')}</div>`;
+  // Full tooltip on hover — show ALL statuses
   el.querySelectorAll('[data-pie-st]').forEach(shape=>{
     shape.addEventListener('mousemove',function(e){
-      const st=this.dataset.pieSt;
-      const count=_pieCounts[st]||0;
-      const pct=Math.round(count/_pieTotal*100);
-      const label=st[0]+st.slice(1).toLowerCase();
-      const html=`<div class="dash-chart-tooltip-title">Composition</div><div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${_pieColors[st]}"></span>${label}<span class="dash-chart-tooltip-val">${count}</span></div><div class="dash-chart-tooltip-row" style="color:var(--text3)">${pct}% of ${_pieTotal} total</div>`;
+      const hoveredSt=this.dataset.pieSt;
+      let rows='';
+      PIE_STATUSES.forEach(st=>{
+        const count=_pieCounts[st]||0;
+        if(!count) return;
+        const pct=Math.round(count/_pieTotal*100);
+        const label=st[0]+st.slice(1).toLowerCase();
+        const highlight=st===hoveredSt?'font-weight:700;color:var(--text)':'';
+        rows+=`<div class="dash-chart-tooltip-row" style="${highlight}"><span class="dash-chart-tooltip-dot" style="background:${PIE_COLORS[st]}"></span>${label}<span class="dash-chart-tooltip-val">${count} (${pct}%)</span></div>`;
+      });
+      const html=`<div class="dash-chart-tooltip-title">Status Distribution</div>${rows}<div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;color:var(--text3)">Total: ${_pieTotal} items</div>`;
       _showDashTooltip(html,e);
     });
     shape.addEventListener('mouseleave',_hideDashTooltip);
@@ -1037,13 +1146,15 @@ async function loadDashboardDeferredData(seq, cfg, enabledLibs){
     };
   }
   if(_dashSelectedLib!=='all' && !_dashSummaryByLib[_dashSelectedLib]) _dashSelectedLib='all';
+  _dashTimelineData=(summary.status_timeline&&typeof summary.status_timeline==='object')?summary.status_timeline:{};
 
   renderDashboardPipelineOverview(_dashSummaryOverall);
   renderDashboardNeedsAttention(cfg, _dashSummaryOverall, enabledLibs);
   renderDashboardRecentActivity(summary.recent_activity||{});
   renderDashLibTabs(enabledLibs);
   renderHistStatusFilters();
-  renderProcessingHistory();
+  renderBarTimeGroupTabs();
+  renderBarChart();
   renderPieChart();
 }
 async function dashboardRefreshHealth(full=false){
@@ -1088,6 +1199,7 @@ async function loadDashboard(force=false){
   _dashboardLibraries={enabled:enabledLibs.map(lib=>lib.name), scheduled:scheduledLibs};
   _dashSummaryByLib={};
   _dashSummaryOverall=emptyDashboardCounts();
+  _dashTimelineData={};
   if(_dashSelectedLib!=='all' && !_dashSummaryByLib[_dashSelectedLib]) _dashSelectedLib='all';
   _resetHowItWorks();
   renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs);
