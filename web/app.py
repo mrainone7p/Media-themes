@@ -13,6 +13,9 @@ from flask import Flask, Response, abort, g, jsonify, request, send_file, stream
 
 from shared.logging_utils import get_project_logger
 import web.services as services
+import web.tasks as tasks
+import web.themes as themes
+import web.ledger as ledger_mod
 
 app = Flask(__name__)
 logging.getLogger("werkzeug").setLevel(logging.WARNING)
@@ -93,7 +96,7 @@ def _infer_row_count(payload) -> int | None:
 @app.before_request
 def _auth_guard():
     g._request_started_at = time.perf_counter()
-    if not services.is_authorized_api_request(request.path, request.headers, request.args):
+    if not tasks.is_authorized_api_request(request.path, request.headers, request.args):
         return jsonify({"error": "unauthorized"}), 401
 
 
@@ -148,7 +151,7 @@ def _log_request(response: Response):
 
 @app.route("/")
 def index():
-    return services.load_template()
+    return tasks.load_template()
 
 
 @app.route("/api/config", methods=["GET"])
@@ -164,7 +167,7 @@ def post_config():
 
 @app.route("/api/ui-terminology", methods=["GET"])
 def get_ui_terminology():
-    return jsonify(services.load_ui_terminology())
+    return jsonify(tasks.load_ui_terminology())
 
 
 @app.route("/api/status-model", methods=["GET"])
@@ -184,7 +187,7 @@ def plex_libraries():
 
 @app.route("/api/movie/bio")
 def movie_bio():
-    return jsonify(services.movie_bio_payload(request.args.get("key", ""), request.args.get("library", "")))
+    return jsonify(themes.movie_bio_payload(request.args.get("key", ""), request.args.get("library", "")))
 
 
 @app.route("/api/test/tmdb", methods=["POST"])
@@ -205,7 +208,7 @@ def list_cookies():
 @app.route("/api/health", methods=["GET"])
 def api_health():
     mode = request.args.get("mode", "lite")
-    payload = services.api_health_payload(mode)
+    payload = tasks.api_health_payload(mode)
     if REQUEST_DEBUG_LOGGING_ENABLED:
         _set_request_debug_stats(component_count=len(payload), mode=mode)
     return jsonify(payload)
@@ -218,7 +221,7 @@ def dashboard_summary():
 
 def _required_library_arg(value: str):
     try:
-        return services.require_library_name(value), None
+        return ledger_mod.require_library_name(value), None
     except ValueError as exc:
         return "", (jsonify({"ok": False, "error": str(exc)}), 400)
 
@@ -270,31 +273,31 @@ def clear_selected_sources():
 
 @app.route("/api/golden-source/import", methods=["POST"])
 def import_golden_source():
-    payload, status = services.import_golden_source_payload(request.get_json(silent=True) or {})
+    payload, status = ledger_mod.golden_source_import_summary(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
 @app.route("/api/theme/trim", methods=["POST"])
 def trim_theme():
-    payload, status = services.trim_theme_payload(request.get_json(silent=True) or {})
+    payload, status = themes.trim_theme_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
 @app.route("/api/theme/delete", methods=["POST"])
 def delete_theme():
-    payload, status = services.delete_theme_payload(request.get_json(silent=True) or {})
+    payload, status = themes.delete_theme_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
 @app.route("/api/theme/download-now", methods=["POST"])
 def download_now():
-    payload, status = services.download_now_payload(request.get_json(silent=True) or {})
+    payload, status = themes.download_now_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
 @app.route("/api/library/sync-themes", methods=["POST"])
 def sync_library_themes():
-    payload, status = services.sync_library_themes_payload((request.get_json(silent=True) or {}).get("library", ""))
+    payload, status = themes.sync_library_themes_payload((request.get_json(silent=True) or {}).get("library", ""))
     return jsonify(payload), status
 
 
@@ -392,13 +395,13 @@ def tasks_history():
 
 @app.route("/api/tasks/export-golden-source", methods=["POST"])
 def export_golden_source_csv():
-    payload, status = services.export_golden_source_csv_payload(request.get_json(silent=True) or {})
+    payload, status = tasks.export_golden_source_csv_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
 @app.route("/api/tasks/export-candidate-csv", methods=["POST"])
 def export_candidate_csv():
-    payload, status = services.export_candidate_csv_payload(request.get_json(silent=True) or {})
+    payload, status = tasks.export_candidate_csv_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
@@ -412,13 +415,13 @@ def download_task_file(filename):
 
 @app.route("/api/tasks/cleanup-logs", methods=["POST"])
 def cleanup_logs():
-    payload, status = services.cleanup_logs_payload(request.get_json(silent=True) or {})
+    payload, status = tasks.cleanup_logs_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
 @app.route("/api/tasks/prune-history", methods=["POST"])
 def prune_task_history():
-    payload, status = services.prune_task_history_payload(request.get_json(silent=True) or {})
+    payload, status = tasks.prune_task_history_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
@@ -430,13 +433,13 @@ def tasks_refresh_themes():
 
 @app.route("/api/tasks/sqlite-maintenance", methods=["POST"])
 def sqlite_maintenance():
-    payload, status = services.sqlite_maintenance_payload(request.get_json(silent=True) or {})
+    payload, status = tasks.sqlite_maintenance_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
 @app.route("/api/tasks/clear-source-urls", methods=["POST"])
 def clear_all_source_urls():
-    payload, status = services.clear_all_source_urls_payload(request.get_json(silent=True) or {})
+    payload, status = tasks.clear_all_source_urls_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
@@ -456,8 +459,10 @@ def _sig_handler(sig, frame):
 signal.signal(signal.SIGTERM, _sig_handler)
 
 if __name__ == "__main__":
+    from waitress import serve
+
     APP_LOG.info("Container/web startup: config_path=%s web_port=%s startup_scan_disabled=%s request_debug_logging=%s", services.CONFIG_PATH, WEB_PORT, True, REQUEST_DEBUG_LOGGING_ENABLED)
     APP_LOG.info("HTTP logging tuned for signal over noise: chatty status, preview, and search endpoints now log only on failure or unusually slow responses.")
     if REQUEST_DEBUG_LOGGING_ENABLED:
         APP_LOG.info("Per-request debug logging enabled for /api/ledger, /api/tasks/history, /api/health, and /api/run/status via WEB_DEBUG_REQUEST_LOGGING.")
-    app.run(host="0.0.0.0", port=WEB_PORT, threaded=True)
+    serve(app, host="0.0.0.0", port=WEB_PORT, threads=4)

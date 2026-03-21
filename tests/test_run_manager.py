@@ -9,7 +9,7 @@ sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **k
 sys.modules.setdefault("requests", types.SimpleNamespace(get=lambda *args, **kwargs: None, post=lambda *args, **kwargs: None))
 
 import web.logic as logic
-import web.run_logic as run_logic
+import web.services as services
 
 
 class _FakeQueue:
@@ -34,9 +34,9 @@ class _FakeQueue:
 class RunManagerTests(unittest.TestCase):
     def test_event_stream_emits_heartbeat_while_run_is_active(self):
         manager = logic.RunManager(active=True)
-        fake_queue = _FakeQueue([run_logic.queue.Empty(), "__DONE__"])
+        fake_queue = _FakeQueue([services.queue.Empty(), "__DONE__"])
 
-        with mock.patch.object(run_logic.queue, "Queue", return_value=fake_queue):
+        with mock.patch.object(services.queue, "Queue", return_value=fake_queue):
             stream = manager.event_stream()
             self.assertEqual(": heartbeat\n\n", next(stream))
             self.assertEqual("data: __DONE__\n\n", next(stream))
@@ -45,9 +45,9 @@ class RunManagerTests(unittest.TestCase):
 
     def test_event_stream_stops_after_timeout_once_run_is_inactive(self):
         manager = logic.RunManager(active=False)
-        fake_queue = _FakeQueue([run_logic.queue.Empty()])
+        fake_queue = _FakeQueue([services.queue.Empty()])
 
-        with mock.patch.object(run_logic.queue, "Queue", return_value=fake_queue):
+        with mock.patch.object(services.queue, "Queue", return_value=fake_queue):
             stream = manager.event_stream()
             with self.assertRaises(StopIteration):
                 next(stream)

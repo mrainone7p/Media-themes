@@ -127,7 +127,6 @@ LIBRARY_TYPE_ALIASES = {
 
 _CRON_FIELD_RE = re.compile(r"^[^\s]+$")
 _FILENAME_INVALID_CHARS_RE = re.compile(r"[\\/]")
-_CRON_ENTRY_RE = re.compile(r"^(?P<cron>\S+\s+\S+\s+\S+\s+\S+\s+\S+)\s+(?P<command>.+)$")
 
 
 def config_error(field, code, message, value=None):
@@ -874,37 +873,6 @@ atexit.register(RUN_MANAGER.cleanup)
 # ── Ledger/theme operations and app-facing service helpers ──────────────────
 
 
-def _logic_modules():
-    import web.ledger as ledger
-    import web.tasks as tasks
-    import web.themes as themes
-
-    return ledger, tasks, themes
-
-
-def is_authorized_api_request(path: str, headers: dict, args: dict) -> bool:
-    _, tasks, _ = _logic_modules()
-    return tasks.is_authorized_api_request(path, headers, args)
-
-
-def load_template() -> str:
-    _, tasks, _ = _logic_modules()
-    return tasks.load_template()
-
-
-def load_ui_terminology() -> dict:
-    _, tasks, _ = _logic_modules()
-    return tasks.load_ui_terminology()
-
-
-def movie_bio_payload(rating_key: str, library: str) -> dict:
-    _, _, themes = _logic_modules()
-    return themes.movie_bio_payload(rating_key, library)
-
-
-def require_library_name(library: str) -> str:
-    ledger, _, _ = _logic_modules()
-    return ledger.require_library_name(library)
 
 
 def get_config_payload():
@@ -916,7 +884,7 @@ def get_config_payload():
 def post_config_payload(incoming):
     if not isinstance(incoming, dict):
         return {"ok": False, "error": "validation_failed", "errors": [config_error("body", "invalid_type", "Expected a JSON object.")]}, 400
-    _, tasks, _ = _logic_modules()
+    import web.tasks as tasks
     existing = load_config()
     candidate = dict(existing)
     candidate.update(incoming)
@@ -984,7 +952,7 @@ def test_tmdb_payload(data):
 
 
 def test_golden_source_payload(data):
-    ledger, _, _ = _logic_modules()
+    import web.ledger as ledger
     try:
         url = data.get("url") or load_config().get("golden_source_url", "")
         normalized_url, rows, fetch_ms, fetch_mode = ledger.fetch_golden_source_catalog(url)
@@ -1009,19 +977,14 @@ def list_cookies_payload():
     return {"files": files}
 
 
-def api_health_payload(mode: str = "lite"):
-    _, tasks, _ = _logic_modules()
-    return tasks.api_health_payload(mode=mode)
-
-
 def get_ledger_payload(library: str):
-    ledger, _, _ = _logic_modules()
+    import web.ledger as ledger
     library_name = ledger.require_library_name(library)
     return load_ledger(ledger_path_for(library_name))
 
 
 def patch_ledger_payload(key: str, library: str, updates: dict):
-    ledger, _, _ = _logic_modules()
+    import web.ledger as ledger
     library_name = ledger.require_library_name(library)
     path = ledger_path_for(library_name)
     rows = load_ledger(path)
@@ -1036,7 +999,7 @@ def patch_ledger_payload(key: str, library: str, updates: dict):
 
 
 def save_manual_source_payload(data: dict):
-    ledger, _, _ = _logic_modules()
+    import web.ledger as ledger
     key = str(data.get("rating_key", "") or "").strip()
     library = str(data.get("library", "") or "").strip()
     url = str(data.get("url", "") or "").strip()
@@ -1070,7 +1033,7 @@ def save_manual_source_payload(data: dict):
 
 
 def bulk_ledger_payload(library: str, data: dict):
-    ledger, _, _ = _logic_modules()
+    import web.ledger as ledger
     library_name = ledger.require_library_name(library)
     path = ledger_path_for(library_name)
     keys = set(data.get("keys", []))
@@ -1095,7 +1058,7 @@ def bulk_ledger_payload(library: str, data: dict):
 
 
 def clear_selected_sources_payload(library: str, data: dict):
-    ledger, _, _ = _logic_modules()
+    import web.ledger as ledger
     library_name = ledger.require_library_name(library or data.get("library", ""))
     path = ledger_path_for(library_name)
     keys = [str(key) for key in (data.get("keys", []) or []) if str(key).strip()]
@@ -1111,33 +1074,10 @@ def clear_selected_sources_payload(library: str, data: dict):
     return {"ok": True, "summary": summary}, 200
 
 
-def import_golden_source_payload(data: dict):
-    ledger, _, _ = _logic_modules()
-    return ledger.golden_source_import_summary(data)
-
-
-def trim_theme_payload(data: dict):
-    _, _, themes = _logic_modules()
-    return themes.trim_theme_payload(data)
-
-
-def delete_theme_payload(data: dict):
-    _, _, themes = _logic_modules()
-    return themes.delete_theme_payload(data)
-
-
-def download_now_payload(data: dict):
-    _, _, themes = _logic_modules()
-    return themes.download_now_payload(data)
-
-
-def sync_library_themes_payload(library: str):
-    _, _, themes = _logic_modules()
-    return themes.sync_library_themes_payload(library)
 
 
 def theme_file_path_for(folder: str):
-    ledger, _, _ = _logic_modules()
+    import web.ledger as ledger
     cfg = load_config()
     if not ledger.is_allowed_folder(folder, ledger.get_media_roots(cfg)):
         return None, {"error": "forbidden"}, 403
@@ -1300,18 +1240,10 @@ def tasks_history_payload(limit: int):
     return load_task_entries(limit=limit)
 
 
-def export_golden_source_csv_payload(data: dict):
-    _, tasks, _ = _logic_modules()
-    return tasks.export_golden_source_csv_payload(data)
-
-
-def export_candidate_csv_payload(data: dict):
-    _, tasks, _ = _logic_modules()
-    return tasks.export_candidate_csv_payload(data)
 
 
 def task_download_path(filename: str):
-    _, tasks, _ = _logic_modules()
+    import web.tasks as tasks
     safe = Path(filename).name
     path = tasks.EXPORTS_DIR / safe
     if not path.exists():
@@ -1319,32 +1251,16 @@ def task_download_path(filename: str):
     return path
 
 
-def cleanup_logs_payload(data: dict):
-    _, tasks, _ = _logic_modules()
-    return tasks.cleanup_logs_payload(data)
-
-
-def prune_task_history_payload(data: dict):
-    _, tasks, _ = _logic_modules()
-    return tasks.prune_task_history_payload(data)
 
 
 def tasks_refresh_themes_payload(data: dict):
-    _, _, themes = _logic_modules()
+    import web.themes as themes
     library = data.get("library", "")
     payload, status = themes.sync_library_themes_payload(library)
     record_task("Refresh Local Theme Detection", "success" if payload.get("ok") else "error", library, f"Updated {payload.get('updated', 0)} rows", {"library": library, **payload})
     return payload, status
 
 
-def sqlite_maintenance_payload(data: dict):
-    _, tasks, _ = _logic_modules()
-    return tasks.sqlite_maintenance_payload(data)
-
-
-def clear_all_source_urls_payload(data: dict):
-    _, tasks, _ = _logic_modules()
-    return tasks.clear_all_source_urls_payload(data)
 
 
 def run_status_payload():

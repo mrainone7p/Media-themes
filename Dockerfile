@@ -17,7 +17,7 @@ RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
     && chmod +x /usr/local/bin/yt-dlp
 
 # Python packages
-RUN pip install --no-cache-dir pyyaml requests flask
+RUN pip install --no-cache-dir pyyaml requests flask waitress
 
 # App directories
 RUN mkdir -p /app/script /app/config /app/logs /app/web /app/shared /app/logs/runs
