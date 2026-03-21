@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Media Tracks{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div>
+          <p class="eyebrow">Media Tracks</p>
+          <h1>Theme Operations</h1>
+          <p class="sidebar-copy">Manage Plex sidecar theme files, review sources, and configure discovery pipeline connections.</p>
+        </div>
+        <nav class="nav-list">
+          <a href="{{ url_for('theme_library') }}" class="nav-link {% if request.endpoint in ['index', 'theme_library'] %}active{% endif %}">Theme Library</a>
+          <a href="{{ url_for('configuration') }}" class="nav-link {% if request.endpoint == 'configuration' %}active{% endif %}">Configuration</a>
+        </nav>
+        <div class="sidebar-note card">
+          <p class="section-label">Pipeline defaults</p>
+          <ul>
+            <li>Mode: Manual approval</li>
+            <li>Theme filename: <code>theme.mp3</code></li>
+            <li>Database: SQLite ledger</li>
+          </ul>
+        </div>
+      </aside>
+      <main class="main-panel">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+    <script>
+      window.__THEMES__ = {{ themes|tojson if themes is defined else '[]' }};
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  </body>
+</html>
