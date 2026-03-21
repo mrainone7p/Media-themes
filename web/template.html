@@ -201,18 +201,32 @@
 
 <!-- ══════════════════════════════════════ CONFIGURATION ═══════════════════════════ -->
 <div class="page" id="page-configuration">
-  <div class="page-head">
-    <div>
+  <div class="page-head simple-page-head">
+    <div class="page-head-copy">
+      <div class="page-kicker">Setup</div>
       <div class="page-title" data-ui="pages.configuration.title">Configuration</div>
-      <div class="page-desc" data-ui="pages.configuration.description">Set up connections, libraries, discovery sources, and download preferences.</div>
+      <div class="page-desc" data-ui="pages.configuration.description">A simpler control center for connections, libraries, source discovery, and download behavior.</div>
     </div>
   </div>
   <div class="page-body"><div class="content">
+    <div class="settings-overview card">
+      <div class="settings-overview-copy">
+        <div class="settings-overview-title">Keep the same theme, make setup easier.</div>
+        <div class="settings-overview-desc">Each section below is grouped by workflow so you can move from connections, to library selection, to source matching, to download output without hunting through dense forms.</div>
+      </div>
+      <div class="settings-overview-links">
+        <button class="quick-link-pill" onclick="document.getElementById('config-section-connections').scrollIntoView({behavior:'smooth', block:'start'})">Connections</button>
+        <button class="quick-link-pill" onclick="document.getElementById('config-section-libraries').scrollIntoView({behavior:'smooth', block:'start'})">Libraries</button>
+        <button class="quick-link-pill" onclick="document.getElementById('config-section-discovery').scrollIntoView({behavior:'smooth', block:'start'})">Discovery</button>
+        <button class="quick-link-pill" onclick="document.getElementById('config-section-curated').scrollIntoView({behavior:'smooth', block:'start'})">Curated</button>
+        <button class="quick-link-pill" onclick="document.getElementById('config-section-downloads').scrollIntoView({behavior:'smooth', block:'start'})">Downloads</button>
+      </div>
+    </div>
     <details class="card settings-section" open id="config-section-connections">
       <summary>
         <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><circle cx="18" cy="18" r="2"/></svg>
-          CONNECTIONS
+          Connections
         </div>
         <div class="settings-chev">˅</div>
       </summary>
@@ -269,7 +283,7 @@
       <summary>
         <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
-          MEDIA LIBRARIES
+          Media Libraries
         </div>
         <div class="settings-chev">˅</div>
       </summary>
@@ -284,11 +298,11 @@
       </div>
     </details>
 
-    <details class="card settings-section" open>
+    <details class="card settings-section" open id="config-section-discovery">
       <summary>
         <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-          SOURCE DISCOVERY
+          Source Discovery
         </div>
         <div class="settings-chev">˅</div>
       </summary>
@@ -368,11 +382,11 @@
       </div>
     </details>
 
-    <details class="card settings-section" open>
+    <details class="card settings-section" open id="config-section-curated">
       <summary>
         <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><path d="M8 7h8M8 17h8"/><circle cx="6" cy="7" r="1"/><circle cx="18" cy="17" r="1"/></svg>
-          CURATED SOURCE DISCOVERY
+          Curated Source Discovery
         </div>
         <div class="settings-chev">˅</div>
       </summary>
@@ -422,11 +436,11 @@
       </div>
     </details>
 
-    <details class="card settings-section" open>
+    <details class="card settings-section" open id="config-section-downloads">
       <summary>
         <div class="card-title mb-0">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          DOWNLOAD OUTPUT &amp; PERFORMANCE
+          Download Output &amp; Performance
         </div>
         <div class="settings-chev">˅</div>
       </summary>
@@ -538,8 +552,8 @@
 
 <!-- ══════════════════════════════════════ DATABASE ═══════════════════════════ -->
 <div class="page" id="page-theme-manager">
-  <div class="page-head">
-    <div><div class="page-title" data-ui="pages.database.title">Theme Manager</div><div class="page-desc" data-ui="pages.database.description">Browse, filter, review, and manage theme items in one place.</div></div>
+  <div class="page-head simple-page-head">
+    <div class="page-head-copy"><div class="page-kicker">Library</div><div class="page-title" data-ui="pages.database.title">Theme Manager</div><div class="page-desc" data-ui="pages.database.description">Browse, filter, and take action from a cleaner, more focused workspace.</div></div>
   </div>
   <div class="page-body">
     <!-- Progress bar -->
@@ -646,7 +660,7 @@
 
 <!-- ══════════════════════════════════════ RUN ════════════════════════════════ -->
 <div class="page" id="page-scheduler">
-  <div class="page-head"><div><div class="page-title" data-ui="pages.schedule.title">Scheduler</div><div class="page-desc" data-ui="pages.schedule.description">Set what the automated schedule does, choose included libraries, and run the configured automation on demand.</div></div></div>
+  <div class="page-head simple-page-head"><div class="page-head-copy"><div class="page-kicker">Automation</div><div class="page-title" data-ui="pages.schedule.title">Scheduler</div><div class="page-desc" data-ui="pages.schedule.description">Set what runs automatically, keep the steps easy to scan, and launch the saved workflow on demand.</div></div></div>
   <div class="page-body"><div class="content">
 
     <div class="run-bar">
@@ -820,7 +834,7 @@
 
 <!-- ══════════════════════════════════════ TASKS ════════════════════════════ -->
 <div class="page" id="page-tasks">
-  <div class="page-head"><div><div class="page-title" data-ui="pages.tasks.title">Tasks</div><div class="page-desc" data-ui="pages.tasks.description">Run utilities, export curated data, perform maintenance, and review task/run history.</div></div></div>
+  <div class="page-head simple-page-head"><div class="page-head-copy"><div class="page-kicker">Utilities</div><div class="page-title" data-ui="pages.tasks.title">Tasks</div><div class="page-desc" data-ui="pages.tasks.description">Run utilities, maintenance, and exports from a more streamlined operations page.</div></div></div>
   <div class="page-body"><div class="content">
     <div class="card">
       <div class="task-section-head">
