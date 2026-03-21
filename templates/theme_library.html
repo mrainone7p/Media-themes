@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% block title %}Theme Library · Media Tracks{% endblock %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow accent">Theme Library</p>
+    <h2>SQLite-backed theme ledger</h2>
+    <p class="page-copy">Filter, sort, and review every title before the pipeline downloads <code>theme.mp3</code> into your Plex media folders.</p>
+  </div>
+  <div class="header-actions">
+    <button class="ghost-button">Scan libraries</button>
+    <button class="ghost-button">Find sources</button>
+    <button class="primary-button">Download approved</button>
+  </div>
+</section>
+
+<section class="card toolbar-card">
+  <div class="toolbar-grid">
+    <label>
+      <span>Search</span>
+      <input id="searchInput" placeholder="Title, folder path, or TMDB ID" />
+    </label>
+    <label>
+      <span>Status</span>
+      <select id="statusFilter">
+        <option>All</option>
+        <option>Missing</option>
+        <option>Staged</option>
+        <option>Approved</option>
+        <option>Available</option>
+        <option>Failed</option>
+      </select>
+    </label>
+    <label>
+      <span>Sort by</span>
+      <select id="sortBy">
+        <option value="updated_at">Updated</option>
+        <option value="title">Title</option>
+        <option value="year">Year</option>
+        <option value="status">Status</option>
+        <option value="tmdb_id">TMDB ID</option>
+      </select>
+    </label>
+    <label>
+      <span>Direction</span>
+      <select id="sortDirection">
+        <option value="desc">Descending</option>
+        <option value="asc">Ascending</option>
+      </select>
+    </label>
+  </div>
+  <div class="quick-actions">
+    <div>
+      <p class="section-label">Quick actions</p>
+      <p>Pipeline actions for selected items.</p>
+    </div>
+    <div class="quick-action-buttons">
+      <button class="ghost-button">Mark approved</button>
+      <button class="ghost-button">Reset to missing</button>
+      <button class="ghost-button">Run replace workflow</button>
+    </div>
+  </div>
+</section>
+
+<section class="card table-card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" aria-label="Select all"></th>
+          <th>Title</th>
+          <th>Year</th>
+          <th>Status</th>
+          <th>Action</th>
+          <th>Golden Source URL</th>
+          <th>Golden Source Offset</th>
+          <th>Source URL</th>
+          <th>Source Offset</th>
+          <th>Updated</th>
+          <th>Notes</th>
+          <th>Folder Path</th>
+          <th>TMDB ID</th>
+        </tr>
+      </thead>
+      <tbody id="themeRows"></tbody>
+    </table>
+  </div>
+</section>
+
+<div class="modal hidden" id="managerModal" aria-hidden="true">
+  <div class="modal-card large-modal">
+    <div class="modal-head">
+      <div>
+        <p class="section-label">Theme manager</p>
+        <h3 id="managerTitle">Title</h3>
+        <p id="managerMeta">Year · status</p>
+      </div>
+      <button class="pill status-pill missing" id="managerStatus">Missing</button>
+    </div>
+    <div class="detail-grid">
+      <section class="soft-panel">
+        <p class="section-label">Local theme</p>
+        <p id="localThemeSummary">Missing locally</p>
+        <p id="localThemePath"></p>
+        <p id="localThemeDuration">Duration —</p>
+        <button class="primary-button small-button" id="openWorkflowButton">Replace</button>
+      </section>
+      <section class="soft-panel">
+        <p class="section-label">Source details</p>
+        <p id="sourceDetailsText">No source is attached right now.</p>
+      </section>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost-button" data-close-modal="managerModal">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="workflowModal" aria-hidden="true">
+  <div class="modal-card workflow-modal">
+    <div class="workflow-steps">
+      <div class="step active">1. Choose search method</div>
+      <div class="step">2. Review results</div>
+      <div class="step">3. Confirm source</div>
+    </div>
+    <div class="workflow-title-row">
+      <div>
+        <h3 id="workflowTitle">Title</h3>
+        <p id="workflowYear">Year</p>
+      </div>
+      <span class="pill">TMDB</span>
+    </div>
+    <div class="workflow-section">
+      <p class="section-label">Choose search method</p>
+      <div class="workflow-card selected">
+        <div>
+          <h4>Playlist <span class="pill active-pill">Selected</span></h4>
+          <p>Search soundtrack playlists and start from track 1.</p>
+          <small>YouTube playlist search · fastest broad match</small>
+        </div>
+      </div>
+      <div class="workflow-card">
+        <div>
+          <h4>Direct</h4>
+          <p>Search for one theme song or title match directly.</p>
+          <small>YouTube single-result search · tighter match</small>
+        </div>
+      </div>
+      <div class="workflow-card muted-card">
+        <div>
+          <h4>Golden Source <span class="pill success">Recommended</span></h4>
+          <p>No curated source is available for this item yet.</p>
+          <small>Offset aware · manual search fallback</small>
+        </div>
+      </div>
+      <div class="workflow-card">
+        <div>
+          <h4>Custom</h4>
+          <p>Hand-tune the query before searching.</p>
+          <div class="inline-input">
+            <input id="customQuery" />
+            <button class="ghost-button">Pick</button>
+          </div>
+        </div>
+      </div>
+      <div class="workflow-card">
+        <div>
+          <h4>Paste URL</h4>
+          <p>Jump straight to a known source URL.</p>
+          <div class="inline-input">
+            <input placeholder="https://www.youtube.com/watch?v=..." />
+            <button class="ghost-button">Pick</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="workflow-section">
+      <p class="section-label">Results · pick the best source match</p>
+      <div class="results-list" id="resultsList"></div>
+    </div>
+    <div class="workflow-section">
+      <p class="section-label">Preview · edit / trim source as needed</p>
+      <div class="preview-box">
+        <div class="preview-header">
+          <strong id="previewTitle">Selected Source</strong>
+          <div class="offset-badge" id="previewOffset">00:00</div>
+        </div>
+        <p id="previewUrl">https://www.youtube.com/watch?v=...</p>
+        <div class="offset-controls">
+          <button class="ghost-button">-5</button>
+          <button class="ghost-button">+5</button>
+          <button class="ghost-button">Snap to current time</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost-button" data-close-modal="workflowModal">Cancel</button>
+      <button class="primary-button">Save for review</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

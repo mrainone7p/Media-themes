@@ -179,3 +179,20 @@ Use package-style startup from the repository root so local runs, tests, and Doc
 python -m web.app
 python -m script.media_tracks
 ```
+
+## Local demo app in this repository
+
+This repository now includes a lightweight Flask demo app that matches the README terminology and the requested two-page UI:
+
+- `Theme Library` — SQLite-backed table with filters, sorting, and manager workflows.
+- `Configuration` — clean settings page for Plex, TMDB, media roots, and pipeline defaults.
+
+Run it locally with:
+
+```bash
+python -m pip install -r requirements.txt
+python init_db.py
+python app.py
+```
+
+Then open `http://127.0.0.1:8182`.
