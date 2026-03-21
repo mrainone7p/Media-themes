@@ -374,15 +374,13 @@ function _pageNeedsCountdown(page=_activePageName()){
   return _countdownPages.has(page);
 }
 function _syncCountdownTimer(){
-  const shouldTick=!!_countdownTargetDt && _pageNeedsCountdown();
-  if(!shouldTick){
-    if(_countdownInterval){clearInterval(_countdownInterval);_countdownInterval=null;}
+  // Static display only — no countdown interval
+  if(!_countdownTargetDt){
     const schedWrap=document.getElementById('sched-cron-next');
     if(schedWrap && _activePageName()!=='scheduler') schedWrap.style.display='none';
     return;
   }
-  _tickCountdowns();
-  if(!_countdownInterval) _countdownInterval=setInterval(_tickCountdowns,1000);
+  _updateStaticNextRun();
 }
 function _startCountdowns(isoStr){
   if(!isoStr){_countdownTargetDt=null;_stopCountdownDisplay();return;}
@@ -391,21 +389,18 @@ function _startCountdowns(isoStr){
   _countdownTargetDt=dt;
   _syncCountdownTimer();
 }
-function _tickCountdowns(){
+function _updateStaticNextRun(){
   if(!_countdownTargetDt) return;
-  const ms=_countdownTargetDt-new Date();
-  const label=ms>0?_fmtCountdown(ms):'Now';
   const absStr=_countdownTargetDt.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
-  // Dashboard action station countdown
-  const dashRel=document.getElementById('dash-next-run-rel');
-  if(dashRel) dashRel.textContent=label;
-  // Scheduler cron countdown
-  const schedCd=document.getElementById('sched-cron-countdown');
-  if(schedCd) schedCd.textContent=label;
+  // Scheduler static next run
   const schedAbs=document.getElementById('sched-cron-next-abs');
   if(schedAbs) schedAbs.textContent=absStr;
   const schedWrap=document.getElementById('sched-cron-next');
   if(schedWrap) schedWrap.style.display='';
+}
+function _tickCountdowns(){
+  // Kept for compatibility — now just calls static update
+  _updateStaticNextRun();
 }
 function _stopCountdownDisplay(){
   const schedWrap=document.getElementById('sched-cron-next');
@@ -520,11 +515,11 @@ function renderDashboardSystemHealth(health){
   if(noteEl){
     noteEl.textContent=validation.detail || (_dashboardHealthMode==='full'
       ? 'All dashboard integrations were checked live.'
-      : 'Cached or placeholder status is shown until you run Validate.');
+      : 'Cached or placeholder status is shown until you run Refresh.');
   }
   const refreshBtn=document.getElementById('dashboard-health-refresh');
   if(refreshBtn){
-    refreshBtn.textContent=_dashboardHealthLoading ? 'Validating…' : (validation.full ? 'Revalidate' : 'Validate');
+    refreshBtn.textContent=_dashboardHealthLoading ? 'Refreshing…' : 'Refresh';
     refreshBtn.disabled=_dashboardHealthLoading;
   }
 }
@@ -539,7 +534,7 @@ function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
   renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs);
   renderDashLibTabs(enabledLibs);
   renderHistStatusFilters();
-  renderBarTimeGroupTabs();
+  renderBarDaysInput();
   renderBarChart();
   renderPieChart();
   const healthCache=readDashboardHealthCache();
@@ -554,7 +549,7 @@ function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
       healthEl.innerHTML='<div class="dashboard-empty">No live health check has run yet. Use Validate to fetch the latest system health.</div>';
     }
     const noteEl=document.getElementById('dashboard-health-note');
-    if(noteEl) noteEl.textContent='Cached or placeholder status is shown until you run Validate.';
+    if(noteEl) noteEl.textContent='Cached or placeholder status is shown until you run Refresh.';
     const refreshBtn=document.getElementById('dashboard-health-refresh');
     if(refreshBtn){
       refreshBtn.disabled=false;
@@ -605,15 +600,13 @@ function renderDashboardActionStation(health){
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   const scheduleActive=s.state==='ok'||s.state==='warning'||s.state==='warn';
   const scheduleDetail=s.detail?`<div style="font-size:11px;color:var(--text3);margin-top:6px">${s.detail}</div>`:'';
-  // Next run block
+  // Next run block (static display, no countdown)
   let nextRunHtml='';
   const nrFull=formatNextRunFull(s.next_run);
-  _startCountdowns(s.next_run||null);
   if(nrFull){
     nextRunHtml=`<div class="dash-station-next-run">
       <div class="dash-station-next-label">Next Scheduled Run</div>
-      <div class="dash-station-next-rel"><span id="dash-next-run-rel">${nrFull.rel}</span></div>
-      <div class="dash-station-next-abs">${nrFull.abs}</div>
+      <div class="dash-station-next-rel">${nrFull.abs}</div>
       ${scheduleDetail}
     </div>`;
   } else if(scheduleActive){
@@ -864,7 +857,7 @@ function renderDashLibTabs(enabledLibs){
   const el=document.getElementById('dash-lib-tabs');
   if(!el) return;
   const tabs=[{name:'all',label:'All'},...(enabledLibs||[]).map(l=>({name:l.name||l,label:l.name||l}))];
-  el.innerHTML=tabs.map(t=>`<button class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
+  el.innerHTML=tabs.map(t=>`<button type="button" class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
 }
 
 function renderHistStatusFilters(){
@@ -880,7 +873,7 @@ function renderHistStatusFilters(){
   ];
   el.innerHTML=filters.map(f=>{
     const active=f.k===_dashHistStatusFilter;
-    return `<button class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter(${JSON.stringify(f.k)})">${f.label}</button>`;
+    return `<button type="button" class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter(${JSON.stringify(f.k)})">${f.label}</button>`;
   }).join('');
 }
 
@@ -914,19 +907,18 @@ function renderDashLibKpi(){
 
 // ── Bar chart — activity over time ────────────────────────────────────────────
 let _dashTimelineData={};
-let _dashBarTimeGroup='month';
+let _dashBarDaysInput=30;
 const BAR_STATUSES=['AVAILABLE','APPROVED','STAGED','MISSING','FAILED'];
 
-function renderBarTimeGroupTabs(){
+function renderBarDaysInput(){
   const el=document.getElementById('dash-bar-timegroup');
   if(!el) return;
-  const groups=['day','week','month','year'];
-  el.innerHTML=groups.map(g=>`<button class="dash-lib-tab${g===_dashBarTimeGroup?' active':''}" onclick="_setBarTimeGroup('${g}')">${g[0].toUpperCase()+g.slice(1)}</button>`).join('');
+  el.innerHTML=`<div class="dash-bar-days-wrap"><span>Last</span><input type="number" min="1" max="365" value="${_dashBarDaysInput}" class="dash-bar-days-input" onchange="_setBarDays(this.value)" onkeydown="if(event.key==='Enter'){this.blur()}"><span>days</span></div>`;
 }
 
-function _setBarTimeGroup(g){
-  _dashBarTimeGroup=g;
-  renderBarTimeGroupTabs();
+function _setBarDays(v){
+  const n=Math.max(1,Math.min(365,parseInt(v,10)||30));
+  _dashBarDaysInput=n;
   renderBarChart();
 }
 
@@ -969,19 +961,39 @@ function renderBarChart(){
   const el=document.getElementById('dash-bar-chart');
   if(!el) return;
   const timeline=_dashTimelineData||{};
-  if(!Object.keys(timeline).length){
-    el.innerHTML='<div class="dash-bar-empty">No activity data available yet. Status changes will appear here over time.</div>';
+  const N=_dashBarDaysInput||30;
+  // Generate all day keys for the last N days (fill empty days)
+  const today=new Date();
+  const allDayKeys=[];
+  for(let i=N-1;i>=0;i--){
+    const d=new Date(today);
+    d.setDate(d.getDate()-i);
+    allDayKeys.push(d.toISOString().slice(0,10));
+  }
+  // Determine aggregation: daily, weekly, or monthly
+  let group='day';
+  if(N>180) group='month';
+  else if(N>60) group='week';
+  // Aggregate timeline data filtered to our date range
+  const cutoff=allDayKeys[0];
+  const filteredTimeline={};
+  for(const [day, statuses] of Object.entries(timeline)){
+    if(day>=cutoff) filteredTimeline[day]=statuses;
+  }
+  // Fill in empty days so chart is continuous
+  allDayKeys.forEach(d=>{ if(!filteredTimeline[d]) filteredTimeline[d]={}; });
+  const buckets=_aggregateTimeline(filteredTimeline, group, _dashHistStatusFilter);
+  const keys=Object.keys(buckets).sort();
+  if(!keys.length){
+    el.innerHTML='<div class="dash-bar-empty">No data for the selected period.</div>';
     return;
   }
-  const buckets=_aggregateTimeline(timeline, _dashBarTimeGroup, _dashHistStatusFilter);
-  const sortedKeys=Object.keys(buckets).sort();
-  if(!sortedKeys.length){
-    el.innerHTML='<div class="dash-bar-empty">No matching data for the selected filters.</div>';
-    return;
-  }
-  // Limit to last N periods
-  const maxBars=_dashBarTimeGroup==='day'?30:_dashBarTimeGroup==='week'?16:_dashBarTimeGroup==='year'?10:12;
-  const keys=sortedKeys.slice(-maxBars);
+  // Calculate totals per status for legend
+  const legendTotals={};
+  BAR_STATUSES.forEach(st=>{ legendTotals[st]=0; });
+  keys.forEach(k=>{
+    BAR_STATUSES.forEach(st=>{ legendTotals[st]+=(buckets[k][st]||0); });
+  });
   // Calculate max stacked height
   let maxTotal=0;
   keys.forEach(k=>{
@@ -989,15 +1001,15 @@ function renderBarChart(){
     BAR_STATUSES.forEach(st=>{ t+=(buckets[k][st]||0); });
     if(t>maxTotal) maxTotal=t;
   });
-  if(!maxTotal){ el.innerHTML='<div class="dash-bar-empty">No data for selected period.</div>'; return; }
+  if(!maxTotal){ el.innerHTML='<div class="dash-bar-empty">No activity in this period.</div>'; return; }
   // SVG dimensions
   const chartW=el.clientWidth||400;
   const chartH=200;
   const padL=40, padR=10, padT=10, padB=30;
   const plotW=chartW-padL-padR;
   const plotH=chartH-padT-padB;
-  const barW=Math.max(8,Math.min(40,Math.floor(plotW/keys.length)-4));
-  const gap=Math.max(2,(plotW-barW*keys.length)/(keys.length||1));
+  const barW=Math.max(4,Math.min(40,Math.floor(plotW/keys.length)-2));
+  const gap=Math.max(1,(plotW-barW*keys.length)/(keys.length||1));
   // Y-axis scale
   const yScale=plotH/maxTotal;
   // Build bars
@@ -1013,9 +1025,10 @@ function renderBarChart(){
       y-=h;
       bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${PIE_COLORS[st]}" opacity="0.85" rx="2" data-bar-key="${key}" data-bar-st="${st}" style="cursor:pointer"/>`;
     });
-    // X label
-    const lbl=_formatBarLabel(key,_dashBarTimeGroup);
-    const showLabel=keys.length<=16||(i%Math.ceil(keys.length/12)===0);
+    // X label — show smartly based on bar count
+    const lbl=_formatBarLabel(key,group);
+    const maxLabels=Math.min(12,keys.length);
+    const showLabel=keys.length<=maxLabels||(i%Math.ceil(keys.length/maxLabels)===0)||(i===keys.length-1);
     if(showLabel){
       labels+=`<text x="${x+barW/2}" y="${chartH-4}" text-anchor="middle" fill="var(--text3)" font-size="9" font-family="var(--mono)">${lbl}</text>`;
     }
@@ -1029,7 +1042,12 @@ function renderBarChart(){
     yLines+=`<line x1="${padL}" y1="${yPos}" x2="${chartW-padR}" y2="${yPos}" stroke="var(--border)" stroke-width="0.5"/>`;
     yLines+=`<text x="${padL-6}" y="${yPos+3}" text-anchor="end" fill="var(--text3)" font-size="9" font-family="var(--mono)">${yVal}</text>`;
   }
-  el.innerHTML=`<svg width="100%" height="${chartH}" viewBox="0 0 ${chartW} ${chartH}" class="dash-bar-chart-svg">${yLines}${bars}${labels}</svg>`;
+  // Legend with status totals
+  const legendItems=BAR_STATUSES.filter(st=>legendTotals[st]>0).map(st=>{
+    const label=st[0]+st.slice(1).toLowerCase();
+    return `<div class="dash-pie-legend-item"><span class="dash-pie-legend-dot" style="background:${PIE_COLORS[st]}"></span>${label}: ${legendTotals[st]}</div>`;
+  }).join('');
+  el.innerHTML=`<svg width="100%" height="${chartH}" viewBox="0 0 ${chartW} ${chartH}" class="dash-bar-chart-svg">${yLines}${bars}${labels}</svg>${legendItems?'<div class="dash-pie-legend" style="margin-top:10px">'+legendItems+'</div>':''}`;
   // Tooltips
   el.querySelectorAll('[data-bar-key]').forEach(rect=>{
     rect.addEventListener('mousemove',function(e){
@@ -1044,7 +1062,7 @@ function renderBarChart(){
         const label=st[0]+st.slice(1).toLowerCase();
         rows+=`<div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${PIE_COLORS[st]}"></span>${label}<span class="dash-chart-tooltip-val">${val}</span></div>`;
       });
-      const html=`<div class="dash-chart-tooltip-title">${_formatBarLabel(key,_dashBarTimeGroup)}</div>${rows}<div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;color:var(--text3)">Total: ${total}</div>`;
+      const html=`<div class="dash-chart-tooltip-title">${_formatBarLabel(key,group)}</div>${rows}<div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;color:var(--text3)">Total: ${total}</div>`;
       _showDashTooltip(html,e);
     });
     rect.addEventListener('mouseleave',_hideDashTooltip);
@@ -1153,7 +1171,7 @@ async function loadDashboardDeferredData(seq, cfg, enabledLibs){
   renderDashboardRecentActivity(summary.recent_activity||{});
   renderDashLibTabs(enabledLibs);
   renderHistStatusFilters();
-  renderBarTimeGroupTabs();
+  renderBarDaysInput();
   renderBarChart();
   renderPieChart();
 }
@@ -1163,7 +1181,7 @@ async function dashboardRefreshHealth(full=false){
   const refreshBtn=document.getElementById('dashboard-health-refresh');
   if(refreshBtn){
     refreshBtn.disabled=true;
-    refreshBtn.textContent=full ? 'Validating…' : 'Refreshing…';
+    refreshBtn.textContent='Refreshing…';
   }
   try{
     const mode=full ? 'full' : 'lite';
@@ -1181,7 +1199,7 @@ async function dashboardRefreshHealth(full=false){
       const currentBtn=document.getElementById('dashboard-health-refresh');
       if(currentBtn){
         currentBtn.disabled=false;
-        currentBtn.textContent=_dashboardHealthMode==='full' ? 'Revalidate' : 'Validate';
+        currentBtn.textContent='Refresh';
       }
     }
   }

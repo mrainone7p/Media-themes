@@ -66,68 +66,7 @@
   </div>
   <div class="page-body"><div class="content">
 
-    <!-- Row 1: KPI Cards -->
-    <div class="dashboard-stat-grid mb-20" id="dashboard-pipeline-overview"></div>
-
-    <!-- Row 2: Needs Attention + Action Station -->
-    <div class="dashboard-grid mb-20">
-      <div class="card dashboard-card span-7 dash-attention-card">
-        <div class="card-title">Needs Attention</div>
-        <div id="dashboard-needs-attention"></div>
-      </div>
-      <div class="card dashboard-card span-5">
-        <div class="card-title">Action Station</div>
-        <div id="dashboard-action-station"><div class="dash-skeleton mb-8"></div><div class="dash-skeleton"></div><div class="dash-skeleton"></div></div>
-      </div>
-    </div>
-
-    <!-- Row 3: Theme Library Overview with two charts -->
-    <div class="card dashboard-card mb-20">
-      <div class="dash-section-header">
-        <div class="card-title mb-0">Theme Library Overview</div>
-        <div class="dash-controls">
-          <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
-          <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
-          <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
-        </div>
-      </div>
-      <div class="dash-charts-grid">
-        <div class="dash-chart-card">
-          <div class="dash-chart-card-title">Status Distribution</div>
-          <div class="dash-pie-wrap" id="dash-pie-chart"></div>
-        </div>
-        <div class="dash-chart-card">
-          <div class="dash-chart-card-header">
-            <div class="dash-chart-card-title">Activity Over Time</div>
-            <div id="dash-bar-timegroup" class="dash-lib-tabs"></div>
-          </div>
-          <div id="dash-bar-chart"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Row 4: System Health + Recent Activity -->
-    <div class="dash-split-row mb-20">
-      <div class="card dashboard-card">
-        <div class="dash-section-header">
-          <div>
-            <div class="card-title mb-0">System Health</div>
-            <div id="dashboard-health-note" class="dash-section-note">Cached or placeholder status is shown until you run Validate.</div>
-          </div>
-          <button class="btn btn-ghost btn-sm" id="dashboard-health-refresh" onclick="dashboardRefreshHealth(true)">Validate</button>
-        </div>
-        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
-      </div>
-      <div class="card dashboard-card">
-        <div class="dash-section-header">
-          <div class="card-title mb-0">Recent Activity</div>
-          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
-        </div>
-        <div id="dashboard-recent-activity"></div>
-      </div>
-    </div>
-
-    <!-- Row 5: How it Works? (collapsed by default, ephemeral) -->
+    <!-- Row 1: How it Works? (collapsed by default, ephemeral) -->
     <div style="margin-bottom:20px">
       <div class="card dashboard-card mb-0" id="dash-pipeline-help">
         <button type="button" id="dash-how-toggle" class="dash-how-toggle-btn" onclick="toggleHowItWorks()" aria-expanded="false" aria-controls="dash-how-content">
@@ -135,8 +74,8 @@
           <span class="settings-chev" id="dash-pipeline-help-chev" style="transform:rotate(180deg)">&#8743;</span>
         </button>
         <div id="dash-how-content" style="display:none;margin-top:14px">
-          <div class="dashboard-grid">
-            <div class="span-7">
+          <div class="dashboard-grid dash-how-grid">
+            <div class="span-6">
               <div class="card-title mb-10">Pipeline Steps</div>
               <div class="dash-pipeline-steps">
                 <div class="dash-pipeline-step">
@@ -162,7 +101,7 @@
                 </div>
               </div>
             </div>
-            <div class="span-5">
+            <div class="span-6">
               <div class="card-title mb-10">Status Key</div>
               <div class="dash-status-key">
                 <div class="dash-status-key-row">
@@ -193,6 +132,67 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Row 2: KPI Cards -->
+    <div class="dashboard-stat-grid mb-20" id="dashboard-pipeline-overview"></div>
+
+    <!-- Row 3: Needs Attention + Action Station -->
+    <div class="dashboard-grid mb-20">
+      <div class="card dashboard-card span-7 dash-attention-card">
+        <div class="card-title">Needs Attention</div>
+        <div id="dashboard-needs-attention"></div>
+      </div>
+      <div class="card dashboard-card span-5">
+        <div class="card-title">Action Station</div>
+        <div id="dashboard-action-station"><div class="dash-skeleton mb-8"></div><div class="dash-skeleton"></div><div class="dash-skeleton"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 4: Theme Library Overview with two charts -->
+    <div class="card dashboard-card mb-20">
+      <div class="dash-section-header">
+        <div class="card-title mb-0">Theme Library Overview</div>
+        <div class="dash-controls">
+          <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
+          <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
+          <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
+        </div>
+      </div>
+      <div class="dash-charts-grid">
+        <div class="dash-chart-card">
+          <div class="dash-chart-card-title">Status Distribution</div>
+          <div class="dash-pie-wrap" id="dash-pie-chart"></div>
+        </div>
+        <div class="dash-chart-card">
+          <div class="dash-chart-card-header">
+            <div class="dash-chart-card-title">Activity Over Time</div>
+            <div id="dash-bar-timegroup"></div>
+          </div>
+          <div id="dash-bar-chart"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 5: System Health + Recent Activity -->
+    <div class="dash-split-row mb-20">
+      <div class="card dashboard-card">
+        <div class="dash-section-header">
+          <div>
+            <div class="card-title mb-0">System Health</div>
+            <div id="dashboard-health-note" class="dash-section-note">Cached or placeholder status is shown until you run Refresh.</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="dashboard-health-refresh" onclick="dashboardRefreshHealth(true)">Refresh</button>
+        </div>
+        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
+      </div>
+      <div class="card dashboard-card">
+        <div class="dash-section-header">
+          <div class="card-title mb-0">Recent Activity</div>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
+        </div>
+        <div id="dashboard-recent-activity"></div>
       </div>
     </div>
 
@@ -689,8 +689,7 @@
           </div>
           <div id="sched-cron-next" style="display:none;flex:1;min-width:200px;padding-top:20px">
             <div style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Next Scheduled Run</div>
-            <div id="sched-cron-next-abs" style="font-size:13px;color:var(--text2);font-family:var(--mono);margin-bottom:3px"></div>
-            <div id="sched-cron-countdown" style="font-size:16px;font-weight:700;color:var(--amber);font-family:var(--mono)"></div>
+            <div id="sched-cron-next-abs" style="font-size:13px;color:var(--amber);font-family:var(--mono)"></div>
           </div>
         </div>
       </div>
