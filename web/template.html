@@ -55,20 +55,84 @@
 
 <!-- ══════════════════════════════════════ DASHBOARD ═══════════════════════════ -->
 <div class="page active" id="page-dashboard">
-  <div class="page-head">
+  <div class="page-head dash-page-head">
     <div>
-      <div class="page-title">Dashboard</div>
-      <div class="page-desc">Monitor pipeline health, review what needs attention, and take action.</div>
+      <div class="page-title dash-title">Dashboard</div>
+      <div class="page-desc dash-subtitle">Monitor pipeline health, review what needs attention, and take action.</div>
+    </div>
+    <div class="dash-header-utils">
+      <span class="dash-last-updated" id="dash-last-updated"></span>
     </div>
   </div>
   <div class="page-body"><div class="content">
 
-    <!-- Row 1: How it Works? (always starts collapsed, ephemeral) -->
-    <div style="position:relative;margin-bottom:16px">
+    <!-- Row 1: KPI Cards -->
+    <div class="dashboard-stat-grid mb-20" id="dashboard-pipeline-overview"></div>
+
+    <!-- Row 2: Needs Attention + Action Station -->
+    <div class="dashboard-grid mb-20">
+      <div class="card dashboard-card span-7 dash-attention-card">
+        <div class="card-title">Needs Attention</div>
+        <div id="dashboard-needs-attention"></div>
+      </div>
+      <div class="card dashboard-card span-5">
+        <div class="card-title">Action Station</div>
+        <div id="dashboard-action-station"><div class="dash-skeleton mb-8"></div><div class="dash-skeleton"></div><div class="dash-skeleton"></div></div>
+      </div>
+    </div>
+
+    <!-- Row 3: Theme Library Overview with two charts -->
+    <div class="card dashboard-card mb-20">
+      <div class="dash-section-header">
+        <div class="card-title mb-0">Theme Library Overview</div>
+        <div class="dash-controls">
+          <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
+          <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
+          <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
+        </div>
+      </div>
+      <div class="dash-charts-grid">
+        <div class="dash-chart-card">
+          <div class="dash-chart-card-title">Status Distribution</div>
+          <div class="dash-pie-wrap" id="dash-pie-chart"></div>
+        </div>
+        <div class="dash-chart-card">
+          <div class="dash-chart-card-header">
+            <div class="dash-chart-card-title">Activity Over Time</div>
+            <div id="dash-bar-timegroup" class="dash-lib-tabs"></div>
+          </div>
+          <div id="dash-bar-chart"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: System Health + Recent Activity -->
+    <div class="dash-split-row mb-20">
+      <div class="card dashboard-card">
+        <div class="dash-section-header">
+          <div>
+            <div class="card-title mb-0">System Health</div>
+            <div id="dashboard-health-note" class="dash-section-note">Cached or placeholder status is shown until you run Validate.</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="dashboard-health-refresh" onclick="dashboardRefreshHealth(true)">Validate</button>
+        </div>
+        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
+      </div>
+      <div class="card dashboard-card">
+        <div class="dash-section-header">
+          <div class="card-title mb-0">Recent Activity</div>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
+        </div>
+        <div id="dashboard-recent-activity"></div>
+      </div>
+    </div>
+
+    <!-- Row 5: How it Works? (collapsed by default, ephemeral) -->
+    <div style="margin-bottom:20px">
       <div class="card dashboard-card mb-0" id="dash-pipeline-help">
-        <button type="button" id="dash-how-toggle" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:0;margin:0;background:none;border:none;color:inherit;width:100%;text-align:left" onclick="toggleHowItWorks()" aria-expanded="false" aria-controls="dash-how-content">
+        <button type="button" id="dash-how-toggle" class="dash-how-toggle-btn" onclick="toggleHowItWorks()" aria-expanded="false" aria-controls="dash-how-content">
           <div class="card-title mb-0">How it Works?</div>
-          <span class="settings-chev" id="dash-pipeline-help-chev" style="transform:rotate(180deg)">∧</span>
+          <span class="settings-chev" id="dash-pipeline-help-chev" style="transform:rotate(180deg)">&#8743;</span>
         </button>
         <div id="dash-how-content" style="display:none;margin-top:14px">
           <div class="dashboard-grid">
@@ -78,22 +142,22 @@
                 <div class="dash-pipeline-step">
                   <div class="dash-pipeline-step-num text-blue">Step 1</div>
                   <div>
-                    <div style="font-size:12px;font-weight:700;margin-bottom:2px">⟳ Scan Libraries</div>
-                    <div class="dash-pipeline-step-desc text-red text-green">Connects to Plex, checks each folder for a local theme file, and marks items <strong>Missing</strong> or <strong>Available</strong>.</div>
+                    <div class="dash-pipeline-step-title">Scan Libraries</div>
+                    <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <strong>Missing</strong> or <strong>Available</strong>.</div>
                   </div>
                 </div>
                 <div class="dash-pipeline-step">
                   <div class="dash-pipeline-step-num text-purple">Step 2</div>
                   <div>
-                    <div style="font-size:12px;font-weight:700;margin-bottom:2px">⚡ Find Sources</div>
-                    <div class="dash-pipeline-step-desc text-red text-purple text-yellow">Searches for sources for <strong>Missing</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong>Staged</strong> for manual review and <strong>Approval</strong>.</div>
+                    <div class="dash-pipeline-step-title">Find Sources</div>
+                    <div class="dash-pipeline-step-desc">Searches for sources for <strong>Missing</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong>Staged</strong> for manual review and <strong>Approval</strong>.</div>
                   </div>
                 </div>
                 <div class="dash-pipeline-step">
                   <div class="dash-pipeline-step-num text-green">Step 3</div>
                   <div>
-                    <div style="font-size:12px;font-weight:700;margin-bottom:2px">↓ Download Approved</div>
-                    <div class="dash-pipeline-step-desc text-yellow text-green">Downloads theme files for <strong>Approved</strong> items using yt-dlp and ffmpeg, then marks them <strong>Available</strong>.</div>
+                    <div class="dash-pipeline-step-title">Download Approved</div>
+                    <div class="dash-pipeline-step-desc">Downloads theme files for <strong>Approved</strong> items using yt-dlp and ffmpeg, then marks them <strong>Available</strong>.</div>
                   </div>
                 </div>
               </div>
@@ -129,73 +193,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Row 2: KPI Cards -->
-    <div class="card dashboard-card mb-16">
-      <div class="dashboard-stat-grid" id="dashboard-pipeline-overview"></div>
-    </div>
-
-    <!-- Row 3: Library Overview + Processing History (moved above Needs Attention) -->
-    <div class="card dashboard-card mb-16">
-      <!-- Header row -->
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div class="card-title mb-0">Theme Library Overview</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
-          <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
-        </div>
-      </div>
-      <!-- Processing History -->
-      <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
-          <div>
-            <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)">Status Snapshot</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">Dashboard stays lightweight; open Theme Manager for row-level ledger history.</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
-            <button class="btn btn-ghost btn-sm" onclick="showPage('theme-manager')">Open Theme Manager</button>
-          </div>
-        </div>
-        <div class="dash-chart-area">
-          <div class="dash-pie-wrap" id="dash-pie-chart"></div>
-          <div id="dash-processing-chart" style="min-height:140px"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Row 4: Needs Attention + Action Station -->
-    <div class="dashboard-grid mb-16">
-      <div class="card dashboard-card span-7 dash-attention-card">
-        <div class="card-title">Needs Attention</div>
-        <div id="dashboard-needs-attention"></div>
-      </div>
-      <div class="card dashboard-card span-5">
-        <div class="card-title">Action Station</div>
-        <div id="dashboard-action-station"><div class="dash-skeleton mb-8"></div><div class="dash-skeleton"></div><div class="dash-skeleton"></div></div>
-      </div>
-    </div>
-
-    <!-- Row 5: System Health + Recent Activity (side by side) -->
-    <div class="dash-split-row mb-16">
-      <div class="card dashboard-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
-          <div>
-            <div class="card-title mb-0">System Health</div>
-            <div id="dashboard-health-note" style="font-size:11px;color:var(--text3);margin-top:4px">Cached or placeholder status is shown until you run Validate.</div>
-          </div>
-          <button class="btn btn-ghost btn-sm" id="dashboard-health-refresh" onclick="dashboardRefreshHealth(true)">Validate</button>
-        </div>
-        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
-      </div>
-      <div class="card dashboard-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="card-title mb-0">Recent Activity</div>
-          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
-        </div>
-        <div id="dashboard-recent-activity"></div>
       </div>
     </div>
 

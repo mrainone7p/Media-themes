@@ -544,6 +544,25 @@ def _dashboard_counts_for_rows(rows: list[dict]) -> dict:
     return counts
 
 
+def _dashboard_status_timeline(enabled_names: list[str]) -> dict:
+    """Aggregate ledger rows by last_updated date and status for timeline chart."""
+    timeline: dict[str, dict[str, int]] = {}
+    for library_name in enabled_names:
+        rows = load_ledger(ledger_path_for(library_name))
+        for row in rows:
+            last_updated = str(row.get("last_updated", "") or "").strip()
+            status = str(row.get("status", "") or "").upper()
+            if not last_updated or status not in DASHBOARD_STATUS_KEYS:
+                continue
+            day = last_updated[:10]
+            if len(day) != 10 or day[4] != "-":
+                continue
+            if day not in timeline:
+                timeline[day] = {}
+            timeline[day][status] = timeline[day].get(status, 0) + 1
+    return timeline
+
+
 def _dashboard_latest_task(entries: list[dict], matcher) -> dict | None:
     for entry in entries:
         task_name = str(entry.get("task", "") or "")
@@ -601,10 +620,12 @@ def dashboard_summary_payload() -> dict:
             overall_counts[status] += value
 
     entries = load_task_entries(limit=100)
+    status_timeline = _dashboard_status_timeline(enabled_names)
     payload = {
         "counts_by_status": overall_counts,
         "counts_by_library": counts_by_library,
         "recent_activity": _dashboard_recent_activity_summary(entries),
+        "status_timeline": status_timeline,
         "libraries": {
             "enabled": enabled_names,
             "scheduled": scheduled_names,
