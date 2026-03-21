@@ -361,6 +361,14 @@ let _globalRunStatusTimer=null;
 let _globalRunStatusInFlight=false;
 const _idleRunStatusPollMs=30000;
 const _activeRunStatusPollMs=4000;
+const _runStatusLeaderKey='mt-run-status-leader';
+const _runStatusBroadcastKey='mt-run-status-broadcast';
+const _runStatusLeaderTtlMs=Math.max(_activeRunStatusPollMs*2, 10000);
+const _runStatusTabId=`${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const _runStatusChannel=(typeof BroadcastChannel==='function') ? new BroadcastChannel('mt-run-status') : null;
+let _runStatusLeaderHeartbeatTimer=null;
+let _runStatusIsLeader=false;
+let _runStatusLastPayload='';
 const _liveRunStatusPages=new Set(['dashboard','theme-manager','tasks','scheduler']);
 const _countdownPages=new Set(['dashboard','scheduler']);
 function _activePageName(){
@@ -412,19 +420,122 @@ function _stopCountdownDisplay(){
   if(schedWrap) schedWrap.style.display='none';
   if(_countdownInterval){clearInterval(_countdownInterval);_countdownInterval=null;}
 }
+function _clearGlobalRunStatusTimer(){
+  if(_globalRunStatusTimer){clearTimeout(_globalRunStatusTimer);_globalRunStatusTimer=null;}
+}
+function _stopRunStatusLeaderHeartbeat(){
+  if(_runStatusLeaderHeartbeatTimer){clearInterval(_runStatusLeaderHeartbeatTimer);_runStatusLeaderHeartbeatTimer=null;}
+}
+function _readRunStatusLeader(){
+  try{
+    const raw=localStorage.getItem(_runStatusLeaderKey);
+    if(!raw) return null;
+    const leader=JSON.parse(raw);
+    if(!leader || leader.expiresAt<=Date.now()) return null;
+    return leader;
+  }catch(_err){
+    return null;
+  }
+}
+function _writeRunStatusLeader(){
+  const leader={tabId:_runStatusTabId, expiresAt:Date.now()+_runStatusLeaderTtlMs};
+  try{ localStorage.setItem(_runStatusLeaderKey, JSON.stringify(leader)); }catch(_err){}
+  return leader;
+}
+function _setRunStatusLeader(isLeader){
+  if(_runStatusIsLeader===isLeader) return;
+  _runStatusIsLeader=isLeader;
+  if(!isLeader) _stopRunStatusLeaderHeartbeat();
+}
+function _releaseRunStatusLeader(){
+  const wasLeader=_runStatusIsLeader;
+  _setRunStatusLeader(false);
+  if(wasLeader){
+    try{ localStorage.removeItem(_runStatusLeaderKey); }catch(_err){}
+  }
+}
+function _ensureRunStatusLeader(){
+  if(document.hidden){
+    _setRunStatusLeader(false);
+    return false;
+  }
+  const leader=_readRunStatusLeader();
+  if(!leader || leader.tabId===_runStatusTabId){
+    _writeRunStatusLeader();
+    _setRunStatusLeader(true);
+    if(!_runStatusLeaderHeartbeatTimer){
+      _runStatusLeaderHeartbeatTimer=setInterval(()=>{
+        if(document.hidden || !_runStatusIsLeader){
+          _setRunStatusLeader(false);
+          return;
+        }
+        _writeRunStatusLeader();
+      }, Math.max(1000, Math.floor(_runStatusLeaderTtlMs/3)));
+    }
+    return true;
+  }
+  _setRunStatusLeader(false);
+  return false;
+}
+function _broadcastGlobalRunStatus(data){
+  const payload={type:'run-status', tabId:_runStatusTabId, at:Date.now(), data};
+  const serialized=JSON.stringify(payload);
+  _runStatusLastPayload=serialized;
+  if(_runStatusChannel){
+    try{ _runStatusChannel.postMessage(payload); }catch(_err){}
+  }
+  try{ localStorage.setItem(_runStatusBroadcastKey, serialized); }catch(_err){}
+}
+function _applyGlobalRunStatus(data,{fromBroadcast=false}={}){
+  const d=(data && typeof data==='object') ? data : {};
+  const bar=document.getElementById('global-run');
+  const dot=document.getElementById('global-run-dot');
+  const text=document.getElementById('global-run-text');
+  const sub=document.getElementById('global-run-sub');
+  const dbPill=document.getElementById('db-run-pill');
+  if(!bar || !dot || !text || !sub) return;
+  if(d.active){
+    bar.classList.remove('hidden');
+    dot.className='run-dot active';
+    text.textContent='Running';
+    sub.textContent=d.scope ? `${d.scope} · ${d.last_line||'Working…'}` : (d.last_line||'Working…');
+    if(dbPill){ dbPill.classList.add('active'); dbPill.innerHTML='<span class="run-dot active"></span><span>Running</span>'; }
+    _wasRunning=true;
+    if(!_dashRunActive){_dashRunActive=true;_updateDashRunButton();}
+  }else{
+    dot.className='run-dot done';
+    text.textContent='Idle';
+    sub.textContent='';
+    bar.classList.add('hidden');
+    if(dbPill){ dbPill.classList.remove('active'); dbPill.innerHTML='<span class="run-dot"></span><span>Idle</span>'; }
+    if(_dashRunActive){_dashRunActive=false;_updateDashRunButton();}
+    if(_wasRunning){
+      _wasRunning=false;
+      loadDashboard(); loadDatabase(); loadTasksPage(); loadRunPage();
+    }
+  }
+  if(fromBroadcast && !_runStatusIsLeader) _syncGlobalRunStatusPolling();
+}
+function _consumeSharedRunStatusPayload(payload){
+  if(!payload || payload.type!=='run-status' || !payload.data) return;
+  const serialized=JSON.stringify(payload);
+  if(serialized===_runStatusLastPayload) return;
+  _runStatusLastPayload=serialized;
+  _applyGlobalRunStatus(payload.data,{fromBroadcast:true});
+}
 function _syncGlobalRunStatusPolling({immediate=false}={}){
-  const shouldPoll=_pageNeedsLiveRunState() || _wasRunning;
+  _clearGlobalRunStatusTimer();
+  const shouldPoll=(_pageNeedsLiveRunState() || _wasRunning) && !document.hidden;
   if(!shouldPoll){
-    if(_globalRunStatusTimer){clearTimeout(_globalRunStatusTimer);_globalRunStatusTimer=null;}
+    _releaseRunStatusLeader();
     return;
   }
+  if(!_ensureRunStatusLeader()) return;
   const nextDelay=_wasRunning ? _activeRunStatusPollMs : _idleRunStatusPollMs;
   if(immediate){
-    if(_globalRunStatusTimer){clearTimeout(_globalRunStatusTimer);_globalRunStatusTimer=null;}
     updateGlobalRunStatus();
     return;
   }
-  if(_globalRunStatusTimer) return;
   _globalRunStatusTimer=setTimeout(()=>{
     _globalRunStatusTimer=null;
     updateGlobalRunStatus();
@@ -1269,36 +1380,13 @@ function removeItemDetailsPanel(){
 let _wasRunning=false;
 let _dashRunActive=false;
 async function updateGlobalRunStatus(){
-  if(_globalRunStatusInFlight) return;
+  if(document.hidden || !_ensureRunStatusLeader() || _globalRunStatusInFlight) return;
   _globalRunStatusInFlight=true;
   try{
     const r=await fetch('/api/run/status');
     const d=await r.json();
-    const bar=document.getElementById('global-run');
-    const dot=document.getElementById('global-run-dot');
-    const text=document.getElementById('global-run-text');
-    const sub=document.getElementById('global-run-sub');
-    const dbPill=document.getElementById('db-run-pill');
-    if(d.active){
-      bar.classList.remove('hidden');
-      dot.className='run-dot active';
-      text.textContent='Running';
-      sub.textContent=d.scope ? `${d.scope} · ${d.last_line||'Working…'}` : (d.last_line||'Working…');
-      if(dbPill){ dbPill.classList.add('active'); dbPill.innerHTML='<span class="run-dot active"></span><span>Running</span>'; }
-      _wasRunning=true;
-      if(!_dashRunActive){_dashRunActive=true;_updateDashRunButton();}
-      return;
-    }
-    dot.className='run-dot done';
-    text.textContent='Idle';
-    sub.textContent='';
-    bar.classList.add('hidden');
-    if(dbPill){ dbPill.classList.remove('active'); dbPill.innerHTML='<span class="run-dot"></span><span>Idle</span>'; }
-    if(_dashRunActive){_dashRunActive=false;_updateDashRunButton();}
-    if(_wasRunning){
-      _wasRunning=false;
-      loadDashboard(); loadDatabase(); loadTasksPage(); loadRunPage();
-    }
+    _applyGlobalRunStatus(d);
+    _broadcastGlobalRunStatus(d);
   }catch(e){}
   finally{
     _globalRunStatusInFlight=false;
@@ -1646,13 +1734,48 @@ async function saveConfiguration(){
 // App bootstrap.
 
 try{
+  if(_runStatusChannel){
+    _runStatusChannel.addEventListener('message',event=>_consumeSharedRunStatusPayload(event.data));
+  }
+  window.addEventListener('storage',event=>{
+    if(event.key===_runStatusBroadcastKey && event.newValue){
+      try{ _consumeSharedRunStatusPayload(JSON.parse(event.newValue)); }catch(_err){}
+      return;
+    }
+    if(event.key===_runStatusLeaderKey){
+      if(document.hidden) return;
+      if(event.newValue){
+        try{
+          const leader=JSON.parse(event.newValue);
+          if(leader && leader.tabId!==_runStatusTabId && leader.expiresAt>Date.now()) return;
+        }catch(_err){}
+      }
+      _syncGlobalRunStatusPolling({immediate:true});
+    }
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){
+      _clearGlobalRunStatusTimer();
+      _releaseRunStatusLeader();
+      return;
+    }
+    _syncCountdownTimer();
+    _syncGlobalRunStatusPolling({immediate:true});
+  });
+  window.addEventListener('beforeunload',()=>{
+    _clearGlobalRunStatusTimer();
+    _releaseRunStatusLeader();
+    if(_runStatusChannel){
+      try{ _runStatusChannel.close(); }catch(_err){}
+    }
+  });
   document.addEventListener('DOMContentLoaded', async ()=>{
     await loadUiTerminology();
     await loadStatusModel();
     initSidebarNav();
     initSharedProgress();
     removeItemDetailsPanel();
-    updateGlobalRunStatus();
+    if(!document.hidden) updateGlobalRunStatus();
     _syncGlobalRunStatusPolling();
     const initial=((location.hash||'').replace(/^#/,'').trim());
     if(['dashboard','configuration','database','theme-manager','schedule','scheduler','tasks'].includes(initial)){
