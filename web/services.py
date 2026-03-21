@@ -531,6 +531,57 @@ def load_task_entries(limit=250):
     return sorted(entries, key=lambda entry: entry.get("time", ""), reverse=True)[: max(1, int(limit or 250))]
 
 
+def _run_history_files() -> list[Path]:
+    return sorted(RUNS_DIR.glob("*.json"), reverse=True)
+
+
+def _safe_history_limit(limit: int | None, default: int = 50, maximum: int = 250) -> int:
+    try:
+        value = int(limit if limit is not None else default)
+    except Exception:
+        value = default
+    return max(1, min(value, maximum))
+
+
+def _safe_history_offset(offset: int | None) -> int:
+    try:
+        value = int(offset or 0)
+    except Exception:
+        value = 0
+    return max(0, value)
+
+
+def _history_run_id(run_file: Path) -> str:
+    return run_file.name
+
+
+def _history_record_from_file(run_file: Path, *, include_log: bool = True) -> dict | None:
+    try:
+        run = json.loads(run_file.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not isinstance(run, dict):
+        return None
+    record = dict(run)
+    record["id"] = _history_run_id(run_file)
+    record["has_log"] = bool(record.get("log"))
+    if include_log:
+        return record
+    else:
+        record.pop("log", None)
+    return record
+
+
+def _history_run_file(run_id: str) -> Path | None:
+    safe_name = Path(str(run_id or "")).name
+    if not safe_name.endswith(".json"):
+        return None
+    run_file = RUNS_DIR / safe_name
+    if not run_file.exists() or run_file.parent != RUNS_DIR:
+        return None
+    return run_file
+
+
 def _empty_dashboard_status_counts() -> dict:
     return {status: 0 for status in DASHBOARD_STATUS_KEYS}
 
@@ -752,14 +803,24 @@ class RunManager:
             except Exception:
                 pass
 
-    def history(self):
+    def history(self, *, include_log: bool = True, limit: int | None = None, offset: int = 0):
+        run_files = _run_history_files()
+        total = len(run_files)
+        page_limit = _safe_history_limit(limit)
+        page_offset = _safe_history_offset(offset)
+        selected_files = run_files[page_offset:page_offset + page_limit]
         runs = []
-        for run_file in sorted(RUNS_DIR.glob("*.json")):
-            try:
-                runs.append(json.loads(run_file.read_text()))
-            except Exception:
-                pass
-        return runs
+        for run_file in selected_files:
+            record = _history_record_from_file(run_file, include_log=include_log)
+            if record is not None:
+                runs.append(record)
+        return {
+            "runs": runs,
+            "limit": page_limit,
+            "offset": page_offset,
+            "total": total,
+            "has_more": page_offset + len(runs) < total,
+        }
 
     def status(self):
         return {
@@ -1253,8 +1314,18 @@ def stop_run_payload():
     return {"ok": False, "error": "No run in progress"}, 200
 
 
-def history_payload():
-    return RUN_MANAGER.history()
+def history_payload(limit: int | None = None, offset: int = 0, include_log: bool = False):
+    return RUN_MANAGER.history(include_log=include_log, limit=limit, offset=offset)
+
+
+def history_detail_payload(run_id: str):
+    run_file = _history_run_file(run_id)
+    if run_file is None:
+        return {"error": "not found"}, 404
+    record = _history_record_from_file(run_file, include_log=True)
+    if record is None:
+        return {"error": "not found"}, 404
+    return record, 200
 
 
 def tasks_history_payload(limit: int):

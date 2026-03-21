@@ -381,7 +381,16 @@ def run_stream():
 
 @app.route("/api/history")
 def get_history():
-    return jsonify(services.history_payload())
+    limit = request.args.get("limit", 50)
+    offset = request.args.get("offset", 0)
+    include_log = str(request.args.get("include_log", "") or "").strip().lower() in {"1", "true", "yes"}
+    return jsonify(services.history_payload(limit=limit, offset=offset, include_log=include_log))
+
+
+@app.route("/api/history/<path:run_id>")
+def get_history_detail(run_id):
+    payload, status = services.history_detail_payload(run_id)
+    return jsonify(payload), status
 
 
 @app.route("/api/tasks/history")
