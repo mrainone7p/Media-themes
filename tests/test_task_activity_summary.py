@@ -6,6 +6,7 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.modules.setdefault("yaml", types.SimpleNamespace(safe_load=lambda *args, **kwargs: {}, safe_dump=lambda *args, **kwargs: ""))
 sys.modules.setdefault("requests", types.SimpleNamespace(get=lambda *args, **kwargs: None, post=lambda *args, **kwargs: None))
@@ -100,6 +101,36 @@ class TaskActivitySummaryTests(unittest.TestCase):
         self.assertEqual(1, len(entries))
         self.assertEqual("Summary Entry", entries[0]["task"])
         self.assertEqual("Served from summary", entries[0]["summary"])
+
+
+    def test_api_health_payload_uses_cache_within_ttl(self):
+        config = {
+            "plex_url": "",
+            "plex_token": "",
+            "tmdb_api_key": "",
+            "golden_source_url": "",
+            "media_roots": [str(self.logs_dir)],
+            "libraries": [],
+            "schedule_enabled": False,
+            "schedule_libraries": [],
+            "cron_schedule": "0 3 * * *",
+        }
+        tasks._health_cache = {"lite": dict(tasks._HEALTH_CACHE_EMPTY), "full": dict(tasks._HEALTH_CACHE_EMPTY)}
+
+        with (
+            mock.patch("web.tasks.load_config", return_value=config),
+            mock.patch("web.tasks.active_scheduler_source", return_value={"authority": "cron", "detail": "ok"}) as scheduler_source,
+            mock.patch("web.tasks.get_media_roots", return_value=[str(self.logs_dir)]),
+            mock.patch("web.tasks.get_db_path", return_value=str(self.logs_dir / "missing.sqlite")),
+            mock.patch("web.tasks.os.access", return_value=True) as access_mock,
+            mock.patch("web.tasks.time.time", side_effect=[1000.0] * 20 + [1005.0] * 20),
+        ):
+            first = tasks.api_health_payload("lite")
+            second = tasks.api_health_payload("lite")
+
+        self.assertEqual(first, second)
+        self.assertEqual(2, scheduler_source.call_count)
+        self.assertEqual(1, access_mock.call_count)
 
     def test_record_task_updates_summary_file(self):
         services.record_task("SQLite Maintenance", "success", "", "Backup complete", {"backup": True}, 3)

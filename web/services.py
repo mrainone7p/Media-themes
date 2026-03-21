@@ -39,6 +39,7 @@ from shared.storage import (
 import web.integrations as integrations
 
 SERVICE_LOG = get_project_logger("web.services")
+TASK_LOG = get_project_logger("web.tasks")
 
 # ── Configuration helpers ────────────────────────────────────────────────────
 
@@ -522,13 +523,25 @@ def _rebuild_task_activity_summary():
 
 
 def load_task_entries(limit=250):
+    started_at = time.perf_counter()
+    summary_rebuilt = False
     if not TASK_ACTIVITY_SUMMARY_FILE.exists():
         _rebuild_task_activity_summary()
+        summary_rebuilt = True
     entries = _read_summary_entries()
     if not entries and (TASKS_FILE.exists() or any(RUNS_DIR.glob("*.json"))):
         _rebuild_task_activity_summary()
+        summary_rebuilt = True
         entries = _read_summary_entries()
-    return sorted(entries, key=lambda entry: entry.get("time", ""), reverse=True)[: max(1, int(limit or 250))]
+    result = sorted(entries, key=lambda entry: entry.get("time", ""), reverse=True)[: max(1, int(limit or 250))]
+    TASK_LOG.info(
+        "Task entry load: limit=%s entries=%s rebuilt_summary=%s total_ms=%.1f",
+        limit,
+        len(result),
+        str(summary_rebuilt).lower(),
+        (time.perf_counter() - started_at) * 1000,
+    )
+    return result
 
 
 def _run_history_files() -> list[Path]:
@@ -648,6 +661,12 @@ def _dashboard_summary_cache_key(enabled_names: list[str], scheduled_names: list
 
 
 def dashboard_summary_payload() -> dict:
+    started_at = time.perf_counter()
+    counts_ms = 0.0
+    tasks_ms = 0.0
+    timeline_ms = 0.0
+    row_count = 0
+    cache_hit = False
     cfg = load_config()
     all_libraries = [
         lib for lib in (cfg.get("libraries") or [])
@@ -659,19 +678,46 @@ def dashboard_summary_payload() -> dict:
     scheduled_names = [name for name in enabled_names if name in scheduled_pool]
     cache_key = _dashboard_summary_cache_key(enabled_names, scheduled_names)
     if _DASHBOARD_SUMMARY_CACHE["payload"] is not None and _DASHBOARD_SUMMARY_CACHE["key"] == cache_key:
-        return dict(_DASHBOARD_SUMMARY_CACHE["payload"])
+        cache_hit = True
+        payload = dict(_DASHBOARD_SUMMARY_CACHE["payload"])
+        counts_by_library = payload.get("counts_by_library") or {}
+        if isinstance(counts_by_library, dict):
+            row_count = sum(
+                sum(int(value or 0) for value in library_counts.values())
+                for library_counts in counts_by_library.values()
+                if isinstance(library_counts, dict)
+            )
+        SERVICE_LOG.info(
+            "Dashboard summary: cache=%s enabled_libraries=%s total_rows=%s counts_ms=%.1f tasks_ms=%.1f timeline_ms=%.1f total_ms=%.1f",
+            "hit",
+            len(enabled_names),
+            row_count,
+            counts_ms,
+            tasks_ms,
+            timeline_ms,
+            (time.perf_counter() - started_at) * 1000,
+        )
+        return payload
 
+    counts_started_at = time.perf_counter()
     counts_by_library = {}
     overall_counts = _empty_dashboard_status_counts()
     for library_name in enabled_names:
         rows = load_ledger(ledger_path_for(library_name))
+        row_count += len(rows)
         library_counts = _dashboard_counts_for_rows(rows)
         counts_by_library[library_name] = library_counts
         for status, value in library_counts.items():
             overall_counts[status] += value
+    counts_ms = (time.perf_counter() - counts_started_at) * 1000
 
+    tasks_started_at = time.perf_counter()
     entries = load_task_entries(limit=100)
+    tasks_ms = (time.perf_counter() - tasks_started_at) * 1000
+
+    timeline_started_at = time.perf_counter()
     status_timeline = _dashboard_status_timeline(enabled_names)
+    timeline_ms = (time.perf_counter() - timeline_started_at) * 1000
     payload = {
         "counts_by_status": overall_counts,
         "counts_by_library": counts_by_library,
@@ -686,6 +732,16 @@ def dashboard_summary_payload() -> dict:
     }
     _DASHBOARD_SUMMARY_CACHE["key"] = cache_key
     _DASHBOARD_SUMMARY_CACHE["payload"] = dict(payload)
+    SERVICE_LOG.info(
+        "Dashboard summary: cache=%s enabled_libraries=%s total_rows=%s counts_ms=%.1f tasks_ms=%.1f timeline_ms=%.1f total_ms=%.1f",
+        "miss" if not cache_hit else "hit",
+        len(enabled_names),
+        row_count,
+        counts_ms,
+        tasks_ms,
+        timeline_ms,
+        (time.perf_counter() - started_at) * 1000,
+    )
     return payload
 
 
@@ -785,6 +841,11 @@ class RunManager:
     def event_stream(self):
         client = queue.Queue(maxsize=8000)
         self.clients.append(client)
+        SERVICE_LOG.info(
+            "Run event stream connected: active=%s client_count=%s",
+            str(bool(self.active)).lower(),
+            len(self.clients),
+        )
         try:
             while True:
                 try:
@@ -802,10 +863,22 @@ class RunManager:
                 self.clients.remove(client)
             except Exception:
                 pass
+            SERVICE_LOG.info(
+                "Run event stream disconnected: active=%s client_count=%s",
+                str(bool(self.active)).lower(),
+                len(self.clients),
+            )
 
     def history(self, *, include_log: bool = True, limit: int | None = None, offset: int = 0):
+        started_at = time.perf_counter()
         run_files = _run_history_files()
         total = len(run_files)
+        total_bytes = 0
+        for run_file in run_files:
+            try:
+                total_bytes += run_file.stat().st_size
+            except OSError:
+                continue
         page_limit = _safe_history_limit(limit)
         page_offset = _safe_history_offset(offset)
         selected_files = run_files[page_offset:page_offset + page_limit]
@@ -814,6 +887,13 @@ class RunManager:
             record = _history_record_from_file(run_file, include_log=include_log)
             if record is not None:
                 runs.append(record)
+        SERVICE_LOG.info(
+            "Run history load: files=%s bytes=%s runs=%s total_ms=%.1f",
+            total,
+            total_bytes,
+            len(runs),
+            (time.perf_counter() - started_at) * 1000,
+        )
         return {
             "runs": runs,
             "limit": page_limit,
@@ -834,6 +914,7 @@ class RunManager:
             "return_code": self.last_return_code,
             "summary": self.last_summary,
             "completed_at": self.completed_at,
+            "client_count": len(self.clients),
         }
 
     def _do_run(self, *, force_pass=0, explicit_libraries=None, scope_label="", allow_schedule_disabled=False, caller_surface="tasks"):
