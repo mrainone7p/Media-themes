@@ -493,41 +493,99 @@ function _activityMetricChips(stats={}, cls='hcard-chip metric'){
   return chips;
 }
 
-async function loadSchedulerHistory(){
-  const el=document.getElementById('scheduler-run-history');
-  if(!el) return;
-  const r=await fetch('/api/history');
-  const runs=await r.json();
-  if(!runs.length){
-    el.innerHTML='<div class="empty">No Scheduler run history yet.</div>';
+const SCHEDULER_HISTORY_PAGE_SIZE = 50;
+let _schedulerHistoryOffset = 0;
+let _schedulerHistoryHasMore = false;
+
+function _escapeSchedulerLog(value){
+  return String(value||'').replace(/</g,'&lt;');
+}
+
+async function toggleSchedulerHistoryCard(runId){
+  const body=document.getElementById(`scheduler-log-${runId}`);
+  if(!body) return;
+  const willOpen=!body.classList.contains('open');
+  body.classList.toggle('open');
+  if(!willOpen || body.dataset.loaded==='true' || body.dataset.loading==='true') return;
+  if(body.dataset.hasLog==='false'){
+    body.textContent='No log recorded.';
+    body.dataset.loaded='true';
     return;
   }
+  body.dataset.loading='true';
+  body.textContent='Loading log…';
+  try{
+    const r=await fetch(`/api/history/${encodeURIComponent(runId)}`);
+    const run=await r.json();
+    if(!r.ok) throw new Error(run?.error || 'Unable to load run log');
+    body.innerHTML=_escapeSchedulerLog(run.log||'No log recorded.');
+    body.dataset.loaded='true';
+  }catch(err){
+    body.textContent=err?.message || 'Unable to load run log.';
+  }finally{
+    delete body.dataset.loading;
+  }
+}
+
+function renderSchedulerHistoryRuns(runs, {append=false, hasMore=false}={}){
+  const el=document.getElementById('scheduler-run-history');
+  if(!el) return;
   const PASS_LABELS={0:'Automated Scheduler Run',1:'Step 1 — Scan Libraries',2:'Step 2 — Find Theme Sources',3:'Step 3 — Download Themes'};
   const OUTCOME_BADGES={success:'pb-3 Success',error:'pb-e Error',stopped:'pb-2 Stopped'};
-  el.innerHTML=runs.reverse().map((run,i)=>{
+  const cards=runs.map((run)=>{
     const outcome=(run.outcome||run.status||'success').toLowerCase();
     const bc=OUTCOME_BADGES[outcome] || 'pb-e Error';
     const [cls,...parts]=bc.split(' ');
     const passLabel=PASS_LABELS[run.pass]||'Pipeline Run';
-    const summary=(run.summary||'No summary recorded.').replace(/</g,'&lt;');
-    const scope=(run.scope||'').replace(/</g,'&lt;');
+    const summary=_escapeSchedulerLog(run.summary||'No summary recorded.');
+    const scope=_escapeSchedulerLog(run.scope||'');
     const metricChips=_activityMetricChips(run.stats||{});
     const meta=[
       scope?`<span class="hcard-chip">Scope · ${scope}</span>`:'',
       run.duration_seconds?`<span class="hcard-chip">Duration · ${Math.round(run.duration_seconds)}s</span>`:'',
       ...metricChips
     ].filter(Boolean).join('');
+    const runId=String(run.id||'').replace(/"/g,'&quot;');
     return `<div class="hcard">
-      <div class="hcard-head" onclick="document.getElementById('scheduler-log-${i}').classList.toggle('open')">
+      <div class="hcard-head" onclick="toggleSchedulerHistoryCard('${runId}')">
         <div>
-          <div class="hcard-time">${(run.time||'').replace(/</g,'&lt;')}</div>
+          <div class="hcard-time">${_escapeSchedulerLog(run.time||'')}</div>
           <div class="hcard-sum">${passLabel} · ${summary}</div>
           ${meta?`<div class="hcard-meta">${meta}</div>`:''}
           <div style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openRunResults(${run.pass||0})">Open filtered rows</button></div>
         </div>
         <span class="pass-badge ${cls}"><span class="status-label">${parts.join(' ')}</span></span>
       </div>
-      <div class="hcard-body" id="scheduler-log-${i}">${(run.log||'').replace(/</g,'&lt;')}</div>
+      <div class="hcard-body" id="scheduler-log-${runId}" data-has-log="${run.has_log ? 'true' : 'false'}">${run.has_log ? 'Expand to load run log…' : 'No log recorded.'}</div>
     </div>`;
   }).join('');
+  if(!append){
+    el.innerHTML=cards;
+  }else{
+    el.insertAdjacentHTML('beforeend', cards);
+  }
+  const moreId='scheduler-history-more';
+  const existing=document.getElementById(moreId);
+  if(existing) existing.remove();
+  if(hasMore){
+    el.insertAdjacentHTML('beforeend', `<div style="margin-top:12px;text-align:center"><button id="${moreId}" class="btn btn-ghost btn-sm" onclick="loadSchedulerHistory({append:true})">Load older runs</button></div>`);
+  }
+}
+
+async function loadSchedulerHistory(options={}){
+  const el=document.getElementById('scheduler-run-history');
+  if(!el) return;
+  const append=options?.append===true;
+  const offset=append ? _schedulerHistoryOffset : 0;
+  if(!append) el.innerHTML='<div class="empty">Loading scheduler run history…</div>';
+  const r=await fetch(`/api/history?limit=${SCHEDULER_HISTORY_PAGE_SIZE}&offset=${offset}`);
+  const payload=await r.json();
+  const runs=Array.isArray(payload?.runs) ? payload.runs : [];
+  if(!runs.length && !append){
+    el.innerHTML='<div class="empty">No Scheduler run history yet.</div>';
+    return;
+  }
+  _schedulerHistoryOffset=Number(payload?.offset||0)+runs.length;
+  _schedulerHistoryHasMore=Boolean(payload?.has_more);
+  renderSchedulerHistoryRuns(runs,{append,hasMore:_schedulerHistoryHasMore});
 }
