@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -7,7 +8,11 @@ from typing import Any
 from flask import Flask, jsonify, render_template, request
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "instance" / "theme_library.db"
+DEFAULT_DB_PATH = BASE_DIR / "instance" / "theme_library.db"
+DB_PATH = Path(os.environ.get("THEME_LIBRARY_DB_PATH", DEFAULT_DB_PATH))
+WEB_HOST = os.environ.get("FLASK_RUN_HOST", "0.0.0.0")
+WEB_PORT = int(os.environ.get("PORT", "8182"))
+DEBUG = os.environ.get("FLASK_DEBUG", "0") == "1"
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS theme_library (
@@ -138,6 +143,10 @@ def create_app() -> Flask:
     def configuration() -> str:
         return render_template("configuration.html")
 
+    @app.get("/health")
+    def health() -> tuple[dict[str, str], int]:
+        return {"status": "ok"}, 200
+
     @app.get("/api/themes")
     def api_themes():
         status = request.args.get("status")
@@ -174,10 +183,12 @@ def create_app() -> Flask:
     return app
 
 
+
 def get_connection() -> sqlite3.Connection:
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     return connection
+
 
 
 def init_db() -> None:
@@ -198,12 +209,14 @@ def init_db() -> None:
             connection.commit()
 
 
+
 def get_themes() -> list[dict[str, Any]]:
     with get_connection() as connection:
         rows = connection.execute(
             "SELECT * FROM theme_library ORDER BY updated_at DESC, title ASC"
         ).fetchall()
     return [row_to_dict(row) for row in rows]
+
 
 
 def row_to_dict(row: sqlite3.Row) -> dict[str, Any]:
@@ -219,4 +232,4 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8182)
+    app.run(debug=DEBUG, host=WEB_HOST, port=WEB_PORT)

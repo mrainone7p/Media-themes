@@ -163,31 +163,30 @@ Notes:
 
 ## Building locally
 
-`Dockerfile` is the only supported build definition in this repository. `Dockerfile.txt` is intentionally not used or shipped.
+`Dockerfile` is the supported build definition for this repository. Build it from the repository root:
 
 ```bash
-git clone https://github.com/mrainone7p/Media-themes.git -b beta
+git clone https://github.com/mrainone7p/Media-themes.git
 cd Media-themes
-docker build -t media-tracks:local .
+docker build -t media-themes:local .
 ```
 
-## Python entrypoints
+## Python entrypoint
 
-Use package-style startup from the repository root so local runs, tests, and Docker all resolve imports the same way:
+Start the demo application from the repository root with:
 
 ```bash
-python -m web.app
-python -m script.media_tracks
+python app.py
 ```
 
 ## Local demo app in this repository
 
-This repository now includes a lightweight Flask demo app that matches the README terminology and the requested two-page UI:
+This repository includes a lightweight Flask demo app that matches the README terminology and the requested two-page UI:
 
 - `Theme Library` — SQLite-backed table with filters, sorting, and manager workflows.
 - `Configuration` — clean settings page for Plex, TMDB, media roots, and pipeline defaults.
 
-Run it locally with:
+### Run locally
 
 ```bash
 python -m pip install -r requirements.txt
@@ -196,3 +195,27 @@ python app.py
 ```
 
 Then open `http://127.0.0.1:8182`.
+
+### Run with Docker
+
+Build the image from the repository root:
+
+```bash
+docker build -t media-themes .
+```
+
+Run the container and persist the SQLite database on the host:
+
+```bash
+docker run --rm -p 8182:8182 \
+  -v "$(pwd)/instance:/app/instance" \
+  media-themes
+```
+
+Then open `http://127.0.0.1:8182`.
+
+#### Optional environment variables
+
+- `PORT` — container/web server port. Defaults to `8182`.
+- `THEME_LIBRARY_DB_PATH` — SQLite file location. Defaults to `/app/instance/theme_library.db` in Docker and `instance/theme_library.db` locally.
+- `FLASK_DEBUG=1` — enables Flask debug mode for local development.
