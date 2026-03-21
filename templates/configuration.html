@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Configuration · Media Tracks{% endblock %}
+{% block content %}
+<section class="page-header">
+  <div>
+    <p class="eyebrow accent">Configuration</p>
+    <h2>Connection and pipeline settings</h2>
+    <p class="page-copy">Keep the setup clean and explicit so Plex discovery, indexing, and sidecar downloads can run without surprises.</p>
+  </div>
+  <div class="header-chip">Readable form layout</div>
+</section>
+
+<section class="config-grid">
+  <article class="card config-section">
+    <div class="section-heading">
+      <p class="section-label">Connections</p>
+      <h3>Plex & metadata services</h3>
+      <p>Used for library discovery, scan and indexing, and local media metadata such as file paths.</p>
+    </div>
+    <div class="form-grid">
+      <label>
+        <span>Plex URL</span>
+        <input value="http://192.168.1.15:32400" />
+      </label>
+      <label>
+        <span>Plex Token</span>
+        <input value="plex-token-••••••••" />
+      </label>
+      <label>
+        <span>TMDB API Key</span>
+        <input value="tmdb-key-••••••••" />
+      </label>
+      <label>
+        <span>UI Token</span>
+        <input value="optional-ui-token" />
+      </label>
+    </div>
+  </article>
+
+  <article class="card config-section">
+    <div class="section-heading">
+      <p class="section-label">Libraries</p>
+      <h3>Discovery targets</h3>
+      <p>Select where theme sidecars should be managed and how the app sees mounted media paths.</p>
+    </div>
+    <div class="pill-row">
+      <span class="pill success">Movies · Enabled</span>
+      <span class="pill">Series · Enabled</span>
+      <span class="pill muted">Documentaries · Paused</span>
+    </div>
+    <label>
+      <span>Media roots</span>
+      <textarea rows="4">/media/Movies
+/media/Shows
+/media/Concerts</textarea>
+    </label>
+  </article>
+
+  <article class="card config-section">
+    <div class="section-heading">
+      <p class="section-label">Download rules</p>
+      <h3>Theme output defaults</h3>
+      <p>These defaults align with the README pipeline: store the theme as a sidecar file named <code>theme.mp3</code>.</p>
+    </div>
+    <div class="form-grid">
+      <label>
+        <span>Audio format</span>
+        <input value="mp3" />
+      </label>
+      <label>
+        <span>Theme filename</span>
+        <input value="theme.mp3" />
+      </label>
+      <label>
+        <span>Max duration (sec)</span>
+        <input value="60" />
+      </label>
+      <label>
+        <span>Mode</span>
+        <input value="manual" />
+      </label>
+    </div>
+  </article>
+
+  <article class="card config-section">
+    <div class="section-heading">
+      <p class="section-label">Automation</p>
+      <h3>Golden source and scheduling</h3>
+      <p>Keep curated source lookups and recurring scans visible without burying operational settings.</p>
+    </div>
+    <div class="form-grid">
+      <label>
+        <span>Golden Source URL</span>
+        <input value="https://example.com/golden_source.csv" />
+      </label>
+      <label>
+        <span>Cache TTL (sec)</span>
+        <input value="1800" />
+      </label>
+      <label>
+        <span>Cron schedule</span>
+        <input value="0 3 * * *" />
+      </label>
+      <label>
+        <span>Schedule enabled</span>
+        <input value="false" />
+      </label>
+    </div>
+  </article>
+</section>
+{% endblock %}

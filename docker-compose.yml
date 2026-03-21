@@ -1,0 +1,13 @@
+services:
+  media-themes-demo:
+    build:
+      context: .
+    container_name: media-themes-demo
+    restart: unless-stopped
+    environment:
+      WEB_PORT: 8182
+      THEME_DB_PATH: /app/instance/theme_library.db
+    ports:
+      - "8182:8182"
+    volumes:
+      - ./instance:/app/instance
