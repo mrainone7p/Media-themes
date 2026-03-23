@@ -1327,17 +1327,18 @@
       <div class="theme-section-body" id="theme-local-body">
         <div class="review-empty hidden" id="theme-local-empty">No local theme file is on disk yet.</div>
         <div class="hidden theme-section-player" id="theme-local-player">
-          <div class="modal-player-row surface-panel compact">
+          <div class="modal-player-row surface-panel compact" id="theme-local-player-controls">
             <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
               <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
-            <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
-            <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
+            <button class="skip-btn" id="theme-modal-skip-back" onclick="themeModalSkip(-5)">-5</button>
+            <button class="skip-btn" id="theme-modal-skip-forward" onclick="themeModalSkip(5)">+5</button>
             <div class="modal-scrubber-wrap">
               <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
               <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
             </div>
           </div>
+          <div class="modal-status-txt modal-status-inline" id="theme-modal-status">Ready</div>
           <audio class="hidden" id="theme-modal-audio"></audio>
         </div>
         <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-local-meta">
@@ -1375,16 +1376,20 @@
       <div class="theme-section-body" id="theme-workflow-body">
         <div class="review-empty hidden" id="theme-workflow-empty">No selected source yet. Find a source to continue.</div>
         <div class="hidden theme-section-player" id="theme-workflow-player">
-          <div class="modal-player-row surface-panel compact">
+          <div class="modal-player-row surface-panel compact" id="theme-workflow-player-controls">
             <button class="play-btn" id="theme-workflow-play" onclick="themeModalSourceToggle()">
               <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
-            <button class="skip-btn" onclick="themeModalSourceSkip(-5)">-5</button>
-            <button class="skip-btn" onclick="themeModalSourceSkip(5)">+5</button>
+            <button class="skip-btn" id="theme-workflow-skip-back" onclick="themeModalSourceSkip(-5)">-5</button>
+            <button class="skip-btn" id="theme-workflow-skip-forward" onclick="themeModalSourceSkip(5)">+5</button>
             <div class="modal-scrubber-wrap">
               <input type="range" class="modal-slider" id="theme-workflow-slider" min="0" max="100" value="0" oninput="themeModalSourceSeek(this.value)">
               <div class="modal-time-row"><span id="theme-workflow-cur">0:00</span><span id="theme-workflow-dur">—</span></div>
             </div>
+          </div>
+          <div class="theme-preview-feedback">
+            <div class="modal-status-txt modal-status-inline" id="theme-workflow-status">Ready</div>
+            <button class="btn btn-ghost btn-sm hidden" type="button" id="theme-workflow-retry" onclick="themeModalSourceRetry()">Retry Preview</button>
           </div>
           <audio class="hidden" id="theme-workflow-audio"></audio>
         </div>
