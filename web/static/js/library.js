@@ -22,6 +22,17 @@ async function openTmdb(title, year, evt){
 }
 function _tmdbPill(title,year){ return `<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(title,year)}" target="_blank" rel="noopener">🎬 TMDB</a>`; }
 function _ytLink(url){ return url?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:''; }
+function _escapeHtml(value){
+  return String(value ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+function _escapeAttr(value){
+  return _escapeHtml(value);
+}
 
 let _rows=[],_filtered=[],_sortCol='title',_sortDir=1,_page=0,_activeLib=null;
 let _rowMap={}; // rating_key → full row object, avoids onclick escaping bugs
@@ -51,6 +62,78 @@ function _hasLocalTheme(row){
 
 function _hasSourceUrl(row){
   return !!String(row?.url||'').trim();
+}
+
+function _rowHasGoldenSource(row){
+  return !!String(row?.golden_source_url||'').trim();
+}
+
+function _rowUsesGoldenSource(row){
+  const sourceUrl=String(row?.url||'').trim();
+  const goldenUrl=String(row?.golden_source_url||'').trim();
+  return !!sourceUrl && !!goldenUrl && sourceUrl===goldenUrl;
+}
+
+function _goldenSourceState(row={}){
+  const hasGolden=_rowHasGoldenSource(row);
+  const hasLocal=_hasLocalTheme(row);
+  if(!hasGolden) return {key:'not_available', label:'Not available', className:'is-unknown', detail:'No curated source'};
+  if(hasLocal && _rowUsesGoldenSource(row)) return {key:'downloaded', label:'Downloaded', className:'is-direct', detail:'Local theme from Golden'};
+  return {key:'available', label:'Available', className:'is-golden', detail:'Curated source ready'};
+}
+
+function _customSourceState(row={}){
+  const sourceUrl=String(row?.url||'').trim();
+  if(!sourceUrl || _rowUsesGoldenSource(row)){
+    return {key:'none', typeLabel:'—', statusLabel:'No custom source', className:'is-unknown', detail:'No custom source selected'};
+  }
+  const meta=_themeSourceMeta(row);
+  const typeLabel=meta.type==='playlist' ? 'Playlist' : meta.type==='direct' ? 'Direct' : 'Custom';
+  const status=String(row?.status||'MISSING').toUpperCase();
+  return {
+    key:meta.type||'custom',
+    typeLabel,
+    statusLabel:displayStatus(status),
+    className:meta.className||'is-custom',
+    detail:sourceUrl,
+  };
+}
+
+function _localSourceState(row={}){
+  const status=String(row?.status||'MISSING').toUpperCase();
+  const hasLocal=_hasLocalTheme(row);
+  if(hasLocal){
+    const meta=_themeSourceMeta(row);
+    const fromLabel=meta.type==='golden'
+      ? 'From Golden'
+      : meta.type==='playlist'
+        ? 'From Playlist'
+        : meta.type==='direct'
+          ? 'From Direct'
+          : meta.type==='custom'
+            ? 'From Custom'
+            : 'Source recorded';
+    return {key:'downloaded', label:'Downloaded', className:'is-direct', detail:fromLabel};
+  }
+  return {
+    key:status.toLowerCase(),
+    label:displayStatus(status),
+    className:status==='FAILED' ? 'is-unknown' : 'is-custom',
+    detail:_hasSourceUrl(row) ? 'Awaiting local file' : 'No local theme',
+  };
+}
+
+function _renderSourceStatePill(label, className='', title=''){
+  const safeTitle=title ? ` title="${_escapeAttr(title)}"` : '';
+  return `<span class="ui-pill db-source-pill ${className}"${safeTitle}>${_escapeHtml(label)}</span>`;
+}
+
+function _renderSourceStateCell(title, primary, secondary=''){
+  return `<div class="db-source-state">
+    <span class="db-source-title">${_escapeHtml(title)}</span>
+    ${primary}
+    ${secondary?`<div class="db-source-detail" title="${_escapeAttr(secondary)}">${_escapeHtml(secondary)}</div>`:''}
+  </div>`;
 }
 
 function _statusValidation(row, attemptedStatus){
@@ -220,6 +303,21 @@ function _sortVal(row,col){
     const url=String(row.golden_source_url||'').trim().toLowerCase();
     return [url?1:0,url];
   }
+  if(col==='golden_state'){
+    const state=_goldenSourceState(row);
+    const rank={not_available:0,available:1,downloaded:2};
+    return [rank[state.key] ?? 0, state.label.toLowerCase()];
+  }
+  if(col==='custom_state'){
+    const state=_customSourceState(row);
+    const rank={none:0,custom:1,direct:2,playlist:3};
+    return [rank[state.key] ?? 0, `${state.typeLabel} ${state.statusLabel}`.toLowerCase()];
+  }
+  if(col==='local_state'){
+    const state=_localSourceState(row);
+    const rank={missing:0,staged:1,approved:2,downloaded:3,available:3,failed:4,unmonitored:5};
+    return [rank[state.key] ?? 0, `${state.label} ${state.detail}`.toLowerCase()];
+  }
   if(col==='source_origin') return (row.source_origin||'').toString().toLowerCase();
   if(col==='current_theme') return (row.status==='AVAILABLE'?1:0);
   return (row[col]||'').toString().toLowerCase();
@@ -237,17 +335,21 @@ function filterTable(){
     if(st&&r.status!==st) return false;
     const hasGolden=!!String(r.golden_source_url||'').trim();
     const hasSource=!!String(r.url||'').trim();
+    const hasCustom=hasSource && !_rowUsesGoldenSource(r);
+    const hasLocal=_hasLocalTheme(r);
     if(sourceFilter==='GOLDEN' && !hasGolden) return false;
     if(sourceFilter==='NO_GOLDEN' && hasGolden) return false;
-    if(sourceFilter==='SOURCE_URL' && !hasSource) return false;
-    if(sourceFilter==='NO_SOURCE_URL' && hasSource) return false;
+    if(sourceFilter==='CUSTOM' && !hasCustom) return false;
+    if(sourceFilter==='NO_CUSTOM' && hasCustom) return false;
+    if(sourceFilter==='LOCAL' && !hasLocal) return false;
+    if(sourceFilter==='NO_LOCAL' && hasLocal) return false;
     if(actionFilter && rowActionType(r)!==actionFilter) return false;
     const haystack=[r.title||'',r.plex_title||'',r.year||'',r.url||'',r.golden_source_url||'',r.notes||'',r.status||''].join(' ').toLowerCase();
     if(q&&!haystack.includes(q)) return false;
     return true;
   });
   _filtered.sort((a,b)=>{
-    if(_sortCol==='golden_source_url'){
+    if(_sortCol==='golden_source_url' || _sortCol==='golden_state' || _sortCol==='custom_state' || _sortCol==='local_state'){
       const [ap,au]=_sortVal(a,_sortCol);
       const [bp,bu]=_sortVal(b,_sortCol);
       if(ap!==bp) return (ap-bp)*_sortDir;
@@ -642,9 +744,10 @@ function renderTable(){
     const checked=_selectedKeys.has(rk)?'checked':'';
     const rawTitle=(row.title||row.plex_title||'');
     const titleAttr=rawTitle.replace(/"/g,'&quot;');
-    const safeUrlAttr=(row.url||'').replace(/"/g,'&quot;');
-    const off=fmt(parseTrim(row.start_offset||0));
     const tmdbHref=_tmdbLink(row.title||row.plex_title,row.year);
+    const goldenState=_goldenSourceState(row);
+    const customState=_customSourceState(row);
+    const localState=_localSourceState(row);
     return `<tr>
       <td><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
       <td class="db-cell-title" title="${titleAttr}">
@@ -655,12 +758,9 @@ function renderTable(){
         ${renderStatusCell(row)}
       </td>
       <td>${renderRowActionCell(row)}</td>
-      <td>${row.golden_source_url?`<a class="golden-link-pill" href="${String(row.golden_source_url).replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${String(row.golden_source_url).replace(/"/g,'&quot;')}">★ Golden Source ↗</a>`:'Not available'}</td>
-      <td>${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" class="db-link-icon" title="${safeUrlAttr}">↗</a>`:''}
-        <input class="inline-ed db-inline-url" value="${safeUrlAttr}" placeholder="paste URL…" style="width:100%;box-sizing:border-box" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
-      <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:100%;box-sizing:border-box;font-size:11px"
-        onblur="saveOffsetInput('${rk}',this)"
-        onkeydown="if(event.key==='Enter')this.blur()"></td>
+      <td>${_renderSourceStateCell('Golden', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), goldenState.detail)}</td>
+      <td>${_renderSourceStateCell('Custom', _renderSourceStatePill(customState.typeLabel, customState.className, customState.detail), customState.statusLabel)}</td>
+      <td>${_renderSourceStateCell('Local', _renderSourceStatePill(localState.label, localState.className, localState.detail), localState.detail)}</td>
       <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
       <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
     </tr>`;

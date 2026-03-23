@@ -527,6 +527,10 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .db-cell-subtle{color:var(--text3)}
 .db-cell-mono{font-size:10px;font-family:var(--mono);color:var(--text3);white-space:nowrap}
 .db-cell-notes{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3);font-size:10px;font-family:var(--mono)}
+.db-source-state{display:flex;flex-direction:column;gap:4px;min-width:0}
+.db-source-title{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text3)}
+.db-source-pill{align-self:flex-start;font-size:10px;padding:4px 9px}
+.db-source-detail{font-size:10px;color:var(--text2);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .db-link-icon{color:var(--text3);font-size:12px;margin-right:4px;text-decoration:none}
 .db-inline-url{min-width:80px;max-width:140px;font-size:10px}
 .db-inline-url.wide{min-width:100px;max-width:160px}
