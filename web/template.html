@@ -1342,7 +1342,6 @@
       </div>
       <div class="modal-actions-row" style="margin-top:10px;justify-content:flex-end" id="theme-local-actions">
         <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim</button>
-        <button class="btn btn-amber btn-sm" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace</button>
         <button class="btn btn-danger-ghost btn-sm" id="theme-modal-delete-btn" onclick="themeModalDelete()">Delete</button>
       </div>
     </div>
@@ -1351,7 +1350,7 @@
       <div class="review-card-header">
         <div class="review-card-heading">
           <div class="modal-section-label mb-0">Source Details</div>
-          <div class="review-card-subtitle" id="theme-modal-source-summary">Current source metadata for this theme.</div>
+          <div class="review-card-subtitle" id="theme-modal-source-summary">Review the saved source, inspect its clip window, or replace it before downloading.</div>
         </div>
       </div>
       <div class="review-empty hidden" id="theme-source-empty">No selected source is saved yet. Use Find Theme to choose one.</div>
@@ -1372,6 +1371,8 @@
           <div class="review-meta-label">Controls</div>
           <div class="review-meta-value">
             <div class="modal-actions-row" style="margin-top:0;justify-content:flex-start" id="theme-modal-source-controls">
+              <button class="btn btn-amber btn-sm" type="button" id="theme-modal-source-preview" onclick="themeModalPreviewSource()">Preview</button>
+              <button class="btn btn-amber btn-sm" type="button" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace</button>
               <button class="btn btn-ghost btn-sm" type="button" id="theme-modal-source-copy">Copy</button>
               <button class="btn btn-ghost btn-sm" type="button" id="theme-modal-source-open">Open</button>
             </div>
@@ -1381,6 +1382,12 @@
           <div class="review-meta-label">When Added</div>
           <div class="review-meta-value" id="theme-modal-source-added">—</div>
         </div>
+      </div>
+      <div class="clip-summary-card" id="theme-modal-source-clip" style="margin-top:12px">
+        <div class="clip-summary-label">Saved clip window</div>
+        <div class="clip-summary-main" id="theme-modal-source-clip-main">Length — · Offset 0:00</div>
+        <div class="clip-summary-sub" id="theme-modal-source-clip-sub">Open Preview to inspect the kept portion before downloading.</div>
+        <div class="clip-summary-warning" id="theme-modal-source-clip-warning"></div>
       </div>
     </div>
 
