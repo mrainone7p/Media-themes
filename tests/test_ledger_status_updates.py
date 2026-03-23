@@ -68,6 +68,46 @@ class SaveLedgerRowUpdatesTests(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual('APPROVED', row['status'])
 
+    def test_stale_available_with_saved_source_restages_before_approval(self):
+        row = {
+            'rating_key': '1',
+            'title': 'Example',
+            'status': 'AVAILABLE',
+            'url': 'https://example.com/theme',
+            'theme_exists': '0',
+            'notes': '',
+        }
+
+        saved_row, error = logic.save_ledger_row_updates(row, {'status': 'STAGED'})
+
+        self.assertIs(saved_row, row)
+        self.assertIsNone(error)
+        self.assertEqual('STAGED', row['status'])
+
+        saved_row, error = logic.save_ledger_row_updates(row, {'status': 'APPROVED'})
+
+        self.assertIs(saved_row, row)
+        self.assertIsNone(error)
+        self.assertEqual('APPROVED', row['status'])
+
+    def test_stale_available_without_saved_source_normalizes_to_missing_rules(self):
+        row = {
+            'rating_key': '1',
+            'title': 'Example',
+            'status': 'AVAILABLE',
+            'url': '',
+            'theme_exists': '0',
+            'notes': '',
+        }
+
+        saved_row, error = logic.save_ledger_row_updates(row, {'status': 'APPROVED'})
+
+        self.assertIsNone(saved_row)
+        self.assertEqual('APPROVAL_REQUIRES_STAGED', error['reason_code'])
+        self.assertEqual('AVAILABLE', error['current_status'])
+        self.assertEqual('APPROVED', error['attempted_status'])
+        self.assertEqual('AVAILABLE', row['status'])
+
     def test_url_matching_golden_source_keeps_golden_origin(self):
         row = {
             'rating_key': '1',
