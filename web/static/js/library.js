@@ -1200,16 +1200,39 @@ function _themeModalNextAction(row={}, hasTheme=false){
   return null;
 }
 const THEME_MODAL_STATUS_HELPERS={
-  MISSING:'No source attached yet.',
-  STAGED:'Source selected, awaiting approval.',
-  APPROVED:'Ready to download.',
-  AVAILABLE:'Local theme saved.',
-  FAILED:'Needs attention before retrying.'
+  MISSING:{
+    default:'No source is attached and no local theme file is on disk.',
+    sourceOnly:'A source is saved, but the theme file is not on disk yet.'
+  },
+  STAGED:{
+    default:'Source selected and waiting for approval. The theme file is not on disk yet.',
+    local:'Source selected and a local theme file is already on disk.'
+  },
+  APPROVED:{
+    default:'Source approved and ready to download. The theme file is not on disk yet.',
+    local:'Source approved and the local theme file is already on disk.'
+  },
+  AVAILABLE:{
+    default:'Marked available, but no local theme file was found on disk.',
+    local:'Local theme file is on disk and ready for playback.'
+  },
+  FAILED:{
+    default:'Source or download needs attention before a local theme file is available.',
+    local:'The last update failed, but an older local theme file is still on disk.'
+  }
 };
-function _themeModalUpdateStatusFlow(status='MISSING'){
+function _themeModalUpdateStatusFlow(status='MISSING', state={}){
   const normalized=String(status||'MISSING').toUpperCase();
   const helper=document.getElementById('theme-modal-status-helper');
-  if(helper) helper.textContent=THEME_MODAL_STATUS_HELPERS[normalized]||'Review the current theme state.';
+  const helperSet=THEME_MODAL_STATUS_HELPERS[normalized];
+  let message='Review the current theme state.';
+  if(typeof helperSet==='string') message=helperSet;
+  else if(helperSet){
+    if(state?.hasTheme && helperSet.local) message=helperSet.local;
+    else if(state?.hasStoredSource && !state?.hasTheme && helperSet.sourceOnly) message=helperSet.sourceOnly;
+    else if(helperSet.default) message=helperSet.default;
+  }
+  if(helper) helper.textContent=message;
 }
 function openThemeModal(rk,title,year,folder,row={}){
   stopAllAudio();
@@ -1217,53 +1240,63 @@ function openThemeModal(rk,title,year,folder,row={}){
   const hasTheme=_themeHasLocal(row);
   const status=String(row?.status||'MISSING').toUpperCase();
   const storedPrimarySourceUrl=_themeModalPrimarySourceUrl(row);
-  const hasSource=status!=='MISSING' && !!storedPrimarySourceUrl;
-  const primarySourceUrl=hasSource?storedPrimarySourceUrl:'';
-  const sourceMeta=hasSource?_themeSourceMeta(row):{label:'None',className:'is-unknown',method:'—'};
+  const hasStoredSource=!!storedPrimarySourceUrl;
+  const hasLocalTheme=hasTheme;
+  const isDownloadable=!hasLocalTheme && hasStoredSource && status==='APPROVED';
+  const isSourceOnly=hasStoredSource && !hasLocalTheme;
+  const shouldShowSourceDetails=hasStoredSource;
+  const primarySourceUrl=hasStoredSource?storedPrimarySourceUrl:'';
+  const sourceMeta=hasStoredSource?_themeSourceMeta(row):{label:'None',className:'is-unknown',method:'—'};
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
 
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
-  document.getElementById('theme-modal-dur-meta').textContent=hasTheme?'Theme present':'Theme missing';
+  document.getElementById('theme-modal-dur-meta').textContent=hasLocalTheme
+    ?'Theme on disk'
+    :(isSourceOnly?'Source saved only':'Theme missing');
   const statusBadge=document.getElementById('theme-modal-status-badge');
   if(statusBadge){
     statusBadge.className=`badge s-${status}`;
     statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
   }
-  _themeModalUpdateStatusFlow(status);
-  document.getElementById('theme-modal-local-status').textContent=hasTheme
+  _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable, shouldShowSourceDetails});
+  document.getElementById('theme-modal-local-status').textContent=hasLocalTheme
     ?'Available locally'
-    :'Missing locally';
+    :(isSourceOnly?'Not on disk yet':'Missing locally');
   document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
-  document.getElementById('theme-modal-local-dur').textContent=`Duration: ${hasTheme&&row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
+  document.getElementById('theme-modal-local-dur').textContent=`Duration: ${hasLocalTheme&&row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
   const sourceUrlEl=document.getElementById('theme-modal-source-url');
   if(sourceUrlEl){
     _applyAutoScrollText(sourceUrlEl, primarySourceUrl, {fallback:'—'});
   }
-  document.getElementById('theme-modal-origin').textContent=hasSource?sourceMeta.method:'—';
-  document.getElementById('theme-modal-imported').textContent=hasSource?_themeModalImportedAt(row):'—';
-  document.getElementById('theme-modal-offset').textContent=hasSource?_themeModalOffsetLabel(row, hasTheme):'—';
-  document.getElementById('theme-modal-source-notes').textContent=hasSource?(String(row?.notes||'').trim()||'No source notes recorded.'):'—';
-  document.getElementById('theme-modal-source-summary').textContent=hasSource
-    ?'Theme used for download and the details applied to it.'
+  document.getElementById('theme-modal-origin').textContent=hasStoredSource?sourceMeta.method:'—';
+  document.getElementById('theme-modal-imported').textContent=hasStoredSource?_themeModalImportedAt(row):'—';
+  document.getElementById('theme-modal-offset').textContent=hasStoredSource?_themeModalOffsetLabel(row, hasLocalTheme):'—';
+  document.getElementById('theme-modal-source-notes').textContent=hasStoredSource?(String(row?.notes||'').trim()||'No source notes recorded.'):'—';
+  document.getElementById('theme-modal-source-summary').textContent=hasStoredSource
+    ?(hasLocalTheme
+      ?'Saved source metadata for the current local theme.'
+      :(isDownloadable
+        ?'Approved source saved for download. The theme file is not on disk yet.'
+        :'Saved source metadata. The theme file is not on disk yet.'))
     :'No source is attached right now.';
   const sourcePill=document.getElementById('theme-modal-source-pill');
   sourcePill.textContent=sourceMeta.label;
   sourcePill.className=`review-source-pill ${sourceMeta.className}`;
-  sourcePill.style.display=hasSource?'inline-flex':'none';
+  sourcePill.style.display=hasStoredSource?'inline-flex':'none';
 
   const sourceEmpty=document.getElementById('theme-source-empty');
   const sourceMetaList=document.getElementById('theme-source-meta-list');
   const sourceDetails=document.getElementById('theme-source-details');
   const openSourceBtn=document.getElementById('theme-open-source-btn');
-  _setHidden(sourceEmpty, hasSource, hasSource?'':'block');
-  if(sourceMetaList) sourceMetaList.style.display=hasSource?'flex':'none';
-  if(openSourceBtn) openSourceBtn.style.display=hasSource?'':'none';
+  _setHidden(sourceEmpty, hasStoredSource, hasStoredSource?'':'block');
+  if(sourceMetaList) sourceMetaList.style.display=hasStoredSource?'flex':'none';
+  if(openSourceBtn) openSourceBtn.style.display=hasStoredSource?'':'none';
   const copySourceBtn=document.getElementById('theme-copy-source-btn');
-  if(copySourceBtn) copySourceBtn.style.display=hasSource?'':'none';
+  if(copySourceBtn) copySourceBtn.style.display=hasStoredSource?'':'none';
   if(sourceDetails){
-    sourceDetails.style.display=hasSource?'block':'none';
+    sourceDetails.style.display=shouldShowSourceDetails?'block':'none';
     sourceDetails.open=false;
   }
 
@@ -1272,22 +1305,27 @@ function openThemeModal(rk,title,year,folder,row={}){
   const localMissing=document.getElementById('theme-local-missing');
   const localTrimBtn=document.getElementById('theme-modal-trim-btn');
   const localDeleteBtn=document.getElementById('theme-modal-delete-btn');
-  if(localCard) localCard.classList.toggle('compact', !hasTheme);
-  if(localMeta) localMeta.style.display=hasTheme?'block':'none';
-  _setHidden(localMissing, hasTheme, hasTheme?'':'block');
-  if(localTrimBtn) localTrimBtn.style.display=hasTheme?'':'none';
-  if(localDeleteBtn) localDeleteBtn.style.display=hasTheme?'':'none';
+  if(localCard) localCard.classList.toggle('compact', !hasLocalTheme);
+  if(localMeta) localMeta.style.display=hasLocalTheme?'block':'none';
+  if(localMissing){
+    localMissing.textContent=isSourceOnly
+      ?'A source is saved for this item, but the local theme file has not been downloaded yet.'
+      :'No local theme file is saved right now.';
+  }
+  _setHidden(localMissing, hasLocalTheme, hasLocalTheme?'':'block');
+  if(localTrimBtn) localTrimBtn.style.display=hasLocalTheme?'':'none';
+  if(localDeleteBtn) localDeleteBtn.style.display=hasLocalTheme?'':'none';
   const localInlinePlay=document.getElementById('theme-modal-inline-play');
-  _setHidden(localInlinePlay, !hasTheme, hasTheme?'inline-flex':'');
+  _setHidden(localInlinePlay, !hasLocalTheme, hasLocalTheme?'inline-flex':'');
   const sourceCard=document.getElementById('theme-source-card');
-  if(sourceCard) sourceCard.classList.toggle('compact', !hasSource);
+  if(sourceCard) sourceCard.classList.toggle('compact', !hasStoredSource);
 
   const replaceBtn=document.getElementById('theme-replace-btn');
   const findBtn=document.getElementById('theme-find-btn');
   const nextStepBtn=document.getElementById('theme-next-step-btn');
-  if(replaceBtn) replaceBtn.style.display=hasTheme?'':'none';
-  _setHidden(findBtn, hasTheme, hasTheme?'':'');
-  const nextAction=_themeModalNextAction(row, hasTheme);
+  if(replaceBtn) replaceBtn.style.display=hasLocalTheme?'':'none';
+  _setHidden(findBtn, hasLocalTheme, hasLocalTheme?'':'');
+  const nextAction=_themeModalNextAction(row, hasLocalTheme);
   if(nextStepBtn){
     if(nextAction && nextAction.handler!=='find'){
       _setHidden(nextStepBtn, false, '');
@@ -1302,8 +1340,8 @@ function openThemeModal(rk,title,year,folder,row={}){
     }
   }
 
-  _setHidden(document.getElementById('theme-local-player'), !hasTheme, hasTheme?'block':'');
-  _setHidden(document.getElementById('theme-local-missing'), hasTheme, hasTheme?'':'block');
+  _setHidden(document.getElementById('theme-local-player'), !hasLocalTheme, hasLocalTheme?'block':'');
+  _setHidden(document.getElementById('theme-local-missing'), hasLocalTheme, hasLocalTheme?'':'block');
 
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
@@ -1314,11 +1352,11 @@ function openThemeModal(rk,title,year,folder,row={}){
     `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
   setBio('theme-modal-bio', rk);
   _themeModalAudio.cleanup({clearSrc:false});
-  if(hasTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+  if(hasLocalTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
   else _themeModalAudio.audio.src='';
   openModal('theme-modal');
   _themeModalAudio.setHandlers();
-  if(hasTheme) _themeModalAudio.audio.load();
+  if(hasLocalTheme) _themeModalAudio.audio.load();
   if(_curKey) stopCurrentAudio();
 }
 function themeModalRunNextStep(){
