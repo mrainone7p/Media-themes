@@ -135,14 +135,14 @@
       </div>
     </div>
 
-    <!-- Row 1: KPI Cards -->
-    <div class="dashboard-stat-grid mb-20" id="dashboard-pipeline-overview"></div>
-
-    <!-- Row 2: Action Station (full width) -->
+    <!-- Row 1: Action Station (full width) -->
     <div class="card dashboard-card mb-20">
       <div class="card-title">Action Station</div>
       <div id="dashboard-action-station"><div class="dash-skeleton mb-8"></div><div class="dash-skeleton"></div><div class="dash-skeleton"></div></div>
     </div>
+
+    <!-- Row 2: KPI Cards -->
+    <div class="dashboard-stat-grid mb-20" id="dashboard-pipeline-overview"></div>
 
     <!-- Row 3: Theme Library Overview with two charts -->
     <div class="card dashboard-card mb-20">
@@ -163,11 +163,11 @@
           <div class="dash-chart-card-header">
             <div class="dash-chart-card-title">Activity Over Time</div>
             <div class="dash-bar-period-wrap">
-              <input type="number" id="dash-bar-count" min="1" max="999" value="12" class="dash-bar-count-input" onchange="_onBarCountChange(this.value)">
+              <input type="number" id="dash-bar-count" min="1" max="999" value="10" class="dash-bar-count-input" onchange="_onBarCountChange(this.value)">
               <select id="dash-bar-freq" class="dash-bar-freq-select" onchange="_setBarFreq(this.value)">
-                <option value="day">Days</option>
+                <option value="day" selected>Days</option>
                 <option value="week">Weeks</option>
-                <option value="month" selected>Months</option>
+                <option value="month">Months</option>
                 <option value="year">Years</option>
               </select>
             </div>

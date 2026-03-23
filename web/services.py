@@ -610,9 +610,11 @@ def _dashboard_counts_for_rows(rows: list[dict]) -> dict:
 
 def _dashboard_status_timeline(enabled_names: list[str]) -> dict:
     """Aggregate ledger rows by last_updated date and status for timeline chart."""
-    timeline: dict[str, dict[str, int]] = {}
+    overall_timeline: dict[str, dict[str, int]] = {}
+    timeline_by_library: dict[str, dict[str, dict[str, int]]] = {}
     for library_name in enabled_names:
         rows = load_ledger(ledger_path_for(library_name))
+        library_timeline: dict[str, dict[str, int]] = {}
         for row in rows:
             last_updated = str(row.get("last_updated", "") or "").strip()
             status = str(row.get("status", "") or "").upper()
@@ -621,10 +623,14 @@ def _dashboard_status_timeline(enabled_names: list[str]) -> dict:
             day = last_updated[:10]
             if len(day) != 10 or day[4] != "-":
                 continue
-            if day not in timeline:
-                timeline[day] = {}
-            timeline[day][status] = timeline[day].get(status, 0) + 1
-    return timeline
+            if day not in overall_timeline:
+                overall_timeline[day] = {}
+            overall_timeline[day][status] = overall_timeline[day].get(status, 0) + 1
+            if day not in library_timeline:
+                library_timeline[day] = {}
+            library_timeline[day][status] = library_timeline[day].get(status, 0) + 1
+        timeline_by_library[library_name] = library_timeline
+    return {"all": overall_timeline, "by_library": timeline_by_library}
 
 
 def _dashboard_latest_task(entries: list[dict], matcher) -> dict | None:
