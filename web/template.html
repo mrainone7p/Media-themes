@@ -582,8 +582,10 @@
             <option value="">All source states</option>
             <option value="GOLDEN">With Golden Source</option>
             <option value="NO_GOLDEN">Without Golden Source</option>
-            <option value="SOURCE_URL">With Source URL</option>
-            <option value="NO_SOURCE_URL">Without Source URL</option>
+            <option value="CUSTOM">With Custom Source</option>
+            <option value="NO_CUSTOM">Without Custom Source</option>
+            <option value="LOCAL">Downloaded Locally</option>
+            <option value="NO_LOCAL">Not Downloaded Locally</option>
           </select>
         </div>
         <div class="filter-stack">
@@ -620,9 +622,9 @@
           <th style="width:5%" onclick="sortTable('year')">Year ↕</th>
           <th style="width:10%" onclick="sortTable('status')">Status ↕</th>
           <th style="width:12%">Action</th>
-          <th style="width:14%" onclick="sortTable('golden_source_url')">Golden Source URL ↕</th>
-          <th style="width:18%" onclick="sortTable('url')">Source URL ↕</th>
-          <th style="width:7%" onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
+          <th style="width:10%" onclick="sortTable('golden_state')">Golden ↕</th>
+          <th style="width:12%" onclick="sortTable('custom_state')">Custom ↕</th>
+          <th style="width:11%" onclick="sortTable('local_state')">Local ↕</th>
           <th style="width:7%" onclick="sortTable('last_updated')">Updated ↕</th>
           <th style="width:9%" onclick="sortTable('notes')">Notes ↕</th>
         </tr></thead>
