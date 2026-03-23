@@ -5,11 +5,12 @@ on:
     branches:
       - beta
       - main
+      - backup
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/media-tracks
+  IMAGE_NAME: ${{ github.repository_owner }}/media-tracks2
 
 jobs:
   build-and-push:
