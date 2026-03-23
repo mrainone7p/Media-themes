@@ -1061,7 +1061,7 @@
                 <div class="sm-card-copy">
                   <div class="sm-card-topline">
                     <div class="sm-card-title">Golden Source</div>
-                    <div class="sm-card-state">Selected Source</div>
+                    <div class="sm-card-state">Selected Method</div>
                     <div class="sm-card-badge recommended" id="sm-golden-recommended">Recommended</div>
                   </div>
                   <div class="sm-card-desc" id="sm-golden-desc">Use the curated source already linked to this item. If it fails, stay here to retry or replace the URL.</div>
@@ -1078,7 +1078,7 @@
                 <div class="sm-card-copy">
                   <div class="sm-card-topline">
                     <div class="sm-card-title">Playlist</div>
-                    <div class="sm-card-state">Selected Source</div>
+                    <div class="sm-card-state">Selected Method</div>
                   </div>
                   <div class="sm-card-desc">Search soundtrack playlists from track 1 onward.</div>
                 </div>
@@ -1093,7 +1093,7 @@
                 <div class="sm-card-copy">
                   <div class="sm-card-topline">
                     <div class="sm-card-title">Direct</div>
-                    <div class="sm-card-state">Selected Source</div>
+                    <div class="sm-card-state">Selected Method</div>
                   </div>
                   <div class="sm-card-desc">Search for a single theme result with a tighter match.</div>
                 </div>
@@ -1112,7 +1112,7 @@
                   <div class="sm-card-copy">
                     <div class="sm-card-topline">
                       <div class="sm-card-title">Custom</div>
-                      <div class="sm-card-state">Selected Source</div>
+                      <div class="sm-card-state">Selected Method</div>
                     </div>
                     <div class="sm-card-desc">Edit the query text before running the search.</div>
                   </div>
@@ -1130,7 +1130,7 @@
                   <div class="sm-card-copy">
                     <div class="sm-card-topline">
                       <div class="sm-card-title">Paste URL</div>
-                      <div class="sm-card-state">Selected Source</div>
+                      <div class="sm-card-state">Selected Method</div>
                     </div>
                     <div class="sm-card-desc">Jump straight to a known source URL.</div>
                     <div class="sm-card-submeta">Direct link entry · skips search results</div>
@@ -1235,8 +1235,8 @@
             </div>
           </div>
           <div class="offset-inline-actions">
-            <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ Play</button>
-            <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Use current time</button>
+            <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ Preview from Offset</button>
+            <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Use Current Time</button>
           </div>
         </div>
         <div class="clip-summary-card" id="se-clip-summary">
@@ -1276,7 +1276,7 @@
       <div class="modal-actions-row footer-action-group">
         <button class="btn btn-ghost" onclick="closeSearchModal()">Cancel</button>
         <button class="btn btn-amber" id="search-modal-primary" onclick="searchModalPrimary()">🔍 Search</button>
-        <button class="btn btn-green hidden" id="search-modal-download-now" onclick="searchModalDownloadNow()">Approve + Download</button>
+        <button class="btn btn-green hidden" id="search-modal-download-now" onclick="searchModalDownloadNow()">Download Theme</button>
       </div>
     </div>
   </div>
@@ -1358,7 +1358,7 @@
           </div>
         </div>
         <div class="modal-actions-row theme-section-actions hidden" id="theme-local-actions">
-          <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim Source</button>
+          <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim Local Theme</button>
           <button class="btn btn-ghost btn-sm" id="theme-modal-local-rematch-btn" onclick="themeModalOpenManualSearch()">Rematch</button>
           <button class="btn btn-danger-ghost btn-sm" id="theme-modal-local-delete-btn" onclick="themeModalDeleteLocalTheme()">Delete</button>
         </div>
@@ -1461,7 +1461,7 @@
 
     <!-- ── Section heading ── -->
     <div class="modal-subsection">
-      <div class="modal-subsection-title">Trim Local Theme File</div>
+      <div class="modal-subsection-title">Trim Local Theme</div>
       <div class="panel-divider"></div>
     </div>
 
@@ -1519,8 +1519,8 @@
             </div>
           </div>
           <div class="offset-inline-actions">
-            <button class="btn btn-ghost btn-sm" onclick="trimModalPreview(true)">▶ Play from trim</button>
-            <button class="btn btn-ghost btn-sm" onclick="trimModalUseCurrent()">Use current</button>
+            <button class="btn btn-ghost btn-sm" onclick="trimModalPreview(true)">▶ Preview from Offset</button>
+            <button class="btn btn-ghost btn-sm" onclick="trimModalUseCurrent()">Use Current Time</button>
           </div>
         </div>
         <div class="modal-trim-result" id="trim-modal-result"></div>
