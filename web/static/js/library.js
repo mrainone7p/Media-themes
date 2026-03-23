@@ -2000,12 +2000,15 @@ function _renderMethodQuickPick(method, result, opts={}){
   const safeUrl=String(result.url||'').replace(/'/g,"\\'");
   const safeHref=String(result.url||'').replace(/"/g,'&quot;');
   const rawTitle=String(opts.title || result.title || '1st result').trim();
-  const safeTitleAttr=rawTitle.replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const rawDisplayTitle=String(opts.displayTitle || rawTitle || result.url || '1st result').trim();
+  const safeTitleAttr=rawDisplayTitle.replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const safeTitleJs=rawTitle.replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const safeOffset=String(result.start_offset||'0').replace(/'/g,"\\'");
   const label=opts.label || 'First match';
   const showOpen=opts.showOpen===true;
-  const titleText=_truncateSourceText(rawTitle, {fallback:'1st result', max:52, middle:!!opts.truncateMiddle});
+  const titleText=opts.scrollTitle===true
+    ? rawDisplayTitle
+    : _truncateSourceText(rawDisplayTitle, {fallback:'1st result', max:52, middle:!!opts.truncateMiddle});
   const titleMarkup=opts.linkTitle===false
     ? `<span class="sm-quickpick-title" title="${safeTitleAttr}">${titleText}</span>`
     : `<a class="sm-quickpick-link sm-quickpick-title" href="${safeHref}" target="_blank" rel="noopener" title="${safeTitleAttr}">${titleText}<span>↗</span></a>`;
@@ -2024,7 +2027,7 @@ function _setMethodQuickPick(method, result){
   if(!el) return;
   if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
   const quickPickOpts=method==='golden_source'
-    ? {label:'Quick pick', title:'Curated Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Select'}
+    ? {label:'Quick pick', title:'Golden Source URL', displayTitle:(result&&result.url)||'Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Pick', scrollTitle:true}
     : {label:'Quick pick'};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
 }
