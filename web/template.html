@@ -1395,6 +1395,36 @@
       </div>
     </div>
 
+    <div class="review-card hidden" id="theme-workflow-card">
+      <div class="review-card-header">
+        <div class="review-card-heading">
+          <div class="modal-section-label mb-0">Selected Source Workflow</div>
+          <div class="review-card-subtitle" id="theme-workflow-subtitle">See the current source state and move it through review, approval, download, or trimming.</div>
+        </div>
+      </div>
+      <div class="theme-workflow-grid">
+        <div class="theme-workflow-item">
+          <div class="theme-workflow-label">Current State</div>
+          <div class="theme-workflow-value" id="theme-workflow-state">—</div>
+        </div>
+        <div class="theme-workflow-item">
+          <div class="theme-workflow-label">Source Origin / Type</div>
+          <div class="theme-workflow-value" id="theme-workflow-origin">—</div>
+        </div>
+        <div class="theme-workflow-item">
+          <div class="theme-workflow-label">Clip Window / Offset</div>
+          <div class="theme-workflow-value" id="theme-workflow-offset">—</div>
+        </div>
+      </div>
+      <div class="clip-summary-card" id="theme-workflow-clip" style="margin-top:12px">
+        <div class="clip-summary-label">Workflow clip summary</div>
+        <div class="clip-summary-main" id="theme-workflow-clip-main">Length — · Offset 0:00</div>
+        <div class="clip-summary-sub" id="theme-workflow-clip-sub">Choose or review a source to see its saved clip window.</div>
+        <div class="clip-summary-warning" id="theme-workflow-clip-warning"></div>
+      </div>
+      <div class="modal-actions-row theme-workflow-actions" id="theme-workflow-actions"></div>
+    </div>
+
     <div class="review-card" id="theme-source-card">
       <div class="review-card-header">
         <div class="review-card-heading">
@@ -1441,11 +1471,8 @@
     <!-- Footer -->
     <div class="modal-footer">
       <div class="review-footer-actions footer-action-group">
-        <button class="btn btn-amber hidden" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace Source</button>
         <button class="btn btn-danger-ghost hidden" id="theme-modal-delete-btn" onclick="themeModalDeleteSource()">Delete Source</button>
         <button class="btn btn-danger-ghost hidden" id="theme-modal-delete-local-btn" onclick="themeModalDeleteLocalTheme()">Delete Local Theme</button>
-        <button class="btn btn-ghost hidden" id="theme-next-step-btn" onclick="themeModalRunNextStep()">Next Step</button>
-        <button class="btn btn-amber hidden" id="theme-find-btn" onclick="themeModalOpenManualSearch()">Find Theme</button>
         <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
       </div>
     </div>
