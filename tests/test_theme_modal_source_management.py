@@ -90,7 +90,8 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         self.assertIn("'trim-source','Trim Source'", self.library_source)
 
     def test_footer_only_contains_close_action(self):
-        footer_split = self.template_source.split('<div class="modal-footer">', 1)[1].split('</div>', 2)[0]
+        theme_modal_split = self.template_source.split('<div class="modal-overlay" id="theme-modal">', 1)[1]
+        footer_split = theme_modal_split.split('<div class="modal-footer spread">', 1)[1].split('</div>', 3)[0]
         self.assertIn('>Close<', footer_split)
         self.assertNotIn('Delete Source', footer_split)
         self.assertNotIn('Delete Local Theme', footer_split)
@@ -254,12 +255,12 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
     def test_shared_trim_editor_standardizes_section_headings_and_copy(self):
         for snippet in (
             'Preview Area',
-            'Trim Window Controls',
-            'Summary State',
-            'Preview the selected source and confirm the trim window before saving.',
-            'Preview the local theme and confirm the trim window before applying changes.',
-            'Review the kept clip window and warning state before saving.',
-            'Review the kept clip window and warning state before applying the trim.',
+            'Offset Controls',
+            'Offset Summary',
+            'Preview the selected source and confirm the saved offset before saving.',
+            'Preview the local theme and confirm the saved offset before applying changes.',
+            'Review the saved offset and resulting theme length before saving.',
+            'Review the saved offset and resulting theme length before applying the trim.',
         ):
             self.assertIn(snippet, self.library_source)
 
