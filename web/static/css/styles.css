@@ -759,8 +759,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--surface2)}
 .modal-bio{font-size:12px;color:var(--text2);line-height:1.55;padding:10px var(--modal-pad-x) 0;border-top:1px solid var(--border);margin-top:10px}
 .modal-bio.is-clamped{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-.modal-inline-bio{display:flex;align-items:flex-start;gap:10px;margin-top:8px;min-width:0}
-.modal-bio-inline{padding:0;border-top:none;margin-top:0;flex:1;min-width:0}
+.modal-inline-bio{display:flex;align-items:flex-start;gap:10px;margin-top:8px;min-width:0;max-width:100%;overflow:hidden}
+.modal-bio-inline{padding:0;border-top:none;margin-top:0;flex:1;min-width:0;max-width:100%}
 .bio-toggle{border:none;background:none;padding:0;color:var(--amber);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 .bio-toggle:hover{text-decoration:underline}
 .modal-section-header{padding:0 var(--modal-pad-x) 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.01em}

@@ -415,7 +415,7 @@ function _playTheme(btn){
   const title=row?(row.title||row.plex_title||''):btn.dataset.title||'';
   const year=row?row.year||'':btn.dataset.year||'';
   const folder=row?row.folder||'':btn.dataset.folder||'';
-  openThemeModal(rk, title, year, folder, row||{});
+  openThemeModal(rk, title, year, folder, row||{}, _activeLib||row?.library||'');
 }
 function _deleteTheme(btn){
   const rk=(btn.dataset.rk||'').trim();
@@ -447,7 +447,7 @@ function _previewSource(btn){
   if(!url) return;
   const title=row?(row.title||row.plex_title||''):'';
   const year=row?row.year||'':'';
-  openYtModal(rk, title, year, url, encodeURIComponent(_activeLib||''));
+  openYtModal(rk, title, year, url, encodeURIComponent(_activeLib||row?.library||''));
 }
 function _downloadNow(btn){
   if(btn.disabled) return;
@@ -460,7 +460,7 @@ function _manualSearch(btn){
   const rk=btn.dataset.rk;
   const row=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
   if(!row) return;
-  openSearchModal(rk, row.title||row.plex_title||'', row.year||'', encodeURIComponent(_activeLib||''));
+  openSearchModal(rk, row.title||row.plex_title||'', row.year||'', encodeURIComponent(_activeLib||row?.library||''));
 }
 
 function renderUrlInput(row){
@@ -919,18 +919,26 @@ async function clearSourcesSelected(){
 function _currentLib(){
   return document.getElementById('lib-tabs')?.querySelector('.tab.active')?.dataset?.lib||_activeLib||'';
 }
-async function fetchBio(rk){
-  if(_bioCache[rk]!==undefined) return _bioCache[rk];
+const _bioCache={};
+function _bioCacheKey(rk, library=''){
+  return `${String(library||'').trim() || '__current__'}::${String(rk||'')}`;
+}
+async function fetchBio(rk, library=''){
+  const lib=String(library||'').trim()||_currentLib();
+  const cacheKey=_bioCacheKey(rk, lib);
+  if(_bioCache[cacheKey]!==undefined) return _bioCache[cacheKey];
   try{
-    const lib=_currentLib();
     const qs='key='+encodeURIComponent(rk)+(lib?'&library='+encodeURIComponent(lib):'');
     const r=await fetch('/api/movie/bio?'+qs);
     const d=await r.json();
-    _bioCache[rk]=d.summary||'';
-    return _bioCache[rk];
-  }catch{ _bioCache[rk]=''; return ''; }
+    _bioCache[cacheKey]=d.summary||'';
+    return _bioCache[cacheKey];
+  }catch{
+    _bioCache[cacheKey]='';
+    return '';
+  }
 }
-async function setBio(elId,rk){
+async function setBio(elId,rk,library=''){
   const el=document.getElementById(elId);
   const wrap=document.getElementById(`${elId}-wrap`);
   const toggle=document.getElementById(`${elId}-toggle`);
@@ -941,7 +949,7 @@ async function setBio(elId,rk){
     _setHidden(toggle, true);
     return;
   }
-  const bio=await fetchBio(rk);
+  const bio=await fetchBio(rk, library);
   if(bio){
     el.textContent=bio;
     el.classList.add('is-clamped');
@@ -1234,9 +1242,10 @@ function _themeModalUpdateStatusFlow(status='MISSING', state={}){
   }
   if(helper) helper.textContent=message;
 }
-function openThemeModal(rk,title,year,folder,row={}){
+function openThemeModal(rk,title,year,folder,row={},library=''){
   stopAllAudio();
-  _themeModalContext={rk,title,year,folder,row};
+  const resolvedLibrary=String(library||row?.library||'').trim()||_activeLib||_currentLib();
+  _themeModalContext={rk,title,year,folder,row,library:resolvedLibrary};
   const hasTheme=_themeHasLocal(row);
   const status=String(row?.status||'MISSING').toUpperCase();
   const storedPrimarySourceUrl=_themeModalPrimarySourceUrl(row);
@@ -1350,7 +1359,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
   document.getElementById('theme-modal-links').innerHTML=
     `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
-  setBio('theme-modal-bio', rk);
+  setBio('theme-modal-bio', rk, resolvedLibrary);
   _themeModalAudio.cleanup({clearSrc:false});
   if(hasLocalTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
   else _themeModalAudio.audio.src='';
@@ -1378,7 +1387,7 @@ function themeModalRunNextStep(){
   }
 }
 async function themeModalDownloadApproved(){
-  const library=requireLibraryContext(_activeLib,'download a theme');
+  const library=requireLibraryContext(_themeModalContext?.library||_activeLib,'download a theme');
   if(!library) return;
   const row=_themeModalContext?.row||{};
   if(String(row?.status||'').toUpperCase()!=='APPROVED') return;
@@ -1428,19 +1437,20 @@ function themeModalDelete(){
   const c=_themeModalContext||{};
   if(!c.rk) return;
   closeThemeModal();
-  openDeleteModal(c.rk,c.title||'',_activeLib||'',c.folder||'');
+  openDeleteModal(c.rk,c.title||'',c.library||_activeLib||'',c.folder||'');
 }
 function themeModalEditTrim(){
   const c=_themeModalContext||{};
   if(!c.rk) return;
   closeThemeModal();
   _trimRk=c.rk;
+  _trimLib=String(c.library||'').trim();
   document.getElementById('trim-modal-title').textContent=c.title||'Edit Trim';
   document.getElementById('trim-modal-meta').textContent=[c.year||'',`Duration: ${fmt(parseFloat(c.row?.theme_duration||0)||0)}`].filter(Boolean).join(' · ');
   document.getElementById('trim-modal-poster').src=apiUrl('/api/poster?key='+encodeURIComponent(c.rk));
   document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">TMDB</a>`;
   document.getElementById('trim-modal-info').textContent='Trim local theme start offset and preview the resulting clip.';
-  setBio('trim-modal-bio', c.rk);
+  setBio('trim-modal-bio', c.rk, _trimLib);
   document.getElementById('trim-modal-offset').value=String(c.row?.start_offset||'0');
   trimModalUpdateResult();
   _trimModalAudio.cleanup({clearSrc:false});
@@ -1460,7 +1470,7 @@ function themeModalOpenManualSearch(){
   const rk=_themeModalContext.rk;
   if(!rk) return;
   closeThemeModal();
-  openSearchModal(rk,_themeModalContext.title||'',_themeModalContext.year||'',encodeURIComponent(_activeLib||''));
+  openSearchModal(rk,_themeModalContext.title||'',_themeModalContext.year||'',encodeURIComponent(_themeModalContext.library||''));
 }
 function closeThemeModal(){
   closeModal('theme-modal');
@@ -1809,7 +1819,7 @@ async function openSearchModal(rk,title,year,lib){
   }
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
   document.getElementById('search-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${tmdbUrl}" target="_blank" rel="noopener">🎬 TMDB</a>`;
-  setBio('search-modal-bio',rk);
+  setBio('search-modal-bio',rk,_searchLib);
   // Restore or reset method cards
   ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
     const card=document.getElementById(_searchMethodCardId(m));
@@ -2478,7 +2488,7 @@ function resetActivePreviewBtn(){
 }
 
 // ── Trim modal preview ────────────────────────────────────────────────────────
-let _trimRk='';
+let _trimRk='',_trimLib='';
 function trimModalUpdateResult(){
   const row=_mediaRows.find(r=>r.rating_key===_trimRk); if(!row) return;
   const offsetValue=document.getElementById('trim-modal-offset').value||'0';
@@ -2503,11 +2513,12 @@ function trimModalSeek(val){ _trimModalAudio.seek(val); }
 function trimModalSkip(s){ _trimModalAudio.skip(s); }
 function closeTrimModal(){
   closeModal('trim-modal');
+  _trimLib='';
   runModalMediaCleanup(()=>_trimModalAudio.cleanup());
 }
 async function applyTrimFromModal(){
   if(!_trimRk) return;
-  const library=requireLibraryContext(_activeLib,'trim a theme');
+  const library=requireLibraryContext(_trimLib||_activeLib,'trim a theme');
   if(!library) return;
   const start=parseTrim(document.getElementById('trim-modal-offset').value||'0');
   const r=await fetch('/api/theme/trim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({library,rating_key:_trimRk,start_offset:start,end_offset:0})});
@@ -2558,7 +2569,7 @@ function openYtModal(rk,title,year,url,lib){
   document.getElementById('yt-modal-start').value='0:00';
   document.getElementById('yt-modal-trim-info').textContent='';
   _ytModalAudio.setStatus('Resolving stream…');
-  setBio('yt-modal-bio', rk);
+  setBio('yt-modal-bio', rk, _ytModalLib);
   _setHidden(document.getElementById('yt-modal-save'), false, 'inline-flex');
   _ytModalAudio.cleanup({clearSrc:false});
   document.getElementById('yt-modal-dur-val').textContent='—';
