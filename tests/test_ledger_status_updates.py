@@ -68,6 +68,48 @@ class SaveLedgerRowUpdatesTests(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual('APPROVED', row['status'])
 
+    def test_url_matching_golden_source_keeps_golden_origin(self):
+        row = {
+            'rating_key': '1',
+            'title': 'Example',
+            'status': 'STAGED',
+            'url': '',
+            'golden_source_url': 'https://example.com/golden',
+            'source_origin': 'unknown',
+            'theme_exists': '0',
+            'notes': '',
+        }
+
+        saved_row, error = logic.save_ledger_row_updates(row, {
+            'url': 'https://example.com/golden',
+            'status': 'APPROVED',
+        })
+
+        self.assertIs(saved_row, row)
+        self.assertIsNone(error)
+        self.assertEqual('golden_source', row['source_origin'])
+
+    def test_non_golden_manual_url_stays_manual_origin(self):
+        row = {
+            'rating_key': '1',
+            'title': 'Example',
+            'status': 'STAGED',
+            'url': '',
+            'golden_source_url': 'https://example.com/golden',
+            'source_origin': 'unknown',
+            'theme_exists': '0',
+            'notes': '',
+        }
+
+        saved_row, error = logic.save_ledger_row_updates(row, {
+            'url': 'https://example.com/manual',
+            'status': 'APPROVED',
+        })
+
+        self.assertIs(saved_row, row)
+        self.assertIsNone(error)
+        self.assertEqual('manual', row['source_origin'])
+
 
 if __name__ == '__main__':
     unittest.main()

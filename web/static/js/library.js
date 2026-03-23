@@ -1036,31 +1036,28 @@ function toggleNav(){
 let _themeModalContext={};
 function _themeHasLocal(row){
   if(!row) return false;
-  return String(row.status||'').toUpperCase()==='AVAILABLE' || String(row.theme_exists||'')==='1';
+  return String(row.theme_exists||'')==='1';
 }
 function _themeSourceMeta(row={}){
   const notes=String(row?.notes||'');
   const sourceOrigin=String(row?.source_origin||'').toLowerCase();
   const sourceUrl=String(row?.url||'').trim();
   const goldenUrl=String(row?.golden_source_url||'').trim();
+  const isGoldenSource=!!goldenUrl && !!sourceUrl && sourceUrl===goldenUrl;
   let type='unknown';
   let method='Unknown';
-  if(sourceOrigin==='golden_source' || sourceOrigin==='golden_source_verified'){
+  if(sourceOrigin==='golden_source' || sourceOrigin==='golden_source_verified' || isGoldenSource || (!sourceUrl && goldenUrl)){
     type='golden';
-    method='Golden Source import';
-  }
-  if(/found via playlist/i.test(notes) || /playlist/i.test(sourceUrl) || /[?&]list=/.test(sourceUrl)){
+    method='Golden Source';
+  }else if(/found via playlist/i.test(notes) || /playlist/i.test(sourceUrl) || /[?&]list=/.test(sourceUrl)){
     type='playlist';
-    method='Playlist search pull';
+    method='Playlist search';
   }else if(/found via direct/i.test(notes)){
     type='direct';
-    method='Direct track pull';
+    method='Direct search';
   }else if(sourceOrigin==='manual'){
     type='custom';
     method='Custom / manual source';
-  }else if(!sourceUrl && goldenUrl){
-    type='golden';
-    method='Golden Source import';
   }else if(sourceUrl){
     type='direct';
     method='Direct source link';
@@ -1209,8 +1206,8 @@ function openThemeModal(rk,title,year,folder,row={}){
   const localTrimBtn=document.getElementById('theme-modal-trim-btn');
   const localDeleteBtn=document.getElementById('theme-modal-delete-btn');
   if(localCard) localCard.classList.toggle('compact', !hasTheme);
-  if(localMeta) localMeta.style.display='block';
-  if(localMissing) localMissing.style.display='none';
+  if(localMeta) localMeta.style.display=hasTheme?'block':'none';
+  if(localMissing) localMissing.style.display=hasTheme?'none':'block';
   if(localTrimBtn) localTrimBtn.style.display=hasTheme?'':'none';
   if(localDeleteBtn) localDeleteBtn.style.display=hasTheme?'':'none';
   const sourceCard=document.getElementById('theme-source-card');
@@ -1219,7 +1216,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   const replaceBtn=document.getElementById('theme-replace-btn');
   const findBtn=document.getElementById('theme-find-btn');
   const nextStepBtn=document.getElementById('theme-next-step-btn');
-  if(replaceBtn) replaceBtn.style.display='';
+  if(replaceBtn) replaceBtn.style.display=hasTheme?'':'none';
   if(findBtn) findBtn.style.display=hasTheme?'none':'';
   const nextAction=_themeModalNextAction(row, hasTheme);
   if(nextStepBtn){
@@ -1237,7 +1234,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   }
 
   document.getElementById('theme-local-player').style.display=hasTheme?'block':'none';
-  document.getElementById('theme-local-missing').style.display='none';
+  document.getElementById('theme-local-missing').style.display=hasTheme?'none':'block';
 
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
@@ -1484,6 +1481,10 @@ function _goldenSourceMeta(row){
   };
 }
 
+function _searchMethodCardId(method){
+  return method==='golden_source' ? 'sm-card-golden' : 'sm-card-'+method;
+}
+
 function _setSearchMethodOrder(hasGolden){
   const wrap=document.getElementById('sm-primary-methods');
   const goldenCard=document.getElementById('sm-card-golden');
@@ -1535,6 +1536,10 @@ function _bindSearchPreviewAudio(){
       this.setHandlers();
       return audio.play().then(()=>_setSearchPreviewPlayIcon(true));
     },
+    skip(seconds){
+      if(!audio.duration) return;
+      audio.currentTime=Math.max(0, Math.min(audio.duration, (audio.currentTime||0)+(Number(seconds)||0)));
+    },
     toggle(){
       if(!audio.src || audio.src===window.location.href) return;
       if(audio.paused){
@@ -1577,15 +1582,37 @@ function _updateQueryDisplay(){
   if(inp) inp.value=_searchCustomQuery||buildSearchQuery('custom',_searchTitle,_searchYear);
 }
 
+function _searchMethodMeta(method){
+  const normalized=String(method||'').trim()||'unknown';
+  const map={
+    golden_source:{label:'Golden Source', className:'is-golden'},
+    playlist:{label:'Playlist', className:'is-playlist'},
+    direct:{label:'Direct', className:'is-direct'},
+    custom:{label:'Custom', className:'is-custom'},
+    paste:{label:'Paste URL', className:'is-custom'},
+    unknown:{label:'Unknown', className:'is-unknown'}
+  };
+  return map[normalized] || map.unknown;
+}
+
+function _renderSearchMethodChosen(method){
+  const el=document.getElementById('sm-results-method');
+  if(!el) return;
+  const meta=_searchMethodMeta(method);
+  el.textContent=meta.label;
+  el.className=`ui-pill review-source-pill ${meta.className}`;
+}
+
 function selectSearchMethod(method){
   const goldenCard=document.getElementById('sm-card-golden');
   if(method==='golden_source' && goldenCard?.classList.contains('disabled')) return;
   _searchMethod=method;
   ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
-    const card=document.getElementById('sm-card-'+m);
+    const card=document.getElementById(_searchMethodCardId(m));
     if(card) card.classList.toggle('active',m===method);
   });
   _updateQueryDisplay();
+  _renderSearchMethodChosen(method);
   _setSearchFooter(1);
 }
 
@@ -1675,9 +1702,10 @@ async function openSearchModal(rk,title,year,lib){
   setBio('search-modal-bio',rk);
   // Restore or reset method cards
   ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
-    const card=document.getElementById('sm-card-'+m);
+    const card=document.getElementById(_searchMethodCardId(m));
     if(card) card.classList.toggle('active',m===_searchMethod);
   });
+  _renderSearchMethodChosen(_searchMethod);
   _updateQueryDisplay();
   const existingUrl=(existingRow?.url||'').trim();
   const existingOffset=fmt(parseTrim(existingRow?.start_offset||'0:00'));
@@ -1713,9 +1741,10 @@ async function openSearchModal(rk,title,year,lib){
   if(_searchMethod==='golden_source' && !hasGolden){
     _searchMethod='playlist';
     ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
-      const card=document.getElementById('sm-card-'+m);
+      const card=document.getElementById(_searchMethodCardId(m));
       if(card) card.classList.toggle('active',m===_searchMethod);
     });
+    _renderSearchMethodChosen(_searchMethod);
   }
   const hasOwnedResults=_lastSearchResults.length && _lastSearchResultsKey===_searchStateKey(rk);
   const shouldRestoreStep3=sameItem && _searchCurrentStep===3 && hasSameItemDraft;
@@ -1799,6 +1828,8 @@ async function _fallbackFromGoldenValidation(errorMessage){
   _searchMethod=fallbackMethod;
   toast(`${notice} Showing ${fallbackMethod==='direct'?'Direct':'Playlist'} results instead.`, 'info');
   goToSearchStep(2);
+  _sourceEditorAudio.cleanup();
+  _renderSearchMethodChosen(fallbackMethod);
   _renderSearchResultsState('Curated source could not be previewed. Searching for reviewable matches…');
   const results=await _searchByMethod(fallbackMethod, true);
   if(results && results.length){
@@ -1825,7 +1856,7 @@ function _renderResults(results){
     <div class="search-result-card ${i===0?'recommended':''}">
       <div class="result-idx">${i+1}.</div>
       <div class="search-result-main">
-        ${i===0?`<span class="ui-badge src-badge recommended result-chip">Best match</span>`:''}
+        ${i===0?`<span class="ui-badge src-badge recommended result-chip">Quick pick</span>`:''}
         <a href="${r.url}" target="_blank" rel="noopener" class="search-result-title">${r.title.replace(/</g,'&lt;')} <span style="font-size:11px">↗</span></a>
       </div>
       <div class="search-result-actions">
@@ -1834,6 +1865,7 @@ function _renderResults(results){
         <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}',{skipPreview:false,sourceTitle:'${r.title.replace(/'/g,"\\'").replace(/</g,'&lt;')}'})">Pick</button>
       </div>
     </div>`).join('');
+  _renderSearchMethodChosen(_searchMethod);
   if(results[0]?.url) setTimeout(()=>previewSearchResult(results[0].url),80);
 }
 
@@ -1868,8 +1900,8 @@ function _setMethodQuickPick(method, result){
   if(!el) return;
   if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
   const quickPickOpts=method==='golden_source'
-    ? {label:'Curated match', title:'Curated Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Select'}
-    : {label:'First match'};
+    ? {label:'Quick pick', title:'Curated Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Select'}
+    : {label:'Quick pick'};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
 }
 
@@ -1939,6 +1971,7 @@ function _initMethodQuickPicks(existingRow){
 }
 
 function searchPreviewSeek(val){ _searchPreviewAudio.seek(val); }
+function searchPreviewSkip(seconds){ _searchPreviewAudio.skip(seconds); }
 function searchPreviewToggle(){ _searchPreviewAudio.toggle(); }
 
 function seSnapOffsetToCurrent(){
@@ -1999,8 +2032,6 @@ function goToStep3(url, opts={}){
   _step3PreparedUrl=url||'';
   _selectedSourceTitle=(opts.sourceTitle||_selectedSourceTitle||_sourceTitleFromUrl(url||''));
   _renderSelectedSourceSummary(url,_selectedSourceTitle);
-  const loadBtn=document.getElementById('se-load-btn');
-  if(loadBtn){ loadBtn.textContent='Loading…'; loadBtn.disabled=true; }
   _sourceEditorAudio.setPlaying(false);
   goToSearchStep(3);
   if(url && opts.skipPreview!==true) setTimeout(()=>seLoadPreview(),80);
@@ -2028,10 +2059,16 @@ function backToSearch(){
   goToSearchStep(2);
 }
 
+let _seAutoLoadTimer=null;
 function seUrlChanged(){
   const u=(document.getElementById('se-url').value||'').trim();
   if(u) _selectedSourceTitle=_sourceTitleFromUrl(u);
   _renderSelectedSourceSummary(u, u?_selectedSourceTitle:(_selectedSourceTitle||'—'));
+  if(_seAutoLoadTimer) clearTimeout(_seAutoLoadTimer);
+  if(!u) return;
+  _seAutoLoadTimer=setTimeout(()=>{
+    if((document.getElementById('se-url')?.value||'').trim()===u) seLoadPreview();
+  }, 350);
 }
 
 async function seCopyUrl(){
@@ -2055,8 +2092,6 @@ async function seLoadPreview(){
   const url=(document.getElementById('se-url').value||'').trim();
   if(!url){ toast('Enter a URL first','info'); return; }
   const loadSeq=++_sePreviewLoadSeq;
-  const btn=document.getElementById('se-load-btn');
-  if(btn){ btn.textContent='Loading…'; btn.disabled=true; }
   const cached=_previewCache[url];
   try{
     let data=null;
@@ -2070,7 +2105,6 @@ async function seLoadPreview(){
       if(data?.ok) _previewCache[url]={audio_url:data.audio_url};
     }
     if(loadSeq!==_sePreviewLoadSeq) return;
-    if(btn){ btn.textContent='↺ Refresh'; btn.disabled=false; }
     if(!data.ok){
       const previewError=data.error||'Failed';
       document.getElementById('se-info').textContent='Error: '+previewError;
@@ -2084,6 +2118,7 @@ async function seLoadPreview(){
     audio.src=apiUrl(data.audio_url);
     _lastPreviewedUrl=url;
     const startedAt=Date.now();
+    let handledPlaybackError=false;
     _sourceEditorAudio.setHandlers({
       onloadedmetadata:(loaded)=>{
         if(loadSeq!==_sePreviewLoadSeq) return;
@@ -2093,18 +2128,21 @@ async function seLoadPreview(){
         _sourceEditorAudio.play().catch(()=>{});
       },
       onerror:()=>{
-        if(loadSeq!==_sePreviewLoadSeq) return;
+        if(loadSeq!==_sePreviewLoadSeq || handledPlaybackError) return;
         if(Date.now()-startedAt<700) return;
-        const playbackError='Playback error — click Refresh to retry';
+        handledPlaybackError=true;
+        const playbackError='Playback error — review another source below';
         document.getElementById('se-info').textContent=playbackError;
+        _sourceEditorAudio.cleanup();
         if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
-          void _fallbackFromGoldenValidation('Playback error');
+          _step3EntryMode='';
+          void _fallbackFromGoldenValidation(`Golden Source preview failed`);
+          return;
         }
       }
     });
     audio.load();
   }catch(e){
-    if(btn){ btn.textContent='↺ Refresh'; btn.disabled=false; }
     const previewError=String(e&&e.message?e.message:e||'Preview failed');
     if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
       document.getElementById('se-info').textContent='Error: '+previewError;

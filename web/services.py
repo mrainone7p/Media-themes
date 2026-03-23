@@ -1188,6 +1188,9 @@ def save_manual_source_payload(data: dict):
         "notes": data.get("notes", ""),
         "status": target_status,
     })
+    if saved_row:
+        golden_url = str(saved_row.get("golden_source_url", "") or "").strip()
+        saved_row["source_origin"] = "golden_source" if golden_url and golden_url == url else "manual"
     if error:
         error["library"] = library
         return error, 400

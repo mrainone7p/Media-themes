@@ -1117,7 +1117,6 @@
                   <div class="sm-card-first">Edit the query, then search when ready.</div>
                   <div class="sm-card-controls">
                     <input id="sm-custom-input" class="search-method-input sm-card-input" placeholder="Type a custom query..." oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')searchModalPrimary()">
-                    <button class="btn btn-ghost btn-xs sm-card-select-btn" onclick="pickSearchMethod('custom', event)">Pick</button>
                   </div>
                 </div>
               </div>
@@ -1137,7 +1136,6 @@
                   <div class="sm-card-first">Paste a URL, then move straight to preview.</div>
                   <div class="sm-card-controls">
                     <input id="search-paste-url" class="search-method-input sm-card-input" placeholder="https://www.youtube.com/watch?v=..." onkeydown="if(event.key==='Enter')searchModalPrimary()">
-                    <button class="btn btn-ghost btn-xs sm-card-select-btn" onclick="pickSearchMethod('paste', event)">Pick</button>
                   </div>
                 </div>
               </div>
@@ -1150,13 +1148,18 @@
     <!-- Step 2: Review Results -->
     <div id="search-step-2" class="search-step-body" style="display:none;overflow:hidden;flex:1;min-height:0">
       <div class="inline-wrap spread" style="padding:12px 22px 8px;flex-shrink:0">
-        <div class="section-label">Results · Pick the best source match</div>
+        <div>
+          <div class="section-label">Results · Pick the best source match</div>
+          <div class="search-method-chosen">Chosen method: <span id="sm-results-method" class="ui-pill review-source-pill is-unknown">—</span></div>
+        </div>
       </div>
       <div style="padding:0 22px 8px;flex-shrink:0">
         <div class="modal-player-row surface-panel compact">
           <button class="play-btn" id="sm-preview-play" onclick="searchPreviewToggle()">
             <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </button>
+          <button class="skip-btn" onclick="searchPreviewSkip(-5)">-5</button>
+          <button class="skip-btn" onclick="searchPreviewSkip(5)">+5</button>
           <div class="modal-scrubber-wrap">
             <input type="range" class="modal-slider" id="sm-preview-slider" min="0" max="100" value="0" oninput="searchPreviewSeek(this.value)">
             <div class="modal-time-row"><span id="sm-preview-cur">0:00</span><span id="sm-preview-dur">—</span></div>
@@ -1200,31 +1203,9 @@
         <div class="modal-status-txt" id="se-info" style="padding-left:0;padding-top:3px">Select a result or paste a URL to preview</div>
       </div>
 
-      <div class="modal-section" style="padding-top:8px;padding-bottom:0">
-        <div class="source-editor-card">
-          <div class="source-editor-title">Selected Source</div>
-          <div class="modal-section-header-row source-summary-row">
-            <div class="source-summary-meta">
-              <div id="se-source-title" class="source-summary-title">—</div>
-              <div id="se-source-url-summary" class="source-summary-url">No source URL selected</div>
-            </div>
-            <div class="source-summary-actions">
-              <button class="btn btn-ghost btn-sm" id="se-load-btn" onclick="seLoadPreview()">↺ Refresh</button>
-              <button class="btn btn-ghost btn-sm" id="se-copy-btn" onclick="seCopyUrl()">⧉ Copy</button>
-              <button class="btn btn-ghost btn-sm" id="se-open-btn" onclick="seOpenUrl()">↗ Open</button>
-            </div>
-          </div>
-          <div class="source-edit-wrap">
-            <label class="source-edit-label" for="se-url">Edit full URL only if needed</label>
-            <input id="se-url" class="search-method-input is-muted" style="flex:1;margin-top:0" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
-            <div class="source-edit-note">The full URL stays editable here, but the compact summary above is the primary reference.</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Start Offset -->
-      <div class="modal-section" style="padding-top:0;padding-bottom:16px">
-        <div class="source-editor-card mb-0">
+      <div class="modal-section" style="padding-top:0;padding-bottom:0">
+        <div class="source-editor-card">
         <div class="source-editor-title">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
         <div class="offset-inline-row">
           <span class="offset-inline-label">Start</span>
@@ -1236,6 +1217,27 @@
           <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ Play from offset</button>
           <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
         </div>
+        </div>
+      </div>
+
+      <div class="modal-section" style="padding-top:8px;padding-bottom:16px">
+        <div class="source-editor-card mb-0">
+          <div class="source-editor-title">Selected Source</div>
+          <div class="modal-section-header-row source-summary-row">
+            <div class="source-summary-meta">
+              <div id="se-source-title" class="source-summary-title">—</div>
+              <div id="se-source-url-summary" class="source-summary-url">No source URL selected</div>
+            </div>
+            <div class="source-summary-actions">
+              <button class="btn btn-ghost btn-sm" id="se-copy-btn" onclick="seCopyUrl()">⧉ Copy</button>
+              <button class="btn btn-ghost btn-sm" id="se-open-btn" onclick="seOpenUrl()">↗ Open</button>
+            </div>
+          </div>
+          <div class="source-edit-wrap">
+            <label class="source-edit-label" for="se-url">Edit full URL only if needed</label>
+            <input id="se-url" class="search-method-input is-muted" style="flex:1;margin-top:0" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
+            <div class="source-edit-note">The full URL stays editable here, but the compact summary above is the primary reference.</div>
+          </div>
         </div>
       </div>
     </div>
