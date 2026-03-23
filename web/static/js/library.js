@@ -166,16 +166,29 @@ function _goldenSourceState(row={}){
   return {key:'available', label:'Ready', className:'is-golden', detail:'Golden source available', chips:[]};
 }
 
-function _selectedSourceLabel(row={}){
-  const sourceUrl=String(row?.url||'').trim();
-  const goldenUrl=String(row?.golden_source_url||'').trim();
+function _selectedSourceFilterKey(row={}){
   const selected=_selectedSourceContract(row);
-  const method=selected.method || _legacySourceMethodFromOrigin(row?.source_origin);
-  if((sourceUrl && goldenUrl && sourceUrl===goldenUrl) || selected.kind==='golden' || method==='golden_source') return 'Golden Source';
-  if(method==='playlist') return 'Playlist';
-  if(method==='direct') return 'Direct';
-  if(sourceUrl) return 'Manual';
-  return '—';
+  if(!selected.url) return 'none';
+  if(selected.kind==='golden' || selected.method==='golden_source') return 'golden';
+  if(selected.method==='playlist') return 'playlist';
+  if(selected.method==='direct') return 'direct';
+  if(selected.method==='paste') return 'paste';
+  if(selected.method==='manual' || selected.method==='custom') return 'manual';
+  return selected.kind==='custom' ? 'manual' : 'none';
+}
+
+function _selectedSourceLabel(row={}){
+  const selected=_selectedSourceContract(row);
+  const filterKey=_selectedSourceFilterKey(row);
+  if(!selected.url) return '—';
+  const labelMap={
+    golden:'Golden Source',
+    playlist:'Playlist',
+    direct:'Direct',
+    paste:'Pasted URL',
+    manual:'Manual',
+  };
+  return labelMap[filterKey] || _sourceMethodLabel(selected.method || selected.kind || 'manual');
 }
 
 function _selectedSourceStateText(row={}){
@@ -194,11 +207,12 @@ function _customSourceState(row={}){
   const selected=_selectedSourceContract(row);
   const typeLabel=_selectedSourceLabel(row);
   const statusLabel=_selectedSourceStateText(row);
+  const filterKey=_selectedSourceFilterKey(row);
   if(!selected.url){
     return {key:'none', typeLabel:'Selected Source', statusLabel, pillLabel:statusLabel, className:'is-unknown', detail:'No selected source saved', chips:[]};
   }
   return {
-    key:typeLabel==='Golden Source' ? 'golden' : (selected.method||'manual'),
+    key:filterKey,
     typeLabel,
     statusLabel,
     pillLabel:_sourceStatePillLabel(typeLabel, statusLabel),
@@ -420,7 +434,7 @@ function _sortVal(row,col){
   }
   if(col==='custom_state'){
     const state=_customSourceState(row);
-    const rank={none:0,custom:1,direct:2,playlist:3,golden:4};
+    const rank={none:0,manual:1,paste:2,direct:3,playlist:4,golden:5};
     return [rank[state.key] ?? 0, `${state.typeLabel} ${state.statusLabel}`.toLowerCase()];
   }
   if(col==='source_origin') return (row.source_origin||'').toString().toLowerCase();
@@ -439,13 +453,14 @@ function filterTable(){
   _filtered=_rows.filter(r=>{
     if(st&&r.status!==st) return false;
     const hasGolden=!!String(r.golden_source_url||'').trim();
-    const hasSource=!!String(r.url||'').trim();
-    const hasCustom=hasSource && !_rowUsesGoldenSource(r);
+    const selectedFilterKey=_selectedSourceFilterKey(r);
     const hasLocal=_hasLocalTheme(r);
     if(sourceFilter==='GOLDEN' && !hasGolden) return false;
     if(sourceFilter==='NO_GOLDEN' && hasGolden) return false;
-    if(sourceFilter==='CUSTOM' && !hasCustom) return false;
-    if(sourceFilter==='NO_CUSTOM' && hasCustom) return false;
+    if(sourceFilter==='PLAYLIST' && selectedFilterKey!=='playlist') return false;
+    if(sourceFilter==='DIRECT' && selectedFilterKey!=='direct') return false;
+    if(sourceFilter==='PASTE' && selectedFilterKey!=='paste') return false;
+    if(sourceFilter==='MANUAL' && selectedFilterKey!=='manual') return false;
     if(sourceFilter==='LOCAL' && !hasLocal) return false;
     if(sourceFilter==='NO_LOCAL' && hasLocal) return false;
     if(actionFilter && rowActionType(r)!==actionFilter) return false;
