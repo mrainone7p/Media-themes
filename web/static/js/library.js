@@ -163,7 +163,7 @@ function _localSourceContract(row={}){
 function _goldenSourceState(row={}){
   const hasGolden=_rowHasGoldenSource(row);
   if(!hasGolden) return {key:'not_available', label:'Not Available', className:'is-unknown', detail:'No golden source saved', chips:[]};
-  return {key:'available', label:'Ready', className:'is-golden', detail:'Golden source available', chips:[]};
+  return {key:'available', label:'Identified', className:'is-golden', detail:'Golden source identified', chips:[]};
 }
 
 function _selectedSourceFilterKey(row={}){
@@ -1461,16 +1461,17 @@ function _renderSourceStateStack(targetId,row={},opts={}){
   if(Object.prototype.hasOwnProperty.call(draft,'selectedUrl')) previewRow.url=draft.selectedUrl;
   const selected=_selectedSourceContract(previewRow);
   const local=_localSourceContract(row);
+  const goldenState=_goldenSourceState(row);
   const summaries=[
     {
       label:'Golden Source',
-      stateLabel:_sourceStatePillLabel('Golden', _rowHasGoldenSource(row) ? 'Ready' : 'Not Available'),
-      className:_rowHasGoldenSource(row) ? 'is-golden' : 'is-unknown',
-      chips:[],
+      stateLabel:_sourceStatePillLabel('Golden', goldenState.label),
+      className:goldenState.className,
+      chips:goldenState.chips,
       url:String(row?.golden_source_url||'').trim(),
       offset:_rowHasGoldenSource(row) ? _themeModalOffsetLabel(row, _themeHasLocal(row), 'golden_source') : '—',
       timestamp:_themeModalImportedAt(row),
-      note:_rowHasGoldenSource(row) ? 'Golden source available' : 'No golden source saved',
+      note:goldenState.detail,
     },
     {
       label:'Selected Source',

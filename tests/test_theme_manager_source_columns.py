@@ -74,6 +74,7 @@ process.stdout.write(JSON.stringify({{
   manualFallbackState:_customSourceState(manualFallbackRow),
   goldenLabel:_selectedSourceLabel(goldenRow),
   goldenState:_customSourceState(goldenRow),
+  goldenSourceState:_goldenSourceState(goldenRow),
 }}));
 """
         result = subprocess.run(
@@ -93,6 +94,8 @@ process.stdout.write(JSON.stringify({{
         self.assertEqual("Custom - Approved", payload["manualFallbackState"]["pillLabel"])
         self.assertEqual("Golden Source", payload["goldenLabel"])
         self.assertEqual("Golden Source - Saved", payload["goldenState"]["pillLabel"])
+        self.assertEqual("Identified", payload["goldenSourceState"]["label"])
+        self.assertEqual("Golden source identified", payload["goldenSourceState"]["detail"])
 
     def test_library_js_renders_new_source_state_cells(self):
         for snippet in (
@@ -102,6 +105,9 @@ process.stdout.write(JSON.stringify({{
             "function _renderSourceStateStack(targetId,row={},opts={})",
             "String(row?.golden_source_imported_at||'').trim() || String(row?.last_updated||'').trim()",
             "String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim()",
+            "const goldenState=_goldenSourceState(row);",
+            "stateLabel:_sourceStatePillLabel('Golden', goldenState.label)",
+            "note:goldenState.detail",
             "_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)",
             "_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.pillLabel), '', customState.chips)",
             "pillLabel:_sourceStatePillLabel(typeLabel, statusLabel)",
@@ -139,6 +145,14 @@ process.stdout.write(JSON.stringify({{
         self.assertNotIn('select class="st-sel"', self.library_source)
         self.assertNotIn("onchange=\"updateRow('${rk}','status',this.value)\"", self.library_source)
 
+    def test_library_js_reserves_ready_for_download_readiness_not_golden_source_presence(self):
+        self.assertIn("label:'Identified'", self.library_source)
+        self.assertIn("detail:'Golden source identified'", self.library_source)
+        self.assertIn("stateLabel:_sourceStatePillLabel('Golden', goldenState.label)", self.library_source)
+        self.assertNotIn("_sourceStatePillLabel('Golden', _rowHasGoldenSource(row) ? 'Ready' : 'Not Available')", self.library_source)
+        self.assertNotIn("label:'Ready', className:'is-golden'", self.library_source)
+
 
 if __name__ == "__main__":
     unittest.main()
+
