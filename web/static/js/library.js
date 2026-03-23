@@ -1725,18 +1725,133 @@ function _themeModalOffsetLabel(row={}, hasTheme=false, layer='selected_source')
   const duration=hasTheme && Number(row?.theme_duration||0)>0?parseFloat(row.theme_duration||0):0;
   return _clipLengthOffsetLabel(duration, _themeModalOffsetValue(row, layer), 0);
 }
-function _themeModalNextAction(row={}, hasTheme=false, hasStoredSource=false){
+function _themeModalWorkflowState(row={}){
+  const hasLocal=_themeHasLocal(row);
+  const hasSelected=!!String(_selectedSourceContract(row).url||'').trim();
+  const hasGolden=_goldenSourceState(row).key==='available';
   const status=_effectiveRowStatus(row);
-  if(hasTheme) return null;
-  if(hasStoredSource){
-    if(status==='STAGED') return {label:'Approve Theme',className:'btn btn-amber',handler:'approve'};
-    if(status==='APPROVED') return {label:'Download Theme',className:'btn btn-green',handler:'download'};
-    return null;
+  if(hasLocal) return {key:'downloaded', label:'Downloaded', className:'is-direct', subtitle:'The local theme is already on disk. Trim it or replace the saved source as needed.'};
+  if(hasSelected && status==='APPROVED') return {key:'approved', label:'Approved', className:'is-direct', subtitle:'The selected source is approved and ready to download.'};
+  if(hasSelected && status==='STAGED') return {key:'staged', label:'Staged', className:'is-playlist', subtitle:'The selected source is staged and waiting for approval.'};
+  if(hasSelected || hasGolden) return {key:'identified', label:'Identified', className:'is-golden', subtitle:'A source has been identified. Review it, confirm the clip window, or replace it.'};
+  return {key:'none', label:'Not Selected', className:'is-unknown', subtitle:'No source is selected yet. Find or choose a source to start the workflow.'};
+}
+function _themeModalWorkflowSourceSummary(row={}){
+  const selected=_selectedSourceContract(row);
+  const local=_localSourceContract(row);
+  const golden=_goldenSourceState(row);
+  if(selected.url){
+    return {
+      layer:selected.kind==='golden' ? 'golden_source' : 'selected_source',
+      typeLabel:_selectedSourceLabel(row),
+      methodLabel:_sourceMethodLabel(selected.method),
+      detail:selected.url,
+      className:_sourceStateClass(selected.kind, selected.method),
+      hasSource:true,
+      hasPreview:true,
+    };
   }
-  if(status==='MISSING' || status==='FAILED' || status==='UNMONITORED'){
-    return {label:'Find Theme',className:'btn btn-amber',handler:'find'};
+  if(_themeHasLocal(row) && local.url){
+    return {
+      layer:'local_theme',
+      typeLabel:_sourceKindLabel(local.kind),
+      methodLabel:_sourceMethodLabel(local.method),
+      detail:local.url,
+      className:_sourceStateClass(local.kind, local.method),
+      hasSource:true,
+      hasPreview:false,
+    };
   }
-  return null;
+  if(golden.key==='available'){
+    return {
+      layer:'golden_source',
+      typeLabel:'Golden Source',
+      methodLabel:'Curated Match',
+      detail:String(row?.golden_source_url||'').trim(),
+      className:golden.className,
+      hasSource:true,
+      hasPreview:false,
+    };
+  }
+  return {
+    layer:'selected_source',
+    typeLabel:'No Source',
+    methodLabel:'Choose a source',
+    detail:'No selected source is saved yet.',
+    className:'is-unknown',
+    hasSource:false,
+    hasPreview:false,
+  };
+}
+function _themeModalWorkflowActions(row={}){
+  const state=_themeModalWorkflowState(row);
+  const selected=_selectedSourceContract(row);
+  const hasSelected=!!selected.url;
+  const canPreview=hasSelected;
+  const actions=[];
+  const push=(id,label,className,handler)=>{
+    if(actions.some(action=>action.id===id)) return;
+    actions.push({id,label,className,handler});
+  };
+  if(state.key==='downloaded'){
+    push('trim-local','Trim Local Theme','btn btn-amber is-primary','themeModalEditTrim');
+    if(hasSelected) push('replace-source','Replace Source','btn btn-ghost','themeModalOpenManualSearch');
+    if(canPreview) push('preview-source','Preview / Trim Source','btn btn-ghost','themeModalPreviewSourceTrim');
+    push('delete-local','Delete Local Theme','btn btn-danger-ghost','themeModalDeleteLocalTheme');
+    return actions;
+  }
+  if(state.key==='approved'){
+    push('download-now','Download Now','btn btn-green is-primary','themeModalDownloadApproved');
+    push('replace-source','Replace Source','btn btn-amber','themeModalOpenManualSearch');
+    push('open-source','Open Source','btn btn-ghost','themeModalOpenSource');
+    push('copy-source','Copy Source','btn btn-ghost','themeModalCopySource');
+    if(canPreview) push('preview-source','Preview / Trim','btn btn-ghost','themeModalPreviewSourceTrim');
+    return actions;
+  }
+  if(state.key==='staged'){
+    push('approve','Approve','btn btn-amber is-primary','themeModalApproveSource');
+    push('replace-source','Replace Source','btn btn-amber','themeModalOpenManualSearch');
+    push('open-source','Open Source','btn btn-ghost','themeModalOpenSource');
+    push('copy-source','Copy Source','btn btn-ghost','themeModalCopySource');
+    if(canPreview) push('preview-source','Preview / Trim','btn btn-ghost','themeModalPreviewSourceTrim');
+    return actions;
+  }
+  if(state.key==='identified'){
+    push('review-select','Review / Select Source','btn btn-amber is-primary','themeModalOpenManualSearch');
+    push('replace-source','Replace Source','btn btn-ghost','themeModalOpenManualSearch');
+    return actions;
+  }
+  push('find-source','Find Theme','btn btn-amber is-primary','themeModalOpenManualSearch');
+  return actions;
+}
+function _themeModalRenderWorkflowActions(actions=[]){
+  if(!Array.isArray(actions) || !actions.length) return '';
+  return actions.map(action=>`<button class="${_escapeAttr(action.className||'btn btn-ghost')}" type="button" onclick="${_escapeAttr(action.handler||'')}()">${_escapeHtml(action.label||'Action')}</button>`).join('');
+}
+function _themeModalUpdateWorkflowCard(row={}){
+  const card=document.getElementById('theme-workflow-card');
+  const subtitle=document.getElementById('theme-workflow-subtitle');
+  const stateEl=document.getElementById('theme-workflow-state');
+  const originEl=document.getElementById('theme-workflow-origin');
+  const offsetEl=document.getElementById('theme-workflow-offset');
+  const actionsEl=document.getElementById('theme-workflow-actions');
+  const state=_themeModalWorkflowState(row);
+  const source=_themeModalWorkflowSourceSummary(row);
+  const actions=_themeModalWorkflowActions(row);
+  const hasVisibleWorkflow=state.key!=='none' || actions.length>0;
+  _setHidden(card, !hasVisibleWorkflow, hasVisibleWorkflow?'block':'');
+  if(!hasVisibleWorkflow) return;
+  if(subtitle) subtitle.textContent=state.subtitle;
+  if(stateEl) stateEl.innerHTML=_renderSourceStatePill(state.label, state.className, state.subtitle);
+  if(originEl) originEl.innerHTML=`${_renderSourceStatePill(source.typeLabel, source.className, source.detail)}<div class="theme-workflow-detail">${_escapeHtml(source.methodLabel)}</div>`;
+  const clipDuration=(source.layer==='local_theme' && Number(row?.theme_duration||0)>0) ? parseFloat(row.theme_duration||0) : 0;
+  if(offsetEl) offsetEl.textContent=_themeModalOffsetLabel(row, source.layer==='local_theme', source.layer);
+  _setClipSummary('theme-workflow-clip','theme-workflow-clip-main','theme-workflow-clip-sub','theme-workflow-clip-warning',clipDuration,_themeModalOffsetValue(row, source.layer),Math.max(0, Number(_maxDur)||0),source.layer==='local_theme'?'local theme':'source');
+  const clipSub=document.getElementById('theme-workflow-clip-sub');
+  if(clipSub && source.layer==='golden_source' && !String(_selectedSourceContract(row).url||'').trim()){
+    clipSub.textContent='Curated source identified. Review it in Find Theme to confirm the kept clip before saving it as the selected source.';
+  }
+  if(actionsEl) actionsEl.innerHTML=_themeModalRenderWorkflowActions(actions);
 }
 const THEME_MODAL_STATUS_HELPERS={
   MISSING:{
@@ -1784,7 +1899,6 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   const isDownloadable=!hasLocalTheme && hasStoredSource && status==='APPROVED';
   const isSourceOnly=hasStoredSource && !hasLocalTheme;
   const showStoredSourcePreviewInLocalTheme=isSourceOnly;
-  const canReplaceStoredSource=hasStoredSource;
   const canDeleteStoredSource=hasStoredSource;
   const canDeleteLocalTheme=hasLocalTheme;
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
@@ -1833,29 +1947,11 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   if(sourceCard) sourceCard.classList.toggle('compact', !hasStoredSource);
   _setHidden(sourceLocalNote, !hasLocalTheme);
 
-  const replaceBtn=document.getElementById('theme-replace-btn');
   const deleteSourceBtn=document.getElementById('theme-modal-delete-btn');
   const deleteLocalBtn=document.getElementById('theme-modal-delete-local-btn');
-  const findBtn=document.getElementById('theme-find-btn');
-  const nextStepBtn=document.getElementById('theme-next-step-btn');
-  if(replaceBtn) replaceBtn.style.display=canReplaceStoredSource?'':'none';
   if(deleteSourceBtn) deleteSourceBtn.style.display=canDeleteStoredSource?'':'none';
   if(deleteLocalBtn) deleteLocalBtn.style.display=canDeleteLocalTheme?'':'none';
-  _setHidden(findBtn, hasLocalTheme || hasStoredSource);
-  const nextAction=_themeModalNextAction(row, hasLocalTheme, hasStoredSource);
-  if(nextStepBtn){
-    if(nextAction && nextAction.handler!=='find'){
-      _setHidden(nextStepBtn, false, '');
-      nextStepBtn.textContent=nextAction.label;
-      nextStepBtn.className=nextAction.className;
-      nextStepBtn.dataset.action=nextAction.handler;
-    }else{
-      _setHidden(nextStepBtn, true);
-      nextStepBtn.dataset.action='';
-      nextStepBtn.className='btn btn-ghost';
-      nextStepBtn.textContent='Next Step';
-    }
-  }
+  _themeModalUpdateWorkflowCard(row);
 
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
@@ -1877,24 +1973,6 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   openModal('theme-modal');
   if(showStoredSourcePreviewInLocalTheme) await _themeModalLoadSavedSourcePreview(row);
   if(_curKey) stopCurrentAudio();
-}
-function themeModalRunNextStep(){
-  const btn=document.getElementById('theme-next-step-btn');
-  const action=String(btn?.dataset?.action||'').trim();
-  const rk=_themeModalContext?.rk;
-  if(action==='approve' && rk){
-    updateRow(rk,'status','APPROVED');
-    closeThemeModal();
-    return;
-  }
-  if(action==='download'){
-    closeThemeModal();
-    themeModalDownloadApproved();
-    return;
-  }
-  if(action==='find'){
-    themeModalOpenManualSearch();
-  }
 }
 async function themeModalDownloadApproved(){
   const library=requireLibraryContext(_themeModalContext?.library||_activeLib,'download a theme');
@@ -1942,6 +2020,16 @@ function themeModalSetStatus(status){
   if(!key) return;
   updateRow(key,'status',status);
   closeThemeModal();
+}
+function themeModalApproveSource(){
+  themeModalSetStatus('APPROVED');
+}
+function themeModalPreviewSourceTrim(){
+  const c=_themeModalContext||{};
+  const url=_themeModalPrimarySourceUrl(c.row||{});
+  if(!c.rk || !url) return toast('No selected source URL on this item','info');
+  closeThemeModal();
+  openYtModal(c.rk, c.title||'', c.year||'', url, encodeURIComponent(c.library||''));
 }
 async function themeModalDeleteSource(){
   const c=_themeModalContext||{};
