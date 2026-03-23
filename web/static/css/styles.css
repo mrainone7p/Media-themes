@@ -313,10 +313,10 @@ body.nav-collapsed main{margin-left:48px}
 .dash-pipeline-step-title{font-size:12px;font-weight:700;margin-bottom:2px;color:var(--text)}
 .dash-pipeline-step-desc{font-size:11px;color:var(--text2);line-height:1.4}
 /* Status Key */
-.dash-status-key{display:flex;flex-direction:column;gap:4px}
-.dash-status-key-row{display:flex;align-items:center;gap:7px}
-.dash-status-key-row .badge{min-width:78px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:2px 7px}
-.dash-status-key-def{font-size:10px;color:var(--text2);line-height:1.35}
+.dash-status-key{display:flex;flex-direction:column;gap:5px}
+.dash-status-key-row{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)}
+.dash-status-key-row .badge{min-width:84px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:2px 7px}
+.dash-status-key-def{font-size:11px;color:var(--text2);line-height:1.4}
 /* Action Station */
 .dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
 .dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
@@ -397,8 +397,20 @@ body.nav-collapsed main{margin-left:48px}
 /* ─── Bar chart ─── */
 .dash-bar-empty{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:40px 10px}
 .dash-bar-chart-svg{overflow:visible}
+/* Activity bar period controls */
+.dash-bar-period-wrap{display:flex;align-items:center;gap:4px}
+.dash-bar-count-input{width:52px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);font-family:var(--mono);font-size:12px;text-align:center;outline:none}
+.dash-bar-count-input:focus{border-color:var(--amber)}
+.dash-bar-freq-select{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);font-size:11px;font-weight:600;font-family:var(--ui);cursor:pointer;outline:none}
+.dash-bar-freq-select:focus{border-color:var(--amber)}
 
 @media(max-width:980px){.dash-charts-grid{grid-template-columns:1fr}}
+/* Mobile stacking for How it Works grid and split rows */
+@media(max-width:700px){
+  .dash-how-grid{grid-template-columns:1fr!important}
+  .dash-how-grid .span-7,.dash-how-grid .span-5{grid-column:span 12}
+  .dash-split-row{grid-template-columns:1fr}
+}
 
 /* ─── Table ─── */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
