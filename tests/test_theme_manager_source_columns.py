@@ -45,6 +45,11 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         helper_block = self.library_source[start:end]
         node_script = f"""
 {helper_block}
+function uiTerm(_key, fallback) {{ return fallback; }}
+const _defaultStatusDisplay = {{}};
+function _effectiveRowStatus(row={{}}) {{
+  return String(row?.status || '').toUpperCase();
+}}
 const playlistRow = {{
   url:'https://example.test/playlist',
   golden_source_url:'https://example.test/golden',
@@ -102,6 +107,8 @@ process.stdout.write(JSON.stringify({{
             "function _goldenSourceState(row={})",
             "function _customSourceState(row={})",
             "function _localSourceState(row={})",
+            "function _selectedSourceStateSummary(row={}, opts={})",
+            "function _renderConfirmSelectedSourceState(targetId,row={},opts={})",
             "function _renderSourceStateStack(targetId,row={},opts={})",
             "String(row?.golden_source_imported_at||'').trim() || String(row?.last_updated||'').trim()",
             "String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim()",
@@ -152,7 +159,15 @@ process.stdout.write(JSON.stringify({{
         self.assertNotIn("_sourceStatePillLabel('Golden', _rowHasGoldenSource(row) ? 'Ready' : 'Not Available')", self.library_source)
         self.assertNotIn("label:'Ready', className:'is-golden'", self.library_source)
 
+    def test_confirm_step_selected_source_summary_uses_single_source_renderer(self):
+        start = self.library_source.index("function _renderSelectedSourceSummary(url, title)")
+        end = self.library_source.index("function _manualSaveTargetStatus()")
+        selected_summary_block = self.library_source[start:end]
+        self.assertIn("_renderConfirmSelectedSourceState('se-source-state-stack', row, {draft:{selectedUrl:cleanUrl}});", selected_summary_block)
+        self.assertNotIn("_renderSourceStateStack('se-source-state-stack'", selected_summary_block)
+        self.assertIn("Review the currently selected source before saving.", self.template_source)
+        self.assertIn("Current Selection", self.template_source)
+
 
 if __name__ == "__main__":
     unittest.main()
-
