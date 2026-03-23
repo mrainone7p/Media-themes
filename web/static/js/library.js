@@ -1222,6 +1222,7 @@ function closeDeleteModal(){
   closeModal('delete-modal');
   _deleteKey=null; _deleteLib=''; _deleteFolder='';
   runModalMediaCleanup();
+  _themeModalReopenFromReturnContext('deleteModal');
 }
 async function confirmDelete(){
   if(!_deleteKey && !_deleteFolder){ closeDeleteModal(); return; }
@@ -1230,6 +1231,7 @@ async function confirmDelete(){
   const folder = _deleteFolder || '';
   const lib    = requireLibraryContext(_deleteLib || _activeLib,'delete a theme');
   if(!lib) return;
+  _themeModalClearReturnContext('deleteModal');
   closeDeleteModal();
   toast('Deleting…','info');
   const r=await fetch('/api/theme/delete',{
@@ -1330,6 +1332,40 @@ function toggleNav(){
 
 // ── Theme preview modal ──────────────────────────────────────────────────────
 let _themeModalContext={};
+const _themeModalReturnContext={deleteModal:null,trimModal:null,ytModal:null};
+function _themeModalSnapshotContext(){
+  const c=_themeModalContext||{};
+  return {
+    rk:c.rk||'',
+    title:c.title||'',
+    year:c.year||'',
+    folder:c.folder||'',
+    library:c.library||'',
+    row:{...(c.row||{})},
+  };
+}
+function _themeModalSetReturnContext(modalKey, shouldReturn=false, context={}){
+  _themeModalReturnContext[modalKey]=shouldReturn
+    ? {fromThemeModal:true, ...context}
+    : null;
+}
+function _themeModalClearReturnContext(modalKey){
+  _themeModalReturnContext[modalKey]=null;
+}
+function _themeModalReopenFromReturnContext(modalKey){
+  const context=_themeModalReturnContext[modalKey];
+  _themeModalReturnContext[modalKey]=null;
+  if(!context?.fromThemeModal || !context.rk) return;
+  const currentRow=_rowMap[context.rk]||_rows.find(row=>String(row?.rating_key||'')===String(context.rk))||context.row||{};
+  openThemeModal(
+    context.rk,
+    context.title||currentRow.title||'',
+    context.year||currentRow.year||'',
+    context.folder||currentRow.folder||'',
+    currentRow,
+    context.library||currentRow.library||''
+  );
+}
 function _themeHasLocal(row){
   if(!row) return false;
   return String(row.theme_exists||'')==='1';
@@ -1752,7 +1788,7 @@ function _themeModalWorkflowActions(row={}){
     push('find-source','Find Source','btn btn-amber is-primary','themeModalOpenManualSearch');
     return actions;
   }
-  push('trim-source','Trim','btn btn-ghost','themeModalPreviewSourceTrim');
+  push('trim-source','Trim Source','btn btn-ghost','themeModalPreviewSourceTrim');
   push('clear-source','Clear Source','btn btn-ghost','themeModalDeleteSource');
   if(status==='APPROVED'){
     if(!hasLocal) push('download-now','Download','btn btn-green is-primary','themeModalDownloadApproved');
@@ -2002,6 +2038,7 @@ function themeModalPreviewSourceTrim(){
   const c=_themeModalContext||{};
   const url=_themeModalPrimarySourceUrl(c.row||{});
   if(!c.rk || !url) return toast('No selected source URL on this item','info');
+  _themeModalSetReturnContext('ytModal', true, _themeModalSnapshotContext());
   closeThemeModal();
   openYtModal(c.rk, c.title||'', c.year||'', url, encodeURIComponent(c.library||''));
 }
@@ -2035,12 +2072,14 @@ async function themeModalDeleteSource(){
 function themeModalDeleteLocalTheme(){
   const c=_themeModalContext||{};
   if(!c.rk) return;
+  _themeModalSetReturnContext('deleteModal', true, _themeModalSnapshotContext());
   closeThemeModal();
   openDeleteModal(c.rk,c.title||'',c.library||_activeLib||'',c.folder||'');
 }
 function themeModalEditTrim(){
   const c=_themeModalContext||{};
   if(!c.rk) return;
+  _themeModalSetReturnContext('trimModal', true, _themeModalSnapshotContext());
   closeThemeModal();
   _trimRk=c.rk;
   _trimLib=String(c.library||'').trim();
@@ -3208,6 +3247,7 @@ function closeTrimModal(){
   _trimRk='';
   _trimLib='';
   runModalMediaCleanup(()=>_trimModalAudio.cleanup());
+  _themeModalReopenFromReturnContext('trimModal');
 }
 async function applyTrimFromModal(){
   if(!_trimRk) return;
@@ -3218,6 +3258,7 @@ async function applyTrimFromModal(){
   const d=await r.json().catch(()=>({ok:false,error:'Trim failed'}));
   if(!r.ok || d.ok===false) return toast(d.error||'Trim failed','err');
   toast(d.message||'Trim applied','ok');
+  _themeModalClearReturnContext('trimModal');
   closeTrimModal();
   await loadDatabase();
 }
@@ -3291,6 +3332,7 @@ function closeYtModal(){
   closeModal('yt-modal');
   runModalMediaCleanup(()=>_ytModalAudio.cleanup());
   _ytModalKey=null;
+  _themeModalReopenFromReturnContext('ytModal');
 }
 function ytModalToggle(){ _ytModalAudio.toggle(); }
 function ytModalSeek(val){ _ytModalAudio.seek(val); }
@@ -3313,6 +3355,7 @@ async function ytModalSave(){
     method:'PATCH',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({start_offset:s,notes:'Offset set via YouTube preview'})
   });
+  _themeModalClearReturnContext('ytModal');
   closeYtModal(); toast('Offset saved','ok');
   if(document.getElementById('page-theme-manager').classList.contains('active')) loadDatabase();
 }
