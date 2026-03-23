@@ -2800,9 +2800,29 @@ function _renderSearchMethodChosen(method){
   el.className=`ui-pill review-source-pill ${meta.className}`;
 }
 
-function selectSearchMethod(method){
+function _searchMethodRadioId(method){
+  return `sm-radio-${method}`;
+}
+
+function _focusSearchStepControl(step){
+  if(step===1){
+    const method=document.getElementById(_searchMethodRadioId(_searchMethod)) || document.getElementById(_searchMethodRadioId('playlist'));
+    method?.focus();
+  } else if(step===2){
+    document.getElementById('search-results')?.focus?.();
+  } else if(step===3){
+    document.getElementById('se-url')?.focus();
+  }
+}
+
+function selectSearchMethod(method, event){
   const goldenCard=document.getElementById('sm-card-golden');
-  if(method==='golden_source' && goldenCard?.classList.contains('disabled')) return;
+  const shouldFocusRadio=!!event && event.target?.classList?.contains('search-method-radio');
+  if(method==='golden_source' && goldenCard?.classList.contains('disabled')){
+    if(event) event.preventDefault();
+    document.getElementById(_searchMethodRadioId(_searchMethod||'playlist'))?.focus();
+    return;
+  }
   _searchMethod=method;
   if(method==='golden_source'){
     _setOwnedSearchResults(null, []);
@@ -2812,33 +2832,64 @@ function selectSearchMethod(method){
   }
   ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
     const card=document.getElementById(_searchMethodCardId(m));
-    if(card) card.classList.toggle('active',m===method);
+    const radio=document.getElementById(_searchMethodRadioId(m));
+    const isActive=m===method;
+    if(card) card.classList.toggle('active',isActive);
+    if(radio) radio.checked=isActive;
   });
   _updateQueryDisplay();
   _renderSearchMethodChosen(method);
   _setSearchFooter(1);
+  if(shouldFocusRadio) document.getElementById(_searchMethodRadioId(method))?.focus();
+}
+
+function searchMethodKeydown(event, method){
+  if(!event) return;
+  if(event.key==='Enter'){
+    event.preventDefault();
+    selectSearchMethod(method, event);
+    const radio=document.getElementById(_searchMethodRadioId(method));
+    if(radio) radio.checked=true;
+  }
 }
 
 function pickSearchMethod(method, event){
   if(event) event.stopPropagation();
-  selectSearchMethod(method);
+  const radio=document.getElementById(_searchMethodRadioId(method));
+  if(radio){
+    radio.checked=true;
+    selectSearchMethod(method, {target:radio});
+  } else {
+    selectSearchMethod(method, event);
+  }
   if(method==='custom') document.getElementById('sm-custom-input')?.focus();
   if(method==='paste') document.getElementById('search-paste-url')?.focus();
 }
 
-function _srailClick(step){
-  if(step===1) goToSearchStep(1);
-  else if(step===2 && _lastSearchResults.length) goToSearchStep(2);
-  else if(step===3 && document.getElementById('se-url')?.value?.trim()) goToSearchStep(3);
+function _srailClick(step, event){
+  let targetStep=1;
+  if(step===1) targetStep=1;
+  else if(step===2 && _lastSearchResults.length) targetStep=2;
+  else if(step===3 && document.getElementById('se-url')?.value?.trim()) targetStep=3;
+  else targetStep=_searchCurrentStep||1;
+  goToSearchStep(targetStep);
+  if(targetStep!==step && event?.currentTarget) event.currentTarget.blur();
+  document.getElementById('srail-'+targetStep)?.focus();
 }
 
 function _setStepRail(step){
   [1,2,3].forEach(n=>{
     const el=document.getElementById('srail-'+n);
     if(!el) return;
+    const isActive=n===step;
+    const isDone=n<step;
+    const isEnabled=n===1 || (n===2 && _lastSearchResults.length) || (n===3 && !!String(document.getElementById('se-url')?.value||'').trim());
     el.classList.remove('active','done');
-    if(n<step) el.classList.add('done');
-    else if(n===step) el.classList.add('active');
+    if(isDone) el.classList.add('done');
+    else if(isActive) el.classList.add('active');
+    if(isActive) el.setAttribute('aria-current','step');
+    else el.removeAttribute('aria-current');
+    el.setAttribute('aria-disabled', isEnabled ? 'false' : 'true');
   });
 }
 
@@ -2896,10 +2947,15 @@ function goToSearchStep(step){
   _searchCurrentStep=step;
   [1,2,3].forEach(n=>{
     const el=document.getElementById('search-step-'+n);
-    if(el) el.style.display=(n===step)?'':'none';
+    if(el){
+      const active=n===step;
+      el.style.display=active?'':'none';
+      el.setAttribute('aria-hidden', active ? 'false' : 'true');
+    }
   });
   _setStepRail(step);
   _setSearchFooter(step);
+  requestAnimationFrame(()=>_focusSearchStepControl(step));
 }
 
 async function openSearchModal(rk,title,year,lib){
@@ -2933,7 +2989,10 @@ async function openSearchModal(rk,title,year,lib){
   // Restore or reset method cards
   ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
     const card=document.getElementById(_searchMethodCardId(m));
-    if(card) card.classList.toggle('active',m===_searchMethod);
+    const radio=document.getElementById(_searchMethodRadioId(m));
+    const isActive=m===_searchMethod;
+    if(card) card.classList.toggle('active',isActive);
+    if(radio) radio.checked=isActive;
   });
   _renderSearchMethodChosen(_searchMethod);
   _updateQueryDisplay();
@@ -2963,6 +3022,7 @@ async function openSearchModal(rk,title,year,lib){
   const goldenOffsetValue=_normalizedOffsetValue(existingRow?.golden_source_offset||'0');
   if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
   if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
+  if(goldenCard) goldenCard.setAttribute('aria-disabled', hasGolden ? 'false' : 'true');
   if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item. If it fails, stay here to retry or replace the URL.':'No curated source is available for this item yet — choose another method to search alternatives.';
   if(goldenOffset) goldenOffset.textContent=hasGolden?`Offset ${goldenOffsetValue}`:'Offset —';
   if(goldenMeta) goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'Choose another method if no curated source is available';
@@ -2972,7 +3032,10 @@ async function openSearchModal(rk,title,year,lib){
     _searchMethod='playlist';
     ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
       const card=document.getElementById(_searchMethodCardId(m));
-      if(card) card.classList.toggle('active',m===_searchMethod);
+      const radio=document.getElementById(_searchMethodRadioId(m));
+      const isActive=m===_searchMethod;
+      if(card) card.classList.toggle('active',isActive);
+      if(radio) radio.checked=isActive;
     });
     _renderSearchMethodChosen(_searchMethod);
   }

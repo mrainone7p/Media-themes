@@ -42,6 +42,7 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app_source = (ROOT / "web" / "app.py").read_text(encoding="utf-8")
         cls.services_source = (ROOT / "web" / "services.py").read_text(encoding="utf-8")
+        cls.template_source = (ROOT / "web" / "template.html").read_text(encoding="utf-8")
 
     def test_ledger_routes_use_required_library_helper(self):
         for snippet in (
@@ -71,6 +72,24 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
         for legacy_path in ("/api/theme/info", "/api/media"):
             self.assertNotIn(legacy_path, self.app_source)
             self.assertNotIn(legacy_path, self.services_source)
+
+    def test_search_modal_step_rail_uses_semantic_buttons(self):
+        self.assertIn('id="search-step-rail" role="navigation" aria-label="Search modal steps"', self.template_source)
+        self.assertIn('<button type="button" class="srail-step active" id="srail-1"', self.template_source)
+        self.assertIn('aria-current="step"', self.template_source)
+        self.assertIn('aria-controls="search-step-2"', self.template_source)
+        self.assertIn('aria-controls="search-step-3"', self.template_source)
+
+    def test_search_method_picker_uses_radiogroup_markup(self):
+        self.assertIn('class="search-method-grid" role="radiogroup"', self.template_source)
+        for snippet in (
+            'type="radio" class="sr-only search-method-radio" id="sm-radio-golden_source"',
+            'type="radio" class="sr-only search-method-radio" id="sm-radio-playlist"',
+            'type="radio" class="sr-only search-method-radio" id="sm-radio-direct"',
+            'type="radio" class="sr-only search-method-radio" id="sm-radio-custom"',
+            'type="radio" class="sr-only search-method-radio" id="sm-radio-paste"',
+        ):
+            self.assertIn(snippet, self.template_source)
 
 
 if __name__ == "__main__":
