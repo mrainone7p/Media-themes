@@ -882,6 +882,10 @@
           <span id="yt-modal-dur-badge" style="display:none;color:var(--green)">Duration: <span id="yt-modal-dur-val"></span></span>
         </div>
         <div class="modal-movie-links" id="yt-modal-links"></div>
+        <div class="modal-inline-bio hidden" id="yt-modal-bio-wrap">
+          <div class="modal-bio modal-bio-inline is-clamped" id="yt-modal-bio"></div>
+          <button class="bio-toggle hidden" id="yt-modal-bio-toggle" type="button" onclick="toggleBio('yt-modal-bio')">More</button>
+        </div>
       </div>
     </div>
 
@@ -902,9 +906,6 @@
       <audio class="hidden" id="yt-modal-audio"></audio>
       <div class="modal-status-txt modal-status-inline" id="yt-modal-status">Resolving stream…</div>
     </div>
-
-    <!-- Bio -->
-    <div class="modal-bio hidden" id="yt-modal-bio"></div>
 
     <!-- Section heading -->
     <div class="modal-subsection">
@@ -1037,7 +1038,10 @@
           <div class="modal-movie-links" id="search-modal-links" style="margin-top:0"></div>
         </div>
         <div class="modal-movie-meta text-muted"><span id="search-modal-year-meta"></span></div>
-        <div class="modal-bio" id="search-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0;max-width:none"></div>
+        <div class="modal-inline-bio hidden" id="search-modal-bio-wrap">
+          <div class="modal-bio modal-bio-inline is-clamped" id="search-modal-bio"></div>
+          <button class="bio-toggle hidden" id="search-modal-bio-toggle" type="button" onclick="toggleBio('search-modal-bio')">More</button>
+        </div>
       </div>
     </div>
     <div class="modal-divider"></div>
@@ -1187,6 +1191,9 @@
           <button class="skip-btn" onclick="seSkip(5)">+5</button>
           <div class="modal-scrubber-wrap">
             <div class="source-editor-slider-wrap">
+              <div class="timeline-markers" id="se-timeline-markers" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
               <input type="range" class="modal-slider" id="se-slider" min="0" max="100" value="0" oninput="seSeek(this.value)">
               <div class="trim-window hidden" id="se-trim-window">
                 <div class="trim-shade" id="se-trim-left"></div>
@@ -1206,16 +1213,36 @@
       <!-- Start Offset -->
       <div class="modal-section" style="padding-top:0;padding-bottom:0">
         <div class="source-editor-card">
-        <div class="source-editor-title">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
-        <div class="offset-inline-row">
-          <span class="offset-inline-label">Start</span>
-          <input type="text" id="se-offset" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="seUpdateTrim()" onblur="normalizeOffsetInput(this)">
-          <div class="offset-steps">
-            <button class="offset-step" type="button" aria-label="Decrease offset" onclick="adjustOffset(document.getElementById('se-offset'),-1)">−</button>
-            <button class="offset-step" type="button" aria-label="Increase offset" onclick="adjustOffset(document.getElementById('se-offset'),1)">+</button>
+        <div class="source-editor-title">Trim Window <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
+        <div class="offset-inline-grid">
+          <div class="offset-inline-cell">
+            <span class="offset-inline-label">Offset</span>
+            <div class="offset-input-wrap">
+              <input type="text" id="se-offset" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="seSyncOffsetInputs('offset')" onblur="normalizeOffsetInput(this);seSyncOffsetInputs('offset')">
+              <div class="offset-steps">
+                <button class="offset-step" type="button" aria-label="Decrease offset" onclick="adjustOffset(document.getElementById('se-offset'),-1);seSyncOffsetInputs('offset')">−</button>
+                <button class="offset-step" type="button" aria-label="Increase offset" onclick="adjustOffset(document.getElementById('se-offset'),1);seSyncOffsetInputs('offset')">+</button>
+              </div>
+            </div>
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ Play from offset</button>
-          <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
+          <div class="offset-inline-cell">
+            <span class="offset-inline-label">Start</span>
+            <input type="text" id="se-start-time" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="seSyncOffsetInputs('start')" onblur="normalizeOffsetInput(this);seSyncOffsetInputs('start')">
+          </div>
+          <div class="offset-inline-cell">
+            <span class="offset-inline-label">Stop</span>
+            <input type="text" id="se-stop-time" class="offset-input" value="" placeholder="end" inputmode="numeric" oninput="seUpdateTrim()" onblur="normalizeOptionalOffsetInput(this);seUpdateTrim()">
+          </div>
+          <div class="offset-inline-actions">
+            <button class="btn btn-ghost btn-sm" onclick="sePreviewFromOffset()">▶ Play from offset</button>
+            <button class="btn btn-ghost btn-sm" onclick="seSnapOffsetToCurrent()">Snap to current time</button>
+          </div>
+        </div>
+        <div class="clip-summary-card" id="se-clip-summary">
+          <div class="clip-summary-label">Trim preview</div>
+          <div class="clip-summary-main" id="se-clip-summary-main">Length — · Start 0:00</div>
+          <div class="clip-summary-sub" id="se-clip-summary-sub">Load a preview to confirm the kept portion.</div>
+          <div class="clip-summary-warning" id="se-clip-summary-warning"></div>
         </div>
         </div>
       </div>
@@ -1248,7 +1275,7 @@
       <div class="modal-actions-row footer-action-group">
         <button class="btn btn-ghost" onclick="closeSearchModal()">Cancel</button>
         <button class="btn btn-amber" id="search-modal-primary" onclick="searchModalPrimary()">🔍 Search</button>
-        <button class="btn btn-green hidden" id="search-modal-download-now" onclick="searchModalDownloadNow()">Download Now</button>
+        <button class="btn btn-green hidden" id="search-modal-download-now" onclick="searchModalDownloadNow()">Approve + Download</button>
       </div>
     </div>
   </div>
@@ -1271,9 +1298,12 @@
           <span class="text-green" id="theme-modal-dur-meta"></span>
           <div class="modal-movie-links" id="theme-modal-links"></div>
         </div>
+        <div class="modal-inline-bio hidden" id="theme-modal-bio-wrap">
+          <div class="modal-bio modal-bio-inline is-clamped" id="theme-modal-bio"></div>
+          <button class="bio-toggle hidden" id="theme-modal-bio-toggle" type="button" onclick="toggleBio('theme-modal-bio')">More</button>
+        </div>
       </div>
     </div>
-    <div class="modal-bio" id="theme-modal-bio" style="display:none;border-top:none;margin-top:6px;padding:0 var(--modal-pad-x) 10px"></div>
     <div class="review-section-divider"></div>
 
     <div class="review-panel-head">
@@ -1291,6 +1321,7 @@
           <div class="modal-section-label mb-0">Local Theme</div>
           <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
         </div>
+        <button class="btn btn-ghost btn-sm hidden" id="theme-modal-inline-play" onclick="themeModalToggle()">▶ Play Theme</button>
       </div>
       <div id="theme-local-meta">
         <div class="simple-line" id="theme-modal-file">File path: —</div>
@@ -1385,6 +1416,10 @@
         <div class="modal-movie-title" id="trim-modal-title">Edit Trim</div>
         <div class="modal-movie-meta"><span id="trim-modal-meta"></span></div>
         <div class="modal-movie-links" id="trim-modal-links"></div>
+        <div class="modal-inline-bio hidden" id="trim-modal-bio-wrap">
+          <div class="modal-bio modal-bio-inline is-clamped" id="trim-modal-bio"></div>
+          <button class="bio-toggle hidden" id="trim-modal-bio-toggle" type="button" onclick="toggleBio('trim-modal-bio')">More</button>
+        </div>
       </div>
     </div>
 
