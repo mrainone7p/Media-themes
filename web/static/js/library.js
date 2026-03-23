@@ -1394,7 +1394,7 @@ function _themeModalUpdateSourceClipSummary(row={}){
   _setHidden(summary, !hasSource, hasSource?'':'');
   if(!hasSource){
     if(main) main.textContent='Length — · Offset 0:00';
-    if(sub) sub.textContent='Open Preview to inspect the kept portion before downloading.';
+    if(sub) sub.textContent='Review the clip in Local Theme to confirm the kept portion before downloading.';
     if(warning) warning.textContent='';
     return;
   }
@@ -1404,8 +1404,62 @@ function _themeModalUpdateSourceClipSummary(row={}){
     if(endTrim>0){
       sub.textContent=`Saved trim starts at ${fmt(parseTrim(offsetValue||'0'))} and ends ${fmt(endTrim)} before the source finishes after preview loads.`;
     }else if(duration<=0){
-      sub.textContent='Open Preview to inspect the kept portion before downloading.';
+      sub.textContent='Review the clip in Local Theme to confirm the kept portion before downloading.';
     }
+  }
+}
+function _themeModalUpdateInlinePreviewSummary(row={}, duration=0){
+  const summary=document.getElementById('theme-modal-inline-play');
+  const hasPreview=!!Number(duration||0);
+  const offsetValue=_themeModalOffsetValue(row, 'selected_source');
+  const maxDur=Math.max(0, Number(_maxDur)||0);
+  _setHidden(summary, !hasPreview, hasPreview?'':'');
+  if(!hasPreview){
+    const main=document.getElementById('theme-modal-inline-play-main');
+    const sub=document.getElementById('theme-modal-inline-play-sub');
+    const warning=document.getElementById('theme-modal-inline-play-warning');
+    if(main) main.textContent='Length — · Offset 0:00';
+    if(sub) sub.textContent='Load a preview to confirm the kept portion.';
+    if(warning) warning.textContent='';
+    return;
+  }
+  _setClipSummary('theme-modal-inline-play','theme-modal-inline-play-main','theme-modal-inline-play-sub','theme-modal-inline-play-warning',duration,offsetValue,maxDur,'preview');
+}
+async function _themeModalLoadSavedSourcePreview(row={}){
+  const url=_themeModalPrimarySourceUrl(row);
+  if(!url){
+    _themeModalAudio.cleanup({clearSrc:false});
+    _themeModalAudio.audio.removeAttribute('src');
+    _themeModalAudio.audio.load();
+    _themeModalUpdateInlinePreviewSummary(row, 0);
+    return false;
+  }
+  try{
+    const cached=_previewCache[url];
+    let data=null;
+    if(cached){
+      data={ok:true,audio_url:cached.audio_url};
+    }else{
+      const r=await fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+      data=await r.json();
+      if(data?.ok) _previewCache[url]={audio_url:data.audio_url};
+    }
+    if(!data?.ok) throw new Error(data?.error||'Preview failed');
+    _themeModalAudio.cleanup({clearSrc:false});
+    _themeModalAudio.audio.src=apiUrl(data.audio_url);
+    _themeModalAudio.setHandlers({
+      onloadedmetadata:(audio)=>{
+        const offsetValue=_themeModalOffsetValue(_themeModalContext?.row||row, 'selected_source');
+        _applyAudioOffset(audio, offsetValue);
+        _themeModalUpdateInlinePreviewSummary(_themeModalContext?.row||row, audio.duration||0);
+      }
+    });
+    _themeModalAudio.audio.load();
+    return true;
+  }catch(e){
+    _themeModalUpdateInlinePreviewSummary(row, 0);
+    toast(`Preview unavailable: ${String(e?.message||e||'Preview failed')}`,'info');
+    return false;
   }
 }
 
@@ -1593,7 +1647,7 @@ function _themeModalUpdateStatusFlow(status='MISSING', state={}){
   }
   if(helper) helper.textContent=message;
 }
-function openThemeModal(rk,title,year,folder,row={},library=''){
+async function openThemeModal(rk,title,year,folder,row={},library=''){
   stopAllAudio();
   const resolvedLibrary=String(library||row?.library||'').trim()||_activeLib||_currentLib();
   _themeModalContext={rk,title,year,folder,row,library:resolvedLibrary};
@@ -1603,6 +1657,10 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   const hasLocalTheme=hasTheme;
   const isDownloadable=!hasLocalTheme && hasStoredSource && status==='APPROVED';
   const isSourceOnly=hasStoredSource && !hasLocalTheme;
+  const showStoredSourcePreviewInLocalTheme=isSourceOnly;
+  const canReplaceStoredSource=hasStoredSource;
+  const canDeleteStoredSource=hasStoredSource;
+  const canDeleteLocalTheme=hasLocalTheme;
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
 
@@ -1619,11 +1677,11 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
   document.getElementById('theme-modal-local-status').textContent=hasLocalTheme
     ?'Available locally'
-    :(isSourceOnly?'Local file missing':'No local theme file found');
+    :(isSourceOnly?'Review saved source preview below':'No local theme file found');
   document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
   document.getElementById('theme-modal-local-dur').textContent=hasLocalTheme
     ? _themeModalOffsetLabel(row, true, 'local_theme')
-    : 'Duration: —';
+    :(showStoredSourcePreviewInLocalTheme?'Preview source loads below':'Duration: —');
   const sourceStateLabel=_themeModalSourceState(row);
   const sourceUrl=_themeModalSourceUrl(row);
   const sourceOffset=_themeModalSourceOffset(row);
@@ -1636,13 +1694,10 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-source-offset').textContent=sourceOffset;
   document.getElementById('theme-modal-source-added').textContent=sourceAdded;
   _themeModalUpdateSourceClipSummary(row);
-  const sourcePreviewBtn=document.getElementById('theme-modal-source-preview');
   const sourceCopyBtn=document.getElementById('theme-modal-source-copy');
   const sourceOpenBtn=document.getElementById('theme-modal-source-open');
-  if(sourcePreviewBtn){
-    sourcePreviewBtn.disabled=!sourceUrl;
-    sourcePreviewBtn.style.display=hasStoredSource?'':'none';
-  }
+  const sourceControls=document.getElementById('theme-modal-source-controls');
+  if(sourceControls) sourceControls.style.display=hasStoredSource?'':'none';
   if(sourceCopyBtn){
     sourceCopyBtn.disabled=!sourceUrl;
     sourceCopyBtn.onclick=sourceUrl?themeModalCopySource:null;
@@ -1660,18 +1715,25 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   const localCard=document.getElementById('theme-local-card');
   const localMeta=document.getElementById('theme-local-meta');
   const localTrimBtn=document.getElementById('theme-modal-trim-btn');
-  const localDeleteBtn=document.getElementById('theme-modal-delete-btn');
-  if(localCard) localCard.classList.toggle('compact', !hasLocalTheme);
+  const localPlayer=document.getElementById('theme-local-player');
+  const localPreviewEmpty=document.getElementById('theme-local-preview-empty');
+  if(localCard) localCard.classList.toggle('compact', !hasLocalTheme && !showStoredSourcePreviewInLocalTheme);
   if(localMeta) localMeta.style.display='block';
   if(localTrimBtn) localTrimBtn.style.display=hasLocalTheme?'':'none';
-  if(localDeleteBtn) localDeleteBtn.style.display=hasLocalTheme?'':'none';
+  _setHidden(localPlayer, !(hasLocalTheme || showStoredSourcePreviewInLocalTheme), (hasLocalTheme || showStoredSourcePreviewInLocalTheme)?'block':'');
+  _setHidden(localPreviewEmpty, !showStoredSourcePreviewInLocalTheme, showStoredSourcePreviewInLocalTheme?'block':'');
+  if(!showStoredSourcePreviewInLocalTheme) _setHidden(document.getElementById('theme-modal-inline-play'), true);
   const sourceCard=document.getElementById('theme-source-card');
   if(sourceCard) sourceCard.classList.toggle('compact', !hasStoredSource);
 
   const replaceBtn=document.getElementById('theme-replace-btn');
+  const deleteSourceBtn=document.getElementById('theme-modal-delete-btn');
+  const deleteLocalBtn=document.getElementById('theme-modal-delete-local-btn');
   const findBtn=document.getElementById('theme-find-btn');
   const nextStepBtn=document.getElementById('theme-next-step-btn');
-  if(replaceBtn) replaceBtn.style.display=hasStoredSource?'':'none';
+  if(replaceBtn) replaceBtn.style.display=canReplaceStoredSource?'':'none';
+  if(deleteSourceBtn) deleteSourceBtn.style.display=canDeleteStoredSource?'':'none';
+  if(deleteLocalBtn) deleteLocalBtn.style.display=canDeleteLocalTheme?'':'none';
   _setHidden(findBtn, hasLocalTheme || hasStoredSource);
   const nextAction=_themeModalNextAction(row, hasLocalTheme, hasStoredSource);
   if(nextStepBtn){
@@ -1688,22 +1750,25 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
     }
   }
 
-  _setHidden(document.getElementById('theme-local-player'), !hasLocalTheme, hasLocalTheme?'block':'');
-
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
-  // TMDB link
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
   const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
   document.getElementById('theme-modal-links').innerHTML=
     `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
   setBio('theme-modal-bio', rk, resolvedLibrary);
   _themeModalAudio.cleanup({clearSrc:false});
-  if(hasLocalTheme) _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
-  else _themeModalAudio.audio.src='';
-  openModal('theme-modal');
   _themeModalAudio.setHandlers();
-  if(hasLocalTheme) _themeModalAudio.audio.load();
+  if(hasLocalTheme){
+    _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+    _themeModalAudio.audio.load();
+  }else{
+    _themeModalAudio.audio.removeAttribute('src');
+    _themeModalAudio.audio.load();
+    _themeModalUpdateInlinePreviewSummary(row, 0);
+  }
+  openModal('theme-modal');
+  if(showStoredSourcePreviewInLocalTheme) await _themeModalLoadSavedSourcePreview(row);
   if(_curKey) stopCurrentAudio();
 }
 function themeModalRunNextStep(){
@@ -1738,20 +1803,6 @@ async function themeModalDownloadApproved(){
   closeThemeModal();
 }
 
-async function themeModalPreviewSource(){
-  const c=_themeModalContext||{};
-  const row=c.row||{};
-  const url=_themeModalPrimarySourceUrl(row);
-  if(!url) return toast('No source URL on this row','info');
-  closeThemeModal();
-  await openSearchModal(c.rk||'', c.title||'', c.year||'', encodeURIComponent(c.library||_activeLib||''));
-  goToStep3(url,{
-    skipPreview:false,
-    sourceTitle:_sourceTitleFromUrl(url),
-    startOffset:row?.start_offset||'0',
-    entryMode:'existing'
-  });
-}
 function themeModalOpenSource(){
   const url=_themeModalPrimarySourceUrl(_themeModalContext?.row||{});
   if(!url) return toast('No source URL on this row','info');
@@ -1785,7 +1836,34 @@ function themeModalSetStatus(status){
   updateRow(key,'status',status);
   closeThemeModal();
 }
-function themeModalDelete(){
+async function themeModalDeleteSource(){
+  const c=_themeModalContext||{};
+  if(!c.rk) return;
+  const library=requireLibraryContext(c.library||_activeLib,'delete a saved source');
+  if(!library) return;
+  const confirmed=await openConfirmModal('Delete Saved Source', {
+    text:`Delete the saved source for ${c.title||'this item'}?`
+  }, 'Delete Source');
+  if(!confirmed) return;
+  const {ok,data:d}=await postJson(apiUrl('/api/ledger/clear-sources?library='+encodeURIComponent(library)),{keys:[c.rk]});
+  if(!ok){
+    toast(d.error||'Failed to delete saved source','err');
+    await loadDatabase(false);
+    return;
+  }
+  const current=_rowMap[c.rk]||_rows.find(r=>String(r.rating_key)===String(c.rk));
+  if(current){
+    current.url='';
+    current.selected_source_kind='';
+    current.selected_source_method='';
+    current.selected_source_recorded_at='';
+    if(String(current.status||'').toUpperCase()!=='AVAILABLE') current.status='MISSING';
+  }
+  toast('Saved source deleted','ok');
+  closeThemeModal();
+  await loadDatabase(false);
+}
+function themeModalDeleteLocalTheme(){
   const c=_themeModalContext||{};
   if(!c.rk) return;
   closeThemeModal();
