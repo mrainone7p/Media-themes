@@ -151,21 +151,13 @@ function upsertLedgerRow(savedRow){
 
 function renderChips(){
   const counts={};
-  let golden=0, noGolden=0;
-  let manage=0;
   _rows.forEach(r=>{
     counts[r.status]=(counts[r.status]||0)+1;
-    if(String(r.golden_source_url||'').trim()) golden+=1;
-    else noGolden+=1;
-    if(rowActionType(r)==='MANAGE') manage+=1;
   });
   const filters=[
     {label:'Total', count:_rows.length, active:!document.getElementById('db-search').value.trim() && !document.getElementById('db-filter').value && !document.getElementById('db-source-filter').value && !document.getElementById('db-action-filter').value, color:'', handler:"clearDbFilter()"},
     {label:'MISSING', count:counts.MISSING||0, active:document.getElementById('db-filter').value==='MISSING', color:SC.MISSING, handler:"filterByStatus('MISSING')"},
     {label:'AVAILABLE', count:counts.AVAILABLE||0, active:document.getElementById('db-filter').value==='AVAILABLE', color:SC.AVAILABLE, handler:"filterByStatus('AVAILABLE')"},
-    {label:'GOLDEN SOURCE', count:golden, active:document.getElementById('db-source-filter').value==='GOLDEN', color:'var(--amber)', handler:"filterBySourceState('GOLDEN')"},
-    {label:'NO GOLDEN SOURCE', count:noGolden, active:document.getElementById('db-source-filter').value==='NO_GOLDEN', color:'var(--text3)', handler:"filterBySourceState('NO_GOLDEN')"},
-    {label:'MANAGE', count:manage, active:document.getElementById('db-action-filter').value==='MANAGE', color:'var(--blue)', handler:"filterByAction('MANAGE')"},
     {label:'STAGED', count:counts.STAGED||0, active:document.getElementById('db-filter').value==='STAGED', color:SC.STAGED, handler:"filterByStatus('STAGED')"},
     {label:'APPROVED', count:counts.APPROVED||0, active:document.getElementById('db-filter').value==='APPROVED', color:SC.APPROVED, handler:"filterByStatus('APPROVED')"},
     {label:'FAILED', count:counts.FAILED||0, active:document.getElementById('db-filter').value==='FAILED', color:SC.FAILED, handler:"filterByStatus('FAILED')"}
@@ -238,6 +230,8 @@ function filterTable(){
   const st=document.getElementById('db-filter').value;
   const sourceFilter=document.getElementById('db-source-filter').value;
   const actionFilter=document.getElementById('db-action-filter').value;
+  const clearBtn=document.getElementById('db-clear-filters');
+  if(clearBtn) clearBtn.style.display=(q||st||sourceFilter||actionFilter)?'':'none';
   renderChips();
   _filtered=_rows.filter(r=>{
     if(st&&r.status!==st) return false;
@@ -355,18 +349,32 @@ function renderRowActionCell(row){
   </div>`;
 }
 
+function _closeAllRowMenus(){
+  document.querySelectorAll('.row-action-menu.open').forEach(m=>{
+    m.classList.remove('open');
+    m.style.position='';m.style.top='';m.style.left='';
+  });
+}
 function toggleRowMenu(btn, evt){
   if(evt) evt.stopPropagation();
   const wrap=btn.closest('.row-action-wrap');
   if(!wrap) return;
   const menu=wrap.querySelector('.row-action-menu');
   const willOpen=!menu.classList.contains('open');
-  document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
-  if(willOpen) menu.classList.add('open');
+  _closeAllRowMenus();
+  if(willOpen){
+    menu.classList.add('open');
+    const r=btn.getBoundingClientRect();
+    menu.style.position='fixed';
+    menu.style.left=Math.max(0,r.right-170)+'px';
+    const menuH=menu.offsetHeight||160;
+    if(r.top>menuH+8) menu.style.top=(r.top-menuH-6)+'px';
+    else menu.style.top=(r.bottom+6)+'px';
+  }
 }
 
 function _rowActionInvoke(fnName, btn){
-  document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
+  _closeAllRowMenus();
   if(typeof window[fnName]==='function') window[fnName](btn);
 }
 
@@ -578,8 +586,9 @@ async function previewUrl(key, encodedUrl){
 }
 
 document.addEventListener('click',(e)=>{
-  if(!e.target.closest('.row-action-wrap')) document.querySelectorAll('.row-action-menu.open').forEach(m=>m.classList.remove('open'));
+  if(!e.target.closest('.row-action-wrap')) _closeAllRowMenus();
 });
+document.querySelector('.tbl-wrap')?.addEventListener('scroll',()=>_closeAllRowMenus());
 
 // === TABLE / ROW RENDERING ===
 // ── Table render ─────────────────────────────────────────────────────────────
@@ -618,10 +627,10 @@ function renderTable(){
         ${renderStatusCell(row)}
       </td>
       <td>${renderRowActionCell(row)}</td>
-      <td style="white-space:nowrap">${row.golden_source_url?`<a class="golden-link-pill" href="${String(row.golden_source_url).replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${String(row.golden_source_url).replace(/"/g,'&quot;')}">★ Golden Source ↗</a>`:'Not available'}</td>
-      <td style="white-space:nowrap">${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" class="db-link-icon" title="${safeUrlAttr}">↗</a>`:''}
-        <input class="inline-ed db-inline-url" value="${safeUrlAttr}" placeholder="paste URL…" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
-      <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:74px;font-size:11px"
+      <td>${row.golden_source_url?`<a class="golden-link-pill" href="${String(row.golden_source_url).replace(/"/g,'&quot;')}" target="_blank" rel="noopener" title="${String(row.golden_source_url).replace(/"/g,'&quot;')}">★ Golden Source ↗</a>`:'Not available'}</td>
+      <td>${row.url?`<a href="${safeUrlAttr}" target="_blank" rel="noopener" class="db-link-icon" title="${safeUrlAttr}">↗</a>`:''}
+        <input class="inline-ed db-inline-url" value="${safeUrlAttr}" placeholder="paste URL…" style="width:100%;box-sizing:border-box" onblur="updateRowAndRefresh('${rk}','url',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></td>
+      <td><input class="inline-ed offset-input" type="text" value="${off}" style="width:100%;box-sizing:border-box;font-size:11px"
         onblur="saveOffsetInput('${rk}',this)"
         onkeydown="if(event.key==='Enter')this.blur()"></td>
       <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>

@@ -567,25 +567,15 @@
         <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
         <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
         <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download Approved Items</button>
+        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve Staged</button>
         <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
       </div>
     </div>
 
+    <input type="hidden" id="db-filter" value="">
     <div class="toolbar">
       <input class="search search-wide" type="text" placeholder="Search titles, years, URLs, or notes…" oninput="debouncedFilterTable()" id="db-search" aria-label="Search database">
       <div class="toolbar-group">
-        <div class="filter-stack">
-          <span class="filter-label">Status</span>
-          <select class="filter-sel" onchange="filterByStatus(this.value)" id="db-filter">
-            <option value="">All statuses</option>
-            <option value="UNMONITORED">Unmonitored</option>
-            <option value="MISSING">Missing</option>
-            <option value="STAGED">Staged</option>
-            <option value="APPROVED">Approved</option>
-            <option value="AVAILABLE">Available</option>
-            <option value="FAILED">Failed</option>
-          </select>
-        </div>
         <div class="filter-stack">
           <span class="filter-label">Source</span>
           <select class="filter-sel" onchange="filterBySourceState(this.value)" id="db-source-filter">
@@ -607,9 +597,7 @@
           </select>
         </div>
       </div>
-      <div class="db-toolbar-actions">
-        <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve Staged Items</button>
-      </div>
+      <button class="btn btn-ghost btn-xs" id="db-clear-filters" onclick="clearDbFilter()" style="display:none">✕ Clear filters</button>
     </div>
     <div class="bulk-bar" id="db-bulk-bar">
       <span class="bulk-count" id="db-bulk-count">0 selected</span>
@@ -627,16 +615,16 @@
     <div class="tbl-wrap">
       <table class="db-table">
         <thead><tr>
-          <th style="width:28px"><input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered"></th>
-          <th style="width:230px" onclick="sortTable('title')">Title ↕</th>
-          <th style="width:90px" onclick="sortTable('year')">Year ↕</th>
-          <th style="width:165px" onclick="sortTable('status')">Status ↕</th>
-          <th style="width:170px">Action</th>
-          <th style="width:220px" onclick="sortTable('golden_source_url')">Golden Source URL ↕</th>
-          <th style="width:260px" onclick="sortTable('url')">Source URL ↕</th>
-          <th style="width:150px" onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
-          <th style="width:130px" onclick="sortTable('last_updated')">Updated ↕</th>
-          <th style="width:220px" onclick="sortTable('notes')">Notes ↕</th>
+          <th style="width:2%"><input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered"></th>
+          <th style="width:16%" onclick="sortTable('title')">Title ↕</th>
+          <th style="width:5%" onclick="sortTable('year')">Year ↕</th>
+          <th style="width:10%" onclick="sortTable('status')">Status ↕</th>
+          <th style="width:12%">Action</th>
+          <th style="width:14%" onclick="sortTable('golden_source_url')">Golden Source URL ↕</th>
+          <th style="width:18%" onclick="sortTable('url')">Source URL ↕</th>
+          <th style="width:7%" onclick="sortTable('start_offset')">Start Offset (mm:ss) ↕</th>
+          <th style="width:7%" onclick="sortTable('last_updated')">Updated ↕</th>
+          <th style="width:9%" onclick="sortTable('notes')">Notes ↕</th>
         </tr></thead>
         <tbody id="db-tbody"></tbody>
       </table>
