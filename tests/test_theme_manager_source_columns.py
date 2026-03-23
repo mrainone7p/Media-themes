@@ -62,6 +62,12 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         self.assertNotIn("_sortCol==='local_state'", self.library_source)
         self.assertNotIn("_renderSourceStateCell('Local'", self.library_source)
 
+    def test_library_js_status_cell_no_longer_renders_inline_status_editor(self):
+        self.assertIn("function renderStatusCell(row)", self.library_source)
+        self.assertIn('<span class="badge s-${status}" title="${statusDesc(status)}">', self.library_source)
+        self.assertNotIn('select class="st-sel"', self.library_source)
+        self.assertNotIn("onchange=\"updateRow('${rk}','status',this.value)\"", self.library_source)
+
 
 if __name__ == "__main__":
     unittest.main()
