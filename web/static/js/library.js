@@ -3,6 +3,9 @@
 // ── SECTION: STATUS / TABLE LOGIC ──────────────────────────────────────────────
 // Shared table helpers
 function _tmdbLink(title,year){ return 'https://www.themoviedb.org/search?query='+encodeURIComponent(((title||'')+' '+(year||'')).trim()); }
+function _mediaHeaderMetaParts({year='', detail='', status=''}={}){
+  return [String(year||'').trim(), String(detail||'').trim(), String(status||'').trim()].filter(Boolean);
+}
 const _tmdbLookupCache = {};
 async function openTmdb(title, year, evt){
   if(evt) evt.preventDefault();
@@ -366,9 +369,9 @@ function _sharedTrimEditorMarkup({
         <div class="source-editor-title">Summary State</div>
         <div class="review-card-subtitle">${summaryHelper}</div>
         <div class="clip-summary-card" id="${summaryId}">
-          <div class="clip-summary-label">Trim preview</div>
-          <div class="clip-summary-main" id="${summaryMainId}">Offset 0:00 · Keep — · End —</div>
-          <div class="clip-summary-sub" id="${summarySubId}">Load a preview to confirm the kept portion.</div>
+          <div class="clip-summary-label">Offset Summary</div>
+          <div class="clip-summary-main" id="${summaryMainId}">Offset Start 0:00 · Theme Length —</div>
+          <div class="clip-summary-sub" id="${summarySubId}">Load a preview to confirm the saved start time and theme length.</div>
           <div class="clip-summary-warning" id="${summaryWarningId}"></div>
         </div>
         ${resultHtml}
@@ -1667,8 +1670,8 @@ function _themeModalUpdateLocalClipSummary(row={}, duration=0){
     const main=document.getElementById('theme-local-clip-main');
     const sub=document.getElementById('theme-local-clip-sub');
     const warning=document.getElementById('theme-local-clip-warning');
-    if(main) main.textContent='Offset 0:00 · Length —';
-    if(sub) sub.textContent='Load a local theme to confirm the kept portion.';
+    if(main) main.textContent='Offset Start 0:00 · Theme Length —';
+    if(sub) sub.textContent='Load a local theme to confirm the saved start time and theme length.';
     if(warning) warning.textContent='';
     return;
   }
@@ -1683,8 +1686,8 @@ function _themeModalUpdateSelectedSourceClipSummary(row={}, duration=0){
     const main=document.getElementById('theme-workflow-clip-main');
     const sub=document.getElementById('theme-workflow-clip-sub');
     const warning=document.getElementById('theme-workflow-clip-warning');
-    if(main) main.textContent='Offset 0:00 · Length —';
-    if(sub) sub.textContent='Choose a source to review its saved offset.';
+    if(main) main.textContent='Offset Start 0:00 · Theme Length —';
+    if(sub) sub.textContent='Choose a source to review its saved start time and theme length.';
     if(warning) warning.textContent='';
     return;
   }
@@ -1693,9 +1696,9 @@ function _themeModalUpdateSelectedSourceClipSummary(row={}, duration=0){
   const sub=document.getElementById('theme-workflow-clip-sub');
   const warning=document.getElementById('theme-workflow-clip-warning');
   const endTrim=parseTrim(_themeModalSourceEndOffset(row)||'0');
-  if(sub && duration<=0) sub.textContent='Load a preview to confirm the kept portion.';
+  if(sub && duration<=0) sub.textContent='Load a preview to confirm the saved start time and theme length.';
   if(sub && endTrim>0){
-    sub.textContent=`Saved trim starts at ${fmt(parseTrim(_themeModalOffsetValue(row, layer)||'0'))} and ends ${fmt(endTrim)} before the source finishes once preview metadata loads.`;
+    sub.textContent=`Saved offset starts at ${fmt(parseTrim(_themeModalOffsetValue(row, layer)||'0'))} and the remaining length ends ${fmt(endTrim)} before the source finishes once preview metadata loads.`;
   }
   if(warning && duration<=0 && !warning.textContent) warning.textContent='';
 }
@@ -1935,7 +1938,7 @@ function _clipWindowMeta(duration=0, offset=0, maxDur=0){
 }
 function _clipLengthOffsetLabel(duration=0, offset=0, maxDur=0){
   const meta=_clipWindowMeta(duration, offset, maxDur);
-  return `Offset ${fmt(meta.rawOffset)} · Length ${meta.total>0?fmt(meta.length):'—'}`;
+  return `Offset Start ${fmt(meta.rawOffset)} · Theme Length ${meta.total>0?fmt(meta.length):'—'}`;
 }
 function _clipWindowPrimaryLabel(duration=0, offset=0, maxDur=0){
   const meta=_clipWindowMeta(duration, offset, maxDur);
@@ -1943,13 +1946,13 @@ function _clipWindowPrimaryLabel(duration=0, offset=0, maxDur=0){
 }
 function _clipWindowRangeLabel(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
   const meta=_clipWindowMeta(duration, offset, maxDur);
-  if(meta.total<=0) return `Load a ${scopeLabel} to confirm the kept portion.`;
-  return `Keeps ${fmt(meta.start)} → ${fmt(meta.end)} of ${fmt(meta.total)} ${scopeLabel}`;
+  if(meta.total<=0) return `Load a ${scopeLabel} to confirm the theme length.`;
+  return `Starts at ${fmt(meta.start)} and runs ${fmt(meta.length)} of the ${fmt(meta.total)} ${scopeLabel}.`;
 }
 function _clipWindowDetailedRangeLabel(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
   const meta=_clipWindowMeta(duration, offset, maxDur);
-  if(meta.total<=0) return `Load a ${scopeLabel} to confirm the kept portion.`;
-  return `${scopeLabel.charAt(0).toUpperCase()+scopeLabel.slice(1)} ${fmt(meta.total)} total · keeping ${fmt(meta.start)} → ${fmt(meta.end)}`;
+  if(meta.total<=0) return `Load a ${scopeLabel} to confirm the theme length.`;
+  return `${scopeLabel.charAt(0).toUpperCase()+scopeLabel.slice(1)} length ${fmt(meta.total)} · offset starts at ${fmt(meta.start)}.`;
 }
 function _clipWarningText(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
   const meta=_clipWindowMeta(duration, offset, maxDur);
@@ -2049,20 +2052,20 @@ function _themeModalWorkflowActions(row={}){
     actions.push({id,label,className,handler});
   };
   if(!hasSelected){
-    push('find-source','Find Source','btn btn-amber btn-sm is-primary','themeModalOpenManualSearch');
+    push('find-source','Find Source','btn btn-amber is-primary','themeModalOpenManualSearch');
     return actions;
   }
-  push('trim-source','Trim Source','btn btn-ghost btn-sm','themeModalPreviewSourceTrim');
-  push('clear-source','Clear Source','btn btn-ghost btn-sm','themeModalDeleteSource');
+  push('trim-source','Trim Source','btn btn-ghost','themeModalPreviewSourceTrim');
+  push('clear-source','Clear Source','btn btn-ghost','themeModalDeleteSource');
   if(status==='APPROVED'){
-    if(!hasLocal) push('download-now','Download','btn btn-green btn-sm is-primary','themeModalDownloadApproved');
+    if(!hasLocal) push('download-now','Download','btn btn-green is-primary','themeModalDownloadApproved');
     return actions;
   }
   if(status==='STAGED'){
-    push('approve','Approve','btn btn-amber btn-sm is-primary','themeModalApproveSource');
+    push('approve','Approve','btn btn-amber is-primary','themeModalApproveSource');
     return actions;
   }
-  push('stage','Stage','btn btn-amber btn-sm is-primary','themeModalStageSource');
+  push('stage','Stage','btn btn-amber is-primary','themeModalStageSource');
   return actions;
 }
 function _themeModalRenderWorkflowActions(actions=[]){
@@ -2315,7 +2318,7 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
   const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
   document.getElementById('theme-modal-links').innerHTML=
-    `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
+    `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">🎬 TMDB</a>`;
   setBio('theme-modal-bio', rk, resolvedLibrary);
 
   _themeModalAudio.cleanup({clearSrc:false});
@@ -2467,10 +2470,13 @@ function themeModalEditTrim(){
   _trimRk=c.rk;
   _trimLib=String(c.library||'').trim();
   document.getElementById('trim-modal-title').textContent=c.title||'Edit Trim';
-  document.getElementById('trim-modal-meta').textContent=[c.year||'',`Duration: ${fmt(parseFloat(c.row?.theme_duration||0)||0)}`].filter(Boolean).join(' · ');
+  document.getElementById('trim-modal-meta').textContent=_mediaHeaderMetaParts({
+    year:c.year||'',
+    detail:`Theme Length ${fmt(parseFloat(c.row?.theme_duration||0)||0)}`
+  }).join(' · ');
   document.getElementById('trim-modal-poster').src=apiUrl('/api/poster?key='+encodeURIComponent(c.rk));
-  document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">TMDB</a>`;
-  document.getElementById('trim-modal-info').textContent='Trim local theme start offset and preview the resulting clip.';
+  document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">🎬 TMDB</a>`;
+  document.getElementById('trim-modal-info').textContent='Adjust the saved offset start time and preview the resulting theme length.';
   setBio('trim-modal-bio', c.rk, _trimLib);
   document.getElementById('trim-modal-offset').value=_normalizedOffsetValue(c.row?.start_offset||'0');
   trimModalUpdateResult();
@@ -2949,7 +2955,7 @@ function goToSearchStep(step){
     const el=document.getElementById('search-step-'+n);
     if(el){
       const active=n===step;
-      el.style.display=active?'':'none';
+      el.style.display=active?'flex':'none';
       el.setAttribute('aria-hidden', active ? 'false' : 'true');
     }
   });
@@ -3087,7 +3093,7 @@ async function _searchByMethod(method, showStep=true){
     goToSearchStep(2);
     document.getElementById('search-results').innerHTML='<div class="search-results-state">Searching…</div>';
   }
-  const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+  const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,method})});
   const data=await r.json();
   if(!data.ok){
     if(showStep){
@@ -3100,10 +3106,6 @@ async function _searchByMethod(method, showStep=true){
   if(showStep){
     _renderResults(_lastSearchResults);
     _setSearchFooter(2);
-    if(method==='playlist' && _lastSearchResults.length){
-      const first=_lastSearchResults[0];
-      if(first?.url) setTimeout(()=>goToStep3(first.url,{skipPreview:false,sourceTitle:first.title||'1st result',entryMode:'playlist_auto'}),120);
-    }
   }
   return _lastSearchResults;
 }
@@ -3139,7 +3141,9 @@ async function _fallbackFromGoldenValidation(errorMessage){
 function _renderResults(results){
   const el=document.getElementById('search-results');
   const countEl=document.getElementById('sm-results-count');
-  if(countEl) countEl.textContent=results.length ? `${results.length} results` : '';
+  if(countEl) countEl.textContent=results.length
+    ? (_searchMethod==='playlist' ? `${results.length} tracks from the first playlist` : `${results.length} results`)
+    : '';
   if(!results.length){
     el.innerHTML='<div class="search-results-state">No results found.</div>';
     return;
@@ -3154,13 +3158,13 @@ function _renderResults(results){
     <div class="search-result-card ${i===0?'recommended':''}">
       <div class="result-idx">${i+1}.</div>
       <div class="search-result-main">
-        ${i===0?'<span class="search-result-inline-badge">Top</span>':''}
+        ${i===0?`<span class="search-result-inline-badge">${_searchMethod==='playlist'?'Default':'Top'}</span>`:''}
         <a href="${safeHref}" target="_blank" rel="noopener" class="search-result-title" title="${safeTitleAttr}"><span class="search-result-title-text">${safeTitle}</span><span class="search-result-link-icon">↗</span></a>
       </div>
       <div class="search-result-actions">
         <span class="search-result-duration">${r.duration||'—'}</span>
         <button class="btn btn-ghost btn-xs" onclick="previewSearchResult('${safeUrl}',this)">▶ Preview</button>
-        <button class="btn btn-amber btn-xs" onclick="goToStep3('${safeUrl}',{skipPreview:false,sourceTitle:'${safeTitleJs}'})">Pick</button>
+        <button class="btn btn-amber btn-xs" onclick="goToStep3('${safeUrl}',{skipPreview:false,sourceTitle:'${safeTitleJs}'})">${i===0?'Pick Default':'Pick'}</button>
       </div>
     </div>`;
   }).join('');
@@ -3185,9 +3189,12 @@ function _renderMethodQuickPick(method, result, opts={}){
   const titleText=opts.scrollTitle===true
     ? rawDisplayTitle
     : _truncateSourceText(rawDisplayTitle, {fallback:'1st result', max:52, middle:!!opts.truncateMiddle});
+  const titleInner=opts.scrollTitle===true
+    ? `<span class="auto-scroll-text"><span>${_escapeHtml(titleText)}</span></span>`
+    : titleText;
   const titleMarkup=opts.linkTitle===false
-    ? `<span class="sm-quickpick-title" title="${safeTitleAttr}">${titleText}</span>`
-    : `<a class="sm-quickpick-link sm-quickpick-title" href="${safeHref}" target="_blank" rel="noopener" title="${safeTitleAttr}">${titleText}<span>↗</span></a>`;
+    ? `<span class="sm-quickpick-title" title="${safeTitleAttr}">${titleInner}</span>`
+    : `<a class="sm-quickpick-link sm-quickpick-title" href="${safeHref}" target="_blank" rel="noopener" title="${safeTitleAttr}">${titleInner}<span>↗</span></a>`;
   const offsetMarkup=result.start_offset
     ? `<span class="ui-pill muted-chip" style="margin:4px 0 0">Offset ${_normalizedOffsetValue(result.start_offset)}</span>`
     : '';
@@ -3204,7 +3211,7 @@ function _setMethodQuickPick(method, result){
   if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
   const quickPickOpts=method==='golden_source'
     ? {label:'Quick pick', title:'Golden Source URL', displayTitle:(result&&result.url)||'Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Pick', scrollTitle:true}
-    : {label:'Quick pick'};
+    : {label:'Quick pick', scrollTitle:true};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
 }
 
@@ -3261,7 +3268,7 @@ async function _prefetchMethodFirstResult(method){
   const q=buildSearchQuery(method,_searchTitle,_searchYear);
   if(!q) return;
   try{
-    const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+    const r=await fetch('/api/youtube/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,method})});
     const data=await r.json();
     _setMethodQuickPick(method, (data.ok && data.results && data.results.length)?data.results[0]:false);
   }catch(_e){ _setMethodQuickPick(method,false); }

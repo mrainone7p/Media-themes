@@ -1296,11 +1296,17 @@ def tmdb_lookup_payload(title: str, year: str):
 
 def youtube_search_payload(data: dict):
     query = data.get("query", "")
+    method = str(data.get("method", "") or "").strip().lower()
     if not query:
         return {"ok": False, "error": "No query"}
     try:
         cfg = load_config()
-        return {"ok": True, "results": integrations.youtube_search(query, cfg.get("cookies_file", "") or None)}
+        cookies_file = cfg.get("cookies_file", "") or None
+        if method == "playlist":
+            results = integrations.youtube_playlist_search(query, cookies_file)
+        else:
+            results = integrations.youtube_search(query, cookies_file)
+        return {"ok": True, "results": results}
     except Exception as exc:
         return {"ok": False, "error": str(exc)[:150]}
 
