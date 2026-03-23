@@ -367,6 +367,37 @@ function formatNextRunFull(isoStr){
   const abs=dt.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
   return {rel,abs,dt};
 }
+function scheduleHasActiveRun(schedule={}){
+  return !!formatNextRunFull(schedule?.next_run);
+}
+function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedule'}={}){
+  const s=(schedule && typeof schedule==='object') ? schedule : {};
+  const nextRun=formatNextRunFull(s.next_run);
+  const scheduleActive=scheduleHasActiveRun(s);
+  const metaParts=[];
+  if(s.detail && !String(s.detail||'').startsWith('Active schedule comes from ')) metaParts.push(`<div class="schedule-status-meta-item">${s.detail}</div>`);
+  if(!scheduleActive && s.cron) metaParts.push(`<div class="schedule-status-meta-item">Cron: <code>${s.cron}</code></div>`);
+  const metaHtml=metaParts.length ? `<div class="schedule-status-meta">${metaParts.join('')}</div>` : '';
+  if(scheduleActive && nextRun){
+    return `<div class="schedule-status-module">
+      <div class="schedule-status-eyebrow">Next Scheduled Run</div>
+      <div class="schedule-status-value" data-schedule-countdown>${nextRun.rel}</div>
+      <div class="schedule-status-detail" data-schedule-absolute>Runs ${nextRun.abs}</div>
+      ${metaHtml}
+    </div>`;
+  }
+  return `<div class="schedule-status-module is-empty">
+    <div class="schedule-status-eyebrow">Schedule Status</div>
+    <div class="schedule-status-value is-muted">No active schedule</div>
+    <div class="schedule-status-cta">${inactiveCta}</div>
+    ${metaHtml}
+  </div>`;
+}
+function renderScheduleStatusModule(target, schedule={}, options={}){
+  const el=typeof target==='string' ? document.getElementById(target) : target;
+  if(!el) return;
+  el.innerHTML=buildScheduleStatusModuleHtml(schedule, options);
+}
 // Live countdown wiring
 let _countdownInterval=null;
 let _countdownTargetDt=null;
@@ -398,8 +429,8 @@ function _syncCountdownTimer(){
   const shouldTick=!!_countdownTargetDt && _pageNeedsCountdown();
   if(!shouldTick){
     if(_countdownInterval){clearInterval(_countdownInterval);_countdownInterval=null;}
-    const schedWrap=document.getElementById('sched-cron-next');
-    if(schedWrap && _activePageName()!=='scheduler') schedWrap.style.display='none';
+    document.querySelectorAll('[data-schedule-countdown]').forEach(el=>{ el.textContent=''; });
+    document.querySelectorAll('[data-schedule-absolute]').forEach(el=>{ el.textContent=''; });
     return;
   }
   _tickCountdowns();
@@ -417,20 +448,10 @@ function _tickCountdowns(){
   const ms=_countdownTargetDt-new Date();
   const label=ms>0?_fmtCountdown(ms):'Now';
   const absStr=_countdownTargetDt.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
-  // Dashboard action station countdown
-  const dashRel=document.getElementById('dash-next-run-rel');
-  if(dashRel) dashRel.textContent=label;
-  // Scheduler cron countdown
-  const schedCd=document.getElementById('sched-cron-countdown');
-  if(schedCd) schedCd.textContent=label;
-  const schedAbs=document.getElementById('sched-cron-next-abs');
-  if(schedAbs) schedAbs.textContent=absStr;
-  const schedWrap=document.getElementById('sched-cron-next');
-  if(schedWrap) schedWrap.style.display='';
+  document.querySelectorAll('[data-schedule-countdown]').forEach(el=>{ el.textContent=label; });
+  document.querySelectorAll('[data-schedule-absolute]').forEach(el=>{ el.textContent=`Runs ${absStr}`; });
 }
 function _stopCountdownDisplay(){
-  const schedWrap=document.getElementById('sched-cron-next');
-  if(schedWrap) schedWrap.style.display='none';
   if(_countdownInterval){clearInterval(_countdownInterval);_countdownInterval=null;}
 }
 function _clearGlobalRunStatusTimer(){
@@ -692,38 +713,10 @@ function renderDashboardActionStation(health){
   const el=document.getElementById('dashboard-action-station');
   if(!el) return;
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
-  const scheduleActive=s.state==='ok'||s.state==='warning'||s.state==='warn';
-  const scheduleMetaParts=[];
-  if(scheduleActive && !s.next_run && s.cron){
-    scheduleMetaParts.push(`<div class="dash-station-schedule-meta">Cron: <code>${s.cron}</code></div>`);
-  }
-  if(scheduleActive && s.detail && !String(s.detail||'').startsWith('Active schedule comes from ')) scheduleMetaParts.push(`<div class="dash-station-schedule-meta">${s.detail}</div>`);
-  const scheduleMetaHtml=scheduleMetaParts.length?`<div class="dash-station-schedule-copy">${scheduleMetaParts.join('')}</div>`:'';
-  // Next run block
-  let nextRunHtml='';
-  const nrFull=formatNextRunFull(s.next_run);
-  _startCountdowns(s.next_run||null);
-  if(nrFull){
-    nextRunHtml=`<div class="dash-station-next-run">
-      <div class="dash-station-next-label">Next Scheduled Run</div>
-      <div class="dash-station-next-rel"><span id="dash-next-run-rel">${nrFull.rel}</span></div>
-      <div class="dash-station-next-abs">Runs ${nrFull.abs}</div>
-      ${scheduleMetaHtml}
-    </div>`;
-  } else if(scheduleActive){
-    nextRunHtml=`<div class="dash-station-next-run">
-      <div class="dash-station-next-label">Automation</div>
-      <div style="margin-top:3px">${dashboardStatusBadge(s.label,s.state)}</div>
-      ${scheduleMetaHtml}
-    </div>`;
-  } else {
-    nextRunHtml=`<div class="dash-station-next-run" style="border-style:dashed">
-      <div class="dash-station-next-label">Automation</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:2px">No schedule configured</div>
-      ${scheduleMetaHtml}
-    </div>`;
-  }
-  const scheduleBtnLabel=scheduleActive?'Edit Schedule':'Setup Schedule';
+  const scheduleActive=scheduleHasActiveRun(s);
+  _startCountdowns(scheduleActive ? s.next_run : null);
+  const nextRunHtml=buildScheduleStatusModuleHtml(s,{inactiveCta:'Enable Schedule'});
+  const scheduleBtnLabel=scheduleActive?'Edit Schedule':'Enable Schedule';
   const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">${scheduleBtnLabel}</button>`;
   const runOrStopBtn=_dashRunActive
     ?`<button class="btn btn-red btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
