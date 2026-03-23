@@ -152,18 +152,44 @@ function _goldenSourceState(row={}){
   return {key:'available', label:'Ready', className:'is-golden', detail:'Curated source available', chips:['Curated']};
 }
 
+function _selectedSourceLabel(row={}){
+  const sourceUrl=String(row?.url||'').trim();
+  const goldenUrl=String(row?.golden_source_url||'').trim();
+  const selected=_selectedSourceContract(row);
+  const method=selected.method || _legacySourceMethodFromOrigin(row?.source_origin);
+  if((sourceUrl && goldenUrl && sourceUrl===goldenUrl) || selected.kind==='golden' || method==='golden_source') return 'Golden Source';
+  if(method==='playlist') return 'Playlist';
+  if(method==='direct') return 'Direct';
+  if(sourceUrl) return 'Custom';
+  return '—';
+}
+
+function _selectedSourceStateText(row={}){
+  const label=_selectedSourceLabel(row);
+  const sourceUrl=String(row?.url||'').trim();
+  if(label==='—') return 'No selected source';
+  if(label==='Golden Source') return 'Golden Source';
+  if(_hasLocalTheme(row)) return `${label} - Downloaded`;
+  if(!sourceUrl) return `${label} - Identified`;
+  const status=String(row?.status||'').toUpperCase();
+  if(status==='STAGED' || status==='APPROVED') return `${label} - Staged`;
+  return `${label} - Identified`;
+}
+
 function _customSourceState(row={}){
   const selected=_selectedSourceContract(row);
+  const typeLabel=_selectedSourceLabel(row);
+  const statusLabel=_selectedSourceStateText(row);
   if(!selected.url){
-    return {key:'none', typeLabel:'—', statusLabel:'No selected source', className:'is-unknown', detail:'No selected source', chips:[]};
+    return {key:'none', typeLabel:typeLabel==='—'?'—':typeLabel, statusLabel, className:'is-unknown', detail:'No selected source', chips:[]};
   }
   return {
-    key:selected.kind==='golden' ? 'golden' : (selected.method||'custom'),
-    typeLabel:selected.kind==='golden' ? 'Golden' : 'Selected',
-    statusLabel:`${_sourceKindLabel(selected.kind)} · ${_sourceMethodLabel(selected.method)}`,
+    key:typeLabel==='Golden Source' ? 'golden' : (selected.method||'custom'),
+    typeLabel,
+    statusLabel,
     className:_sourceKindClass(selected.kind),
     detail:selected.url,
-    chips:[_sourceKindLabel(selected.kind), _sourceMethodLabel(selected.method)],
+    chips:typeLabel && typeLabel!=='—' ? [typeLabel] : [],
   };
 }
 
@@ -1288,7 +1314,7 @@ function _themeHasLocal(row){
   return String(row.theme_exists||'')==='1';
 }
 function _themeModalPrimarySourceUrl(row={}){
-  return _themeModalSourceUrl(row);
+  return String(_selectedSourceContract(row).url||'').trim();
 }
 function _themeModalImportedAt(row={}){
   const raw=String(row?.last_updated||'').trim();
@@ -1299,79 +1325,22 @@ function _themeModalImportedAt(row={}){
   return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
 function _themeModalSourceOriginLabel(row={}){
-  const selected=_selectedSourceContract(row);
-  const local=_localSourceContract(row);
-  const effective=selected.url ? selected : local;
-  if(_rowUsesGoldenSource(row) || effective.kind==='golden' || (!effective.url && _rowHasGoldenSource(row))) return 'Golden Source';
-  if(effective.method==='playlist') return 'Playlist';
-  if(effective.method==='direct') return 'Direct';
-  if(effective.url) return 'Custom';
-  if(_rowHasGoldenSource(row)) return 'Golden Source';
-  return '—';
+  return _selectedSourceLabel(row);
+}
+function _themeModalSourceState(row={}){
+  return _selectedSourceStateText(row);
 }
 function _themeModalSourceUrl(row={}){
-  const selectedUrl=String(_selectedSourceContract(row).url||'').trim();
-  if(selectedUrl) return selectedUrl;
-  const localUrl=String(_localSourceContract(row).url||'').trim();
-  if(localUrl) return localUrl;
-  return String(row?.golden_source_url||'').trim();
+  return String(_selectedSourceContract(row).url||'').trim();
 }
 function _themeModalSourceOffset(row={}){
   const selected=_selectedSourceContract(row);
-  if(selected.url){
-    return _themeModalOffsetLabel({...row, url:selected.url}, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source');
-  }
-  const local=_localSourceContract(row);
-  if(local.url) return _themeModalOffsetLabel(row, true, 'local_theme');
-  if(_rowHasGoldenSource(row)) return _themeModalOffsetLabel(row, _themeHasLocal(row), 'golden_source');
-  return '—';
+  if(!selected.url) return '—';
+  return _themeModalOffsetLabel({...row, url:selected.url}, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source');
 }
 function _themeModalSourceAdded(row={}){
-  if(String(_selectedSourceContract(row).url||'').trim() || String(row?.golden_source_url||'').trim()) return _themeModalImportedAt(row);
-  const raw=String(row?.local_source_recorded_at||'').trim();
-  if(!raw) return 'Not imported yet';
-  const dt=new Date(raw);
-  if(Number.isNaN(dt.getTime())) return raw;
-  return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-}
-function _themeLayerSummary(layer,row={},draft={}){
-  const goldenUrl=String(row?.golden_source_url||'').trim();
-  const selected=_selectedSourceContract({...row, url:draft.selectedUrl ?? row?.url});
-  const local=_localSourceContract(row);
-  if(layer==='golden'){
-    return {
-      label:'Golden',
-      stateLabel:goldenUrl ? 'Ready' : 'None',
-      className:goldenUrl ? 'is-golden' : 'is-unknown',
-      chips:goldenUrl ? ['Curated'] : [],
-      url:goldenUrl,
-      offset:goldenUrl ? _themeModalOffsetLabel(row, _themeHasLocal(row), 'golden_source') : '—',
-      timestamp:_themeModalImportedAt(row),
-      note:goldenUrl ? 'Curated import' : 'No curated source recorded',
-    };
-  }
-  if(layer==='selected'){
-    return {
-      label:'Selected',
-      stateLabel:selected.url ? 'Saved' : 'None',
-      className:selected.url ? _sourceKindClass(selected.kind) : 'is-unknown',
-      chips:selected.url ? [_sourceKindLabel(selected.kind), _sourceMethodLabel(selected.method)] : [],
-      url:selected.url,
-      offset:selected.url ? _themeModalOffsetLabel({...row, url:selected.url}, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
-      timestamp:selected.url ? _themeModalImportedAt(row) : '—',
-      note:selected.url ? 'Used for approval/download' : 'No selected source recorded',
-    };
-  }
-  return {
-    label:'Local',
-    stateLabel:_themeHasLocal(row) ? 'On disk' : 'Missing',
-    className:_themeHasLocal(row) ? _sourceKindClass(local.kind) : 'is-unknown',
-    chips:_themeHasLocal(row) && local.url ? [_sourceKindLabel(local.kind), _sourceMethodLabel(local.method)] : [],
-    url:local.url,
-    offset:_themeHasLocal(row) ? _themeModalOffsetLabel(row, true, 'local_theme') : '—',
-    timestamp:String(row?.local_source_recorded_at||'').trim() || '—',
-    note:_themeHasLocal(row) ? 'Local theme provenance' : 'No local theme on disk',
-  };
+  if(!String(_selectedSourceContract(row).url||'').trim()) return '—';
+  return _themeModalImportedAt(row);
 }
 
 function _renderSourceStateCard(summary, opts={}){
@@ -1422,8 +1391,43 @@ function _renderSourceStateStack(targetId,row={},opts={}){
   const el=document.getElementById(targetId);
   if(!el) return;
   const draft=opts.draft||{};
-  const layers=['golden','selected','local'].map(layer=>_themeLayerSummary(layer,row,draft));
-  el.innerHTML=layers.map(layer=>_renderSourceStateCard(layer,{compact:opts.compact===true})).join('');
+  const previewRow={...row};
+  if(Object.prototype.hasOwnProperty.call(draft,'selectedUrl')) previewRow.url=draft.selectedUrl;
+  const selected=_selectedSourceContract(previewRow);
+  const local=_localSourceContract(row);
+  const summaries=[
+    {
+      label:'Golden',
+      stateLabel:_rowHasGoldenSource(row) ? 'Ready' : 'None',
+      className:_rowHasGoldenSource(row) ? 'is-golden' : 'is-unknown',
+      chips:_rowHasGoldenSource(row) ? ['Curated'] : [],
+      url:String(row?.golden_source_url||'').trim(),
+      offset:_rowHasGoldenSource(row) ? _themeModalOffsetLabel(row, _themeHasLocal(row), 'golden_source') : '—',
+      timestamp:_themeModalImportedAt(row),
+      note:_rowHasGoldenSource(row) ? 'Curated import' : 'No curated source recorded',
+    },
+    {
+      label:'Selected',
+      stateLabel:selected.url ? _selectedSourceStateText(previewRow) : 'None',
+      className:selected.url ? _sourceKindClass(selected.kind) : 'is-unknown',
+      chips:selected.url ? [_selectedSourceLabel(previewRow)] : [],
+      url:selected.url,
+      offset:selected.url ? _themeModalOffsetLabel(previewRow, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
+      timestamp:selected.url ? _themeModalImportedAt(row) : '—',
+      note:selected.url ? 'Used for approval/download' : 'No selected source recorded',
+    },
+    {
+      label:'Local',
+      stateLabel:_themeHasLocal(row) ? 'On disk' : 'Missing',
+      className:_themeHasLocal(row) ? _sourceKindClass(local.kind) : 'is-unknown',
+      chips:_themeHasLocal(row) && local.url ? [_sourceKindLabel(local.kind), _sourceMethodLabel(local.method)] : [],
+      url:local.url,
+      offset:_themeHasLocal(row) ? _themeModalOffsetLabel(row, true, 'local_theme') : '—',
+      timestamp:String(row?.local_source_recorded_at||'').trim() || '—',
+      note:_themeHasLocal(row) ? 'Local theme provenance' : 'No local theme on disk',
+    }
+  ];
+  el.innerHTML=summaries.map(layer=>_renderSourceStateCard(layer,{compact:opts.compact===true})).join('');
 }
 function _clipWindowMeta(duration=0, offset=0, maxDur=0){
   const total=Math.max(0, Number(duration)||0);
@@ -1526,7 +1530,7 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   _themeModalContext={rk,title,year,folder,row,library:resolvedLibrary};
   const hasTheme=_themeHasLocal(row);
   const status=String(row?.status||'MISSING').toUpperCase();
-  const hasStoredSource=!!_themeModalSourceUrl(row);
+  const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim();
   const hasLocalTheme=hasTheme;
   const isDownloadable=!hasLocalTheme && hasStoredSource && status==='APPROVED';
   const isSourceOnly=hasStoredSource && !hasLocalTheme;
@@ -1552,29 +1556,26 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
     ? _themeModalOffsetLabel(row, true, 'local_theme')
     : 'Duration: —';
   const sourceOriginLabel=_themeModalSourceOriginLabel(row);
+  const sourceStateLabel=_themeModalSourceState(row);
   const sourceUrl=_themeModalSourceUrl(row);
   const sourceOffset=_themeModalSourceOffset(row);
   const sourceAdded=_themeModalSourceAdded(row);
   document.getElementById('theme-modal-source-summary').textContent=hasStoredSource
-    ?(hasLocalTheme
-      ?'The current local theme is tied to a saved source record.'
-      :(isDownloadable
-        ?'A saved source is approved and ready to download.'
-        :'A saved source is attached, but the local theme file is not on disk yet.'))
-    :'No source details are attached right now.';
+    ? sourceStateLabel
+    : 'No source details are attached right now.';
   document.getElementById('theme-modal-source-origin').textContent=sourceOriginLabel;
   document.getElementById('theme-modal-source-url').textContent=sourceUrl || '—';
   document.getElementById('theme-modal-source-offset').textContent=sourceOffset;
-  document.getElementById('theme-modal-source-added').textContent=hasStoredSource ? sourceAdded : '—';
+  document.getElementById('theme-modal-source-added').textContent=sourceAdded;
   const sourceCopyBtn=document.getElementById('theme-modal-source-copy');
   const sourceOpenBtn=document.getElementById('theme-modal-source-open');
   if(sourceCopyBtn){
     sourceCopyBtn.disabled=!sourceUrl;
-    sourceCopyBtn.onclick=sourceUrl?()=>_copyTextValue(sourceUrl,'Source URL copied'):null;
+    sourceCopyBtn.onclick=sourceUrl?themeModalCopySource:null;
   }
   if(sourceOpenBtn){
     sourceOpenBtn.disabled=!sourceUrl;
-    sourceOpenBtn.onclick=sourceUrl?()=>window.open(sourceUrl,'_blank','noopener'):null;
+    sourceOpenBtn.onclick=sourceUrl?themeModalOpenSource:null;
   }
 
   const sourceEmpty=document.getElementById('theme-source-empty');
