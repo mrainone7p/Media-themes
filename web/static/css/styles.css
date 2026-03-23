@@ -161,7 +161,16 @@ body.nav-collapsed main{margin-left:48px}
 }
 @media (max-width: 640px){
   .dashboard-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .dash-controls{flex-direction:column;align-items:flex-start}
+  .dash-controls{flex-direction:column;align-items:stretch}
+  .dash-controls > *{width:100%}
+  .dash-lib-tabs{width:100%}
+  .dash-lib-tab{white-space:normal;text-align:center;justify-content:center}
+  .dash-bar-period-wrap{justify-content:flex-start}
+  .dash-health-row{align-items:flex-start;flex-wrap:wrap}
+  .dash-health-label{flex-basis:calc(100% - 86px)}
+  .dash-health-detail{flex-basis:100%;white-space:normal;overflow:visible;text-overflow:clip;text-align:left;padding-right:0}
+  .dash-activity-row{grid-template-columns:1fr;gap:6px}
+  .dash-activity-label{order:2}
 }
 .offset-input{width:110px;min-width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;text-align:center}
 .offset-input:focus{border-color:var(--purple)}
@@ -307,13 +316,13 @@ body.nav-collapsed main{margin-left:48px}
 /* How it Works toggle */
 .dash-how-toggle-btn{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:0;margin:0;background:none;border:none;color:inherit;width:100%;text-align:left}
 /* Pipeline steps inline section */
-.dash-pipeline-steps{display:flex;flex-direction:column;gap:5px}
-.dash-pipeline-step{display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)}
+.dash-pipeline-steps{display:flex;flex-direction:column;gap:5px;height:100%}
+.dash-pipeline-step{display:flex;gap:8px;align-items:flex-start;padding:6px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);flex:1}
 .dash-pipeline-step-num{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;min-width:auto;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,currentColor 12%,transparent);text-align:center}
 .dash-pipeline-step-title{font-size:12px;font-weight:700;margin-bottom:2px;color:var(--text)}
 .dash-pipeline-step-desc{font-size:11px;color:var(--text2);line-height:1.4}
 /* Status Key */
-.dash-status-key{display:flex;flex-direction:column;gap:5px}
+.dash-status-key{display:flex;flex-direction:column;gap:5px;height:100%}
 .dash-status-key-row{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)}
 .dash-status-key-row .badge{min-width:84px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:2px 7px}
 .dash-status-key-def{font-size:11px;color:var(--text2);line-height:1.4}
@@ -379,7 +388,7 @@ body.nav-collapsed main{margin-left:48px}
 
 /* ─── Two-chart grid ─── */
 .dash-charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.dash-chart-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.dash-chart-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-width:0}
 .dash-chart-card-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
 .dash-chart-card-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .dash-chart-card-header .dash-chart-card-title{margin-bottom:0}
@@ -398,7 +407,7 @@ body.nav-collapsed main{margin-left:48px}
 .dash-bar-empty{font-size:11px;color:var(--text3);font-family:var(--mono);text-align:center;padding:40px 10px}
 .dash-bar-chart-svg{overflow:visible}
 /* Activity bar period controls */
-.dash-bar-period-wrap{display:flex;align-items:center;gap:4px}
+.dash-bar-period-wrap{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .dash-bar-count-input{width:52px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);font-family:var(--mono);font-size:12px;text-align:center;outline:none}
 .dash-bar-count-input:focus{border-color:var(--amber)}
 .dash-bar-freq-select{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 6px;color:var(--text);font-size:11px;font-weight:600;font-family:var(--ui);cursor:pointer;outline:none}
@@ -410,7 +419,10 @@ body.nav-collapsed main{margin-left:48px}
   .dash-how-grid{grid-template-columns:1fr!important}
   .dash-how-grid .span-7,.dash-how-grid .span-5{grid-column:span 12}
   .dash-split-row{grid-template-columns:1fr}
+  .dash-pipeline-steps,.dash-status-key{height:auto}
+  .dash-pipeline-step{flex:none}
 }
+
 
 /* ─── Table ─── */
 .tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}

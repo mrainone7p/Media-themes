@@ -960,6 +960,14 @@ function renderHistStatusFilters(){
 
 function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();renderBarChart();renderPieChart();}
 
+function dashboardTimelineForLibrary(name){
+  const timeline=_dashTimelineData||{};
+  const byLibrary=(timeline.by_library && typeof timeline.by_library==='object') ? timeline.by_library : {};
+  const allTimeline=(timeline.all && typeof timeline.all==='object') ? timeline.all : {};
+  if(name==='all') return allTimeline;
+  return (byLibrary[name] && typeof byLibrary[name]==='object') ? byLibrary[name] : {};
+}
+
 function switchDashLib(name){
   _dashSelectedLib=name;
   renderDashLibTabs();
@@ -987,9 +995,9 @@ function renderDashLibKpi(){
 }
 
 // ── Bar chart — activity over time ────────────────────────────────────────────
-let _dashTimelineData={};
-let _dashBarTimeGroup='month';
-let _dashBarCount=12;
+let _dashTimelineData={all:{},by_library:{}};
+let _dashBarTimeGroup='day';
+let _dashBarCount=10;
 const BAR_STATUSES=['AVAILABLE','APPROVED','STAGED','MISSING','FAILED'];
 
 function _setBarFreq(freq){
@@ -1040,7 +1048,7 @@ function _formatBarLabel(key, group){
 function renderBarChart(){
   const el=document.getElementById('dash-bar-chart');
   if(!el) return;
-  const timeline=_dashTimelineData||{};
+  const timeline=dashboardTimelineForLibrary(_dashSelectedLib);
   if(!Object.keys(timeline).length){
     el.innerHTML='<div class="dash-bar-empty">No activity data available yet. Status changes will appear here over time.</div>';
     return;
@@ -1217,7 +1225,9 @@ async function loadDashboardDeferredData(seq, cfg, enabledLibs){
     };
   }
   if(_dashSelectedLib!=='all' && !_dashSummaryByLib[_dashSelectedLib]) _dashSelectedLib='all';
-  _dashTimelineData=(summary.status_timeline&&typeof summary.status_timeline==='object')?summary.status_timeline:{};
+  _dashTimelineData=(summary.status_timeline&&typeof summary.status_timeline==='object')
+    ? {all:(summary.status_timeline.all&&typeof summary.status_timeline.all==='object')?summary.status_timeline.all:{}, by_library:(summary.status_timeline.by_library&&typeof summary.status_timeline.by_library==='object')?summary.status_timeline.by_library:{}}
+    : {all:{},by_library:{}};
 
   renderDashboardPipelineOverview(_dashSummaryOverall);
   renderDashboardRecentActivity(summary.recent_activity||{});
@@ -1268,7 +1278,7 @@ async function loadDashboard(force=false){
   _dashboardLibraries={enabled:enabledLibs.map(lib=>lib.name), scheduled:scheduledLibs};
   _dashSummaryByLib={};
   _dashSummaryOverall=emptyDashboardCounts();
-  _dashTimelineData={};
+  _dashTimelineData={all:{},by_library:{}};
   if(_dashSelectedLib!=='all' && !_dashSummaryByLib[_dashSelectedLib]) _dashSelectedLib='all';
   _resetHowItWorks();
   renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs);

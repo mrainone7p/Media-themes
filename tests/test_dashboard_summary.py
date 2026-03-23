@@ -28,14 +28,14 @@ class DashboardSummaryPayloadTests(unittest.TestCase):
         }
         ledger_rows = {
             "Movies": [
-                {"status": "MISSING"},
-                {"status": "APPROVED"},
-                {"status": "AVAILABLE"},
+                {"status": "MISSING", "last_updated": "2026-03-18 10:00:00"},
+                {"status": "APPROVED", "last_updated": "2026-03-19 10:00:00"},
+                {"status": "AVAILABLE", "last_updated": "2026-03-20 10:00:00"},
             ],
             "Shows": [
-                {"status": "FAILED"},
-                {"status": "AVAILABLE"},
-                {"status": "UNMONITORED"},
+                {"status": "FAILED", "last_updated": "2026-03-20 11:00:00"},
+                {"status": "AVAILABLE", "last_updated": "2026-03-20 12:00:00"},
+                {"status": "UNMONITORED", "last_updated": "2026-03-21 09:00:00"},
             ],
         }
         entries = [
@@ -70,6 +70,9 @@ class DashboardSummaryPayloadTests(unittest.TestCase):
         )
         self.assertEqual(1, payload["counts_by_library"]["Movies"]["APPROVED"])
         self.assertEqual(1, payload["counts_by_library"]["Shows"]["FAILED"])
+        self.assertEqual({"APPROVED": 1}, payload["status_timeline"]["by_library"]["Movies"]["2026-03-19"])
+        self.assertEqual({"FAILED": 1, "AVAILABLE": 1}, payload["status_timeline"]["by_library"]["Shows"]["2026-03-20"])
+        self.assertEqual({"AVAILABLE": 2, "FAILED": 1}, payload["status_timeline"]["all"]["2026-03-20"])
         self.assertEqual("Scan Libraries", payload["recent_activity"]["scan"]["task"])
         self.assertEqual("Find Sources", payload["recent_activity"]["discover"]["task"])
         self.assertEqual("Download Themes", payload["recent_activity"]["download"]["task"])
