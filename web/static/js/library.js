@@ -262,10 +262,8 @@ function allowedStatuses(row){
 }
 
 function renderStatusCell(row){
-  const rk=row.rating_key;
   const status=row.status;
-  const opts=allowedStatuses(row).map(s=>`<option value="${s}"${status===s?' selected':''}>${displayStatus(s)}</option>`).join('');
-  return `<span class="badge s-${status}" title="${statusDesc(status)}" style="cursor:pointer;position:relative"><span class="si"></span><select class="st-sel" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%" onchange="updateRow('${rk}','status',this.value)">${opts}</select><span class="status-label">${displayStatus(status)}</span></span>`;
+  return `<span class="badge s-${status}" title="${statusDesc(status)}"><span class="si"></span><span class="status-label">${displayStatus(status)}</span></span>`;
 }
 
 function renderStatusKey(){
