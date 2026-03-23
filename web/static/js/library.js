@@ -542,11 +542,11 @@ function _renderSelectedSourceSummary(url, title){
   const openBtn=document.getElementById('se-open-btn');
   const cleanUrl=String(url||'').trim();
   const row=_rowMap[_seKey||_searchKey]||_rows.find(r=>String(r.rating_key)===String(_seKey||_searchKey))||{};
-  _renderSourceStateStack('se-source-state-stack', row, {compact:true, draft:{selectedUrl:cleanUrl}});
+  _renderConfirmSelectedSourceState('se-source-state-stack', row, {draft:{selectedUrl:cleanUrl}});
   if(subtitleEl){
     subtitleEl.textContent=cleanUrl
       ? `${String(title||'').trim()||_sourceTitleFromUrl(cleanUrl)}`
-      : 'Review the saved source and local theme file before saving.';
+      : 'Review the currently selected source before saving.';
   }
   if(copyBtn) copyBtn.disabled=!cleanUrl;
   if(openBtn) openBtn.disabled=!cleanUrl;
@@ -1494,6 +1494,30 @@ function _renderSourceStateCard(summary, opts={}){
   </div>`;
 }
 
+function _selectedSourceStateSummary(row={}, opts={}){
+  const draft=opts.draft||{};
+  const previewRow={...row};
+  if(Object.prototype.hasOwnProperty.call(draft,'selectedUrl')) previewRow.url=draft.selectedUrl;
+  const selected=_selectedSourceContract(previewRow);
+  return {
+    label:'Selected Source',
+    stateLabel:selected.url ? _sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow)) : 'Not Selected',
+    className:selected.url ? _sourceStateClass(selected.kind, selected.method) : 'is-unknown',
+    chips:[],
+    url:selected.url,
+    offset:selected.url ? _themeModalOffsetLabel(previewRow, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
+    timestamp:selected.url ? _themeModalSourceAdded(row) : '—',
+    note:selected.url ? 'Selected for approval or download' : 'No selected source saved',
+  };
+}
+
+function _renderConfirmSelectedSourceState(targetId,row={},opts={}){
+  const el=document.getElementById(targetId);
+  if(!el) return;
+  const summary=_selectedSourceStateSummary(row, opts);
+  el.innerHTML=_renderSourceStateCard(summary,{compact:true});
+}
+
 function _copyTextValue(value='', successMessage='Copied'){
   const text=String(value||'').trim();
   if(!text) return toast('Nothing to copy','info');
@@ -1517,10 +1541,6 @@ function _copyTextValue(value='', successMessage='Copied'){
 function _renderSourceStateStack(targetId,row={},opts={}){
   const el=document.getElementById(targetId);
   if(!el) return;
-  const draft=opts.draft||{};
-  const previewRow={...row};
-  if(Object.prototype.hasOwnProperty.call(draft,'selectedUrl')) previewRow.url=draft.selectedUrl;
-  const selected=_selectedSourceContract(previewRow);
   const local=_localSourceContract(row);
   const goldenState=_goldenSourceState(row);
   const summaries=[
@@ -1534,16 +1554,7 @@ function _renderSourceStateStack(targetId,row={},opts={}){
       timestamp:_themeModalImportedAt(row),
       note:goldenState.detail,
     },
-    {
-      label:'Selected Source',
-      stateLabel:selected.url ? _sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow)) : 'Not Selected',
-      className:selected.url ? _sourceStateClass(selected.kind, selected.method) : 'is-unknown',
-      chips:[],
-      url:selected.url,
-      offset:selected.url ? _themeModalOffsetLabel(previewRow, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
-      timestamp:selected.url ? _themeModalSourceAdded(row) : '—',
-      note:selected.url ? 'Selected for approval or download' : 'No selected source saved',
-    },
+    _selectedSourceStateSummary(row, opts),
     {
       label:'Local Theme',
       stateLabel:_themeHasLocal(row) ? 'On disk' : 'Missing',
