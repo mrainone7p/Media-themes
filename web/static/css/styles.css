@@ -807,7 +807,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .ui-pill,.review-source-pill,.sm-card-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:999px;background:var(--gray-soft);border:1px solid var(--border);font-size:9px;line-height:1.2;color:var(--text2);font-family:var(--mono)}
 .review-source-pill{justify-content:center;padding:5px 10px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:var(--ui)}
 .ui-pill.is-golden,.review-source-pill.is-golden,.src-badge.golden{border-color:rgba(245,166,35,.4);background:var(--amber-soft);color:var(--amber)}
-.ui-pill.is-custom,.review-source-pill.is-custom,.review-source-pill.is-manual{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
+.ui-pill.is-custom,.ui-pill.is-manual,.review-source-pill.is-custom,.review-source-pill.is-manual{border-color:rgba(59,130,246,.35);background:var(--blue-soft);color:var(--blue)}
 .ui-pill.is-playlist,.review-source-pill.is-playlist{border-color:rgba(176,106,255,.35);background:rgba(176,106,255,.1);color:#b06aff}
 .ui-pill.is-direct,.review-source-pill.is-direct{border-color:rgba(45,212,160,.35);background:var(--green-soft);color:var(--green)}
 .ui-pill.is-unknown,.review-source-pill.is-unknown{color:var(--text3)}

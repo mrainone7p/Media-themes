@@ -623,7 +623,7 @@
           <th style="width:10%" onclick="sortTable('status')">Status ↕</th>
           <th style="width:12%">Action</th>
           <th style="width:13%" onclick="sortTable('golden_state')">Golden ↕</th>
-          <th style="width:17%" onclick="sortTable('custom_state')">Selected ↕</th>
+          <th style="width:17%" onclick="sortTable('custom_state')">Selected Source ↕</th>
           <th style="width:9%" onclick="sortTable('last_updated')">Updated ↕</th>
           <th style="width:12%" onclick="sortTable('notes')">Notes ↕</th>
         </tr></thead>
@@ -1059,7 +1059,7 @@
                 <div class="sm-card-copy">
                   <div class="sm-card-topline">
                     <div class="sm-card-title">Golden Source</div>
-                    <div class="sm-card-state">Selected</div>
+                    <div class="sm-card-state">Selected Source</div>
                     <div class="sm-card-badge recommended" id="sm-golden-recommended">Recommended</div>
                   </div>
                   <div class="sm-card-desc" id="sm-golden-desc">Use the curated source already linked to this item. If it fails, stay here to retry or replace the URL.</div>
@@ -1076,7 +1076,7 @@
                 <div class="sm-card-copy">
                   <div class="sm-card-topline">
                     <div class="sm-card-title">Playlist</div>
-                    <div class="sm-card-state">Selected</div>
+                    <div class="sm-card-state">Selected Source</div>
                   </div>
                   <div class="sm-card-desc">Search soundtrack playlists from track 1 onward.</div>
                 </div>
@@ -1091,7 +1091,7 @@
                 <div class="sm-card-copy">
                   <div class="sm-card-topline">
                     <div class="sm-card-title">Direct</div>
-                    <div class="sm-card-state">Selected</div>
+                    <div class="sm-card-state">Selected Source</div>
                   </div>
                   <div class="sm-card-desc">Search for a single theme result with a tighter match.</div>
                 </div>
@@ -1110,7 +1110,7 @@
                   <div class="sm-card-copy">
                     <div class="sm-card-topline">
                       <div class="sm-card-title">Custom</div>
-                      <div class="sm-card-state">Selected</div>
+                      <div class="sm-card-state">Selected Source</div>
                     </div>
                     <div class="sm-card-desc">Edit the query text before running the search.</div>
                   </div>
@@ -1128,7 +1128,7 @@
                   <div class="sm-card-copy">
                     <div class="sm-card-topline">
                       <div class="sm-card-title">Paste URL</div>
-                      <div class="sm-card-state">Selected</div>
+                      <div class="sm-card-state">Selected Source</div>
                     </div>
                     <div class="sm-card-desc">Jump straight to a known source URL.</div>
                     <div class="sm-card-submeta">Direct link entry · skips search results</div>
@@ -1356,7 +1356,7 @@
       <div class="review-empty hidden" id="theme-source-empty">No selected source is saved yet. Use Find Theme to choose one.</div>
       <div class="ui-meta-list review-meta-list" id="theme-source-meta-list">
         <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">Source Type</div>
+          <div class="review-meta-label">Source State</div>
           <div class="review-meta-value" id="theme-modal-source-origin">—</div>
         </div>
         <div class="ui-meta-row review-meta-item">

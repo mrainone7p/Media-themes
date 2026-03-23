@@ -99,15 +99,29 @@ function _sourceKindLabel(kind=''){
 
 function _sourceMethodLabel(method=''){
   const map={
-    golden_source:'Curated',
+    golden_source:'Golden Source',
     playlist:'Playlist',
     direct:'Direct',
-    custom:'Custom',
-    paste:'Paste',
+    custom:'Manual',
+    paste:'Manual',
     manual:'Manual',
     existing:'Existing',
   };
   return map[method] || formatStatusLabel(method||'unknown');
+}
+
+function _sourceStateClass(kind='', method=''){
+  const normalized=_normalizeSourceMethod(method);
+  if(normalized==='golden_source') return 'is-golden';
+  if(normalized==='playlist') return 'is-playlist';
+  if(normalized==='direct') return 'is-direct';
+  if(normalized==='custom' || normalized==='paste' || normalized==='manual') return 'is-manual';
+  return _sourceKindClass(kind);
+}
+
+function _sourceStatePillLabel(typeLabel='', statusLabel=''){
+  const parts=[String(typeLabel||'').trim(), String(statusLabel||'').trim()].filter(Boolean);
+  return parts.length ? parts.join(' · ') : '—';
 }
 
 function _sourceKindClass(kind=''){
@@ -148,8 +162,8 @@ function _localSourceContract(row={}){
 
 function _goldenSourceState(row={}){
   const hasGolden=_rowHasGoldenSource(row);
-  if(!hasGolden) return {key:'not_available', label:'Not Available', className:'is-unknown', detail:'No curated source', chips:[]};
-  return {key:'available', label:'Ready', className:'is-golden', detail:'Curated source available', chips:['Curated']};
+  if(!hasGolden) return {key:'not_available', label:'Not Available', className:'is-unknown', detail:'No golden source saved', chips:[]};
+  return {key:'available', label:'Ready', className:'is-golden', detail:'Golden source available', chips:[]};
 }
 
 function _selectedSourceLabel(row={}){
@@ -160,7 +174,7 @@ function _selectedSourceLabel(row={}){
   if((sourceUrl && goldenUrl && sourceUrl===goldenUrl) || selected.kind==='golden' || method==='golden_source') return 'Golden Source';
   if(method==='playlist') return 'Playlist';
   if(method==='direct') return 'Direct';
-  if(sourceUrl) return 'Custom';
+  if(sourceUrl) return 'Manual';
   return '—';
 }
 
@@ -173,7 +187,7 @@ function _selectedSourceStateText(row={}){
   if(status==='STAGED') return 'Staged';
   if(status==='FAILED') return 'Failed';
   if(status==='UNMONITORED') return 'Unmonitored';
-  return 'Identified';
+  return 'Saved';
 }
 
 function _customSourceState(row={}){
@@ -181,14 +195,15 @@ function _customSourceState(row={}){
   const typeLabel=_selectedSourceLabel(row);
   const statusLabel=_selectedSourceStateText(row);
   if(!selected.url){
-    return {key:'none', typeLabel:typeLabel==='—'?'—':typeLabel, statusLabel, className:'is-unknown', detail:'', chips:[]};
+    return {key:'none', typeLabel:'Selected Source', statusLabel, pillLabel:statusLabel, className:'is-unknown', detail:'No selected source saved', chips:[]};
   }
   return {
-    key:typeLabel==='Golden Source' ? 'golden' : (selected.method||'custom'),
+    key:typeLabel==='Golden Source' ? 'golden' : (selected.method||'manual'),
     typeLabel,
     statusLabel,
-    className:_sourceKindClass(selected.kind),
-    detail:'',
+    pillLabel:_sourceStatePillLabel(typeLabel, statusLabel),
+    className:_sourceStateClass(selected.kind, selected.method),
+    detail:selected.url,
     chips:[],
   };
 }
@@ -852,8 +867,8 @@ function renderTable(){
         ${renderStatusCell(row)}
       </td>
       <td>${renderRowActionCell(row)}</td>
-      <td>${_renderSourceStateCell('Golden', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)}</td>
-      <td>${_renderSourceStateCell('Selected', _renderSourceStatePill(customState.typeLabel, customState.className, customState.statusLabel), customState.statusLabel, customState.chips)}</td>
+      <td>${_renderSourceStateCell('Golden Source', _renderSourceStatePill(_sourceStatePillLabel('Golden', goldenState.label), goldenState.className, goldenState.detail), '', goldenState.chips)}</td>
+      <td>${_renderSourceStateCell('Selected Source', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.statusLabel), '', customState.chips)}</td>
       <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
       <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
     </tr>`;
@@ -1316,10 +1331,20 @@ function _themeModalImportedAt(row={}){
   return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
 function _themeModalSourceOriginLabel(row={}){
-  return _selectedSourceLabel(row);
+  const selected=_selectedSourceContract(row);
+  if(!selected.url) return 'Not Selected';
+  return _sourceStatePillLabel(_selectedSourceLabel(row), _selectedSourceStateText(row));
 }
 function _themeModalSourceState(row={}){
   return _selectedSourceStateText(row);
+}
+function _themeModalSourceOriginClass(row={}){
+  const selected=_selectedSourceContract(row);
+  if(!selected.url) return 'is-unknown';
+  return _sourceStateClass(selected.kind, selected.method);
+}
+function _themeModalSourceOriginMarkup(row={}){
+  return _renderSourceStatePill(_themeModalSourceOriginLabel(row), _themeModalSourceOriginClass(row), _themeModalSourceUrl(row) || _themeModalSourceState(row));
 }
 function _themeModalSourceUrl(row={}){
   return String(_selectedSourceContract(row).url||'').trim();
@@ -1418,24 +1443,24 @@ function _renderSourceStateStack(targetId,row={},opts={}){
   const local=_localSourceContract(row);
   const summaries=[
     {
-      label:'Curated Source',
-      stateLabel:_rowHasGoldenSource(row) ? 'Available' : 'None',
+      label:'Golden Source',
+      stateLabel:_sourceStatePillLabel('Golden', _rowHasGoldenSource(row) ? 'Ready' : 'Not Available'),
       className:_rowHasGoldenSource(row) ? 'is-golden' : 'is-unknown',
-      chips:_rowHasGoldenSource(row) ? ['Curated'] : [],
+      chips:[],
       url:String(row?.golden_source_url||'').trim(),
       offset:_rowHasGoldenSource(row) ? _themeModalOffsetLabel(row, _themeHasLocal(row), 'golden_source') : '—',
       timestamp:_themeModalImportedAt(row),
-      note:_rowHasGoldenSource(row) ? 'Curated source available' : 'No curated source saved',
+      note:_rowHasGoldenSource(row) ? 'Golden source available' : 'No golden source saved',
     },
     {
-      label:'Saved Source',
-      stateLabel:selected.url ? _selectedSourceStateText(previewRow) : 'None',
-      className:selected.url ? _sourceKindClass(selected.kind) : 'is-unknown',
-      chips:selected.url ? [_selectedSourceLabel(previewRow)] : [],
+      label:'Selected Source',
+      stateLabel:selected.url ? _sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow)) : 'Not Selected',
+      className:selected.url ? _sourceStateClass(selected.kind, selected.method) : 'is-unknown',
+      chips:[],
       url:selected.url,
       offset:selected.url ? _themeModalOffsetLabel(previewRow, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
       timestamp:selected.url ? _themeModalImportedAt(row) : '—',
-      note:selected.url ? 'Saved for approval or download' : 'No selected source saved',
+      note:selected.url ? 'Selected for approval or download' : 'No selected source saved',
     },
     {
       label:'Local Theme',
@@ -1578,7 +1603,6 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-local-dur').textContent=hasLocalTheme
     ? _themeModalOffsetLabel(row, true, 'local_theme')
     : 'Duration: —';
-  const sourceOriginLabel=_themeModalSourceOriginLabel(row);
   const sourceStateLabel=_themeModalSourceState(row);
   const sourceUrl=_themeModalSourceUrl(row);
   const sourceOffset=_themeModalSourceOffset(row);
@@ -1586,7 +1610,7 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-source-summary').textContent=hasStoredSource
     ? sourceStateLabel
     : 'No selected source is saved yet.';
-  document.getElementById('theme-modal-source-origin').textContent=sourceOriginLabel;
+  document.getElementById('theme-modal-source-origin').innerHTML=_themeModalSourceOriginMarkup(row);
   document.getElementById('theme-modal-source-url').textContent=sourceUrl || '—';
   document.getElementById('theme-modal-source-offset').textContent=sourceOffset;
   document.getElementById('theme-modal-source-added').textContent=sourceAdded;
