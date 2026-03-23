@@ -41,6 +41,24 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         ):
             self.assertIn(snippet, self.library_source)
 
+    def test_library_js_uses_distinct_offsets_for_golden_selected_and_local_layers(self):
+        for snippet in (
+            "offset:_normalizedOffsetValue(sourceRow?.golden_source_offset||'0')",
+            "const goldenOffsetValue=_normalizedOffsetValue(existingRow?.golden_source_offset||'0');",
+            "if(layer==='golden_source') return row?.golden_source_offset||0;",
+            "if(layer==='local_theme') return row?.local_source_offset ?? row?.start_offset ?? 0;",
+            "return row?.start_offset||0;",
+            "const sourceOffsetLayer=sourceMeta.type==='golden'?'golden_source':'selected_source';",
+            "_themeModalOffsetLabel(row, hasLocalTheme, sourceOffsetLayer)",
+            "_themeModalOffsetLabel(row, true, 'local_theme')",
+            "_setMethodQuickPick('golden_source', golden.url ? {title:'Golden Source URL', url:golden.url, start_offset:golden.offset} : false);",
+        ):
+            self.assertIn(snippet, self.library_source)
+
+    def test_library_js_does_not_reuse_selected_source_offset_for_golden_source_ui(self):
+        self.assertNotIn("offset:_normalizedOffsetValue(sourceRow?.start_offset||'0')", self.library_source)
+        self.assertNotIn("const goldenOffsetValue=_normalizedOffsetValue(existingRow?.start_offset||'0');", self.library_source)
+
 
 if __name__ == "__main__":
     unittest.main()
