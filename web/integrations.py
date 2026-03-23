@@ -9,6 +9,7 @@ web.logic can decide what should happen with the results.
 from __future__ import annotations
 
 import hashlib
+from pathlib import Path
 import re
 import shutil
 import subprocess
