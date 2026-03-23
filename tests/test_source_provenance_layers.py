@@ -75,12 +75,15 @@ class StorageLocalProvenanceTests(unittest.TestCase):
                 "status": "AVAILABLE",
                 "url": "https://example.test/selected",
                 "start_offset": "12",
+                "selected_source_kind": "custom",
+                "selected_source_method": "playlist",
                 "golden_source_url": "https://example.test/golden",
                 "golden_source_offset": "8",
                 "local_source_url": "https://example.test/local",
                 "local_source_offset": "12",
                 "local_source_origin": "manual",
-                "local_source_method": "manual_download",
+                "local_source_kind": "custom",
+                "local_source_method": "playlist",
                 "local_source_recorded_at": "2026-03-23 10:00:00",
                 "end_offset": "0",
                 "plex_title": "Example",
@@ -103,7 +106,10 @@ class StorageLocalProvenanceTests(unittest.TestCase):
             self.assertEqual("https://example.test/local", loaded[0]["local_source_url"])
             self.assertEqual("12", loaded[0]["local_source_offset"])
             self.assertEqual("manual", loaded[0]["local_source_origin"])
-            self.assertEqual("manual_download", loaded[0]["local_source_method"])
+            self.assertEqual("custom", loaded[0]["selected_source_kind"])
+            self.assertEqual("playlist", loaded[0]["selected_source_method"])
+            self.assertEqual("custom", loaded[0]["local_source_kind"])
+            self.assertEqual("playlist", loaded[0]["local_source_method"])
             self.assertEqual("2026-03-23 10:00:00", loaded[0]["local_source_recorded_at"])
 
 
@@ -116,12 +122,15 @@ class SourceFlowLayeringTests(unittest.TestCase):
             "status": "STAGED",
             "url": "https://example.test/manual-selected",
             "start_offset": "15",
+            "selected_source_kind": "custom",
+            "selected_source_method": "manual",
             "golden_source_url": "",
             "golden_source_offset": "0",
             "local_source_url": "https://example.test/local-theme",
             "local_source_offset": "15",
             "local_source_origin": "manual",
-            "local_source_method": "manual_download",
+            "local_source_kind": "custom",
+            "local_source_method": "manual",
             "local_source_recorded_at": "2026-03-22 10:00:00",
             "end_offset": "0",
             "plex_title": "Example",
@@ -165,10 +174,12 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertEqual("https://example.test/manual-selected", row["url"])
         self.assertEqual("15", row["start_offset"])
         self.assertEqual("manual", row["source_origin"])
+        self.assertEqual("custom", row["selected_source_kind"])
+        self.assertEqual("manual", row["selected_source_method"])
         self.assertEqual("https://example.test/golden-selected", row["golden_source_url"])
         self.assertEqual("4", row["golden_source_offset"])
         self.assertEqual("https://example.test/local-theme", row["local_source_url"])
-        self.assertEqual("manual_download", row["local_source_method"])
+        self.assertEqual("manual", row["local_source_method"])
 
     def test_manual_save_updates_selected_source_only(self):
         row = {
@@ -177,12 +188,15 @@ class SourceFlowLayeringTests(unittest.TestCase):
             "status": "STAGED",
             "url": "https://example.test/old-selected",
             "start_offset": "3",
+            "selected_source_kind": "custom",
+            "selected_source_method": "direct",
             "golden_source_url": "https://example.test/golden",
             "golden_source_offset": "1",
             "local_source_url": "https://example.test/local-theme",
             "local_source_offset": "3",
             "local_source_origin": "golden_source",
-            "local_source_method": "pass3_download",
+            "local_source_kind": "golden",
+            "local_source_method": "golden_source",
             "local_source_recorded_at": "2026-03-22 09:00:00",
             "end_offset": "0",
             "notes": "",
@@ -199,6 +213,8 @@ class SourceFlowLayeringTests(unittest.TestCase):
                 "rating_key": "1",
                 "url": "https://example.test/new-selected",
                 "start_offset": "11",
+                "selected_source_kind": "custom",
+                "selected_source_method": "playlist",
                 "target_status": "APPROVED",
                 "notes": "Manual override",
             })
@@ -207,10 +223,12 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertEqual("https://example.test/new-selected", row["url"])
         self.assertEqual("11", row["start_offset"])
-        self.assertEqual("manual", row["source_origin"])
+        self.assertEqual("youtube_playlist", row["source_origin"])
+        self.assertEqual("custom", row["selected_source_kind"])
+        self.assertEqual("playlist", row["selected_source_method"])
         self.assertEqual("https://example.test/golden", row["golden_source_url"])
         self.assertEqual("https://example.test/local-theme", row["local_source_url"])
-        self.assertEqual("pass3_download", row["local_source_method"])
+        self.assertEqual("golden_source", row["local_source_method"])
 
     def test_manual_download_stamps_local_provenance_from_selected_source(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -224,6 +242,8 @@ class SourceFlowLayeringTests(unittest.TestCase):
                 "status": "APPROVED",
                 "url": "https://example.test/selected",
                 "start_offset": "7",
+                "selected_source_kind": "custom",
+                "selected_source_method": "playlist",
                 "source_origin": "manual",
                 "folder": str(folder),
                 "theme_exists": "0",
@@ -249,7 +269,8 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertEqual("https://example.test/selected", row["local_source_url"])
         self.assertEqual("7", row["local_source_offset"])
         self.assertEqual("manual", row["local_source_origin"])
-        self.assertEqual("manual_download", row["local_source_method"])
+        self.assertEqual("custom", row["local_source_kind"])
+        self.assertEqual("playlist", row["local_source_method"])
         self.assertEqual("2026-03-23 11:00:00", row["local_source_recorded_at"])
 
     def test_worker_download_stamps_local_provenance_from_selected_source(self):
@@ -259,6 +280,8 @@ class SourceFlowLayeringTests(unittest.TestCase):
             "status": media_tracks.ST_APPROVED,
             "url": "https://example.test/selected",
             "start_offset": "5",
+            "selected_source_kind": "golden",
+            "selected_source_method": "golden_source",
             "source_origin": "golden_source",
             "folder": "/tmp/example",
             "theme_exists": 0,
@@ -284,7 +307,8 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertEqual("https://example.test/selected", row["local_source_url"])
         self.assertEqual("5", row["local_source_offset"])
         self.assertEqual("golden_source", row["local_source_origin"])
-        self.assertEqual("pass3_download", row["local_source_method"])
+        self.assertEqual("golden", row["local_source_kind"])
+        self.assertEqual("golden_source", row["local_source_method"])
         self.assertEqual("2026-03-23 12:00:00", row["local_source_recorded_at"])
 
 

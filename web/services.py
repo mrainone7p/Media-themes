@@ -1186,11 +1186,11 @@ def save_manual_source_payload(data: dict):
         "url": url,
         "start_offset": data.get("start_offset", "0"),
         "end_offset": data.get("end_offset", "0"),
+        "selected_source_kind": data.get("selected_source_kind", ""),
+        "selected_source_method": data.get("selected_source_method", ""),
         "notes": data.get("notes", ""),
         "status": target_status,
     })
-    if saved_row:
-        saved_row["source_origin"] = "manual"
     if error:
         error["library"] = library
         return error, 400

@@ -261,7 +261,7 @@ def download_now_payload(data: dict):
         recorded_at = now_str()
         row["last_updated"] = recorded_at
         row["notes"] = "Downloaded via manual download (replaced existing local theme)" if replaced_existing else "Downloaded via manual download"
-        stamp_local_source_provenance(row, recorded_at=recorded_at, method="manual_download")
+        stamp_local_source_provenance(row, recorded_at=recorded_at)
         row, _ = sync_theme_cache(row, cfg.get("theme_filename", "theme.mp3"), probe_duration=True)
         save_ledger(path, rows)
         message = f"Downloaded and replaced existing {cfg.get('theme_filename', 'theme.mp3')}" if replaced_existing else f"Downloaded and saved as {cfg.get('theme_filename', 'theme.mp3')}"

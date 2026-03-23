@@ -74,52 +74,117 @@ function _rowUsesGoldenSource(row){
   return !!sourceUrl && !!goldenUrl && sourceUrl===goldenUrl;
 }
 
+function _normalizeSourceKind(value){
+  const normalized=String(value||'').trim().toLowerCase();
+  return normalized==='golden' || normalized==='custom' ? normalized : '';
+}
+
+function _normalizeSourceMethod(value){
+  return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
+
+function _legacySourceMethodFromOrigin(origin=''){
+  const normalized=String(origin||'').trim().toLowerCase();
+  if(!normalized) return '';
+  if(normalized.startsWith('golden_source')) return 'golden_source';
+  if(normalized.includes('playlist')) return 'playlist';
+  if(normalized.includes('direct')) return 'direct';
+  if(normalized==='manual' || normalized==='custom') return 'manual';
+  return '';
+}
+
+function _sourceKindLabel(kind=''){
+  return kind==='golden' ? 'Golden' : kind==='custom' ? 'Custom' : 'Unknown';
+}
+
+function _sourceMethodLabel(method=''){
+  const map={
+    golden_source:'Curated',
+    playlist:'Playlist',
+    direct:'Direct',
+    custom:'Custom',
+    paste:'Paste',
+    manual:'Manual',
+    existing:'Existing',
+  };
+  return map[method] || formatStatusLabel(method||'unknown');
+}
+
+function _sourceKindClass(kind=''){
+  if(kind==='golden') return 'is-golden';
+  if(kind==='custom') return 'is-custom';
+  return 'is-unknown';
+}
+
+function _selectedSourceContract(row={}){
+  const url=String(row?.url||'').trim();
+  if(!url) return {kind:'', method:'', url:''};
+  let kind=_normalizeSourceKind(row?.selected_source_kind);
+  let method=_normalizeSourceMethod(row?.selected_source_method);
+  if(!method) method=_legacySourceMethodFromOrigin(row?.source_origin);
+  if(!kind){
+    if(method==='golden_source' || _rowUsesGoldenSource(row)) kind='golden';
+    else kind='custom';
+  }
+  if(!method) method=kind==='golden' ? 'golden_source' : 'manual';
+  return {kind, method, url};
+}
+
+function _localSourceContract(row={}){
+  const url=String(row?.local_source_url||'').trim();
+  if(!url) return {kind:'', method:'', url:''};
+  let kind=_normalizeSourceKind(row?.local_source_kind);
+  let method=_normalizeSourceMethod(row?.local_source_method);
+  if(!method || method==='manual_download' || method==='pass3_download'){
+    const selected=_selectedSourceContract(row);
+    method=selected.method || _legacySourceMethodFromOrigin(row?.local_source_origin) || 'manual';
+  }
+  if(!kind){
+    const selected=_selectedSourceContract(row);
+    kind=selected.kind || (method==='golden_source' ? 'golden' : 'custom');
+  }
+  return {kind, method, url};
+}
+
 function _goldenSourceState(row={}){
   const hasGolden=_rowHasGoldenSource(row);
-  const hasLocal=_hasLocalTheme(row);
-  if(!hasGolden) return {key:'not_available', label:'Not available', className:'is-unknown', detail:'No curated source'};
-  if(hasLocal && _rowUsesGoldenSource(row)) return {key:'downloaded', label:'Downloaded', className:'is-direct', detail:'Local theme from Golden'};
-  return {key:'available', label:'Available', className:'is-golden', detail:'Curated source ready'};
+  if(!hasGolden) return {key:'not_available', label:'None', className:'is-unknown', detail:'No curated source', chips:[]};
+  return {key:'available', label:'Ready', className:'is-golden', detail:'Curated source available', chips:['Curated']};
 }
 
 function _customSourceState(row={}){
-  const sourceUrl=String(row?.url||'').trim();
-  if(!sourceUrl || _rowUsesGoldenSource(row)){
-    return {key:'none', typeLabel:'—', statusLabel:'No custom source', className:'is-unknown', detail:'No custom source selected'};
+  const selected=_selectedSourceContract(row);
+  if(!selected.url){
+    return {key:'none', typeLabel:'—', statusLabel:'No selected source', className:'is-unknown', detail:'No selected source', chips:[]};
   }
-  const meta=_themeSourceMeta(row);
-  const typeLabel=meta.type==='playlist' ? 'Playlist' : meta.type==='direct' ? 'Direct' : 'Custom';
-  const status=String(row?.status||'MISSING').toUpperCase();
   return {
-    key:meta.type||'custom',
-    typeLabel,
-    statusLabel:displayStatus(status),
-    className:meta.className||'is-custom',
-    detail:sourceUrl,
+    key:selected.kind==='golden' ? 'golden' : (selected.method||'custom'),
+    typeLabel:selected.kind==='golden' ? 'Golden' : 'Selected',
+    statusLabel:`${_sourceKindLabel(selected.kind)} · ${_sourceMethodLabel(selected.method)}`,
+    className:_sourceKindClass(selected.kind),
+    detail:selected.url,
+    chips:[_sourceKindLabel(selected.kind), _sourceMethodLabel(selected.method)],
   };
 }
 
 function _localSourceState(row={}){
-  const status=String(row?.status||'MISSING').toUpperCase();
   const hasLocal=_hasLocalTheme(row);
   if(hasLocal){
-    const meta=_themeSourceMeta(row);
-    const fromLabel=meta.type==='golden'
-      ? 'From Golden'
-      : meta.type==='playlist'
-        ? 'From Playlist'
-        : meta.type==='direct'
-          ? 'From Direct'
-          : meta.type==='custom'
-            ? 'From Custom'
-            : 'Source recorded';
-    return {key:'downloaded', label:'Downloaded', className:'is-direct', detail:fromLabel};
+    const local=_localSourceContract(row);
+    return {
+      key:'downloaded',
+      label:'On disk',
+      className:_sourceKindClass(local.kind)||'is-direct',
+      detail:local.url || 'Local theme recorded',
+      chips:local.url ? [_sourceKindLabel(local.kind), _sourceMethodLabel(local.method)] : ['Local'],
+    };
   }
   return {
-    key:status.toLowerCase(),
-    label:displayStatus(status),
-    className:status==='FAILED' ? 'is-unknown' : 'is-custom',
-    detail:_hasSourceUrl(row) ? 'Awaiting local file' : 'No local theme',
+    key:String(row?.status||'MISSING').toLowerCase(),
+    label:'Missing',
+    className:'is-unknown',
+    detail:_hasSourceUrl(row) ? 'Awaiting download' : 'No local theme',
+    chips:[],
   };
 }
 
@@ -128,10 +193,16 @@ function _renderSourceStatePill(label, className='', title=''){
   return `<span class="ui-pill db-source-pill ${className}"${safeTitle}>${_escapeHtml(label)}</span>`;
 }
 
-function _renderSourceStateCell(title, primary, secondary=''){
+function _renderSourceStateChips(chips=[]){
+  if(!Array.isArray(chips) || !chips.length) return '';
+  return `<div class="db-source-meta">${chips.map(chip=>`<span class="ui-pill muted-chip db-source-chip">${_escapeHtml(chip)}</span>`).join('')}</div>`;
+}
+
+function _renderSourceStateCell(title, primary, secondary='', chips=[]){
   return `<div class="db-source-state">
     <span class="db-source-title">${_escapeHtml(title)}</span>
     ${primary}
+    ${_renderSourceStateChips(chips)}
     ${secondary?`<div class="db-source-detail" title="${_escapeAttr(secondary)}">${_escapeHtml(secondary)}</div>`:''}
   </div>`;
 }
@@ -310,7 +381,7 @@ function _sortVal(row,col){
   }
   if(col==='custom_state'){
     const state=_customSourceState(row);
-    const rank={none:0,custom:1,direct:2,playlist:3};
+    const rank={none:0,custom:1,direct:2,playlist:3,golden:4};
     return [rank[state.key] ?? 0, `${state.typeLabel} ${state.statusLabel}`.toLowerCase()];
   }
   if(col==='local_state'){
@@ -417,12 +488,17 @@ function _applyAutoScrollText(el, value, {fallback='—'}={}){
 }
 
 function _renderSelectedSourceSummary(url, title){
-  const sourceEl=document.getElementById('se-source-title');
+  const subtitleEl=document.getElementById('se-source-summary-subtitle');
   const copyBtn=document.getElementById('se-copy-btn');
   const openBtn=document.getElementById('se-open-btn');
   const cleanUrl=String(url||'').trim();
-  const cleanTitle=String(title||'').trim()||_sourceTitleFromUrl(cleanUrl)||'—';
-  _applyTruncatedText(sourceEl, cleanTitle, {fallback:'—', max:62});
+  const row=_rowMap[_seKey||_searchKey]||_rows.find(r=>String(r.rating_key)===String(_seKey||_searchKey))||{};
+  _renderSourceStateStack('se-source-state-stack', row, {compact:true, draft:{selectedUrl:cleanUrl}});
+  if(subtitleEl){
+    subtitleEl.textContent=cleanUrl
+      ? `${String(title||'').trim()||_sourceTitleFromUrl(cleanUrl)}`
+      : 'Review Golden, Selected, and Local layers before saving.';
+  }
   if(copyBtn) copyBtn.disabled=!cleanUrl;
   if(openBtn) openBtn.disabled=!cleanUrl;
 }
@@ -758,9 +834,9 @@ function renderTable(){
         ${renderStatusCell(row)}
       </td>
       <td>${renderRowActionCell(row)}</td>
-      <td>${_renderSourceStateCell('Golden', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), goldenState.detail)}</td>
-      <td>${_renderSourceStateCell('Custom', _renderSourceStatePill(customState.typeLabel, customState.className, customState.detail), customState.statusLabel)}</td>
-      <td>${_renderSourceStateCell('Local', _renderSourceStatePill(localState.label, localState.className, localState.detail), localState.detail)}</td>
+      <td>${_renderSourceStateCell('Golden', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), goldenState.detail, goldenState.chips)}</td>
+      <td>${_renderSourceStateCell('Selected', _renderSourceStatePill(customState.typeLabel, customState.className, customState.detail), customState.statusLabel, customState.chips)}</td>
+      <td>${_renderSourceStateCell('Local', _renderSourceStatePill(localState.label, localState.className, localState.detail), localState.detail, localState.chips)}</td>
       <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
       <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
     </tr>`;
@@ -1211,34 +1287,6 @@ function _themeHasLocal(row){
   if(!row) return false;
   return String(row.theme_exists||'')==='1';
 }
-function _themeSourceMeta(row={}){
-  const notes=String(row?.notes||'');
-  const sourceOrigin=String(row?.source_origin||'').toLowerCase();
-  const sourceUrl=String(row?.url||'').trim();
-  const goldenUrl=String(row?.golden_source_url||'').trim();
-  const isGoldenSource=!!goldenUrl && !!sourceUrl && sourceUrl===goldenUrl;
-  let type='unknown';
-  let method='Unknown';
-  if(sourceOrigin==='golden_source' || sourceOrigin==='golden_source_verified' || isGoldenSource || (!sourceUrl && goldenUrl)){
-    type='golden';
-    method='Golden Source';
-  }else if(/found via playlist/i.test(notes) || /playlist/i.test(sourceUrl) || /[?&]list=/.test(sourceUrl)){
-    type='playlist';
-    method='Playlist search';
-  }else if(/found via direct/i.test(notes)){
-    type='direct';
-    method='Direct search';
-  }else if(sourceOrigin==='manual'){
-    type='custom';
-    method='Custom / manual source';
-  }else if(sourceUrl){
-    type='direct';
-    method='Direct source link';
-  }
-  const labelMap={golden:'Golden Source',playlist:'Playlist',direct:'Direct',custom:'Custom',unknown:'Unknown'};
-  const classMap={golden:'is-golden',playlist:'is-playlist',direct:'is-direct',custom:'is-custom',unknown:'is-unknown'};
-  return {type,label:labelMap[type]||'Unknown',method,className:classMap[type]||'is-unknown'};
-}
 function _themeModalPrimarySourceUrl(row={}){
   return String(row?.url||'').trim() || String(row?.golden_source_url||'').trim();
 }
@@ -1249,6 +1297,97 @@ function _themeModalImportedAt(row={}){
   const dt=new Date(iso);
   if(Number.isNaN(dt.getTime())) return raw;
   return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function _themeLayerSummary(layer,row={},draft={}){
+  const goldenUrl=String(row?.golden_source_url||'').trim();
+  const selected=_selectedSourceContract({...row, url:draft.selectedUrl ?? row?.url});
+  const local=_localSourceContract(row);
+  if(layer==='golden'){
+    return {
+      label:'Golden',
+      stateLabel:goldenUrl ? 'Ready' : 'None',
+      className:goldenUrl ? 'is-golden' : 'is-unknown',
+      chips:goldenUrl ? ['Curated'] : [],
+      url:goldenUrl,
+      offset:goldenUrl ? _themeModalOffsetLabel(row, _themeHasLocal(row), 'golden_source') : '—',
+      timestamp:_themeModalImportedAt(row),
+      note:goldenUrl ? 'Curated import' : 'No curated source recorded',
+    };
+  }
+  if(layer==='selected'){
+    return {
+      label:'Selected',
+      stateLabel:selected.url ? 'Saved' : 'None',
+      className:selected.url ? _sourceKindClass(selected.kind) : 'is-unknown',
+      chips:selected.url ? [_sourceKindLabel(selected.kind), _sourceMethodLabel(selected.method)] : [],
+      url:selected.url,
+      offset:selected.url ? _themeModalOffsetLabel({...row, url:selected.url}, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
+      timestamp:selected.url ? _themeModalImportedAt(row) : '—',
+      note:selected.url ? 'Used for approval/download' : 'No selected source recorded',
+    };
+  }
+  return {
+    label:'Local',
+    stateLabel:_themeHasLocal(row) ? 'On disk' : 'Missing',
+    className:_themeHasLocal(row) ? _sourceKindClass(local.kind) : 'is-unknown',
+    chips:_themeHasLocal(row) && local.url ? [_sourceKindLabel(local.kind), _sourceMethodLabel(local.method)] : [],
+    url:local.url,
+    offset:_themeHasLocal(row) ? _themeModalOffsetLabel(row, true, 'local_theme') : '—',
+    timestamp:String(row?.local_source_recorded_at||'').trim() || '—',
+    note:_themeHasLocal(row) ? 'Local theme provenance' : 'No local theme on disk',
+  };
+}
+
+function _renderSourceStateCard(summary, opts={}){
+  const compact=opts.compact===true;
+  const jsUrl=JSON.stringify(String(summary.url||''));
+  const jsCopied=JSON.stringify('Source URL copied');
+  const actions=summary.url
+    ? `<div class="source-state-actions">
+        <button class="btn btn-ghost btn-xs" type="button" onclick='event.stopPropagation();_copyTextValue(${jsUrl},${jsCopied})'>Copy</button>
+        <button class="btn btn-ghost btn-xs" type="button" onclick='event.stopPropagation();window.open(${jsUrl},\"_blank\",\"noopener\")'>Open</button>
+      </div>`
+    : '';
+  return `<div class="source-state-card ${summary.url?'':'is-empty'}">
+    <div class="source-state-main">
+      <div class="source-state-head">
+        <span class="source-state-label">${_escapeHtml(summary.label)}</span>
+        <span class="ui-pill review-source-pill ${summary.className}">${_escapeHtml(summary.stateLabel)}</span>
+      </div>
+      ${summary.chips?.length?`<div class="source-state-meta">${summary.chips.map(chip=>`<span class="ui-pill muted-chip">${_escapeHtml(chip)}</span>`).join('')}</div>`:''}
+      <div class="source-state-url" title="${_escapeAttr(summary.url||summary.note)}">${_escapeHtml(summary.url||summary.note)}</div>
+      ${compact?'':`<div class="source-state-note">${_escapeHtml(`Offset ${summary.offset} · ${summary.timestamp}`)}</div>`}
+    </div>
+    ${actions}
+  </div>`;
+}
+
+function _copyTextValue(value='', successMessage='Copied'){
+  const text=String(value||'').trim();
+  if(!text) return toast('Nothing to copy','info');
+  const write=navigator.clipboard?.writeText
+    ? navigator.clipboard.writeText(text)
+    : Promise.reject(new Error('clipboard unavailable'));
+  return write.then(()=>toast(successMessage,'ok')).catch(()=>{
+    const tmp=document.createElement('textarea');
+    tmp.value=text;
+    tmp.setAttribute('readonly','readonly');
+    tmp.style.position='absolute';
+    tmp.style.left='-9999px';
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    toast(successMessage,'ok');
+  });
+}
+
+function _renderSourceStateStack(targetId,row={},opts={}){
+  const el=document.getElementById(targetId);
+  if(!el) return;
+  const draft=opts.draft||{};
+  const layers=['golden','selected','local'].map(layer=>_themeLayerSummary(layer,row,draft));
+  el.innerHTML=layers.map(layer=>_renderSourceStateCard(layer,{compact:opts.compact===true})).join('');
 }
 function _clipWindowMeta(duration=0, offset=0, maxDur=0){
   const total=Math.max(0, Number(duration)||0);
@@ -1352,13 +1491,11 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   const hasTheme=_themeHasLocal(row);
   const status=String(row?.status||'MISSING').toUpperCase();
   const storedPrimarySourceUrl=_themeModalPrimarySourceUrl(row);
-  const hasStoredSource=!!storedPrimarySourceUrl;
+  const hasStoredSource=!!storedPrimarySourceUrl || _rowHasGoldenSource(row) || _hasLocalTheme(row);
   const hasLocalTheme=hasTheme;
   const isDownloadable=!hasLocalTheme && hasStoredSource && status==='APPROVED';
   const isSourceOnly=hasStoredSource && !hasLocalTheme;
   const shouldShowSourceDetails=hasStoredSource;
-  const primarySourceUrl=hasStoredSource?storedPrimarySourceUrl:'';
-  const sourceMeta=hasStoredSource?_themeSourceMeta(row):{label:'None',className:'is-unknown',method:'—'};
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
 
@@ -1380,36 +1517,25 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-local-dur').textContent=hasLocalTheme
     ? _themeModalOffsetLabel(row, true, 'local_theme')
     : 'Duration: —';
-  const sourceUrlEl=document.getElementById('theme-modal-source-url');
-  if(sourceUrlEl){
-    _applyAutoScrollText(sourceUrlEl, primarySourceUrl, {fallback:'—'});
-  }
-  document.getElementById('theme-modal-origin').textContent=hasStoredSource?sourceMeta.method:'—';
-  document.getElementById('theme-modal-imported').textContent=hasStoredSource?_themeModalImportedAt(row):'—';
-  const sourceOffsetLayer=sourceMeta.type==='golden'?'golden_source':'selected_source';
-  document.getElementById('theme-modal-offset').textContent=hasStoredSource?_themeModalOffsetLabel(row, hasLocalTheme, sourceOffsetLayer):'—';
   document.getElementById('theme-modal-source-notes').textContent=hasStoredSource?(String(row?.notes||'').trim()||'No source notes recorded.'):'—';
   document.getElementById('theme-modal-source-summary').textContent=hasStoredSource
     ?(hasLocalTheme
-      ?'Saved source metadata for the current local theme.'
+      ?'Golden, Selected, and Local layers are recorded for the current local theme.'
       :(isDownloadable
-        ?'Approved source saved for download. The theme file is not on disk yet.'
-        :'Saved source metadata. The theme file is not on disk yet.'))
-    :'No source is attached right now.';
+        ?'A selected source is approved and ready to become the local theme.'
+        :'Source layers are recorded, but the local theme file is not on disk yet.'))
+    :'No Golden, Selected, or Local source state is attached right now.';
   const sourcePill=document.getElementById('theme-modal-source-pill');
-  sourcePill.textContent=sourceMeta.label;
-  sourcePill.className=`review-source-pill ${sourceMeta.className}`;
+  sourcePill.textContent='3 Layers';
+  sourcePill.className='review-source-pill is-custom';
   sourcePill.style.display=hasStoredSource?'inline-flex':'none';
+  _renderSourceStateStack('theme-source-state-stack', row);
 
   const sourceEmpty=document.getElementById('theme-source-empty');
   const sourceMetaList=document.getElementById('theme-source-meta-list');
   const sourceDetails=document.getElementById('theme-source-details');
-  const openSourceBtn=document.getElementById('theme-open-source-btn');
   _setHidden(sourceEmpty, hasStoredSource, hasStoredSource?'':'block');
   if(sourceMetaList) sourceMetaList.style.display=hasStoredSource?'flex':'none';
-  if(openSourceBtn) openSourceBtn.style.display=hasStoredSource?'':'none';
-  const copySourceBtn=document.getElementById('theme-copy-source-btn');
-  if(copySourceBtn) copySourceBtn.style.display=hasStoredSource?'':'none';
   if(sourceDetails){
     sourceDetails.style.display=shouldShowSourceDetails?'block':'none';
     sourceDetails.open=false;
@@ -2533,12 +2659,32 @@ function sePreviewFromOffset(){
   _sourceEditorAudio.play().catch(()=>{});
 }
 
+function _draftSelectedSourceContract(url=''){
+  const cleanUrl=String(url||'').trim();
+  if(!cleanUrl) return {kind:'', method:''};
+  const row=_rowMap[_seKey||_searchKey]||_rows.find(r=>String(r.rating_key)===String(_seKey||_searchKey))||{};
+  const goldenUrl=String(row?.golden_source_url||'').trim();
+  if(cleanUrl && goldenUrl && cleanUrl===goldenUrl) return {kind:'golden', method:'golden_source'};
+  if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select') return {kind:'golden', method:'golden_source'};
+  if(_step3EntryMode==='search_result'){
+    if(_searchMethod==='playlist' || _searchMethod==='direct') return {kind:'custom', method:_searchMethod};
+    if(_searchMethod==='custom') return {kind:'custom', method:'custom'};
+  }
+  if(_step3EntryMode==='paste') return {kind:'custom', method:'paste'};
+  if(_step3EntryMode==='existing'){
+    const existing=_selectedSourceContract({...row, url:cleanUrl});
+    if(existing.url) return {kind:existing.kind, method:existing.method};
+  }
+  return {kind:'custom', method:'manual'};
+}
+
 async function saveSourceEditor(skipClose=false){
   const key=_seKey||_searchKey; if(!key) return;
   const url=(document.getElementById('se-url').value||'').trim();
   const trimMeta=_sourceEditorTrimMeta();
   const offset=trimMeta.rawOffset;
   const endOffset=trimMeta.endOffset;
+  const sourceContract=_draftSelectedSourceContract(url);
   if(!url){ toast('Please enter a URL','info'); return; }
   const lib=_seLib||_searchLib||_activeLib||'';
   const status='STAGED';
@@ -2552,6 +2698,8 @@ async function saveSourceEditor(skipClose=false){
       url,
       start_offset:offset,
       end_offset:endOffset,
+      selected_source_kind:sourceContract.kind,
+      selected_source_method:sourceContract.method,
       notes,
       target_status:status
     })

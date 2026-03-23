@@ -37,11 +37,14 @@ LEDGER_HEADERS = [
     "status",
     "url",
     "start_offset",
+    "selected_source_kind",
+    "selected_source_method",
     "golden_source_url",
     "golden_source_offset",
     "local_source_url",
     "local_source_offset",
     "local_source_origin",
+    "local_source_kind",
     "local_source_method",
     "local_source_recorded_at",
     "end_offset",
@@ -79,6 +82,8 @@ MANUAL_STATUS_TRANSITIONS = {
     "AVAILABLE": frozenset({"MISSING"}),
     "FAILED": frozenset({"MISSING", "STAGED"}),
 }
+
+SOURCE_KINDS = frozenset({"golden", "custom"})
 
 
 def normalize_status(status: str | None, default: str = "MISSING") -> str:
@@ -183,6 +188,97 @@ def _now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 now_str = _now_str  # public alias used by app.py and media_tracks.py
+
+
+def normalize_source_kind(value: str | None, default: str = "") -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in SOURCE_KINDS:
+        return normalized
+    return str(default or "").strip().lower() if default else ""
+
+
+def normalize_source_method(value: str | None, default: str = "") -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "_", str(value or "").strip().lower()).strip("_")
+    return normalized or (re.sub(r"[^a-z0-9]+", "_", str(default or "").strip().lower()).strip("_") if default else "")
+
+
+def infer_selected_source_contract(row: dict) -> tuple[str, str]:
+    url = str(row.get("url", "") or "").strip()
+    if not url:
+        return "", ""
+    explicit_kind = normalize_source_kind(row.get("selected_source_kind", ""))
+    explicit_method = normalize_source_method(row.get("selected_source_method", ""))
+    if explicit_kind or explicit_method:
+        kind = explicit_kind or ("golden" if explicit_method == "golden_source" else "custom")
+        method = explicit_method or ("golden_source" if kind == "golden" else "manual")
+        return kind, method
+
+    source_origin = str(row.get("source_origin", "") or "").strip().lower()
+    golden_url = str(row.get("golden_source_url", "") or "").strip()
+    if golden_url and url == golden_url:
+        return "golden", "golden_source"
+    if source_origin.startswith("golden_source"):
+        return "golden", "golden_source"
+    if "playlist" in source_origin:
+        return "custom", "playlist"
+    if "direct" in source_origin:
+        return "custom", "direct"
+    if source_origin in {"manual", "custom"}:
+        return "custom", "manual"
+    return "custom", "manual"
+
+
+def infer_local_source_contract(row: dict) -> tuple[str, str]:
+    url = str(row.get("local_source_url", "") or "").strip()
+    if not url:
+        return "", ""
+    explicit_kind = normalize_source_kind(row.get("local_source_kind", ""))
+    explicit_method = normalize_source_method(row.get("local_source_method", ""))
+    if explicit_method in {"manual_download", "pass3_download"}:
+        explicit_method = ""
+    if explicit_kind or explicit_method:
+        kind = explicit_kind or ("golden" if explicit_method == "golden_source" else "custom")
+        method = explicit_method or ("golden_source" if kind == "golden" else infer_selected_source_contract(row)[1] or "manual")
+        return kind, method
+
+    selected_kind, selected_method = infer_selected_source_contract(row)
+    if selected_kind or selected_method:
+        return selected_kind, selected_method
+
+    local_origin = str(row.get("local_source_origin", "") or "").strip().lower()
+    if local_origin.startswith("golden_source"):
+        return "golden", "golden_source"
+    if "playlist" in local_origin:
+        return "custom", "playlist"
+    if "direct" in local_origin:
+        return "custom", "direct"
+    return "custom", "manual"
+
+
+def set_selected_source_contract(row: dict, *, kind: str = "", method: str = "") -> dict:
+    url = str(row.get("url", "") or "").strip()
+    if not url:
+        row["selected_source_kind"] = ""
+        row["selected_source_method"] = ""
+        return row
+    normalized_method = normalize_source_method(method)
+    normalized_kind = normalize_source_kind(kind, default="golden" if normalized_method == "golden_source" else "custom")
+    row["selected_source_kind"] = normalized_kind
+    row["selected_source_method"] = normalized_method or ("golden_source" if normalized_kind == "golden" else "manual")
+    return row
+
+
+def set_local_source_contract(row: dict, *, kind: str = "", method: str = "") -> dict:
+    url = str(row.get("local_source_url", "") or "").strip()
+    if not url:
+        row["local_source_kind"] = ""
+        row["local_source_method"] = ""
+        return row
+    normalized_method = normalize_source_method(method)
+    normalized_kind = normalize_source_kind(kind, default="golden" if normalized_method == "golden_source" else "custom")
+    row["local_source_kind"] = normalized_kind
+    row["local_source_method"] = normalized_method or ("golden_source" if normalized_kind == "golden" else "manual")
+    return row
 
 
 def load_config() -> dict:
@@ -298,11 +394,18 @@ def _normalize_row(row: dict) -> dict:
     out["local_source_offset"] = str(out.get("local_source_offset", "0") or "0")
     out["tmdb_id"]      = str(out.get("tmdb_id", "") or "").strip()
     out["source_origin"] = str(out.get("source_origin", "") or "unknown").strip() or "unknown"
+    out["url"] = str(out.get("url", "") or "").strip()
+    out["golden_source_url"] = str(out.get("golden_source_url", "") or "").strip()
     out["local_source_url"] = str(out.get("local_source_url", "") or "").strip()
     out["local_source_origin"] = str(out.get("local_source_origin", "") or "").strip()
-    out["local_source_method"] = str(out.get("local_source_method", "") or "").strip()
     out["local_source_recorded_at"] = str(out.get("local_source_recorded_at", "") or "").strip()
     out["folder"]       = str(out.get("folder", "") or "").strip()
+    selected_kind, selected_method = infer_selected_source_contract(out)
+    out["selected_source_kind"] = selected_kind
+    out["selected_source_method"] = selected_method
+    local_kind, local_method = infer_local_source_contract(out)
+    out["local_source_kind"] = local_kind
+    out["local_source_method"] = local_method
 
     out["theme_exists"] = 1 if str(out.get("theme_exists", "0") or "0").strip() in {"1", "true", "True"} else 0
     try:
@@ -377,11 +480,14 @@ def _init_db(conn: sqlite3.Connection):
             status TEXT,
             url TEXT,
             start_offset TEXT,
+            selected_source_kind TEXT,
+            selected_source_method TEXT,
             golden_source_url TEXT,
             golden_source_offset TEXT DEFAULT '0',
             local_source_url TEXT,
             local_source_offset TEXT DEFAULT '0',
             local_source_origin TEXT,
+            local_source_kind TEXT,
             local_source_method TEXT,
             local_source_recorded_at TEXT,
             end_offset TEXT,
@@ -410,11 +516,14 @@ def _init_db(conn: sqlite3.Connection):
         "theme_mtime": "REAL DEFAULT 0",
         "tmdb_id": "TEXT",
         "source_origin": "TEXT DEFAULT 'unknown'",
+        "selected_source_kind": "TEXT",
+        "selected_source_method": "TEXT",
         "golden_source_url": "TEXT",
         "golden_source_offset": "TEXT DEFAULT '0'",
         "local_source_url": "TEXT",
         "local_source_offset": "TEXT DEFAULT '0'",
         "local_source_origin": "TEXT",
+        "local_source_kind": "TEXT",
         "local_source_method": "TEXT",
         "local_source_recorded_at": "TEXT",
     }
@@ -466,16 +575,16 @@ def _import_csv_if_needed(conn: sqlite3.Connection, path: str, slug: str):
         conn.execute(
             """
             INSERT OR REPLACE INTO items(
-                library_slug,rating_key,title,year,status,url,start_offset,golden_source_url,golden_source_offset,
-                local_source_url,local_source_offset,local_source_origin,local_source_method,local_source_recorded_at,end_offset,
+                library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,golden_source_url,golden_source_offset,
+                local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
                 plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                 theme_size,theme_mtime,created_at,updated_at
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
-                row["start_offset"], row["golden_source_url"], row["golden_source_offset"],
-                row["local_source_url"], row["local_source_offset"], row["local_source_origin"],
+                row["start_offset"], row["selected_source_kind"], row["selected_source_method"], row["golden_source_url"], row["golden_source_offset"],
+                row["local_source_url"], row["local_source_offset"], row["local_source_origin"], row["local_source_kind"],
                 row["local_source_method"], row["local_source_recorded_at"],
                 row["end_offset"], row["plex_title"], row["folder"],
                 row["tmdb_id"], row["last_updated"], row["notes"], row.get("source_origin", "unknown"),
@@ -495,8 +604,8 @@ def _sqlite_load_rows(path: str) -> list[dict]:
             _import_csv_if_needed(conn, path, slug)
             cur = conn.execute(
                 """
-                SELECT title,year,status,url,start_offset,golden_source_url,golden_source_offset,
-                       local_source_url,local_source_offset,local_source_origin,local_source_method,local_source_recorded_at,end_offset,plex_title,folder,
+                SELECT title,year,status,url,start_offset,selected_source_kind,selected_source_method,golden_source_url,golden_source_offset,
+                       local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,plex_title,folder,
                        rating_key,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                        theme_size,theme_mtime
                 FROM items
@@ -544,22 +653,25 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                 conn.execute(
                     """
                     INSERT INTO items(
-                        library_slug,rating_key,title,year,status,url,start_offset,golden_source_url,golden_source_offset,
-                        local_source_url,local_source_offset,local_source_origin,local_source_method,local_source_recorded_at,end_offset,
+                        library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,golden_source_url,golden_source_offset,
+                        local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
                         plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                         theme_size,theme_mtime,created_at,updated_at
-                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(library_slug,rating_key) DO UPDATE SET
                         title=excluded.title,
                         year=excluded.year,
                         status=excluded.status,
                         url=excluded.url,
                         start_offset=excluded.start_offset,
+                        selected_source_kind=excluded.selected_source_kind,
+                        selected_source_method=excluded.selected_source_method,
                         golden_source_url=excluded.golden_source_url,
                         golden_source_offset=excluded.golden_source_offset,
                         local_source_url=excluded.local_source_url,
                         local_source_offset=excluded.local_source_offset,
                         local_source_origin=excluded.local_source_origin,
+                        local_source_kind=excluded.local_source_kind,
                         local_source_method=excluded.local_source_method,
                         local_source_recorded_at=excluded.local_source_recorded_at,
                         end_offset=excluded.end_offset,
@@ -577,8 +689,8 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                     """,
                     (
                         slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
-                        row["start_offset"], row["golden_source_url"], row["golden_source_offset"],
-                        row["local_source_url"], row["local_source_offset"], row["local_source_origin"],
+                        row["start_offset"], row["selected_source_kind"], row["selected_source_method"], row["golden_source_url"], row["golden_source_offset"],
+                        row["local_source_url"], row["local_source_offset"], row["local_source_origin"], row["local_source_kind"],
                         row["local_source_method"], row["local_source_recorded_at"], row["end_offset"], row["plex_title"], row["folder"],
                         row["tmdb_id"], row["last_updated"], row["notes"], row.get("source_origin", "unknown"),
                         int(row["theme_exists"]), float(row["theme_duration"]),
@@ -618,6 +730,7 @@ def clear_local_source_provenance(row: dict) -> dict:
     row["local_source_url"] = ""
     row["local_source_offset"] = "0"
     row["local_source_origin"] = ""
+    row["local_source_kind"] = ""
     row["local_source_method"] = ""
     row["local_source_recorded_at"] = ""
     return row
@@ -627,13 +740,13 @@ def stamp_local_source_provenance(
     row: dict,
     *,
     recorded_at: str | None = None,
-    method: str = "",
 ) -> dict:
     timestamp = str(recorded_at or _now_str()).strip()
     row["local_source_url"] = str(row.get("url", "") or "").strip()
     row["local_source_offset"] = str(row.get("start_offset", "0") or "0")
     row["local_source_origin"] = str(row.get("source_origin", "") or "unknown").strip() or "unknown"
-    row["local_source_method"] = str(method or "").strip()
+    selected_kind, selected_method = infer_selected_source_contract(row)
+    set_local_source_contract(row, kind=selected_kind, method=selected_method)
     row["local_source_recorded_at"] = timestamp
     return row
 
@@ -670,7 +783,7 @@ def sync_theme_cache(row: dict, theme_filename: str, probe_duration: bool = Fals
                 changed = True
         had_local_provenance = any(
             str(row.get(key, "") or "").strip()
-            for key in ("local_source_url", "local_source_origin", "local_source_method", "local_source_recorded_at")
+            for key in ("local_source_url", "local_source_origin", "local_source_kind", "local_source_method", "local_source_recorded_at")
         ) or str(row.get("local_source_offset", "0") or "0").strip() not in {"", "0"}
         if had_local_provenance:
             clear_local_source_provenance(row)
