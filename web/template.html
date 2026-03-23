@@ -58,7 +58,7 @@
   <div class="page-head dash-page-head">
     <div>
       <div class="page-title dash-title">Dashboard</div>
-      <div class="page-desc dash-subtitle">Monitor pipeline health, review what needs attention, and take action.</div>
+      <div class="page-desc dash-subtitle">Monitor pipeline health, take action, and track activity over time.</div>
     </div>
     <div class="dash-header-utils">
       <span class="dash-last-updated" id="dash-last-updated"></span>
@@ -66,76 +66,15 @@
   </div>
   <div class="page-body"><div class="content">
 
-    <!-- Row 1: KPI Cards -->
-    <div class="dashboard-stat-grid mb-20" id="dashboard-pipeline-overview"></div>
-
-    <!-- Row 2: Needs Attention + Action Station -->
-    <div class="dashboard-grid mb-20">
-      <div class="card dashboard-card span-7 dash-attention-card">
-        <div class="card-title">Needs Attention</div>
-        <div id="dashboard-needs-attention"></div>
-      </div>
-      <div class="card dashboard-card span-5">
-        <div class="card-title">Action Station</div>
-        <div id="dashboard-action-station"><div class="dash-skeleton mb-8"></div><div class="dash-skeleton"></div><div class="dash-skeleton"></div></div>
-      </div>
-    </div>
-
-    <!-- Row 3: Theme Library Overview with two charts -->
-    <div class="card dashboard-card mb-20">
-      <div class="dash-section-header">
-        <div class="card-title mb-0">Theme Library Overview</div>
-        <div class="dash-controls">
-          <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
-          <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
-          <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
-        </div>
-      </div>
-      <div class="dash-charts-grid">
-        <div class="dash-chart-card">
-          <div class="dash-chart-card-title">Status Distribution</div>
-          <div class="dash-pie-wrap" id="dash-pie-chart"></div>
-        </div>
-        <div class="dash-chart-card">
-          <div class="dash-chart-card-header">
-            <div class="dash-chart-card-title">Activity Over Time</div>
-            <div id="dash-bar-timegroup" class="dash-lib-tabs"></div>
-          </div>
-          <div id="dash-bar-chart"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Row 4: System Health + Recent Activity -->
-    <div class="dash-split-row mb-20">
-      <div class="card dashboard-card">
-        <div class="dash-section-header">
-          <div>
-            <div class="card-title mb-0">System Health</div>
-            <div id="dashboard-health-note" class="dash-section-note">Cached or placeholder status is shown until you run Validate.</div>
-          </div>
-          <button class="btn btn-ghost btn-sm" id="dashboard-health-refresh" onclick="dashboardRefreshHealth(true)">Validate</button>
-        </div>
-        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
-      </div>
-      <div class="card dashboard-card">
-        <div class="dash-section-header">
-          <div class="card-title mb-0">Recent Activity</div>
-          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
-        </div>
-        <div id="dashboard-recent-activity"></div>
-      </div>
-    </div>
-
-    <!-- Row 5: How it Works? (collapsed by default, ephemeral) -->
-    <div style="margin-bottom:20px">
+    <!-- How it Works? (collapsed by default, at top) -->
+    <div class="mb-20">
       <div class="card dashboard-card mb-0" id="dash-pipeline-help">
         <button type="button" id="dash-how-toggle" class="dash-how-toggle-btn" onclick="toggleHowItWorks()" aria-expanded="false" aria-controls="dash-how-content">
           <div class="card-title mb-0">How it Works?</div>
           <span class="settings-chev" id="dash-pipeline-help-chev" style="transform:rotate(180deg)">&#8743;</span>
         </button>
         <div id="dash-how-content" style="display:none;margin-top:14px">
-          <div class="dashboard-grid">
+          <div class="dashboard-grid dash-how-grid">
             <div class="span-7">
               <div class="card-title mb-10">Pipeline Steps</div>
               <div class="dash-pipeline-steps">
@@ -196,6 +135,69 @@
       </div>
     </div>
 
+    <!-- Row 1: KPI Cards -->
+    <div class="dashboard-stat-grid mb-20" id="dashboard-pipeline-overview"></div>
+
+    <!-- Row 2: Action Station (full width) -->
+    <div class="card dashboard-card mb-20">
+      <div class="card-title">Action Station</div>
+      <div id="dashboard-action-station"><div class="dash-skeleton mb-8"></div><div class="dash-skeleton"></div><div class="dash-skeleton"></div></div>
+    </div>
+
+    <!-- Row 3: Theme Library Overview with two charts -->
+    <div class="card dashboard-card mb-20">
+      <div class="dash-section-header">
+        <div class="card-title mb-0">Theme Library Overview</div>
+        <div class="dash-controls">
+          <div id="dash-lib-tabs" class="dash-lib-tabs"></div>
+          <div id="dash-hist-status-filters" class="dash-lib-tabs"></div>
+          <button class="btn btn-ghost btn-sm" onclick="navigateTo('configuration','config-section-libraries')">Manage</button>
+        </div>
+      </div>
+      <div class="dash-charts-grid">
+        <div class="dash-chart-card">
+          <div class="dash-chart-card-title">Status Distribution</div>
+          <div class="dash-pie-wrap" id="dash-pie-chart"></div>
+        </div>
+        <div class="dash-chart-card">
+          <div class="dash-chart-card-header">
+            <div class="dash-chart-card-title">Activity Over Time</div>
+            <div class="dash-bar-period-wrap">
+              <input type="number" id="dash-bar-count" min="1" max="999" value="12" class="dash-bar-count-input" onchange="_onBarCountChange(this.value)">
+              <select id="dash-bar-freq" class="dash-bar-freq-select" onchange="_setBarFreq(this.value)">
+                <option value="day">Days</option>
+                <option value="week">Weeks</option>
+                <option value="month" selected>Months</option>
+                <option value="year">Years</option>
+              </select>
+            </div>
+          </div>
+          <div id="dash-bar-chart"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: System Health + Recent Activity -->
+    <div class="dash-split-row mb-20">
+      <div class="card dashboard-card">
+        <div class="dash-section-header">
+          <div>
+            <div class="card-title mb-0">System Health</div>
+            <div id="dashboard-health-note" class="dash-section-note">Cached or placeholder status is shown until you run Refresh.</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="dashboard-health-refresh" onclick="dashboardRefreshHealth(true)">Refresh</button>
+        </div>
+        <div id="dashboard-system-health"><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton" style="margin-bottom:6px"></div><div class="dash-skeleton"></div></div>
+      </div>
+      <div class="card dashboard-card">
+        <div class="dash-section-header">
+          <div class="card-title mb-0">Recent Activity</div>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('tasks')">View Full Activity</button>
+        </div>
+        <div id="dashboard-recent-activity"></div>
+      </div>
+    </div>
+
   </div></div>
 </div>
 
@@ -209,19 +211,6 @@
     </div>
   </div>
   <div class="page-body"><div class="content">
-    <div class="settings-overview card">
-      <div class="settings-overview-copy">
-        <div class="settings-overview-title">Keep the same theme, make setup easier.</div>
-        <div class="settings-overview-desc">Each section below is grouped by workflow so you can move from connections, to library selection, to source matching, to download output without hunting through dense forms.</div>
-      </div>
-      <div class="settings-overview-links">
-        <button class="quick-link-pill" onclick="document.getElementById('config-section-connections').scrollIntoView({behavior:'smooth', block:'start'})">Connections</button>
-        <button class="quick-link-pill" onclick="document.getElementById('config-section-libraries').scrollIntoView({behavior:'smooth', block:'start'})">Libraries</button>
-        <button class="quick-link-pill" onclick="document.getElementById('config-section-discovery').scrollIntoView({behavior:'smooth', block:'start'})">Discovery</button>
-        <button class="quick-link-pill" onclick="document.getElementById('config-section-curated').scrollIntoView({behavior:'smooth', block:'start'})">Curated</button>
-        <button class="quick-link-pill" onclick="document.getElementById('config-section-downloads').scrollIntoView({behavior:'smooth', block:'start'})">Downloads</button>
-      </div>
-    </div>
     <details class="card settings-section" open id="config-section-connections">
       <summary>
         <div class="card-title mb-0">
@@ -493,12 +482,12 @@
         <div class="settings-panel flat">
           <div class="settings-inline-row">
             <div class="settings-inline-copy">
-              <div class="subcard-title"><span class="status-term status-tone-MISSING">Missing</span> titles per run</div>
+              <div class="subcard-title">Missing titles per run</div>
               <div class="subcard-intro">Control how many <span class="status-term status-tone-MISSING">Missing</span> items are processed during each source discovery run. <strong>0 = unlimited.</strong></div>
             </div>
             <div class="settings-inline-control">
               <div class="field" style="width:100%">
-                <label><span class="status-term status-tone-MISSING">Missing</span> Titles Per Run</label>
+                <label>Missing Titles Per Run</label>
                 <input type="number" id="cfg-test_limit" min="0">
                 <div class="field-help compact">Recommended for testing, or for gradually processing larger libraries over time.</div>
               </div>

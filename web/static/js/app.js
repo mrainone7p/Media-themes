@@ -631,11 +631,11 @@ function renderDashboardSystemHealth(health){
   if(noteEl){
     noteEl.textContent=validation.detail || (_dashboardHealthMode==='full'
       ? 'All dashboard integrations were checked live.'
-      : 'Cached or placeholder status is shown until you run Validate.');
+      : 'Cached or placeholder status is shown until you run Refresh.');
   }
   const refreshBtn=document.getElementById('dashboard-health-refresh');
   if(refreshBtn){
-    refreshBtn.textContent=_dashboardHealthLoading ? 'Validating…' : (validation.full ? 'Revalidate' : 'Validate');
+    refreshBtn.textContent=_dashboardHealthLoading ? 'Refreshing…' : 'Refresh';
     refreshBtn.disabled=_dashboardHealthLoading;
   }
 }
@@ -645,12 +645,10 @@ function renderDashboardSchedule(health){
 }
 function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
   renderDashboardPipelineOverview({MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0});
-  renderDashboardNeedsAttention(cfg, {MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0}, enabledLibs);
   renderDashboardRecentActivity([]);
   renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs);
   renderDashLibTabs(enabledLibs);
   renderHistStatusFilters();
-  renderBarTimeGroupTabs();
   renderBarChart();
   renderPieChart();
   const healthCache=readDashboardHealthCache();
@@ -662,53 +660,16 @@ function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
     _dashboardHealthMode='lite';
     const healthEl=document.getElementById('dashboard-system-health');
     if(healthEl){
-      healthEl.innerHTML='<div class="dashboard-empty">No live health check has run yet. Use Validate to fetch the latest system health.</div>';
+      healthEl.innerHTML='<div class="dashboard-empty">No live health check has run yet. Use Refresh to fetch the latest system health.</div>';
     }
     const noteEl=document.getElementById('dashboard-health-note');
-    if(noteEl) noteEl.textContent='Cached or placeholder status is shown until you run Validate.';
+    if(noteEl) noteEl.textContent='Cached or placeholder status is shown until you run Refresh.';
     const refreshBtn=document.getElementById('dashboard-health-refresh');
     if(refreshBtn){
       refreshBtn.disabled=false;
-      refreshBtn.textContent='Validate';
+      refreshBtn.textContent='Refresh';
     }
   }
-}
-function renderDashboardNeedsAttention(cfg, counts, enabledLibs){
-  const items=[];
-  const plexOk=(cfg.plex_url||'').trim() && (cfg.plex_token||'').trim();
-  const tmdbOk=(cfg.tmdb_api_key||'').trim();
-  if(!plexOk) items.push({title:'Plex not configured', detail:'Connect Plex to enable library scanning and indexing.', cta:'Configure', target:{page:'configuration',section:'config-section-connections'}});
-  if(!tmdbOk) items.push({title:'TMDB API not configured', detail:'Add your TMDB API key to enable metadata matching.', cta:'Configure', target:{page:'configuration',section:'config-section-connections'}});
-  if(!enabledLibs.length) items.push({title:'No libraries enabled', detail:'Enable at least one movie or TV library to start processing.', cta:'Add Libraries', target:{page:'configuration',section:'config-section-libraries'}});
-  if((counts.MISSING||0)>0) items.push({title:`${counts.MISSING} missing title${counts.MISSING===1?'':'s'} need source discovery`, detail:'Run Find Sources to search for theme matches.', cta:'Open Missing', target:{page:'theme-manager',filter:'MISSING'}});
-  if((counts.FAILED||0)>0) items.push({title:`${counts.FAILED} failed title${counts.FAILED===1?'':'s'} need review`, detail:'Inspect failures and update sources or retry.', cta:'Review Failed', target:{page:'theme-manager',filter:'FAILED'}});
-  const el=document.getElementById('dashboard-needs-attention');
-  if(!el) return;
-  if(!items.length){
-    el.innerHTML='<div class="dashboard-empty">Nothing needs attention right now.</div>';
-    return;
-  }
-  const SHOW_MAX=3;
-  const hasMore=items.length>SHOW_MAX;
-  const itemsHtml=items.map((item,i)=>`
-    <div class="dashboard-attention-item${i>=SHOW_MAX?' dash-attention-extra hidden':''}">
-      <div class="dashboard-attention-copy">
-        <div class="dashboard-main-copy">${item.title}</div>
-        <div class="dashboard-sub-copy">${item.detail}</div>
-      </div>
-      <button class="btn btn-amber btn-sm" style="flex-shrink:0" onclick='dashboardOpenTarget(${JSON.stringify(item.target)})'>${item.cta}</button>
-    </div>`).join('');
-  const toggleHtml=hasMore?`
-    <button class="btn btn-ghost btn-xs dash-attention-toggle" onclick="toggleDashboardAttention(this,${items.length})">View all ${items.length} issues</button>`:'';
-  el.innerHTML=`<div style="display:grid;gap:6px">${itemsHtml}</div>${toggleHtml}`;
-}
-function toggleDashboardAttention(btn,total){
-  const container=btn.closest('#dashboard-needs-attention');
-  const extras=container.querySelectorAll('.dash-attention-extra');
-  const expanded=btn.dataset.expanded==='1';
-  extras.forEach(el=>el.classList.toggle('hidden',expanded));
-  btn.dataset.expanded=expanded?'0':'1';
-  btn.textContent=expanded?`View all ${total} issues`:'Show less';
 }
 function renderDashboardActionStation(health){
   const el=document.getElementById('dashboard-action-station');
@@ -889,6 +850,7 @@ let _dashSummaryByLib={};
 let _dashSummaryOverall={MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0,UNMONITORED:0};
 let _dashSelectedLib='all';
 let _dashHistStatusFilter='all';
+let _dashEnabledLibs=[];
 let _dashboardLoadSeq=0;
 let _dashboardHealthRequestSeq=0;
 let _dashboardHealthMode='lite';
@@ -967,14 +929,15 @@ function toggleSecretField(btn){
   input.type=isPassword?'text':'password';
   const eyeOn=btn.querySelector('.eye-icon');
   const eyeOff=btn.querySelector('.eye-off-icon');
-  if(eyeOn) eyeOn.style.display=isPassword?'none':'';
-  if(eyeOff) eyeOff.style.display=isPassword?'':'none';
+  if(eyeOn) eyeOn.classList.toggle('hidden',!isPassword);
+  if(eyeOff) eyeOff.classList.toggle('hidden',isPassword);
 }
 
 function renderDashLibTabs(enabledLibs){
   const el=document.getElementById('dash-lib-tabs');
   if(!el) return;
-  const tabs=[{name:'all',label:'All'},...(enabledLibs||[]).map(l=>({name:l.name||l,label:l.name||l}))];
+  if(enabledLibs && enabledLibs.length) _dashEnabledLibs=enabledLibs;
+  const tabs=[{name:'all',label:'All'},...(_dashEnabledLibs||[]).map(l=>({name:l.name||l,label:l.name||l}))];
   el.innerHTML=tabs.map(t=>`<button class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
 }
 
@@ -999,7 +962,7 @@ function _setHistFilter(k){_dashHistStatusFilter=k;renderHistStatusFilters();ren
 
 function switchDashLib(name){
   _dashSelectedLib=name;
-  renderDashLibTabs(Object.keys(_dashSummaryByLib).map(n=>({name:n})));
+  renderDashLibTabs();
   renderBarChart();
   renderPieChart();
 }
@@ -1026,18 +989,16 @@ function renderDashLibKpi(){
 // ── Bar chart — activity over time ────────────────────────────────────────────
 let _dashTimelineData={};
 let _dashBarTimeGroup='month';
+let _dashBarCount=12;
 const BAR_STATUSES=['AVAILABLE','APPROVED','STAGED','MISSING','FAILED'];
 
-function renderBarTimeGroupTabs(){
-  const el=document.getElementById('dash-bar-timegroup');
-  if(!el) return;
-  const groups=['day','week','month','year'];
-  el.innerHTML=groups.map(g=>`<button class="dash-lib-tab${g===_dashBarTimeGroup?' active':''}" onclick="_setBarTimeGroup('${g}')">${g[0].toUpperCase()+g.slice(1)}</button>`).join('');
+function _setBarFreq(freq){
+  _dashBarTimeGroup=freq;
+  renderBarChart();
 }
 
-function _setBarTimeGroup(g){
-  _dashBarTimeGroup=g;
-  renderBarTimeGroupTabs();
+function _onBarCountChange(val){
+  _dashBarCount=Math.max(1,parseInt(val)||1);
   renderBarChart();
 }
 
@@ -1091,8 +1052,7 @@ function renderBarChart(){
     return;
   }
   // Limit to last N periods
-  const maxBars=_dashBarTimeGroup==='day'?30:_dashBarTimeGroup==='week'?16:_dashBarTimeGroup==='year'?10:12;
-  const keys=sortedKeys.slice(-maxBars);
+  const keys=sortedKeys.slice(-_dashBarCount);
   // Calculate max stacked height
   let maxTotal=0;
   keys.forEach(k=>{
@@ -1260,11 +1220,9 @@ async function loadDashboardDeferredData(seq, cfg, enabledLibs){
   _dashTimelineData=(summary.status_timeline&&typeof summary.status_timeline==='object')?summary.status_timeline:{};
 
   renderDashboardPipelineOverview(_dashSummaryOverall);
-  renderDashboardNeedsAttention(cfg, _dashSummaryOverall, enabledLibs);
   renderDashboardRecentActivity(summary.recent_activity||{});
   renderDashLibTabs(enabledLibs);
   renderHistStatusFilters();
-  renderBarTimeGroupTabs();
   renderBarChart();
   renderPieChart();
 }
@@ -1274,7 +1232,7 @@ async function dashboardRefreshHealth(full=false){
   const refreshBtn=document.getElementById('dashboard-health-refresh');
   if(refreshBtn){
     refreshBtn.disabled=true;
-    refreshBtn.textContent=full ? 'Validating…' : 'Refreshing…';
+    refreshBtn.textContent='Refreshing…';
   }
   try{
     const mode=full ? 'full' : 'lite';
@@ -1292,7 +1250,7 @@ async function dashboardRefreshHealth(full=false){
       const currentBtn=document.getElementById('dashboard-health-refresh');
       if(currentBtn){
         currentBtn.disabled=false;
-        currentBtn.textContent=_dashboardHealthMode==='full' ? 'Revalidate' : 'Validate';
+        currentBtn.textContent='Refresh';
       }
     }
   }
