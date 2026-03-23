@@ -39,8 +39,10 @@ LEDGER_HEADERS = [
     "start_offset",
     "selected_source_kind",
     "selected_source_method",
+    "selected_source_recorded_at",
     "golden_source_url",
     "golden_source_offset",
+    "golden_source_imported_at",
     "local_source_url",
     "local_source_offset",
     "local_source_origin",
@@ -395,7 +397,9 @@ def _normalize_row(row: dict) -> dict:
     out["tmdb_id"]      = str(out.get("tmdb_id", "") or "").strip()
     out["source_origin"] = str(out.get("source_origin", "") or "unknown").strip() or "unknown"
     out["url"] = str(out.get("url", "") or "").strip()
+    out["selected_source_recorded_at"] = str(out.get("selected_source_recorded_at", "") or "").strip()
     out["golden_source_url"] = str(out.get("golden_source_url", "") or "").strip()
+    out["golden_source_imported_at"] = str(out.get("golden_source_imported_at", "") or "").strip()
     out["local_source_url"] = str(out.get("local_source_url", "") or "").strip()
     out["local_source_origin"] = str(out.get("local_source_origin", "") or "").strip()
     out["local_source_recorded_at"] = str(out.get("local_source_recorded_at", "") or "").strip()
@@ -482,8 +486,10 @@ def _init_db(conn: sqlite3.Connection):
             start_offset TEXT,
             selected_source_kind TEXT,
             selected_source_method TEXT,
+            selected_source_recorded_at TEXT,
             golden_source_url TEXT,
             golden_source_offset TEXT DEFAULT '0',
+            golden_source_imported_at TEXT,
             local_source_url TEXT,
             local_source_offset TEXT DEFAULT '0',
             local_source_origin TEXT,
@@ -518,8 +524,10 @@ def _init_db(conn: sqlite3.Connection):
         "source_origin": "TEXT DEFAULT 'unknown'",
         "selected_source_kind": "TEXT",
         "selected_source_method": "TEXT",
+        "selected_source_recorded_at": "TEXT",
         "golden_source_url": "TEXT",
         "golden_source_offset": "TEXT DEFAULT '0'",
+        "golden_source_imported_at": "TEXT",
         "local_source_url": "TEXT",
         "local_source_offset": "TEXT DEFAULT '0'",
         "local_source_origin": "TEXT",
@@ -575,15 +583,16 @@ def _import_csv_if_needed(conn: sqlite3.Connection, path: str, slug: str):
         conn.execute(
             """
             INSERT OR REPLACE INTO items(
-                library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,golden_source_url,golden_source_offset,
-                local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
+                library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,golden_source_url,golden_source_offset,
+                golden_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
                 plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                 theme_size,theme_mtime,created_at,updated_at
-            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """,
             (
                 slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
-                row["start_offset"], row["selected_source_kind"], row["selected_source_method"], row["golden_source_url"], row["golden_source_offset"],
+                row["start_offset"], row["selected_source_kind"], row["selected_source_method"], row["selected_source_recorded_at"],
+                row["golden_source_url"], row["golden_source_offset"], row["golden_source_imported_at"],
                 row["local_source_url"], row["local_source_offset"], row["local_source_origin"], row["local_source_kind"],
                 row["local_source_method"], row["local_source_recorded_at"],
                 row["end_offset"], row["plex_title"], row["folder"],
@@ -604,8 +613,8 @@ def _sqlite_load_rows(path: str) -> list[dict]:
             _import_csv_if_needed(conn, path, slug)
             cur = conn.execute(
                 """
-                SELECT title,year,status,url,start_offset,selected_source_kind,selected_source_method,golden_source_url,golden_source_offset,
-                       local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,plex_title,folder,
+                SELECT title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,golden_source_url,golden_source_offset,
+                       golden_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,plex_title,folder,
                        rating_key,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                        theme_size,theme_mtime
                 FROM items
@@ -653,11 +662,11 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                 conn.execute(
                     """
                     INSERT INTO items(
-                        library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,golden_source_url,golden_source_offset,
-                        local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
+                        library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,golden_source_url,golden_source_offset,
+                        golden_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
                         plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                         theme_size,theme_mtime,created_at,updated_at
-                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(library_slug,rating_key) DO UPDATE SET
                         title=excluded.title,
                         year=excluded.year,
@@ -666,8 +675,10 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                         start_offset=excluded.start_offset,
                         selected_source_kind=excluded.selected_source_kind,
                         selected_source_method=excluded.selected_source_method,
+                        selected_source_recorded_at=excluded.selected_source_recorded_at,
                         golden_source_url=excluded.golden_source_url,
                         golden_source_offset=excluded.golden_source_offset,
+                        golden_source_imported_at=excluded.golden_source_imported_at,
                         local_source_url=excluded.local_source_url,
                         local_source_offset=excluded.local_source_offset,
                         local_source_origin=excluded.local_source_origin,
@@ -689,7 +700,8 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                     """,
                     (
                         slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
-                        row["start_offset"], row["selected_source_kind"], row["selected_source_method"], row["golden_source_url"], row["golden_source_offset"],
+                        row["start_offset"], row["selected_source_kind"], row["selected_source_method"], row["selected_source_recorded_at"],
+                        row["golden_source_url"], row["golden_source_offset"], row["golden_source_imported_at"],
                         row["local_source_url"], row["local_source_offset"], row["local_source_origin"], row["local_source_kind"],
                         row["local_source_method"], row["local_source_recorded_at"], row["end_offset"], row["plex_title"], row["folder"],
                         row["tmdb_id"], row["last_updated"], row["notes"], row.get("source_origin", "unknown"),
@@ -733,6 +745,34 @@ def clear_local_source_provenance(row: dict) -> dict:
     row["local_source_kind"] = ""
     row["local_source_method"] = ""
     row["local_source_recorded_at"] = ""
+    return row
+
+
+def clear_selected_source_record(row: dict) -> dict:
+    row["selected_source_recorded_at"] = ""
+    return row
+
+
+def stamp_selected_source_record(
+    row: dict,
+    *,
+    recorded_at: str | None = None,
+) -> dict:
+    row["selected_source_recorded_at"] = str(recorded_at or _now_str()).strip()
+    return row
+
+
+def clear_golden_source_import_record(row: dict) -> dict:
+    row["golden_source_imported_at"] = ""
+    return row
+
+
+def stamp_golden_source_import_record(
+    row: dict,
+    *,
+    imported_at: str | None = None,
+) -> dict:
+    row["golden_source_imported_at"] = str(imported_at or _now_str()).strip()
     return row
 
 

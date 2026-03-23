@@ -67,7 +67,9 @@ from shared.storage import (
     CONFIG_PATH,
     LEDGER_HEADERS,
     TMDB_GUID_RE,
+    clear_golden_source_import_record,
     clear_local_source_provenance,
+    clear_selected_source_record,
     ffprobe_duration,
     infer_selected_source_contract,
     ledger_path_for,
@@ -76,7 +78,9 @@ from shared.storage import (
     read_golden_source_text,
     save_ledger_map as save_ledger,
     set_selected_source_contract,
+    stamp_golden_source_import_record,
     stamp_local_source_provenance,
+    stamp_selected_source_record,
     sync_theme_cache,
 )
 from shared.yt_dlp_utils import yt_dlp_base_flags
@@ -187,8 +191,10 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         "start_offset":   str(start_offset) if start_offset else existing.get("start_offset", "0"),
         "selected_source_kind": existing.get("selected_source_kind", ""),
         "selected_source_method": existing.get("selected_source_method", ""),
+        "selected_source_recorded_at": existing.get("selected_source_recorded_at", ""),
         "golden_source_url": golden_source_url if golden_source_url else existing.get("golden_source_url", ""),
         "golden_source_offset": str(golden_source_offset) if golden_source_offset else existing.get("golden_source_offset", "0"),
+        "golden_source_imported_at": existing.get("golden_source_imported_at", ""),
         "end_offset":     str(end_offset) if end_offset else existing.get("end_offset", "0"),
         "plex_title":     plex_title,
         "folder":         folder,
@@ -216,9 +222,31 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
             kind=selected_source_kind or existing_kind,
             method=selected_source_method or existing_method,
         )
+        source_changed = any(
+            (
+                str(ledger[rating_key].get("url", "") or "").strip() != str(existing.get("url", "") or "").strip(),
+                str(ledger[rating_key].get("start_offset", "0") or "0") != str(existing.get("start_offset", "0") or "0"),
+                str(ledger[rating_key].get("end_offset", "0") or "0") != str(existing.get("end_offset", "0") or "0"),
+                str(ledger[rating_key].get("selected_source_kind", "") or "") != str(existing.get("selected_source_kind", "") or ""),
+                str(ledger[rating_key].get("selected_source_method", "") or "") != str(existing.get("selected_source_method", "") or ""),
+            )
+        )
+        if source_changed or not str(existing.get("selected_source_recorded_at", "") or "").strip():
+            stamp_selected_source_record(ledger[rating_key], recorded_at=ledger[rating_key]["last_updated"])
     else:
         ledger[rating_key]["selected_source_kind"] = ""
         ledger[rating_key]["selected_source_method"] = ""
+        clear_selected_source_record(ledger[rating_key])
+
+    if golden_source_url:
+        if (
+            str(golden_source_url).strip() != str(existing.get("golden_source_url", "") or "").strip()
+            or str(golden_source_offset).strip() != str(existing.get("golden_source_offset", "0") or "0")
+            or not str(existing.get("golden_source_imported_at", "") or "").strip()
+        ):
+            stamp_golden_source_import_record(ledger[rating_key], imported_at=ledger[rating_key]["last_updated"])
+    elif not ledger[rating_key]["golden_source_url"]:
+        clear_golden_source_import_record(ledger[rating_key])
 
 
 # ─── Plex API ─────────────────────────────────────────────────────────────────

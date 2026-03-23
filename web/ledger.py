@@ -9,6 +9,8 @@ from pathlib import Path
 from shared.golden_source_csv import parse_golden_source_csv_rows
 from shared.storage import (
     LEDGER_HEADERS,
+    clear_golden_source_import_record,
+    clear_selected_source_record,
     ffprobe_duration,
     infer_selected_source_contract,
     ledger_path_for,
@@ -16,6 +18,8 @@ from shared.storage import (
     now_str,
     read_golden_source_text,
     save_ledger_rows as save_ledger,
+    stamp_golden_source_import_record,
+    stamp_selected_source_record,
     set_selected_source_contract,
     status_after_clearing_source,
     validate_manual_status_transition,
@@ -75,6 +79,11 @@ def ledger_row_response(row: dict) -> dict:
 def save_ledger_row_updates(row: dict, updates: dict, *, default_notes: str | None = None):
     attempted_status = None
     original_status = str(row.get("status", "") or "")
+    original_url = str(row.get("url", "") or "").strip()
+    original_start_offset = str(row.get("start_offset", "0") or "0")
+    original_end_offset = str(row.get("end_offset", "0") or "0")
+    original_selected_kind = str(row.get("selected_source_kind", "") or "")
+    original_selected_method = str(row.get("selected_source_method", "") or "")
     candidate_row = dict(row)
     for key, value in updates.items():
         if key not in EDITABLE_LEDGER_FIELDS:
@@ -123,6 +132,20 @@ def save_ledger_row_updates(row: dict, updates: dict, *, default_notes: str | No
             kind=str(updates.get("selected_source_kind", "") or ""),
             method=str(updates.get("selected_source_method", "") or ""),
         )
+        selected_changed = any(
+            (
+                updated_url != original_url,
+                str(row.get("start_offset", "0") or "0") != original_start_offset,
+                str(row.get("end_offset", "0") or "0") != original_end_offset,
+                str(row.get("selected_source_kind", "") or "") != original_selected_kind,
+                str(row.get("selected_source_method", "") or "") != original_selected_method,
+            )
+        )
+        if updated_url:
+            if selected_changed or not str(row.get("selected_source_recorded_at", "") or "").strip():
+                stamp_selected_source_record(row)
+        else:
+            clear_selected_source_record(row)
     elif "selected_source_kind" in updates or "selected_source_method" in updates:
         selected_kind, selected_method = infer_selected_source_contract(candidate_row)
         set_selected_source_contract(
@@ -343,6 +366,10 @@ def golden_source_import_summary(data: dict):
         row["golden_source_url"] = incoming_url
         row["golden_source_offset"] = incoming_offset
         row["end_offset"] = match.get("end_offset", "0") or "0"
+        if incoming_url:
+            stamp_golden_source_import_record(row, imported_at=now)
+        else:
+            clear_golden_source_import_record(row)
         if existing_url and not overwrite:
             skipped_existing += 1
             continue
@@ -352,6 +379,10 @@ def golden_source_import_summary(data: dict):
             row["start_offset"] = incoming_offset
             row["source_origin"] = "golden_source" if incoming_url else "unknown"
             set_selected_source_contract(row, kind="golden" if incoming_url else "", method="golden_source" if incoming_url else "")
+            if incoming_url:
+                stamp_selected_source_record(row, recorded_at=now)
+            else:
+                clear_selected_source_record(row)
         if current_status == "UNMONITORED":
             pass
         elif not incoming_url and current_status != "AVAILABLE":

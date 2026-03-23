@@ -1338,7 +1338,7 @@ function _themeModalPrimarySourceUrl(row={}){
   return String(_selectedSourceContract(row).url||'').trim();
 }
 function _themeModalImportedAt(row={}){
-  const raw=String(row?.last_updated||'').trim();
+  const raw=String(row?.golden_source_imported_at||'').trim() || String(row?.last_updated||'').trim();
   if(!raw) return 'Not imported yet';
   const iso=raw.replace(' ','T')+'Z';
   const dt=new Date(iso);
@@ -1371,7 +1371,12 @@ function _themeModalSourceOffset(row={}){
 }
 function _themeModalSourceAdded(row={}){
   if(!String(_selectedSourceContract(row).url||'').trim()) return '—';
-  return _themeModalImportedAt(row);
+  const raw=String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim();
+  if(!raw) return '—';
+  const iso=raw.replace(' ','T')+'Z';
+  const dt=new Date(iso);
+  if(Number.isNaN(dt.getTime())) return raw;
+  return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
 function _themeModalSourceEndOffset(row={}){
   return row?.end_offset||0;
@@ -1474,7 +1479,7 @@ function _renderSourceStateStack(targetId,row={},opts={}){
       chips:[],
       url:selected.url,
       offset:selected.url ? _themeModalOffsetLabel(previewRow, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
-      timestamp:selected.url ? _themeModalImportedAt(row) : '—',
+      timestamp:selected.url ? _themeModalSourceAdded(row) : '—',
       note:selected.url ? 'Selected for approval or download' : 'No selected source saved',
     },
     {

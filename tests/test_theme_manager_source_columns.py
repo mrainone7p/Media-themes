@@ -86,6 +86,8 @@ process.stdout.write(JSON.stringify({{
             "function _customSourceState(row={})",
             "function _localSourceState(row={})",
             "function _renderSourceStateStack(targetId,row={},opts={})",
+            "String(row?.golden_source_imported_at||'').trim() || String(row?.last_updated||'').trim()",
+            "String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim()",
             "_renderSourceStateCell('Golden Source'",
             "_renderSourceStateCell('Selected Source'",
             "_sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow))",
