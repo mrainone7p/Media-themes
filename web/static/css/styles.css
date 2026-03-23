@@ -759,6 +759,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-kbd{display:inline-block;padding:1px 5px;border:1px solid var(--border);border-radius:4px;font-size:10px;font-family:var(--mono);color:var(--text3);background:var(--surface2)}
 .modal-bio{font-size:12px;color:var(--text2);line-height:1.55;padding:10px var(--modal-pad-x) 0;border-top:1px solid var(--border);margin-top:10px}
 .modal-bio.is-clamped{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.modal-inline-bio{display:flex;align-items:flex-start;gap:10px;margin-top:8px;min-width:0}
+.modal-bio-inline{padding:0;border-top:none;margin-top:0;flex:1;min-width:0}
+.bio-toggle{border:none;background:none;padding:0;color:var(--amber);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+.bio-toggle:hover{text-decoration:underline}
 .modal-section-header{padding:0 var(--modal-pad-x) 8px;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.01em}
 .modal-section-divider{height:1px;background:var(--border);margin:0 var(--modal-pad-x) 0}
 .modal-status-txt{font-size:11px;font-family:var(--mono);color:var(--text3);padding:0 var(--modal-pad-x) 6px;min-height:18px}
@@ -797,8 +801,14 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .search-method-input.is-muted{background:color-mix(in srgb, var(--surface) 70%, transparent);border-color:color-mix(in srgb, var(--border) 78%, transparent);color:var(--text2)}
 .search-method-input.is-muted:focus{background:var(--surface);border-color:var(--amber);color:var(--text)}
 .offset-inline-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.offset-inline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.offset-inline-cell{display:flex;flex-direction:column;gap:6px;min-width:0}
+.offset-inline-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;grid-column:1 / -1}
+.offset-input-wrap{display:flex;align-items:center;gap:8px}
 .offset-inline-label{font-size:11px;color:var(--text2);font-weight:600}
 .source-editor-slider-wrap{position:relative}
+.timeline-markers{position:absolute;inset:50% 8px auto 8px;height:14px;transform:translateY(-50%);display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:0}
+.timeline-markers span{display:block;width:1px;height:10px;background:color-mix(in srgb,var(--text3) 55%, transparent);opacity:.75}
 .trim-window{position:absolute;left:0;right:0;top:50%;height:10px;transform:translateY(-50%);pointer-events:none;border-radius:999px;overflow:hidden}
 .trim-shade{position:absolute;top:0;bottom:0;background:rgba(15,23,42,.42);backdrop-filter:blur(1px)}
 .trim-shade.right{right:0}
@@ -847,6 +857,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-source-details[open] .settings-chev{transform:rotate(180deg)}
 .theme-source-summary-text{display:inline-flex;align-items:center;gap:8px}
 .theme-source-url-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.source-summary-url,.theme-source-url-text{position:relative}
+.auto-scroll-text{display:block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap}
+.auto-scroll-text.auto-scroll-active > span{display:inline-block;padding-right:28px;animation:auto-scroll-text 14s linear infinite}
+@keyframes auto-scroll-text{
+  0%,12%{transform:translateX(0)}
+  88%,100%{transform:translateX(calc(-1 * var(--scroll-distance, 0px)))}
+}
 .review-card.compact{padding:12px}
 .review-card.compact .review-card-header{margin-bottom:8px}
 .review-empty{font-size:12px;color:var(--text3);line-height:1.5;padding:9px 11px;border:1px dashed var(--border);border-radius:10px;background:color-mix(in srgb,var(--surface) 55%,transparent)}
@@ -857,7 +874,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 #theme-modal .review-card{margin:0 var(--modal-pad-x) 8px;padding:10px 12px}
 #theme-modal .review-card-header{margin-bottom:6px}
 #theme-modal .review-meta-item{padding:8px 10px;gap:4px}
-#theme-modal .modal-bio{padding:0 var(--modal-pad-x) 8px}
+#theme-modal .modal-inline-bio{margin-top:6px}
+@media (max-width: 720px){
+  .offset-inline-grid{grid-template-columns:1fr}
+  .offset-inline-actions{grid-column:auto}
+}
 #theme-modal .review-section-divider{margin:2px var(--modal-pad-x) 8px}
 #theme-modal .simple-line{margin-bottom:3px}
 #theme-modal .theme-status-flow-wrap{gap:2px}
@@ -1164,4 +1185,3 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .text-muted2{color:var(--text3)}
 .cursor-pointer{cursor:pointer}
 .pointer-events-none{pointer-events:none}
-
