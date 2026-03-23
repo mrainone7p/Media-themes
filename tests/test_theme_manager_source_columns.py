@@ -58,12 +58,22 @@ const manualFallbackRow = {{
   status:'APPROVED',
   source_origin:'manual',
 }};
+const goldenRow = {{
+  url:'https://example.test/golden',
+  golden_source_url:'https://example.test/golden',
+  status:'MISSING',
+  selected_source_kind:'golden',
+  selected_source_method:'golden_source',
+}};
 process.stdout.write(JSON.stringify({{
   playlistLabel:_selectedSourceLabel(playlistRow),
   playlistFilterKey:_selectedSourceFilterKey(playlistRow),
   playlistState:_customSourceState(playlistRow),
   manualFallbackLabel:_selectedSourceLabel(manualFallbackRow),
   manualFallbackFilterKey:_selectedSourceFilterKey(manualFallbackRow),
+  manualFallbackState:_customSourceState(manualFallbackRow),
+  goldenLabel:_selectedSourceLabel(goldenRow),
+  goldenState:_customSourceState(goldenRow),
 }}));
 """
         result = subprocess.run(
@@ -77,9 +87,12 @@ process.stdout.write(JSON.stringify({{
         self.assertEqual("Playlist", payload["playlistLabel"])
         self.assertEqual("playlist", payload["playlistFilterKey"])
         self.assertEqual("playlist", payload["playlistState"]["key"])
-        self.assertEqual("Staged", payload["playlistState"]["pillLabel"])
-        self.assertEqual("Manual", payload["manualFallbackLabel"])
+        self.assertEqual("Playlist - Staged", payload["playlistState"]["pillLabel"])
+        self.assertEqual("Custom", payload["manualFallbackLabel"])
         self.assertEqual("manual", payload["manualFallbackFilterKey"])
+        self.assertEqual("Custom - Approved", payload["manualFallbackState"]["pillLabel"])
+        self.assertEqual("Golden Source", payload["goldenLabel"])
+        self.assertEqual("Golden Source - Saved", payload["goldenState"]["pillLabel"])
 
     def test_library_js_renders_new_source_state_cells(self):
         for snippet in (
@@ -90,7 +103,8 @@ process.stdout.write(JSON.stringify({{
             "String(row?.golden_source_imported_at||'').trim() || String(row?.last_updated||'').trim()",
             "String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim()",
             "_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)",
-            "_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.statusLabel), '', customState.chips)",
+            "_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.pillLabel), '', customState.chips)",
+            "pillLabel:_sourceStatePillLabel(typeLabel, statusLabel)",
             "_sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow))",
             "_themeModalSourceOriginMarkup(row)",
         ):
