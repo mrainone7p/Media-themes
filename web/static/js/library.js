@@ -102,9 +102,9 @@ function _sourceMethodLabel(method=''){
     golden_source:'Golden Source',
     playlist:'Playlist',
     direct:'Direct',
-    custom:'Manual',
-    paste:'Manual',
-    manual:'Manual',
+    custom:'Custom',
+    paste:'Custom',
+    manual:'Custom',
     existing:'Existing',
   };
   return map[method] || formatStatusLabel(method||'unknown');
@@ -121,7 +121,7 @@ function _sourceStateClass(kind='', method=''){
 
 function _sourceStatePillLabel(typeLabel='', statusLabel=''){
   const parts=[String(typeLabel||'').trim(), String(statusLabel||'').trim()].filter(Boolean);
-  return parts.length ? parts.join(' · ') : '—';
+  return parts.length ? parts.join(' - ') : '—';
 }
 
 function _sourceKindClass(kind=''){
@@ -185,8 +185,8 @@ function _selectedSourceLabel(row={}){
     golden:'Golden Source',
     playlist:'Playlist',
     direct:'Direct',
-    paste:'Pasted URL',
-    manual:'Manual',
+    paste:'Custom',
+    manual:'Custom',
   };
   return labelMap[filterKey] || _sourceMethodLabel(selected.method || selected.kind || 'manual');
 }
@@ -209,13 +209,13 @@ function _customSourceState(row={}){
   const statusLabel=_selectedSourceStateText(row);
   const filterKey=_selectedSourceFilterKey(row);
   if(!selected.url){
-    return {key:'none', typeLabel:'Selected Source', statusLabel, pillLabel:statusLabel, className:'is-unknown', detail:'No selected source saved', chips:[]};
+    return {key:'none', typeLabel:'Selected Source', statusLabel, pillLabel:'Selected Source', className:'is-unknown', detail:'No selected source saved', chips:[]};
   }
   return {
     key:filterKey,
     typeLabel,
     statusLabel,
-    pillLabel:statusLabel,
+    pillLabel:_sourceStatePillLabel(typeLabel, statusLabel),
     className:_sourceStateClass(selected.kind, selected.method),
     detail:selected.url,
     chips:[],
@@ -883,7 +883,7 @@ function renderTable(){
       </td>
       <td>${renderRowActionCell(row)}</td>
       <td>${_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)}</td>
-      <td>${_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.statusLabel), '', customState.chips)}</td>
+      <td>${_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.pillLabel), '', customState.chips)}</td>
       <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
       <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
     </tr>`;
