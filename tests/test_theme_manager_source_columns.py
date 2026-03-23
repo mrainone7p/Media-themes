@@ -13,10 +13,10 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         cls.template_source = (ROOT / "web" / "template.html").read_text(encoding="utf-8")
         cls.library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
 
-    def test_table_headers_use_golden_custom_local_columns(self):
+    def test_table_headers_use_golden_and_selected_columns(self):
         self.assertIn("sortTable('golden_state')", self.template_source)
         self.assertIn("sortTable('custom_state')", self.template_source)
-        self.assertIn("sortTable('local_state')", self.template_source)
+        self.assertNotIn("sortTable('local_state')", self.template_source)
         self.assertNotIn("Golden Source URL ↕", self.template_source)
         self.assertNotIn("Source URL ↕", self.template_source)
         self.assertNotIn("Start Offset (mm:ss) ↕", self.template_source)
@@ -38,7 +38,6 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
             "function _renderSourceStateStack(targetId,row={},opts={})",
             "_renderSourceStateCell('Golden'",
             "_renderSourceStateCell('Selected'",
-            "_renderSourceStateCell('Local'",
         ):
             self.assertIn(snippet, self.library_source)
 
@@ -57,6 +56,11 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
     def test_library_js_does_not_reuse_selected_source_offset_for_golden_source_ui(self):
         self.assertNotIn("offset:_normalizedOffsetValue(sourceRow?.start_offset||'0')", self.library_source)
         self.assertNotIn("const goldenOffsetValue=_normalizedOffsetValue(existingRow?.start_offset||'0');", self.library_source)
+
+    def test_library_js_no_longer_sorts_or_renders_local_table_column(self):
+        self.assertNotIn("if(col==='local_state')", self.library_source)
+        self.assertNotIn("_sortCol==='local_state'", self.library_source)
+        self.assertNotIn("_renderSourceStateCell('Local'", self.library_source)
 
 
 if __name__ == "__main__":

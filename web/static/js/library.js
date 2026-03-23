@@ -148,7 +148,7 @@ function _localSourceContract(row={}){
 
 function _goldenSourceState(row={}){
   const hasGolden=_rowHasGoldenSource(row);
-  if(!hasGolden) return {key:'not_available', label:'None', className:'is-unknown', detail:'No curated source', chips:[]};
+  if(!hasGolden) return {key:'not_available', label:'Not Available', className:'is-unknown', detail:'No curated source', chips:[]};
   return {key:'available', label:'Ready', className:'is-golden', detail:'Curated source available', chips:['Curated']};
 }
 
@@ -165,15 +165,15 @@ function _selectedSourceLabel(row={}){
 }
 
 function _selectedSourceStateText(row={}){
-  const label=_selectedSourceLabel(row);
-  const sourceUrl=String(row?.url||'').trim();
-  if(label==='—') return 'No selected source';
-  if(label==='Golden Source') return 'Golden Source';
-  if(_hasLocalTheme(row)) return `${label} - Downloaded`;
-  if(!sourceUrl) return `${label} - Identified`;
+  const selectedUrl=String(row?.url||'').trim();
+  if(!selectedUrl) return 'Not Selected';
+  if(_hasLocalTheme(row)) return 'Downloaded';
   const status=String(row?.status||'').toUpperCase();
-  if(status==='STAGED' || status==='APPROVED') return `${label} - Staged`;
-  return `${label} - Identified`;
+  if(status==='APPROVED') return 'Approved';
+  if(status==='STAGED') return 'Staged';
+  if(status==='FAILED') return 'Failed';
+  if(status==='UNMONITORED') return 'Unmonitored';
+  return 'Identified';
 }
 
 function _customSourceState(row={}){
@@ -181,15 +181,15 @@ function _customSourceState(row={}){
   const typeLabel=_selectedSourceLabel(row);
   const statusLabel=_selectedSourceStateText(row);
   if(!selected.url){
-    return {key:'none', typeLabel:typeLabel==='—'?'—':typeLabel, statusLabel, className:'is-unknown', detail:'No selected source', chips:[]};
+    return {key:'none', typeLabel:typeLabel==='—'?'—':typeLabel, statusLabel, className:'is-unknown', detail:'', chips:[]};
   }
   return {
     key:typeLabel==='Golden Source' ? 'golden' : (selected.method||'custom'),
     typeLabel,
     statusLabel,
     className:_sourceKindClass(selected.kind),
-    detail:selected.url,
-    chips:typeLabel && typeLabel!=='—' ? [typeLabel] : [],
+    detail:'',
+    chips:[],
   };
 }
 
@@ -410,11 +410,6 @@ function _sortVal(row,col){
     const rank={none:0,custom:1,direct:2,playlist:3,golden:4};
     return [rank[state.key] ?? 0, `${state.typeLabel} ${state.statusLabel}`.toLowerCase()];
   }
-  if(col==='local_state'){
-    const state=_localSourceState(row);
-    const rank={missing:0,staged:1,approved:2,downloaded:3,available:3,failed:4,unmonitored:5};
-    return [rank[state.key] ?? 0, `${state.label} ${state.detail}`.toLowerCase()];
-  }
   if(col==='source_origin') return (row.source_origin||'').toString().toLowerCase();
   if(col==='current_theme') return (row.status==='AVAILABLE'?1:0);
   return (row[col]||'').toString().toLowerCase();
@@ -446,7 +441,7 @@ function filterTable(){
     return true;
   });
   _filtered.sort((a,b)=>{
-    if(_sortCol==='golden_source_url' || _sortCol==='golden_state' || _sortCol==='custom_state' || _sortCol==='local_state'){
+    if(_sortCol==='golden_source_url' || _sortCol==='golden_state' || _sortCol==='custom_state'){
       const [ap,au]=_sortVal(a,_sortCol);
       const [bp,bu]=_sortVal(b,_sortCol);
       if(ap!==bp) return (ap-bp)*_sortDir;
@@ -849,7 +844,6 @@ function renderTable(){
     const tmdbHref=_tmdbLink(row.title||row.plex_title,row.year);
     const goldenState=_goldenSourceState(row);
     const customState=_customSourceState(row);
-    const localState=_localSourceState(row);
     return `<tr>
       <td><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
       <td class="db-cell-title" title="${titleAttr}">
@@ -860,9 +854,8 @@ function renderTable(){
         ${renderStatusCell(row)}
       </td>
       <td>${renderRowActionCell(row)}</td>
-      <td>${_renderSourceStateCell('Golden', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), goldenState.detail, goldenState.chips)}</td>
-      <td>${_renderSourceStateCell('Selected', _renderSourceStatePill(customState.typeLabel, customState.className, customState.detail), customState.statusLabel, customState.chips)}</td>
-      <td>${_renderSourceStateCell('Local', _renderSourceStatePill(localState.label, localState.className, localState.detail), localState.detail, localState.chips)}</td>
+      <td>${_renderSourceStateCell('Golden', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)}</td>
+      <td>${_renderSourceStateCell('Selected', _renderSourceStatePill(customState.typeLabel, customState.className, customState.statusLabel), customState.statusLabel, customState.chips)}</td>
       <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
       <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
     </tr>`;
