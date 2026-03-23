@@ -1061,8 +1061,8 @@
                     <div class="sm-card-state">Selected</div>
                     <div class="sm-card-badge recommended" id="sm-golden-recommended">Recommended</div>
                   </div>
-                  <div class="sm-card-desc" id="sm-golden-desc">Use the curated source already linked to this item.</div>
-                  <div class="sm-card-submeta"><span class="ui-pill sm-card-chip" id="sm-golden-offset">Offset —</span><span id="sm-golden-meta">Curated match</span></div>
+                  <div class="sm-card-desc" id="sm-golden-desc">Use the curated source already linked to this item. If it fails, stay here to retry or replace the URL.</div>
+                  <div class="sm-card-submeta"><span class="ui-pill sm-card-chip" id="sm-golden-offset">Offset —</span><span id="sm-golden-meta">Curated match • alternatives stay manual</span></div>
                 </div>
               </div>
               <div class="sm-card-actions">
@@ -1205,6 +1205,15 @@
         </div>
         <audio class="hidden" id="se-audio"></audio>
         <div class="modal-status-txt" id="se-info" style="padding-left:0;padding-top:3px">Select a result or paste a URL to preview</div>
+        <div class="surface-panel compact hidden" id="se-golden-error" style="margin-top:10px">
+          <div class="section-label" style="margin-bottom:6px">Curated source needs attention</div>
+          <div class="body-copy compact" id="se-golden-error-msg" style="margin-bottom:10px"></div>
+          <div class="modal-actions-row" style="gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" type="button" onclick="seLoadPreview()">↺ Retry Preview</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="_focusSourceEditorUrl()">✎ Paste / Edit URL</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="_returnToSearchMethodChoice()">← Choose Another Method</button>
+          </div>
+        </div>
       </div>
 
       <!-- Start Offset -->
