@@ -620,9 +620,12 @@ function renderDashboardSystemHealth(health){
     const h=health[row.key]||{state:'unknown',label:'Unknown'};
     const badge=dashboardStatusBadge(h.label, h.state);
     const detail=h.detail||'';
+    const safeDetail=detail ? detail.replace(/"/g,'&quot;') : '';
     return `<div class="dash-health-row">
-      <span class="dash-health-label">${row.label}</span>
-      ${detail ? `<span class="dash-health-detail" title="${detail.replace(/"/g,'&quot;')}">${detail}</span>` : ''}
+      <div class="dash-health-copy-wrap">
+        <span class="dash-health-label">${row.label}</span>
+        ${detail ? `<span class="dash-health-detail" title="${safeDetail}">${detail}</span>` : ''}
+      </div>
       ${badge}
     </div>`;
   }).join('')+'</div>';
@@ -678,10 +681,10 @@ function renderDashboardActionStation(health){
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   const scheduleActive=s.state==='ok'||s.state==='warning'||s.state==='warn';
   const scheduleMetaParts=[];
-  if(!s.next_run && s.cron){
+  if(scheduleActive && !s.next_run && s.cron){
     scheduleMetaParts.push(`<div class="dash-station-schedule-meta">Cron: <code>${s.cron}</code></div>`);
   }
-  if(s.detail) scheduleMetaParts.push(`<div class="dash-station-schedule-meta">${s.detail}</div>`);
+  if(scheduleActive && s.detail && !String(s.detail||'').startsWith('Active schedule comes from ')) scheduleMetaParts.push(`<div class="dash-station-schedule-meta">${s.detail}</div>`);
   const scheduleMetaHtml=scheduleMetaParts.length?`<div class="dash-station-schedule-copy">${scheduleMetaParts.join('')}</div>`:'';
   // Next run block
   let nextRunHtml='';
@@ -716,17 +719,7 @@ function renderDashboardActionStation(health){
   el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`;
 }
 function renderDashboardActionStationFromConfig(cfg, scheduledLibs){
-  renderDashboardActionStation({
-    schedule:{
-      state:cfg.schedule_enabled ? (scheduledLibs.length ? 'ok' : 'warning') : 'off',
-      label:cfg.schedule_enabled ? (scheduledLibs.length ? 'Configured' : 'No libraries selected') : 'Disabled',
-      next_run:null,
-      cron:(cfg.cron_schedule||'0 3 * * *').trim(),
-      detail:cfg.schedule_enabled
-        ? `Scheduled for ${scheduledLibs.length} librar${scheduledLibs.length===1?'y':'ies'}.`
-        : 'Enable automation in Scheduler to run this pipeline automatically.',
-    }
-  });
+  renderDashboardActionStation({schedule:buildDashboardScheduleHealth(cfg, scheduledLibs)});
 }
 function _updateDashRunButton(){
   const btn=document.getElementById('dash-run-btn');
@@ -880,6 +873,34 @@ function writeDashboardHealthCache(health){
       window.localStorage.setItem(_dashboardHealthStorageKey, JSON.stringify(health));
     }
   }catch(_err){}
+}
+function clearDashboardHealthCache(){
+  try{
+    if(window.localStorage) window.localStorage.removeItem(_dashboardHealthStorageKey);
+  }catch(_err){}
+}
+function buildDashboardScheduleHealth(cfg={}, scheduledLibs=[]){
+  const libs=Array.isArray(scheduledLibs) ? scheduledLibs.filter(Boolean) : [];
+  const enabled=cfg.schedule_enabled !== false;
+  return {
+    state: enabled ? (libs.length ? 'ok' : 'warning') : 'off',
+    label: enabled ? (libs.length ? 'Configured' : 'No libraries selected') : 'Disabled',
+    next_run: null,
+    cron: (cfg.cron_schedule||'0 3 * * *').trim(),
+    configured_cron: (cfg.cron_schedule||'0 3 * * *').trim(),
+    libraries: libs.length,
+    detail: enabled
+      ? `Scheduled for ${libs.length} librar${libs.length===1?'y':'ies'}.`
+      : 'Enable automation in Scheduler to run this pipeline automatically.',
+  };
+}
+function syncDashboardScheduleHealthCache(cfg={}, scheduledLibs=[]){
+  const cached=readDashboardHealthCache();
+  if(!cached){
+    if(cfg.schedule_enabled===false) clearDashboardHealthCache();
+    return;
+  }
+  writeDashboardHealthCache({...cached, schedule:buildDashboardScheduleHealth(cfg, scheduledLibs)});
 }
 
 function emptyDashboardCounts(){
