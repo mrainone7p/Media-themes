@@ -353,15 +353,30 @@ function retryRun(scope){
 }
 let _mediaEvtSrc=null;
 
+function renderSchedulerNextRunModule(schedule={}){
+  renderScheduleStatusModule('scheduler-next-run-module', schedule, {inactiveCta:'Enable Schedule'});
+  _startCountdowns(scheduleHasActiveRun(schedule) ? schedule.next_run : null);
+}
+
+async function refreshSchedulerNextRunModule(fallbackSchedule=null){
+  let schedule=(fallbackSchedule && typeof fallbackSchedule==='object') ? fallbackSchedule : null;
+  try{
+    const {data:health}=await requestJson('/api/health');
+    if(health && typeof health==='object' && health.schedule) schedule=health.schedule;
+  }catch(_err){}
+  if(!schedule){
+    const cfg=await loadConfig();
+    const enabledLibs=(cfg.libraries||[]).filter(l=>l.enabled!==false && (!l.type||l.type==='movie'||l.type==='show'));
+    const selectedNames=new Set((cfg.schedule_libraries&&cfg.schedule_libraries.length)?cfg.schedule_libraries:enabledLibs.map(l=>l.name));
+    const scheduledLibs=enabledLibs.filter(l=>selectedNames.has(l.name)).map(l=>l.name);
+    schedule=buildDashboardScheduleHealth(cfg, scheduledLibs);
+  }
+  renderSchedulerNextRunModule(schedule);
+}
+
 async function loadRunPage(){
   const cfg=await loadConfig();
   document.getElementById('run-cron').value=cfg.cron_schedule||'0 3 * * *';
-  // Wire up live countdown for scheduler page
-  try{
-    const {data:health}=await requestJson('/api/health');
-    const nextRun=(health&&health.schedule&&health.schedule.next_run)||null;
-    _startCountdowns(nextRun);
-  }catch(e){}
   document.getElementById('run-schedule-limit').value=cfg.schedule_test_limit ?? cfg.test_limit ?? 0;
   document.getElementById('sched-enabled').checked = cfg.schedule_enabled !== false;
   const enabledLibs=(cfg.libraries||[]).filter(l=>l.enabled!==false && (!l.type||l.type==='movie'||l.type==='show'));
@@ -374,6 +389,7 @@ async function loadRunPage(){
   document.getElementById('sched-autoapprove').checked = !!cfg.auto_approve;
   document.getElementById('sched-only-golden').checked = !!cfg.search_only_golden;
   applyScheduleEnabledState();
+  refreshSchedulerNextRunModule(buildDashboardScheduleHealth(cfg, _selectedRunLibraries()));
   _refreshScopedRunLabels();
   loadSchedulerHistory();
 }
@@ -424,10 +440,10 @@ async function saveRunSchedule(){
       rememberConfigPatch(cfg);
       const scheduledLibs=cfg.schedule_libraries||[];
       syncDashboardScheduleHealthCache(cfg, scheduledLibs);
-      if(!enabled) _startCountdowns(null);
       toast(enabled ? 'Scheduler saved' : 'Automation disabled','ok');
       renderRunLibs();
       applyScheduleEnabledState();
+      refreshSchedulerNextRunModule(buildDashboardScheduleHealth(cfg, scheduledLibs));
       if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboardActionStationFromConfig(cfg, scheduledLibs);
     }else{
       toast(data?.message || data?.error || 'Scheduler save failed','err');
