@@ -32,15 +32,16 @@ def _validate_audio_ready(audio_path: str | Path) -> float:
 def movie_bio_payload(rating_key: str, library: str) -> dict:
     if not rating_key:
         return {"summary": ""}
+    requested_library = str(library or "").strip()
     cfg = load_config()
     tmdb_key = cfg.get("tmdb_api_key", "")
     plex_url = cfg.get("plex_url", "").rstrip("/")
     plex_token = cfg.get("plex_token", "")
-    cache_key = f"{library}:{rating_key}"
+    cache_key = f"{requested_library}:{rating_key}"
 
     if tmdb_key:
         try:
-            path = ledger_path_for(library) if library else legacy_theme_log_path()
+            path = ledger_path_for(requested_library) if requested_library else legacy_theme_log_path()
             rows = load_ledger(path)
             row = next((row for row in rows if row.get("rating_key") == rating_key), None)
             title = (row or {}).get("title") or (row or {}).get("plex_title", "")
