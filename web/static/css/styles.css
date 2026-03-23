@@ -963,7 +963,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-workflow-value{font-size:12px;font-weight:600;color:var(--text);min-width:0;word-break:break-word}
 .theme-workflow-detail{margin-top:4px;font-size:11px;font-weight:500;color:var(--text3)}
 .theme-workflow-value .ui-pill,.theme-workflow-value .badge{max-width:100%}
-.theme-section-actions .btn,.theme-workflow-actions .btn{flex:0 0 auto}
+.theme-section-actions .btn,.theme-workflow-actions .btn{flex:0 0 auto;min-width:118px;min-height:36px}
 .theme-workflow-actions .btn.is-primary,.theme-section-actions .btn.is-primary{box-shadow:0 0 0 1px rgba(255,255,255,.04) inset}
 @media (max-width: 640px){
   .review-card-header,.review-panel-head{flex-direction:column;align-items:flex-start}

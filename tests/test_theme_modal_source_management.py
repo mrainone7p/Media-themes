@@ -62,6 +62,10 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         ):
             self.assertNotIn(snippet, source_card_split)
 
+
+    def test_template_contains_updated_trim_source_label(self):
+        self.assertIn('>Trim Source<', self.template_source)
+
     def test_footer_only_contains_close_action(self):
         footer_split = self.template_source.split('<div class="modal-footer">', 1)[1].split('</div>', 2)[0]
         self.assertIn('>Close<', footer_split)
@@ -88,7 +92,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         for snippet in (
             'function _themeModalWorkflowActions(row={}){',
             "push('find-source','Find Source','btn btn-amber is-primary','themeModalOpenManualSearch');",
-            "push('trim-source','Trim','btn btn-ghost','themeModalPreviewSourceTrim');",
+            "push('trim-source','Trim Source','btn btn-ghost','themeModalPreviewSourceTrim');",
             "push('clear-source','Clear Source','btn btn-ghost','themeModalDeleteSource');",
             "if(status==='APPROVED')",
             "push('download-now','Download','btn btn-green is-primary','themeModalDownloadApproved');",
@@ -97,6 +101,26 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "push('stage','Stage','btn btn-amber is-primary','themeModalStageSource');",
             'function themeModalStageSource(){',
             "themeModalSetStatus('STAGED');",
+        ):
+            self.assertIn(snippet, self.library_source)
+
+
+    def test_theme_modal_secondary_modals_track_return_context_for_cancel_reopen(self):
+        for snippet in (
+            'const _themeModalReturnContext={deleteModal:null,trimModal:null,ytModal:null};',
+            'function _themeModalSnapshotContext(){',
+            "function _themeModalSetReturnContext(modalKey, shouldReturn=false, context={}){",
+            "function _themeModalClearReturnContext(modalKey){",
+            "function _themeModalReopenFromReturnContext(modalKey){",
+            "_themeModalSetReturnContext('deleteModal', true, _themeModalSnapshotContext());",
+            "_themeModalSetReturnContext('trimModal', true, _themeModalSnapshotContext());",
+            "_themeModalSetReturnContext('ytModal', true, _themeModalSnapshotContext());",
+            "_themeModalReopenFromReturnContext('deleteModal');",
+            "_themeModalReopenFromReturnContext('trimModal');",
+            "_themeModalReopenFromReturnContext('ytModal');",
+            "_themeModalClearReturnContext('deleteModal');",
+            "_themeModalClearReturnContext('trimModal');",
+            "_themeModalClearReturnContext('ytModal');",
         ):
             self.assertIn(snippet, self.library_source)
 
