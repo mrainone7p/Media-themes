@@ -1549,6 +1549,39 @@ function _searchPreviewReset(){
   if(dur) dur.textContent='—';
 }
 
+function _hideGoldenValidationError(){
+  const panel=document.getElementById('se-golden-error');
+  const msg=document.getElementById('se-golden-error-msg');
+  if(panel) panel.classList.add('hidden');
+  if(msg) msg.textContent='';
+}
+
+function _focusSourceEditorUrl(){
+  const urlEl=document.getElementById('se-url');
+  if(!urlEl) return;
+  urlEl.focus();
+  urlEl.select();
+}
+
+function _returnToSearchMethodChoice(){
+  _hideGoldenValidationError();
+  goToSearchStep(1);
+}
+
+function _renderGoldenValidationError(errorMessage){
+  const notice=errorMessage||'Golden Source preview could not be loaded.';
+  const infoEl=document.getElementById('se-info');
+  const panel=document.getElementById('se-golden-error');
+  const msg=document.getElementById('se-golden-error-msg');
+  const countEl=document.getElementById('sm-results-count');
+  _setOwnedSearchResults(null, []);
+  _renderSearchResultsState('Curated source preview failed. Choose another method to search alternatives.', 'error');
+  if(countEl) countEl.textContent='';
+  if(infoEl) infoEl.textContent='Curated source unavailable — retry preview, paste/edit a replacement URL, or choose another method.';
+  if(msg) msg.textContent=notice;
+  if(panel) panel.classList.remove('hidden');
+}
+
 function _resetSourceEditorDraft(){
   _sePreviewLoadSeq++;
   _step3PreparedUrl='';
@@ -1562,6 +1595,7 @@ function _resetSourceEditorDraft(){
   if(loadBtn){ loadBtn.textContent='↺ Refresh'; loadBtn.disabled=false; }
   _sourceEditorAudio.cleanup();
   _step3EntryMode='';
+  _hideGoldenValidationError();
   const trimWindow=document.getElementById('se-trim-window');
   const startLabel=document.getElementById('se-trim-start-label');
   const endLabel=document.getElementById('se-trim-end-label');
@@ -1722,6 +1756,12 @@ function selectSearchMethod(method){
   const goldenCard=document.getElementById('sm-card-golden');
   if(method==='golden_source' && goldenCard?.classList.contains('disabled')) return;
   _searchMethod=method;
+  if(method==='golden_source'){
+    _setOwnedSearchResults(null, []);
+    _renderSearchResultsState('Golden Source stays in curated review unless you choose another method to search alternatives.');
+    const countEl=document.getElementById('sm-results-count');
+    if(countEl) countEl.textContent='';
+  }
   ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
     const card=document.getElementById(_searchMethodCardId(m));
     if(card) card.classList.toggle('active',m===method);
@@ -1851,9 +1891,9 @@ async function openSearchModal(rk,title,year,lib){
   const goldenOffsetValue=_normalizedOffsetValue(existingRow?.start_offset||'0');
   if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
   if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
-  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item.':'No curated source is available for this item yet.';
+  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item. If it fails, stay here to retry or replace the URL.':'No curated source is available for this item yet — choose another method to search alternatives.';
   if(goldenOffset) goldenOffset.textContent=hasGolden?`Offset ${goldenOffsetValue}`:'Offset —';
-  if(goldenMeta) goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'Manual search fallback';
+  if(goldenMeta) goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'Choose another method if no curated source is available';
   _setSearchMethodOrder(hasGolden);
   _initMethodQuickPicks(existingRow);
   if(_searchMethod==='golden_source' && !hasGolden){
@@ -1864,9 +1904,14 @@ async function openSearchModal(rk,title,year,lib){
     });
     _renderSearchMethodChosen(_searchMethod);
   }
-  const hasOwnedResults=_lastSearchResults.length && _lastSearchResultsKey===_searchStateKey(rk);
+  const canRestoreSearchResults=_searchMethod!=='golden_source';
+  const hasOwnedResults=canRestoreSearchResults && _lastSearchResults.length && _lastSearchResultsKey===_searchStateKey(rk);
   const shouldRestoreStep3=sameItem && _searchCurrentStep===3 && hasSameItemDraft;
   if(hasOwnedResults) _renderResults(_lastSearchResults);
+  else if(_searchMethod==='golden_source'){
+    _setOwnedSearchResults(null, []);
+    _renderSearchResultsState('Golden Source stays in curated review unless you choose another method to search alternatives.');
+  }
   // Decide starting step
   if(shouldRestoreStep3){
     goToSearchStep(3);
@@ -1885,7 +1930,10 @@ function closeSearchModal(){
 }
 
 function searchModalBack(){
-  if(_searchCurrentStep===3) goToSearchStep(2);
+  if(_searchCurrentStep===3){
+    if(_searchMethod==='golden_source') goToSearchStep(1);
+    else goToSearchStep(2);
+  }
   else if(_searchCurrentStep===2) goToSearchStep(1);
   else closeSearchModal();
 }
@@ -1928,6 +1976,8 @@ async function doSearch(){
     const golden=_goldenSourceMeta();
     const url=golden.url;
     if(!url) return toast('Golden Source URL not currently available for this item','info');
+    _setOwnedSearchResults(null, []);
+    _renderSearchResultsState('Golden Source stays in curated review unless you choose another method to search alternatives.');
     return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL',startOffset:golden.offset,entryMode:'golden_fast_path'});
   }
   await _searchByMethod(_searchMethod, true);
@@ -1936,30 +1986,15 @@ async function doSearch(){
 
 function _renderSearchResultsState(message, tone='info'){
   const el=document.getElementById('search-results');
+  const countEl=document.getElementById('sm-results-count');
   if(!el) return;
+  if(countEl) countEl.textContent='';
   el.innerHTML=`<div class="search-results-state ${tone==='error'?'error':''}">${message}</div>`;
 }
 
 async function _fallbackFromGoldenValidation(errorMessage){
-  const notice=errorMessage||'Golden Source preview could not be loaded.';
-  const fallbackMethod=_searchDefaultMethod||'playlist';
-  _searchMethod=fallbackMethod;
-  toast(`${notice} Showing ${fallbackMethod==='direct'?'Direct':'Playlist'} results instead.`, 'info');
-  goToSearchStep(2);
   _sourceEditorAudio.cleanup();
-  _renderSearchMethodChosen(fallbackMethod);
-  _renderSearchResultsState('Curated source could not be previewed. Searching for reviewable matches…');
-  const results=await _searchByMethod(fallbackMethod, true);
-  if(results && results.length){
-    const el=document.getElementById('search-results');
-    if(el){
-      el.insertAdjacentHTML('afterbegin', `<div class="search-results-state" style="margin-bottom:10px">Curated source could not be previewed (${notice}). Review the fallback matches below, or go back and paste a replacement URL.</div>`);
-    }
-    return;
-  }
-  _renderSearchResultsState(`Curated source could not be previewed (${notice}). Go back to choose another method, or paste a replacement URL in Step 1.`,'error');
-  const countEl=document.getElementById('sm-results-count');
-  if(countEl) countEl.textContent='';
+  _renderGoldenValidationError(errorMessage||'Golden Source preview could not be loaded.');
 }
 
 function _renderResults(results){
@@ -2074,7 +2109,11 @@ async function quickPickSelect(method,url,title='',startOffset='0:00'){
   if(!url) return;
   _searchMethod=method||_searchMethod;
   if(_searchMethod!=='golden_source') await _searchByMethod(_searchMethod,false);
-  if(_lastSearchResults.length) _renderResults(_lastSearchResults);
+  else {
+    _setOwnedSearchResults(null, []);
+    _renderSearchResultsState('Golden Source stays in curated review unless you choose another method to search alternatives.');
+  }
+  if(_searchMethod!=='golden_source' && _lastSearchResults.length) _renderResults(_lastSearchResults);
   goToStep3(url,{skipPreview:false,sourceTitle:title,startOffset,entryMode:method==='golden_source'?'golden_manual_select':'search_result'});
 }
 
@@ -2169,7 +2208,8 @@ async function searchModalDownloadNow(){
 function goToStep3(url, opts={}){
   _step3EntryMode=opts.entryMode||'';
   stopAllAudio();
-  if(_lastSearchResults.length) _renderResults(_lastSearchResults);
+  _hideGoldenValidationError();
+  if(_searchMethod!=='golden_source' && _lastSearchResults.length) _renderResults(_lastSearchResults);
   document.getElementById('se-url').value=url||'';
   document.getElementById('se-offset').value=_normalizedOffsetValue(opts.startOffset||'0');
   document.getElementById('se-cur').textContent='0:00';
@@ -2213,6 +2253,7 @@ function backToSearch(){
 
 let _seAutoLoadTimer=null;
 function seUrlChanged(){
+  _hideGoldenValidationError();
   const u=(document.getElementById('se-url').value||'').trim();
   if(u) _selectedSourceTitle=_sourceTitleFromUrl(u);
   _renderSelectedSourceSummary(u, u?_selectedSourceTitle:(_selectedSourceTitle||'—'));
@@ -2262,9 +2303,11 @@ async function seLoadPreview(){
       document.getElementById('se-info').textContent='Error: '+previewError;
       if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
         await _fallbackFromGoldenValidation(previewError);
+        return;
       }
       return;
     }
+    _hideGoldenValidationError();
     const audio=_sourceEditorAudio.audio;
     stopAllAudio('se-audio');
     audio.src=apiUrl(data.audio_url);
@@ -2287,8 +2330,7 @@ async function seLoadPreview(){
         document.getElementById('se-info').textContent=playbackError;
         _sourceEditorAudio.cleanup();
         if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
-          _step3EntryMode='';
-          void _fallbackFromGoldenValidation(`Golden Source preview failed`);
+          void _fallbackFromGoldenValidation('Golden Source preview failed');
           return;
         }
       }
