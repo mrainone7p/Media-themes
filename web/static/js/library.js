@@ -262,6 +262,215 @@ function _renderSourceStateCell(title, primary, secondary='', chips=[]){
   </div>`;
 }
 
+function _sharedTrimEditorMarkup({
+  variant='',
+  previewCardClass='',
+  previewRowClass='',
+  previewButtonId='',
+  previewToggle='',
+  previewSeek='',
+  previewSkipBack='',
+  previewSkipForward='',
+  sliderId='',
+  curId='',
+  durId='',
+  infoId='',
+  infoDefault='',
+  timelineMarkersId='',
+  windowId='',
+  leftShadeId='',
+  rightShadeId='',
+  startMarkerId='',
+  endMarkerId='',
+  startLabelId='',
+  endLabelId='',
+  audioId='',
+  offsetId='',
+  syncOffset='',
+  previewFromOffset='',
+  useCurrent='',
+  summaryId='',
+  summaryMainId='',
+  summarySubId='',
+  summaryWarningId='',
+  resultId='',
+  resultClass='',
+  resultDefault='',
+  previewHelper='',
+  controlsHelper='',
+  summaryHelper='',
+  extraPreviewHtml='',
+}={}){
+  const markers='<span></span>'.repeat(9);
+  const previewCardClasses=['source-editor-card', previewCardClass].filter(Boolean).join(' ');
+  const previewRowClasses=['modal-player-row', previewRowClass].filter(Boolean).join(' ');
+  const summaryCardClasses=['source-editor-card', variant==='trim-modal'?'mb-0':''].filter(Boolean).join(' ');
+  const resultHtml=resultId
+    ? `<div class="${resultClass||'modal-trim-result'}" id="${resultId}">${resultDefault||''}</div>`
+    : '';
+  return `
+    <div class="modal-section" style="padding-top:${variant==='search'?'14px':'0'};padding-bottom:0">
+      <div class="${previewCardClasses}">
+        <div class="source-editor-title">Preview Area</div>
+        <div class="review-card-subtitle">${previewHelper}</div>
+        <div class="${previewRowClasses}">
+          <button class="play-btn" id="${previewButtonId}" onclick="${previewToggle}">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <button class="skip-btn" onclick="${previewSkipBack}">-5</button>
+          <button class="skip-btn" onclick="${previewSkipForward}">+5</button>
+          <div class="modal-scrubber-wrap">
+            <div class="source-editor-slider-wrap">
+              <div class="timeline-markers" id="${timelineMarkersId}" aria-hidden="true">${markers}</div>
+              <input type="range" class="modal-slider" id="${sliderId}" min="0" max="100" value="0" oninput="${previewSeek}">
+              <div class="trim-window hidden" id="${windowId}">
+                <div class="trim-shade" id="${leftShadeId}"></div>
+                <div class="trim-marker" id="${startMarkerId}"></div>
+                <div class="trim-marker end" id="${endMarkerId}"></div>
+                <div class="trim-shade right" id="${rightShadeId}"></div>
+              </div>
+            </div>
+            <div class="modal-time-row"><span id="${curId}">0:00</span><span id="${durId}">—</span></div>
+            <div class="trim-window-meta"><span id="${startLabelId}">Start 0:00</span><span id="${endLabelId}">End —</span></div>
+          </div>
+        </div>
+        <div class="modal-status-txt" id="${infoId}" style="padding-left:0;padding-top:3px">${infoDefault}</div>
+        ${extraPreviewHtml}
+        <audio class="hidden" id="${audioId}"></audio>
+      </div>
+    </div>
+    <div class="modal-section" style="padding-top:8px;padding-bottom:0">
+      <div class="source-editor-card">
+        <div class="source-editor-title">Trim Window Controls <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
+        <div class="review-card-subtitle">${controlsHelper}</div>
+        <div class="offset-inline-grid">
+          <div class="offset-inline-cell">
+            <span class="offset-inline-label">Offset</span>
+            <div class="offset-input-wrap">
+              <input type="text" id="${offsetId}" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="${syncOffset}" onblur="normalizeOffsetInput(this);${syncOffset}">
+              <div class="offset-steps">
+                <button class="offset-step" type="button" aria-label="Decrease offset" onclick="adjustOffset(document.getElementById('${offsetId}'),-1);${syncOffset}">−</button>
+                <button class="offset-step" type="button" aria-label="Increase offset" onclick="adjustOffset(document.getElementById('${offsetId}'),1);${syncOffset}">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="offset-inline-actions">
+            <button class="btn btn-ghost btn-sm" onclick="${previewFromOffset}">▶ Preview from Offset</button>
+            <button class="btn btn-ghost btn-sm" onclick="${useCurrent}">Use Current Time</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-section" style="padding-top:8px;padding-bottom:${variant==='search'?'0':'16px'}">
+      <div class="${summaryCardClasses}">
+        <div class="source-editor-title">Summary State</div>
+        <div class="review-card-subtitle">${summaryHelper}</div>
+        <div class="clip-summary-card" id="${summaryId}">
+          <div class="clip-summary-label">Trim preview</div>
+          <div class="clip-summary-main" id="${summaryMainId}">Offset 0:00 · Keep — · End —</div>
+          <div class="clip-summary-sub" id="${summarySubId}">Load a preview to confirm the kept portion.</div>
+          <div class="clip-summary-warning" id="${summaryWarningId}"></div>
+        </div>
+        ${resultHtml}
+      </div>
+    </div>`;
+}
+
+const _sharedTrimEditorVariants={
+  se:{
+    variant:'search',
+    mountId:'se-trim-editor-root',
+    previewButtonId:'se-play-btn',
+    previewToggle:'seToggle()',
+    previewSeek:'seSeek(this.value)',
+    previewSkipBack:'seSkip(-5)',
+    previewSkipForward:'seSkip(5)',
+    sliderId:'se-slider',
+    curId:'se-cur',
+    durId:'se-dur',
+    infoId:'se-info',
+    infoDefault:'Select a result or paste a URL to preview',
+    timelineMarkersId:'se-timeline-markers',
+    windowId:'se-trim-window',
+    leftShadeId:'se-trim-left',
+    rightShadeId:'se-trim-right',
+    startMarkerId:'se-trim-start',
+    endMarkerId:'se-trim-end',
+    startLabelId:'se-trim-start-label',
+    endLabelId:'se-trim-end-label',
+    audioId:'se-audio',
+    offsetId:'se-offset',
+    syncOffset:'seSyncOffsetInputs()',
+    previewFromOffset:'sePreviewFromOffset()',
+    useCurrent:'seSnapOffsetToCurrent()',
+    summaryId:'se-clip-summary',
+    summaryMainId:'se-clip-summary-main',
+    summarySubId:'se-clip-summary-sub',
+    summaryWarningId:'se-clip-summary-warning',
+    previewHelper:'Preview the selected source and confirm the trim window before saving.',
+    controlsHelper:'Set the saved start offset or jump to the current playback time.',
+    summaryHelper:'Review the kept clip window and warning state before saving.',
+    extraPreviewHtml:`<div class="surface-panel compact hidden" id="se-golden-error" style="margin-top:10px">
+          <div class="section-label" style="margin-bottom:6px">Curated source needs attention</div>
+          <div class="body-copy compact" id="se-golden-error-msg" style="margin-bottom:10px"></div>
+          <div class="modal-actions-row" style="gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" type="button" onclick="seLoadPreview()">↺ Retry Preview</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="_focusSourceEditorUrl()">✎ Paste / Edit URL</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="_returnToSearchMethodChoice()">← Choose Another Method</button>
+          </div>
+        </div>`,
+  },
+  trimModal:{
+    variant:'trim-modal',
+    mountId:'trim-modal-editor-root',
+    previewCardClass:'trim-modal-editor-card',
+    previewRowClass:'trim-modal-player-row',
+    previewButtonId:'trim-modal-play',
+    previewToggle:'trimModalTogglePlay()',
+    previewSeek:'trimModalSeek(this.value)',
+    previewSkipBack:'trimModalSkip(-5)',
+    previewSkipForward:'trimModalSkip(5)',
+    sliderId:'trim-modal-slider',
+    curId:'trim-modal-cur',
+    durId:'trim-modal-dur',
+    infoId:'trim-modal-status',
+    infoDefault:'Load playback to confirm the kept portion.',
+    timelineMarkersId:'trim-modal-timeline-markers',
+    windowId:'trim-modal-trim-window',
+    leftShadeId:'trim-modal-trim-left',
+    rightShadeId:'trim-modal-trim-right',
+    startMarkerId:'trim-modal-trim-start',
+    endMarkerId:'trim-modal-trim-end',
+    startLabelId:'trim-modal-trim-start-label',
+    endLabelId:'trim-modal-trim-end-label',
+    audioId:'trim-modal-audio',
+    offsetId:'trim-modal-offset',
+    syncOffset:'trimModalSyncOffsetInputs()',
+    previewFromOffset:'trimModalPreview(true)',
+    useCurrent:'trimModalUseCurrent()',
+    summaryId:'trim-modal-summary',
+    summaryMainId:'trim-modal-summary-main',
+    summarySubId:'trim-modal-summary-sub',
+    summaryWarningId:'trim-modal-summary-warning',
+    resultId:'trim-modal-result',
+    resultDefault:'',
+    previewHelper:'Preview the local theme and confirm the trim window before applying changes.',
+    controlsHelper:'Set the saved start offset or jump to the current playback time.',
+    summaryHelper:'Review the kept clip window and warning state before applying the trim.',
+  }
+};
+
+function _mountSharedTrimEditors(){
+  Object.values(_sharedTrimEditorVariants).forEach(config=>{
+    const mount=document.getElementById(config.mountId);
+    if(!mount || mount.dataset.trimEditorReady==='1') return;
+    mount.innerHTML=_sharedTrimEditorMarkup(config);
+    mount.dataset.trimEditorReady='1';
+  });
+}
+
+_mountSharedTrimEditors();
+
 function _statusValidation(row, attemptedStatus){
   const attempted=String(attemptedStatus||'').toUpperCase();
   const current=_effectiveRowStatus(row);

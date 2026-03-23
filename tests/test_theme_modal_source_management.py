@@ -87,7 +87,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             self.assertIn(snippet, self.template_source)
 
     def test_template_contains_updated_trim_source_label(self):
-        self.assertIn('>Trim Source<', self.template_source)
+        self.assertIn("'trim-source','Trim Source'", self.library_source)
 
     def test_footer_only_contains_close_action(self):
         footer_split = self.template_source.split('<div class="modal-footer">', 1)[1].split('</div>', 2)[0]
@@ -225,6 +225,41 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "const result=await updateRow(key,'status','APPROVED');",
             'await approveSourceEditor(true);',
             "toast('Approved source — downloading now…','info');",
+        ):
+            self.assertIn(snippet, self.library_source)
+
+    def test_trim_editor_markup_uses_shared_mount_points_in_template(self):
+        for snippet in (
+            'id="search-step-3"',
+            'id="se-trim-editor-root"',
+            'id="trim-modal-editor-root"',
+        ):
+            self.assertIn(snippet, self.template_source)
+        self.assertNotIn('id="se-play-btn"', self.template_source)
+        self.assertNotIn('id="trim-modal-play"', self.template_source)
+
+    def test_library_js_renders_shared_trim_editor_variants_from_metadata(self):
+        for snippet in (
+            'function _sharedTrimEditorMarkup({',
+            "const _sharedTrimEditorVariants={",
+            "mountId:'se-trim-editor-root'",
+            "mountId:'trim-modal-editor-root'",
+            "summaryId:'se-clip-summary'",
+            "summaryId:'trim-modal-summary'",
+            "function _mountSharedTrimEditors(){",
+            "_mountSharedTrimEditors();",
+        ):
+            self.assertIn(snippet, self.library_source)
+
+    def test_shared_trim_editor_standardizes_section_headings_and_copy(self):
+        for snippet in (
+            'Preview Area',
+            'Trim Window Controls',
+            'Summary State',
+            'Preview the selected source and confirm the trim window before saving.',
+            'Preview the local theme and confirm the trim window before applying changes.',
+            'Review the kept clip window and warning state before saving.',
+            'Review the kept clip window and warning state before applying the trim.',
         ):
             self.assertIn(snippet, self.library_source)
 
