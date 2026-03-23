@@ -624,7 +624,7 @@
           <th style="width:5%" onclick="sortTable('year')">Year ↕</th>
           <th style="width:10%" onclick="sortTable('status')">Status ↕</th>
           <th style="width:12%">Action</th>
-          <th style="width:13%" onclick="sortTable('golden_state')">Golden ↕</th>
+          <th style="width:13%" onclick="sortTable('golden_state')">Golden Source ↕</th>
           <th style="width:17%" onclick="sortTable('custom_state')">Selected Source ↕</th>
           <th style="width:9%" onclick="sortTable('last_updated')">Updated ↕</th>
           <th style="width:12%" onclick="sortTable('notes')">Notes ↕</th>
@@ -1317,26 +1317,25 @@
     </div>
 
     <div class="review-card" id="theme-local-card">
+      <div class="hidden" id="theme-local-player" style="margin-bottom:10px">
+        <div class="modal-player-row">
+          <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
+          <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
+          <div class="modal-scrubber-wrap">
+            <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
+            <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
+          </div>
+        </div>
+        <audio class="hidden" id="theme-modal-audio"></audio>
+      </div>
       <div class="review-card-header" style="align-items:flex-start">
         <div class="review-card-heading" style="flex:1 1 auto">
           <div class="modal-section-label mb-0">Local Theme</div>
           <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
-          <div class="hidden" id="theme-local-player" style="margin-top:10px">
-            <div class="modal-player-row">
-              <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
-                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              </button>
-              <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
-              <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
-              <div class="modal-scrubber-wrap">
-                <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
-                <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
-              </div>
-            </div>
-            <audio class="hidden" id="theme-modal-audio"></audio>
-          </div>
         </div>
-        <button class="btn btn-ghost btn-sm hidden" id="theme-modal-inline-play" onclick="themeModalToggle()">▶ Play Theme</button>
       </div>
       <div id="theme-local-meta">
         <div class="simple-line" id="theme-modal-file">File path: —</div>
@@ -1344,7 +1343,6 @@
       </div>
       <div class="modal-actions-row" style="margin-top:10px;justify-content:flex-end" id="theme-local-actions">
         <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim</button>
-        <button class="btn btn-danger-ghost btn-sm" id="theme-modal-delete-btn" onclick="themeModalDelete()">Delete</button>
       </div>
     </div>
 
@@ -1374,7 +1372,6 @@
           <div class="review-meta-value">
             <div class="modal-actions-row" style="margin-top:0;justify-content:flex-start" id="theme-modal-source-controls">
               <button class="btn btn-amber btn-sm" type="button" id="theme-modal-source-preview" onclick="themeModalPreviewSource()">Preview</button>
-              <button class="btn btn-amber btn-sm" type="button" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace</button>
               <button class="btn btn-ghost btn-sm" type="button" id="theme-modal-source-copy">Copy</button>
               <button class="btn btn-ghost btn-sm" type="button" id="theme-modal-source-open">Open</button>
             </div>
@@ -1396,6 +1393,8 @@
     <!-- Footer -->
     <div class="modal-footer">
       <div class="review-footer-actions footer-action-group">
+        <button class="btn btn-amber hidden" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace</button>
+        <button class="btn btn-danger-ghost hidden" id="theme-modal-delete-btn" onclick="themeModalDelete()">Delete</button>
         <button class="btn btn-ghost hidden" id="theme-next-step-btn" onclick="themeModalRunNextStep()">Next Step</button>
         <button class="btn btn-amber hidden" id="theme-find-btn" onclick="themeModalOpenManualSearch()">Find Theme</button>
         <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
