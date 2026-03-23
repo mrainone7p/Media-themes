@@ -1057,8 +1057,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 
 /* ─── Search modal 3-step ─── */
 .search-step-body{display:flex;flex-direction:column}
-.srail-step{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:6px;cursor:pointer;transition:all .15s;user-select:none;flex-shrink:0}
+.srail-step{display:flex;align-items:center;gap:7px;padding:6px 10px;border:0;border-radius:6px;cursor:pointer;transition:all .15s;user-select:none;flex-shrink:0;background:none;color:inherit;font:inherit;text-align:left;appearance:none}
 .srail-step:hover .srail-label{color:var(--text)}
+.srail-step:focus-visible{outline:2px solid color-mix(in srgb, var(--purple) 70%, white);outline-offset:2px}
+.srail-step[aria-disabled="true"]{opacity:.72}
 .srail-num{width:20px;height:20px;border-radius:50%;background:var(--border);color:var(--text3);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .srail-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;transition:all .15s}
 .srail-step.active .srail-num{background:var(--purple);color:#fff}
@@ -1181,6 +1183,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .search-method-card{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,.98fr);align-items:stretch;gap:12px;padding:10px 11px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all .15s;text-align:left;background:var(--surface2);user-select:none;min-height:82px;overflow:hidden}
 .search-method-card:hover{border-color:color-mix(in srgb, var(--purple) 65%, var(--border));background:color-mix(in srgb, var(--purple-soft) 72%, var(--surface2))}
 .search-method-card.active{border-color:var(--purple);background:color-mix(in srgb, var(--purple-soft) 88%, var(--surface2));box-shadow:inset 0 0 0 1px rgba(187,134,255,.18)}
+.search-method-card:focus-within{outline:2px solid color-mix(in srgb, var(--purple) 70%, white);outline-offset:2px}
 .search-method-card.golden-source{border-color:rgba(245,166,35,.3);background:color-mix(in srgb, var(--amber-soft) 26%, var(--surface2))}
 .search-method-card.golden-source.active{border-color:var(--purple);background:color-mix(in srgb, var(--purple-soft) 70%, color-mix(in srgb, var(--amber-soft) 24%, var(--surface2)));box-shadow:inset 0 0 0 1px rgba(187,134,255,.18), 0 0 0 2px rgba(187,134,255,.14)}
 .search-method-card.golden-source.disabled{border-style:dashed;background:color-mix(in srgb, var(--amber-soft) 16%, var(--surface2));opacity:.68;cursor:not-allowed}

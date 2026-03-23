@@ -1018,18 +1018,18 @@
   <div class="modal modal-shell">
 
     <!-- Step rail - TOP -->
-    <div class="inline-wrap" id="search-step-rail">
-      <div class="srail-step active" id="srail-1" onclick="_srailClick(1)">
+    <div class="inline-wrap" id="search-step-rail" role="navigation" aria-label="Search modal steps">
+      <button type="button" class="srail-step active" id="srail-1" onclick="_srailClick(1, event)" aria-controls="search-step-1" aria-current="step">
         <span class="srail-num">1.</span><span class="srail-label">Choose Search Method</span>
-      </div>
+      </button>
       <div class="srail-sep"></div>
-      <div class="srail-step" id="srail-2" onclick="_srailClick(2)">
+      <button type="button" class="srail-step" id="srail-2" onclick="_srailClick(2, event)" aria-controls="search-step-2">
         <span class="srail-num">2.</span><span class="srail-label">Review Results</span>
-      </div>
+      </button>
       <div class="srail-sep"></div>
-      <div class="srail-step" id="srail-3" onclick="_srailClick(3)">
+      <button type="button" class="srail-step" id="srail-3" onclick="_srailClick(3, event)" aria-controls="search-step-3">
         <span class="srail-num">3.</span><span class="srail-label">Confirm Source</span>
-      </div>
+      </button>
     </div>
 
     <!-- Movie header -->
@@ -1054,12 +1054,14 @@
       <div class="modal-section modal-section--dense">
         <div class="modal-section-header search-step-section-head">
           <div class="modal-section-heading">
-            <div class="search-method-head">Choose Search Method</div>
+            <div class="search-method-head" id="search-method-heading">Choose Search Method</div>
           </div>
         </div>
-        <div class="search-method-grid">
+        <div class="search-method-grid" role="radiogroup" aria-labelledby="search-method-heading" aria-describedby="search-method-picker-help">
+          <div class="sr-only" id="search-method-picker-help">Use arrow keys to move between search methods, then press Enter or Space to select one.</div>
           <div class="manual-methods" id="sm-primary-methods">
-            <div class="search-method-card golden-source" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
+            <label class="search-method-card golden-source" id="sm-card-golden" for="sm-radio-golden_source" aria-disabled="false">
+              <input type="radio" class="sr-only search-method-radio" id="sm-radio-golden_source" name="search-method-picker" value="golden_source" onkeydown="searchMethodKeydown(event, 'golden_source')" onchange="selectSearchMethod('golden_source', event)">
               <div class="sm-card-main">
                 <div class="sm-card-icon">★</div>
                 <div class="sm-card-copy">
@@ -1075,8 +1077,9 @@
               <div class="sm-card-actions">
                 <div class="sm-card-first" id="sm-first-golden_source"></div>
               </div>
-            </div>
-            <div class="search-method-card active" id="sm-card-playlist" onclick="selectSearchMethod('playlist')">
+            </label>
+            <label class="search-method-card active" id="sm-card-playlist" for="sm-radio-playlist">
+              <input type="radio" class="sr-only search-method-radio" id="sm-radio-playlist" name="search-method-picker" value="playlist" checked onkeydown="searchMethodKeydown(event, 'playlist')" onchange="selectSearchMethod('playlist', event)">
               <div class="sm-card-main">
                 <div class="sm-card-icon">🎵</div>
                 <div class="sm-card-copy">
@@ -1090,8 +1093,9 @@
               <div class="sm-card-actions">
                 <div class="sm-card-first" id="sm-first-playlist"></div>
               </div>
-            </div>
-            <div class="search-method-card" id="sm-card-direct" onclick="selectSearchMethod('direct')">
+            </label>
+            <label class="search-method-card" id="sm-card-direct" for="sm-radio-direct">
+              <input type="radio" class="sr-only search-method-radio" id="sm-radio-direct" name="search-method-picker" value="direct" onkeydown="searchMethodKeydown(event, 'direct')" onchange="selectSearchMethod('direct', event)">
               <div class="sm-card-main">
                 <div class="sm-card-icon">🎯</div>
                 <div class="sm-card-copy">
@@ -1105,12 +1109,13 @@
               <div class="sm-card-actions">
                 <div class="sm-card-first" id="sm-first-direct"></div>
               </div>
-            </div>
+            </label>
           </div>
           <div class="search-method-group">
             <div class="search-method-group-label">Advanced</div>
             <div class="manual-methods">
-              <div class="search-method-card" id="sm-card-custom" onclick="selectSearchMethod('custom')">
+              <label class="search-method-card" id="sm-card-custom" for="sm-radio-custom">
+                <input type="radio" class="sr-only search-method-radio" id="sm-radio-custom" name="search-method-picker" value="custom" onkeydown="searchMethodKeydown(event, 'custom')" onchange="selectSearchMethod('custom', event)">
                 <div class="sm-card-main">
                   <div class="sm-card-icon">✏️</div>
                   <div class="sm-card-copy">
@@ -1124,11 +1129,12 @@
                 <div class="sm-card-actions">
                   <div class="sm-card-first">Edit the query, then search when ready.</div>
                   <div class="sm-card-controls">
-                    <input id="sm-custom-input" class="search-method-input sm-card-input" placeholder="Type a custom query..." oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')searchModalPrimary()">
+                    <input id="sm-custom-input" class="search-method-input sm-card-input" placeholder="Type a custom query..." onfocus="pickSearchMethod('custom', event)" oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')searchModalPrimary()">
                   </div>
                 </div>
-              </div>
-              <div class="search-method-card" id="sm-card-paste" onclick="selectSearchMethod('paste')">
+              </label>
+              <label class="search-method-card" id="sm-card-paste" for="sm-radio-paste">
+                <input type="radio" class="sr-only search-method-radio" id="sm-radio-paste" name="search-method-picker" value="paste" onkeydown="searchMethodKeydown(event, 'paste')" onchange="selectSearchMethod('paste', event)">
                 <div class="sm-card-main">
                   <div class="sm-card-icon">📎</div>
                   <div class="sm-card-copy">
@@ -1143,10 +1149,10 @@
                 <div class="sm-card-actions">
                   <div class="sm-card-first">Paste a URL, then move straight to preview.</div>
                   <div class="sm-card-controls">
-                    <input id="search-paste-url" class="search-method-input sm-card-input" placeholder="https://www.youtube.com/watch?v=..." onkeydown="if(event.key==='Enter')searchModalPrimary()">
+                    <input id="search-paste-url" class="search-method-input sm-card-input" placeholder="https://www.youtube.com/watch?v=..." onfocus="pickSearchMethod('paste', event)" onkeydown="if(event.key==='Enter')searchModalPrimary()">
                   </div>
                 </div>
-              </div>
+              </label>
             </div>
           </div>
         </div>
@@ -1177,7 +1183,7 @@
         </div>
       </div>
       <div class="search-step-results">
-        <div id="search-results" class="search-step-results-list"></div>
+        <div id="search-results" class="search-step-results-list" tabindex="-1"></div>
       </div>
       <div class="inline-wrap spread search-step-results-footer">
         <div id="sm-results-count" class="search-step-results-count"></div>
