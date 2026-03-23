@@ -2629,9 +2629,9 @@ function _renderGoldenValidationError(errorMessage){
   const msg=document.getElementById('se-golden-error-msg');
   const countEl=document.getElementById('sm-results-count');
   _setOwnedSearchResults(null, []);
-  _renderSearchResultsState('Curated source preview failed. Choose another method to search alternatives.', 'error');
+  _renderSearchResultsState('Curated source preview failed.', 'error');
   if(countEl) countEl.textContent='';
-  if(infoEl) infoEl.textContent='Curated source unavailable — retry preview, paste/edit a replacement URL, or choose another method.';
+  if(infoEl) infoEl.textContent='Curated source unavailable — retry preview or replace the URL.';
   if(msg) msg.textContent=notice;
   if(panel) panel.classList.remove('hidden');
 }
@@ -2688,12 +2688,11 @@ function _searchMethodCardId(method){
   return method==='golden_source' ? 'sm-card-golden' : 'sm-card-'+method;
 }
 
-function _setSearchMethodOrder(hasGolden){
+function _setSearchMethodOrder(){
   const wrap=document.getElementById('sm-primary-methods');
   const goldenCard=document.getElementById('sm-card-golden');
   if(!wrap || !goldenCard) return;
-  if(hasGolden) wrap.prepend(goldenCard);
-  else wrap.appendChild(goldenCard);
+  wrap.prepend(goldenCard);
 }
 
 function _applyAudioOffset(audio, offsetValue){
@@ -2832,7 +2831,7 @@ function selectSearchMethod(method, event){
   _searchMethod=method;
   if(method==='golden_source'){
     _setOwnedSearchResults(null, []);
-    _renderSearchResultsState('Golden Source stays in curated review unless you choose another method to search alternatives.');
+    _renderSearchResultsState('Golden Source uses the curated match and skips search results.');
     const countEl=document.getElementById('sm-results-count');
     if(countEl) countEl.textContent='';
   }
@@ -2955,7 +2954,7 @@ function goToSearchStep(step){
     const el=document.getElementById('search-step-'+n);
     if(el){
       const active=n===step;
-      el.style.display=active?'':'none';
+      el.style.display=active?'flex':'none';
       el.setAttribute('aria-hidden', active ? 'false' : 'true');
     }
   });
@@ -3029,10 +3028,16 @@ async function openSearchModal(rk,title,year,lib){
   if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
   if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
   if(goldenCard) goldenCard.setAttribute('aria-disabled', hasGolden ? 'false' : 'true');
-  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item. If it fails, stay here to retry or replace the URL.':'No curated source is available for this item yet — choose another method to search alternatives.';
-  if(goldenOffset) goldenOffset.textContent=hasGolden?`Offset ${goldenOffsetValue}`:'Offset —';
-  if(goldenMeta) goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'Choose another method if no curated source is available';
-  _setSearchMethodOrder(hasGolden);
+  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item.':'No curated source available yet.';
+  if(goldenOffset){
+    goldenOffset.textContent=hasGolden?`Offset ${goldenOffsetValue}`:'';
+    goldenOffset.classList.toggle('hidden', !hasGolden);
+  }
+  if(goldenMeta){
+    goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'';
+    goldenMeta.classList.toggle('hidden', !hasGolden);
+  }
+  _setSearchMethodOrder();
   _initMethodQuickPicks(existingRow);
   if(_searchMethod==='golden_source' && !hasGolden){
     _searchMethod='playlist';
@@ -3051,7 +3056,7 @@ async function openSearchModal(rk,title,year,lib){
   if(hasOwnedResults) _renderResults(_lastSearchResults);
   else if(_searchMethod==='golden_source'){
     _setOwnedSearchResults(null, []);
-    _renderSearchResultsState('Golden Source stays in curated review unless you choose another method to search alternatives.');
+    _renderSearchResultsState('Golden Source uses the curated match and skips search results.');
   }
   // Decide starting step
   if(shouldRestoreStep3){
@@ -3118,7 +3123,7 @@ async function doSearch(){
     const url=golden.url;
     if(!url) return toast('Golden Source URL not currently available for this item','info');
     _setOwnedSearchResults(null, []);
-    _renderSearchResultsState('Golden Source stays in curated review unless you choose another method to search alternatives.');
+    _renderSearchResultsState('Golden Source uses the curated match and skips search results.');
     return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL',startOffset:golden.offset,entryMode:'golden_fast_path'});
   }
   await _searchByMethod(_searchMethod, true);
@@ -3260,7 +3265,7 @@ async function quickPickSelect(method,url,title='',startOffset='0:00'){
   if(_searchMethod!=='golden_source') await _searchByMethod(_searchMethod,false);
   else {
     _setOwnedSearchResults(null, []);
-    _renderSearchResultsState('Golden Source stays in curated review unless you choose another method to search alternatives.');
+    _renderSearchResultsState('Golden Source uses the curated match and skips search results.');
   }
   if(_searchMethod!=='golden_source' && _lastSearchResults.length) _renderResults(_lastSearchResults);
   goToStep3(url,{skipPreview:false,sourceTitle:title,startOffset,entryMode:method==='golden_source'?'golden_manual_select':'search_result'});

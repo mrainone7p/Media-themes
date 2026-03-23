@@ -91,6 +91,16 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
         ):
             self.assertIn(snippet, self.template_source)
 
+    def test_review_results_step_is_shown_via_flex_when_activated(self):
+        library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
+        self.assertIn("el.style.display=active?'flex':'none';", library_source)
+
+    def test_golden_source_card_stays_first_and_uses_minimal_unavailable_copy(self):
+        library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
+        self.assertIn("wrap.prepend(goldenCard);", library_source)
+        self.assertIn("'No curated source available yet.'", library_source)
+        self.assertNotIn("choose another method to search alternatives", library_source)
+
 
 if __name__ == "__main__":
     unittest.main()
