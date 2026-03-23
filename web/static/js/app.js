@@ -938,7 +938,7 @@ function renderDashLibTabs(enabledLibs){
   if(!el) return;
   if(enabledLibs && enabledLibs.length) _dashEnabledLibs=enabledLibs;
   const tabs=[{name:'all',label:'All'},...(_dashEnabledLibs||[]).map(l=>({name:l.name||l,label:l.name||l}))];
-  el.innerHTML=tabs.map(t=>`<button class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(${JSON.stringify(t.name)})">${t.label}</button>`).join('');
+  el.innerHTML=tabs.map(t=>`<button class="dash-lib-tab${t.name===_dashSelectedLib?' active':''}" onclick="switchDashLib(this.dataset.n)" data-n="${t.name.replace(/"/g,'&quot;')}">${t.label}</button>`).join('');
 }
 
 function renderHistStatusFilters(){
@@ -954,7 +954,7 @@ function renderHistStatusFilters(){
   ];
   el.innerHTML=filters.map(f=>{
     const active=f.k===_dashHistStatusFilter;
-    return `<button class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter(${JSON.stringify(f.k)})">${f.label}</button>`;
+    return `<button class="dash-lib-tab${active?' active':''}" style="${active?'border-color:'+f.c+';color:'+f.c+';background:transparent':''}" onclick="_setHistFilter('${f.k}')">${f.label}</button>`;
   }).join('');
 }
 
