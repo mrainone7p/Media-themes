@@ -155,11 +155,29 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "if(status==='STAGED')",
             "push('approve','Approve','btn btn-amber is-primary','themeModalApproveSource');",
             "push('stage','Stage','btn btn-amber is-primary','themeModalStageSource');",
-            'function themeModalStageSource(){',
-            "themeModalSetStatus('STAGED');",
+            'async function themeModalStageSource(){',
+            "return await themeModalSetStatus('STAGED');",
         ):
             self.assertIn(snippet, self.library_source)
 
+
+
+    def test_theme_modal_status_flow_waits_for_save_before_closing(self):
+        for snippet in (
+            'async function themeModalSetStatus(status){',
+            "const result=await updateRow(key,'status',status);",
+            'if(result?.ok) closeThemeModal();',
+            'return result;',
+            'async function themeModalStageSource(){',
+            "return await themeModalSetStatus('STAGED');",
+            'async function themeModalApproveSource(){',
+            "return await themeModalSetStatus('APPROVED');",
+        ):
+            self.assertIn(snippet, self.library_source)
+        status_start=self.library_source.index('async function themeModalSetStatus(status){')
+        close_index=self.library_source.index('if(result?.ok) closeThemeModal();', status_start)
+        update_index=self.library_source.index("const result=await updateRow(key,'status',status);", status_start)
+        self.assertGreater(close_index, update_index)
 
     def test_theme_modal_secondary_modals_track_return_context_for_cancel_reopen(self):
         for snippet in (
@@ -204,7 +222,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         for snippet in (
             "const status='STAGED';",
             'await saveSourceEditor(true);',
-            "await updateRow(key,'status','APPROVED');",
+            "const result=await updateRow(key,'status','APPROVED');",
             'await approveSourceEditor(true);',
             "toast('Approved source — downloading now…','info');",
         ):

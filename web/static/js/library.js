@@ -910,7 +910,7 @@ async function updateRow(key,field,value,selEl){
   const library=requireLibraryContext(_activeLib,'save changes');
   if(!library){
     renderTable();
-    return;
+    return {ok:false,data:{error:'missing_library_context'}};
   }
   const row=_rows.find(r=>r.rating_key===key);
   const prevValue=row?row[field]:undefined;
@@ -919,7 +919,7 @@ async function updateRow(key,field,value,selEl){
     if(!localCheck.ok){
       toast(localCheck.reason,'info');
       renderTable();
-      return;
+      return {ok:false,data:{error:localCheck.reason,reason_code:'local_validation_failed'}};
     }
   }
   if(row){
@@ -931,21 +931,23 @@ async function updateRow(key,field,value,selEl){
     toast('Saved','ok');
     renderChips();
     renderTable();
-  } else {
-    if(row){
-      row[field]=prevValue;
-      if(_rowMap[key]) _rowMap[key][field]=prevValue;
-    }
-    const msg=[data.error,data.reason_code?`(${data.reason_code})`:'' ,data.current_status&&data.attempted_status?`[${data.current_status} → ${data.attempted_status}]`:'' ].filter(Boolean).join(' ').trim();
-    toast(msg||'Save failed','err');
-    await loadDatabase(false);
+    return {ok:true,data};
   }
+  if(row){
+    row[field]=prevValue;
+    if(_rowMap[key]) _rowMap[key][field]=prevValue;
+  }
+  const msg=[data.error,data.reason_code?`(${data.reason_code})`:'' ,data.current_status&&data.attempted_status?`[${data.current_status} → ${data.attempted_status}]`:'' ].filter(Boolean).join(' ').trim();
+  toast(msg||'Save failed','err');
+  await loadDatabase(false);
+  return {ok:false,data};
 }
 
 async function updateRowAndRefresh(key,field,value){
-  await updateRow(key,field,value);
+  const result=await updateRow(key,field,value);
   renderChips();
   filterTable();
+  return result;
 }
 
 async function saveOffsetInput(key, el){
@@ -2193,17 +2195,18 @@ async function themeModalCopyWorkflowSource(){
   if(!url) return toast('No source URL on this row','info');
   return _copyTextValue(url,'Source URL copied');
 }
-function themeModalSetStatus(status){
+async function themeModalSetStatus(status){
   const key=_themeModalContext?.rk;
-  if(!key) return;
-  updateRow(key,'status',status);
-  closeThemeModal();
+  if(!key) return {ok:false,data:{error:'missing_theme_modal_context'}};
+  const result=await updateRow(key,'status',status);
+  if(result?.ok) closeThemeModal();
+  return result;
 }
-function themeModalStageSource(){
-  themeModalSetStatus('STAGED');
+async function themeModalStageSource(){
+  return await themeModalSetStatus('STAGED');
 }
-function themeModalApproveSource(){
-  themeModalSetStatus('APPROVED');
+async function themeModalApproveSource(){
+  return await themeModalSetStatus('APPROVED');
 }
 function themeModalPreviewSourceTrim(){
   const c=_themeModalContext||{};
@@ -3285,7 +3288,8 @@ async function approveSourceEditor(skipClose=false){
   const key=_seKey||_searchKey;
   if(!key) return false;
   await saveSourceEditor(true);
-  await updateRow(key,'status','APPROVED');
+  const result=await updateRow(key,'status','APPROVED');
+  if(!result?.ok) return false;
   if(!skipClose){
     closeSearchModal();
     toast('Source approved','ok');
