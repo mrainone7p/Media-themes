@@ -7,7 +7,16 @@ import subprocess
 from pathlib import Path
 
 from shared.file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
-from shared.storage import ffprobe_duration, ledger_path_for, load_ledger_rows as load_ledger, now_str, save_ledger_rows as save_ledger, sync_theme_cache
+from shared.storage import (
+    clear_local_source_provenance,
+    ffprobe_duration,
+    ledger_path_for,
+    load_ledger_rows as load_ledger,
+    now_str,
+    save_ledger_rows as save_ledger,
+    stamp_local_source_provenance,
+    sync_theme_cache,
+)
 import web.integrations as integrations
 from web.ledger import (
     find_row_by_identity,
@@ -167,6 +176,7 @@ def delete_theme_payload(data: dict):
         item["theme_duration"] = 0.0
         item["theme_size"] = 0
         item["theme_mtime"] = 0.0
+        clear_local_source_provenance(item)
         item["last_updated"] = now_str()
 
     if not theme_path.exists():
@@ -248,8 +258,10 @@ def download_now_payload(data: dict):
                 _validate_audio_ready(downloaded)
         replaced_existing = atomic_replace_file(downloaded, theme_path)
         row["status"] = "AVAILABLE"
-        row["last_updated"] = now_str()
+        recorded_at = now_str()
+        row["last_updated"] = recorded_at
         row["notes"] = "Downloaded via manual download (replaced existing local theme)" if replaced_existing else "Downloaded via manual download"
+        stamp_local_source_provenance(row, recorded_at=recorded_at, method="manual_download")
         row, _ = sync_theme_cache(row, cfg.get("theme_filename", "theme.mp3"), probe_duration=True)
         save_ledger(path, rows)
         message = f"Downloaded and replaced existing {cfg.get('theme_filename', 'theme.mp3')}" if replaced_existing else f"Downloaded and saved as {cfg.get('theme_filename', 'theme.mp3')}"

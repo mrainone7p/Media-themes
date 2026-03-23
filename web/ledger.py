@@ -141,6 +141,7 @@ def clear_source_urls_for_rows(rows: list[dict], *, keys=None, note: str, now: s
         next_status, bucket = status_after_clearing_source(row.get("status", ""), has_theme=row_has_theme(row))
         previous_status = str(row.get("status", "") or "").upper()
         row["url"] = ""
+        row["start_offset"] = "0"
         row["source_origin"] = "unknown"
         row["status"] = next_status
         row["last_updated"] = now
@@ -314,19 +315,20 @@ def golden_source_import_summary(data: dict):
             continue
 
         existing_url = str(row.get("url", "") or "").strip()
+        incoming_url = str(match.get("source_url", "") or "").strip()
+        incoming_offset = str(match.get("start_offset", "0") or "0")
+        row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id", "") or "").strip()
+        row["golden_source_url"] = incoming_url
+        row["golden_source_offset"] = incoming_offset
+        row["end_offset"] = match.get("end_offset", "0") or "0"
         if existing_url and not overwrite:
             skipped_existing += 1
-            if tmdb_id:
-                row["tmdb_id"] = tmdb_id
             continue
 
-        incoming_url = str(match.get("source_url", "") or "").strip()
-        row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id", "") or "").strip()
-        row["url"] = incoming_url
-        row["golden_source_url"] = incoming_url
-        row["golden_source_offset"] = match.get("start_offset", "0") or "0"
-        row["end_offset"] = match.get("end_offset", "0") or "0"
-        row["source_origin"] = "golden_source" if incoming_url else "unknown"
+        if overwrite or not existing_url:
+            row["url"] = incoming_url
+            row["start_offset"] = incoming_offset
+            row["source_origin"] = "golden_source" if incoming_url else "unknown"
         if current_status == "UNMONITORED":
             pass
         elif not incoming_url and current_status != "AVAILABLE":

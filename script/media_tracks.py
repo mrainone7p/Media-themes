@@ -67,12 +67,14 @@ from shared.storage import (
     CONFIG_PATH,
     LEDGER_HEADERS,
     TMDB_GUID_RE,
+    clear_local_source_provenance,
     ffprobe_duration,
     ledger_path_for,
     load_ledger_map as load_ledger,
     now_str,
     read_golden_source_text,
     save_ledger_map as save_ledger,
+    stamp_local_source_provenance,
     sync_theme_cache,
 )
 from shared.yt_dlp_utils import yt_dlp_base_flags
@@ -195,6 +197,11 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         "theme_duration": existing.get("theme_duration", 0.0),
         "theme_size":     existing.get("theme_size", 0),
         "theme_mtime":    existing.get("theme_mtime", 0.0),
+        "local_source_url": existing.get("local_source_url", ""),
+        "local_source_offset": existing.get("local_source_offset", "0"),
+        "local_source_origin": existing.get("local_source_origin", ""),
+        "local_source_method": existing.get("local_source_method", ""),
+        "local_source_recorded_at": existing.get("local_source_recorded_at", ""),
     }
 
 
@@ -928,8 +935,10 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
         if success:
             log.info(f"[OK]       {title} ({year}) — {message}")
             row["status"]       = ST_AVAILABLE
-            row["last_updated"] = now_str()
+            recorded_at         = now_str()
+            row["last_updated"] = recorded_at
             row["notes"]        = message
+            stamp_local_source_provenance(row, recorded_at=recorded_at, method="pass3_download")
             row, _              = sync_theme_cache(row, theme_filename, probe_duration=True)
             ledger[rk]          = row  # write back with updated theme cache
             stats["downloaded"] += 1
@@ -938,6 +947,8 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
             row["status"]       = ST_FAILED
             row["last_updated"] = now_str()
             row["notes"]        = message
+            if int(row.get("theme_exists", 0) or 0) != 1:
+                clear_local_source_provenance(row)
             stats["failed"]    += 1
 
     return stats
