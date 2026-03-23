@@ -1976,22 +1976,30 @@ function _renderResults(results){
     el.innerHTML='<div class="search-results-state">No results found.</div>';
     return;
   }
-  el.innerHTML=results.map((r,i)=>`
+  el.innerHTML=results.map((r,i)=>{
+    const safeHref=String(r.url||'').replace(/"/g,'&quot;');
+    const safeUrl=String(r.url||'').replace(/'/g,"\\'");
+    const safeTitle=String(r.title||'').replace(/</g,'&lt;');
+    const safeTitleAttr=safeTitle.replace(/"/g,'&quot;');
+    const safeTitleJs=String(r.title||'').replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    return `
     <div class="search-result-card ${i===0?'recommended':''}">
       <div class="result-idx">${i+1}.</div>
       <div class="search-result-main">
-        ${i===0?`<span class="ui-badge src-badge recommended result-chip">Quick pick</span>`:''}
-        <a href="${r.url}" target="_blank" rel="noopener" class="search-result-title">${r.title.replace(/</g,'&lt;')} <span style="font-size:11px">↗</span></a>
+        ${i===0?'<span class="search-result-inline-badge">Top</span>':''}
+        <a href="${safeHref}" target="_blank" rel="noopener" class="search-result-title" title="${safeTitleAttr}"><span class="search-result-title-text">${safeTitle}</span><span class="search-result-link-icon">↗</span></a>
       </div>
       <div class="search-result-actions">
         <span class="search-result-duration">${r.duration||'—'}</span>
-        <button class="btn btn-ghost btn-xs" onclick="previewSearchResult('${r.url.replace(/'/g,"\\'")}',this)">▶ Preview</button>
-        <button class="btn btn-amber btn-xs" onclick="goToStep3('${r.url.replace(/'/g,"\\'")}',{skipPreview:false,sourceTitle:'${r.title.replace(/'/g,"\\'").replace(/</g,'&lt;')}'})">Pick</button>
+        <button class="btn btn-ghost btn-xs" onclick="previewSearchResult('${safeUrl}',this)">▶ Preview</button>
+        <button class="btn btn-amber btn-xs" onclick="goToStep3('${safeUrl}',{skipPreview:false,sourceTitle:'${safeTitleJs}'})">Pick</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   _renderSearchMethodChosen(_searchMethod);
   if(results[0]?.url) setTimeout(()=>previewSearchResult(results[0].url),80);
 }
+
 
 
 function _renderMethodQuickPick(method, result, opts={}){
