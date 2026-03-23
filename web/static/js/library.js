@@ -1449,7 +1449,7 @@ function _themeModalSourceEndOffset(row={}){
   return row?.end_offset||0;
 }
 function _themeModalUpdateLocalClipSummary(row={}, duration=0){
-  const hasLocal=_themeHasLocal(row);
+  const hasLocal=_themeModalHasVerifiedLocal(row);
   const summaryId='theme-local-clip';
   _setHidden(document.getElementById(summaryId), !hasLocal, hasLocal?'':'');
   if(!hasLocal){
@@ -1806,7 +1806,7 @@ function _themeModalRenderWorkflowActions(actions=[]){
   return actions.map(action=>`<button class="${_escapeAttr(action.className||'btn btn-ghost')}" type="button" onclick="${_escapeAttr(action.handler||'')}()">${_escapeHtml(action.label||'Action')}</button>`).join('');
 }
 function _themeModalUpdateLocalCard(row={}){
-  const hasLocal=_themeHasLocal(row);
+  const hasLocal=_themeModalHasVerifiedLocal(row);
   const local=document.getElementById('theme-local-card');
   const empty=document.getElementById('theme-local-empty');
   const player=document.getElementById('theme-local-player');
@@ -1904,6 +1904,85 @@ function _themeModalUpdateWorkflowCard(row={}){
   _themeModalUpdateSelectedSourceClipSummary(row, 0);
   if(actionsEl) actionsEl.innerHTML=_themeModalRenderWorkflowActions(actions);
 }
+function _themeModalHasVerifiedLocal(row={}){
+  if(Object.prototype.hasOwnProperty.call(row,'_verifiedThemeExists')) return !!row._verifiedThemeExists;
+  return _themeHasLocal(row);
+}
+function _themeModalNeedsLocalProbe(row={}, folder=''){
+  const normalizedFolder=String(folder||row?.folder||'').trim();
+  if(!normalizedFolder || _themeModalHasVerifiedLocal(row)) return false;
+  const status=String(row?.status||'').toUpperCase();
+  return String(row?.theme_exists||'')!=='1'
+    || status==='AVAILABLE'
+    || !!String(row?.local_source_url||'').trim()
+    || !!String(row?.local_source_recorded_at||'').trim();
+}
+function _themeModalApplyVerifiedLocalAvailability(row={}, exists=false, metadata={}){
+  if(!row || typeof row!=='object') return row;
+  row._verifiedThemeExists=!!exists;
+  if(exists){
+    row.theme_exists=1;
+    if(Number(metadata?.duration||0)>0) row.theme_duration=Number(metadata.duration)||0;
+    if(!String(row?.local_source_url||'').trim() && String(row?.url||'').trim()) row.local_source_url=String(row.url||'').trim();
+    if((row?.local_source_offset ?? '')==='' || row?.local_source_offset==null || String(row.local_source_offset)==='0') row.local_source_offset=row?.start_offset ?? '0';
+    if(!String(row?.local_source_origin||'').trim()) row.local_source_origin=String(row?.source_origin||'').trim() || 'unknown';
+    if(!String(row?.local_source_kind||'').trim()) row.local_source_kind=_normalizeSourceKind(row?.selected_source_kind) || (_rowUsesGoldenSource(row) ? 'golden' : 'custom');
+    if(!String(row?.local_source_method||'').trim()){
+      row.local_source_method=_normalizeSourceMethod(row?.selected_source_method)
+        || _legacySourceMethodFromOrigin(row?.source_origin)
+        || (row.local_source_kind==='golden' ? 'golden_source' : 'manual');
+    }
+    if(!String(row?.local_source_recorded_at||'').trim()){
+      row.local_source_recorded_at=String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim();
+    }
+  }else if(Object.prototype.hasOwnProperty.call(row,'theme_exists')){
+    row.theme_exists=String(row?.theme_exists||'')==='1' ? 1 : 0;
+  }
+  return row;
+}
+function _themeModalRememberRow(row={}){
+  const rk=String(row?.rating_key||'').trim();
+  if(!rk) return row;
+  _rowMap[rk]=row;
+  _rows=_rows.map(current=>String(current?.rating_key||'').trim()===rk ? row : current);
+  _filtered=_filtered.map(current=>String(current?.rating_key||'').trim()===rk ? row : current);
+  return row;
+}
+function _themeModalProbeLocalAudio(folder=''){
+  const normalizedFolder=String(folder||'').trim();
+  if(!normalizedFolder) return Promise.resolve({ok:false});
+  return new Promise((resolve)=>{
+    const probe=new Audio();
+    let settled=false;
+    const finish=(payload)=>{
+      if(settled) return;
+      settled=true;
+      probe.onloadedmetadata=null;
+      probe.oncanplaythrough=null;
+      probe.onerror=null;
+      try{ probe.pause(); }catch(e){}
+      try{ probe.removeAttribute('src'); }catch(e){}
+      try{ probe.load(); }catch(e){}
+      resolve(payload);
+    };
+    probe.preload='metadata';
+    probe.onloadedmetadata=()=>finish({ok:true,duration:Number(probe.duration)||0,src:probe.src||apiUrl('/api/theme?folder='+encodeURIComponent(normalizedFolder))});
+    probe.oncanplaythrough=()=>finish({ok:true,duration:Number(probe.duration)||0,src:probe.src||apiUrl('/api/theme?folder='+encodeURIComponent(normalizedFolder))});
+    probe.onerror=()=>finish({ok:false});
+    probe.src=apiUrl('/api/theme?folder='+encodeURIComponent(normalizedFolder));
+    try{ probe.load(); }catch(e){ finish({ok:false,error:e}); }
+  });
+}
+async function _themeModalVerifyLocalPlayback(row={}, folder=''){
+  const normalizedFolder=String(folder||row?.folder||'').trim();
+  if(!_themeModalNeedsLocalProbe(row, normalizedFolder)){
+    return {ok:_themeModalHasVerifiedLocal(row), row, duration:Number(row?.theme_duration||0)||0};
+  }
+  const result=await _themeModalProbeLocalAudio(normalizedFolder);
+  _themeModalApplyVerifiedLocalAvailability(row, !!result?.ok, {duration:Number(result?.duration||0)||0});
+  _themeModalRememberRow(row);
+  return {ok:!!result?.ok, row, duration:Number(result?.duration||0)||0, src:result?.src||''};
+}
 const THEME_MODAL_STATUS_HELPERS={
   MISSING:{
     default:'No selected source is saved and no local theme file was found.',
@@ -1942,8 +2021,10 @@ function _themeModalUpdateStatusFlow(status='MISSING', state={}){
 async function openThemeModal(rk,title,year,folder,row={},library=''){
   stopAllAudio();
   const resolvedLibrary=String(library||row?.library||'').trim()||_activeLib||_currentLib();
-  _themeModalContext={rk,title,year,folder,row,library:resolvedLibrary};
-  const hasLocalTheme=_themeHasLocal(row);
+  const resolvedFolder=String(folder||row?.folder||'').trim();
+  _themeModalContext={rk,title,year,folder:resolvedFolder,row,library:resolvedLibrary};
+  const localProbe=await _themeModalVerifyLocalPlayback(row, resolvedFolder);
+  const hasLocalTheme=_themeModalHasVerifiedLocal(row);
   const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim();
   const status=_effectiveRowStatus(row);
   const isDownloadable=!hasLocalTheme && hasStoredSource && status==='APPROVED';
@@ -1974,11 +2055,21 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
 
   _themeModalAudio.cleanup({clearSrc:false});
   _themeModalAudio.setHandlers({
-    onloadedmetadata:(audio)=>_themeModalUpdateLocalClipSummary(_themeModalContext?.row||row, audio.duration||0)
+    onloadedmetadata:(audio)=>{
+      const nextRow=_themeModalContext?.row||row;
+      _themeModalApplyVerifiedLocalAvailability(nextRow, true, {duration:audio.duration||0});
+      _themeModalRememberRow(nextRow);
+      _themeModalUpdateLocalCard(nextRow);
+      _themeModalUpdateLocalClipSummary(nextRow, audio.duration||0);
+    }
   });
   if(hasLocalTheme){
-    _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+    _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(resolvedFolder));
     _themeModalAudio.audio.load();
+    if(Number(localProbe?.duration||0)>0){
+      row.theme_duration=Number(localProbe.duration)||0;
+      _themeModalUpdateLocalClipSummary(row, row.theme_duration);
+    }
   }else{
     _themeModalAudio.audio.removeAttribute('src');
     _themeModalAudio.audio.load();
