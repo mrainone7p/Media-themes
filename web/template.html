@@ -1316,10 +1316,24 @@
     </div>
 
     <div class="review-card" id="theme-local-card">
-      <div class="review-card-header">
-        <div class="review-card-heading">
+      <div class="review-card-header" style="align-items:flex-start">
+        <div class="review-card-heading" style="flex:1 1 auto">
           <div class="modal-section-label mb-0">Local Theme</div>
           <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
+          <div class="hidden" id="theme-local-player" style="margin-top:10px">
+            <div class="modal-player-row">
+              <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </button>
+              <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
+              <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
+              <div class="modal-scrubber-wrap">
+                <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
+                <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
+              </div>
+            </div>
+            <audio class="hidden" id="theme-modal-audio"></audio>
+          </div>
         </div>
         <button class="btn btn-ghost btn-sm hidden" id="theme-modal-inline-play" onclick="themeModalToggle()">▶ Play Theme</button>
       </div>
@@ -1327,50 +1341,48 @@
         <div class="simple-line" id="theme-modal-file">File path: —</div>
         <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
       </div>
-      <div class="review-empty hidden" id="theme-local-missing">No local theme file is saved right now.</div>
-      <div class="modal-actions-row" style="margin-top:10px" id="theme-local-actions">
+      <div class="modal-actions-row" style="margin-top:10px;justify-content:flex-end" id="theme-local-actions">
         <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim</button>
         <button class="btn btn-amber btn-sm" id="theme-replace-btn" onclick="themeModalOpenManualSearch()">Replace</button>
         <button class="btn btn-danger-ghost btn-sm" id="theme-modal-delete-btn" onclick="themeModalDelete()">Delete</button>
-      </div>
-      <div class="hidden" id="theme-local-player">
-        <div class="modal-player-row">
-          <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
-            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </button>
-          <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
-          <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
-          <div class="modal-scrubber-wrap">
-            <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
-            <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
-          </div>
-        </div>
-        <audio class="hidden" id="theme-modal-audio"></audio>
       </div>
     </div>
 
     <div class="review-card" id="theme-source-card">
       <div class="review-card-header">
         <div class="review-card-heading">
-          <div class="modal-section-label mb-0">Source State</div>
-          <div class="review-card-subtitle" id="theme-modal-source-summary">Golden, Selected, and Local layers stay separate so each row shows the source lifecycle clearly.</div>
+          <div class="modal-section-label mb-0">Source Details</div>
+          <div class="review-card-subtitle" id="theme-modal-source-summary">Current source metadata for this theme.</div>
         </div>
-        <div class="ui-pill review-source-pill is-unknown" id="theme-modal-source-pill">3 Layers</div>
       </div>
-      <div class="review-empty hidden" id="theme-source-empty">No Golden, Selected, or Local source state is recorded yet.</div>
-      <details class="surface-panel compact theme-source-details" id="theme-source-details">
-        <summary>
-          <span class="theme-source-summary-text">Layer details</span>
-          <span class="settings-chev">▾</span>
-        </summary>
-        <div class="source-state-stack source-state-stack-modal" id="theme-source-state-stack"></div>
-        <div class="ui-meta-list review-meta-list" id="theme-source-meta-list">
-          <div class="ui-meta-row review-meta-item">
-            <div class="review-meta-label">Notes</div>
-            <div class="review-meta-value" id="theme-modal-source-notes">—</div>
+      <div class="review-empty hidden" id="theme-source-empty">No source details are recorded yet.</div>
+      <div class="ui-meta-list review-meta-list" id="theme-source-meta-list">
+        <div class="ui-meta-row review-meta-item">
+          <div class="review-meta-label">Source Type</div>
+          <div class="review-meta-value" id="theme-modal-source-origin">—</div>
+        </div>
+        <div class="ui-meta-row review-meta-item">
+          <div class="review-meta-label">Source URL</div>
+          <div class="review-meta-value" id="theme-modal-source-url">—</div>
+        </div>
+        <div class="ui-meta-row review-meta-item">
+          <div class="review-meta-label">Offset</div>
+          <div class="review-meta-value" id="theme-modal-source-offset">—</div>
+        </div>
+        <div class="ui-meta-row review-meta-item">
+          <div class="review-meta-label">Controls</div>
+          <div class="review-meta-value">
+            <div class="modal-actions-row" style="margin-top:0;justify-content:flex-start" id="theme-modal-source-controls">
+              <button class="btn btn-ghost btn-sm" type="button" id="theme-modal-source-copy">Copy</button>
+              <button class="btn btn-ghost btn-sm" type="button" id="theme-modal-source-open">Open</button>
+            </div>
           </div>
         </div>
-      </details>
+        <div class="ui-meta-row review-meta-item">
+          <div class="review-meta-label">When Added</div>
+          <div class="review-meta-value" id="theme-modal-source-added">—</div>
+        </div>
+      </div>
     </div>
 
     <!-- Footer -->
