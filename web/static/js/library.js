@@ -1391,7 +1391,7 @@ function _themeModalImportedAt(row={}){
 function _themeModalSourceOriginLabel(row={}){
   const selected=_selectedSourceContract(row);
   if(!selected.url) return 'Not Selected';
-  return _sourceStatePillLabel(_selectedSourceLabel(row), _selectedSourceStateText(row));
+  return _selectedSourceLabel(row);
 }
 function _themeModalSourceState(row={}){
   return _selectedSourceStateText(row);
@@ -1402,7 +1402,7 @@ function _themeModalSourceOriginClass(row={}){
   return _sourceStateClass(selected.kind, selected.method);
 }
 function _themeModalSourceOriginMarkup(row={}){
-  return _renderSourceStatePill(_themeModalSourceOriginLabel(row), _themeModalSourceOriginClass(row), _themeModalSourceUrl(row) || _themeModalSourceState(row));
+  return _renderSourceStatePill(_themeModalSourceOriginLabel(row), _themeModalSourceOriginClass(row), _themeModalSourceUrl(row) || _themeModalSourceOriginLabel(row));
 }
 function _themeModalSourceUrl(row={}){
   return String(_selectedSourceContract(row).url||'').trim();
@@ -1830,6 +1830,41 @@ function _themeModalUpdateLocalCard(row={}){
   _setHidden(actions, !hasLocal, hasLocal?'flex':'');
   _themeModalUpdateLocalClipSummary(row, hasLocal ? parseFloat(row?.theme_duration||0)||0 : 0);
 }
+const _THEME_MODAL_CARD_STORAGE_KEY='mt-theme-modal-card-state';
+function _themeModalCardDefaultOpen(cardId, row={}){
+  const hasLocal=_themeHasLocal(row);
+  const hasSelected=!!String(_selectedSourceContract(row).url||'').trim();
+  if(cardId==='theme-local-card') return hasLocal;
+  if(cardId==='theme-workflow-card') return hasSelected || !hasLocal;
+  return true;
+}
+function _themeModalCardState(){
+  try{return JSON.parse(localStorage.getItem(_THEME_MODAL_CARD_STORAGE_KEY)||'{}')||{};}catch(e){return {};}
+}
+function _themeModalPersistCardState(cardId, isOpen){
+  try{
+    const next=_themeModalCardState();
+    next[cardId]=!!isOpen;
+    localStorage.setItem(_THEME_MODAL_CARD_STORAGE_KEY, JSON.stringify(next));
+  }catch(e){}
+}
+function _themeModalApplyCardState(row={}){
+  ['theme-local-card','theme-workflow-card'].forEach(cardId=>{
+    const card=document.getElementById(cardId);
+    if(!card) return;
+    const state=_themeModalCardState();
+    const open=Object.prototype.hasOwnProperty.call(state, cardId) ? !!state[cardId] : _themeModalCardDefaultOpen(cardId, row);
+    card.open=open;
+  });
+}
+function _themeModalBindCardToggles(){
+  ['theme-local-card','theme-workflow-card'].forEach(cardId=>{
+    const card=document.getElementById(cardId);
+    if(!card || card.dataset.toggleBound==='1') return;
+    card.dataset.toggleBound='1';
+    card.addEventListener('toggle', ()=>_themeModalPersistCardState(cardId, card.open));
+  });
+}
 function _themeModalUpdateWorkflowCard(row={}){
   const selected=_selectedSourceContract(row);
   const hasSelected=!!String(selected.url||'').trim();
@@ -1853,11 +1888,9 @@ function _themeModalUpdateWorkflowCard(row={}){
   _setHidden(metaListEl, !hasSelected, hasSelected?'block':'');
   _setHidden(player, true);
   if(stateEl) stateEl.innerHTML=hasSelected
-    ? _renderSourceStatePill(_selectedSourceStateSummary(row).stateLabel, _themeModalSourceOriginClass(row), _themeModalSourceUrl(row) || _themeModalSourceState(row))
+    ? _renderSourceStatePill(_themeModalSourceState(row), _themeModalSourceOriginClass(row), _themeModalSourceState(row))
     : '—';
-  if(originEl) originEl.innerHTML=hasSelected
-    ? `${_themeModalSourceOriginMarkup(row)}<div class="theme-workflow-detail">${_escapeHtml(_sourceMethodLabel(selected.method))}</div>`
-    : '—';
+  if(originEl) originEl.innerHTML=hasSelected ? _themeModalSourceOriginMarkup(row) : '—';
   if(addedEl) addedEl.textContent=hasSelected ? _themeModalSourceAdded(row) : '—';
   _themeModalSetLinkRow({
     urlId:'theme-workflow-url',
@@ -1926,6 +1959,8 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
     statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
   }
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
+  _themeModalBindCardToggles();
+  _themeModalApplyCardState(row);
   _themeModalUpdateLocalCard(row);
   _themeModalUpdateWorkflowCard(row);
 

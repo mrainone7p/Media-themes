@@ -1316,107 +1316,113 @@
       </div>
     </div>
 
-    <div class="review-card theme-section-card" id="theme-local-card">
-      <div class="review-card-header theme-section-header">
+    <details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-local-card">
+      <summary class="review-card-header theme-section-header theme-card-toggle" id="theme-local-toggle" aria-controls="theme-local-body">
         <div class="review-card-heading theme-section-heading">
           <div class="modal-section-label mb-0">Local Theme</div>
           <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
         </div>
-      </div>
-      <div class="review-empty hidden" id="theme-local-empty">No local theme file is on disk yet.</div>
-      <div class="hidden theme-section-player" id="theme-local-player">
-        <div class="modal-player-row surface-panel compact">
-          <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
-            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </button>
-          <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
-          <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
-          <div class="modal-scrubber-wrap">
-            <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
-            <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
+        <span class="settings-chev" aria-hidden="true">˅</span>
+      </summary>
+      <div class="theme-section-body" id="theme-local-body">
+        <div class="review-empty hidden" id="theme-local-empty">No local theme file is on disk yet.</div>
+        <div class="hidden theme-section-player" id="theme-local-player">
+          <div class="modal-player-row surface-panel compact">
+            <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+            <button class="skip-btn" onclick="themeModalSkip(-5)">-5</button>
+            <button class="skip-btn" onclick="themeModalSkip(5)">+5</button>
+            <div class="modal-scrubber-wrap">
+              <input type="range" class="modal-slider" id="theme-modal-slider" min="0" max="100" value="0" oninput="themeModalSeek(this.value)">
+              <div class="modal-time-row"><span id="theme-modal-cur">0:00</span><span id="theme-modal-dur">—</span></div>
+            </div>
+          </div>
+          <audio class="hidden" id="theme-modal-audio"></audio>
+        </div>
+        <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-local-meta">
+          <div class="ui-meta-row review-meta-item">
+            <div class="review-meta-label">Local State</div>
+            <div class="review-meta-value" id="theme-modal-local-state">—</div>
+          </div>
+          <div class="ui-meta-row review-meta-item">
+            <div class="review-meta-label">File Path</div>
+            <div class="review-meta-value theme-detail-value is-path" id="theme-modal-file">—</div>
+          </div>
+          <div class="ui-meta-row review-meta-item clip-summary-row hidden" id="theme-local-clip">
+            <div class="clip-summary-label">Clip Window / Offset</div>
+            <div class="clip-summary-main" id="theme-local-clip-main">Length — · Offset 0:00</div>
+            <div class="clip-summary-sub" id="theme-local-clip-sub">Preview the local theme to confirm the kept portion.</div>
+            <div class="clip-summary-warning" id="theme-local-clip-warning"></div>
           </div>
         </div>
-        <audio class="hidden" id="theme-modal-audio"></audio>
-      </div>
-      <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-local-meta">
-        <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">Local State</div>
-          <div class="review-meta-value" id="theme-modal-local-state">—</div>
-        </div>
-        <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">File Path</div>
-          <div class="review-meta-value theme-detail-value is-path" id="theme-modal-file">—</div>
+        <div class="modal-actions-row theme-section-actions hidden" id="theme-local-actions">
+          <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim Source</button>
+          <button class="btn btn-ghost btn-sm" id="theme-modal-local-rematch-btn" onclick="themeModalOpenManualSearch()">Rematch</button>
+          <button class="btn btn-danger-ghost btn-sm" id="theme-modal-local-delete-btn" onclick="themeModalDeleteLocalTheme()">Delete</button>
         </div>
       </div>
-      <div class="clip-summary-card hidden" id="theme-local-clip">
-        <div class="clip-summary-label">Clip Window / Offset</div>
-        <div class="clip-summary-main" id="theme-local-clip-main">Length — · Offset 0:00</div>
-        <div class="clip-summary-sub" id="theme-local-clip-sub">Preview the local theme to confirm the kept portion.</div>
-        <div class="clip-summary-warning" id="theme-local-clip-warning"></div>
-      </div>
-      <div class="modal-actions-row theme-section-actions hidden" id="theme-local-actions">
-        <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim Source</button>
-        <button class="btn btn-ghost btn-sm" id="theme-modal-local-rematch-btn" onclick="themeModalOpenManualSearch()">Rematch</button>
-        <button class="btn btn-danger-ghost btn-sm" id="theme-modal-local-delete-btn" onclick="themeModalDeleteLocalTheme()">Delete</button>
-      </div>
-    </div>
+    </details>
 
-    <div class="review-card theme-section-card" id="theme-workflow-card">
-      <div class="review-card-header theme-section-header">
+    <details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-workflow-card">
+      <summary class="review-card-header theme-section-header theme-card-toggle" id="theme-workflow-toggle" aria-controls="theme-workflow-body">
         <div class="review-card-heading theme-section-heading">
           <div class="modal-section-label mb-0">Selected Source</div>
           <div class="review-card-subtitle" id="theme-workflow-subtitle">Review the saved source, confirm the clip window, and choose the next action.</div>
         </div>
-      </div>
-      <div class="review-empty hidden" id="theme-workflow-empty">No selected source yet. Find a source to continue.</div>
-      <div class="hidden theme-section-player" id="theme-workflow-player">
-        <div class="modal-player-row surface-panel compact">
-          <button class="play-btn" id="theme-workflow-play" onclick="themeModalSourceToggle()">
-            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          </button>
-          <button class="skip-btn" onclick="themeModalSourceSkip(-5)">-5</button>
-          <button class="skip-btn" onclick="themeModalSourceSkip(5)">+5</button>
-          <div class="modal-scrubber-wrap">
-            <input type="range" class="modal-slider" id="theme-workflow-slider" min="0" max="100" value="0" oninput="themeModalSourceSeek(this.value)">
-            <div class="modal-time-row"><span id="theme-workflow-cur">0:00</span><span id="theme-workflow-dur">—</span></div>
+        <span class="settings-chev" aria-hidden="true">˅</span>
+      </summary>
+      <div class="theme-section-body" id="theme-workflow-body">
+        <div class="review-empty hidden" id="theme-workflow-empty">No selected source yet. Find a source to continue.</div>
+        <div class="hidden theme-section-player" id="theme-workflow-player">
+          <div class="modal-player-row surface-panel compact">
+            <button class="play-btn" id="theme-workflow-play" onclick="themeModalSourceToggle()">
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+            <button class="skip-btn" onclick="themeModalSourceSkip(-5)">-5</button>
+            <button class="skip-btn" onclick="themeModalSourceSkip(5)">+5</button>
+            <div class="modal-scrubber-wrap">
+              <input type="range" class="modal-slider" id="theme-workflow-slider" min="0" max="100" value="0" oninput="themeModalSourceSeek(this.value)">
+              <div class="modal-time-row"><span id="theme-workflow-cur">0:00</span><span id="theme-workflow-dur">—</span></div>
+            </div>
           </div>
+          <audio class="hidden" id="theme-workflow-audio"></audio>
         </div>
-        <audio class="hidden" id="theme-workflow-audio"></audio>
-      </div>
-      <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-workflow-meta-list">
-        <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">Source State</div>
-          <div class="review-meta-value" id="theme-workflow-state">—</div>
-        </div>
-        <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">Source Type</div>
-          <div class="review-meta-value" id="theme-workflow-origin">—</div>
-        </div>
-        <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">Source URL</div>
-          <div class="review-meta-value">
-            <div class="theme-link-row">
-              <a class="theme-link-value" href="#" target="_blank" rel="noopener" id="theme-workflow-url">—</a>
-              <div class="modal-actions-row theme-link-actions" id="theme-workflow-controls">
-                <button class="btn btn-ghost btn-sm" type="button" id="theme-workflow-copy">Copy</button>
-                <button class="btn btn-ghost btn-sm" type="button" id="theme-workflow-open">Open</button>
+        <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-workflow-meta-list">
+          <div class="ui-meta-row review-meta-item">
+            <div class="review-meta-label">Workflow State</div>
+            <div class="review-meta-value" id="theme-workflow-state">—</div>
+          </div>
+          <div class="ui-meta-row review-meta-item">
+            <div class="review-meta-label">Source Type</div>
+            <div class="review-meta-value" id="theme-workflow-origin">—</div>
+          </div>
+          <div class="ui-meta-row review-meta-item">
+            <div class="review-meta-label">Source URL</div>
+            <div class="review-meta-value">
+              <div class="theme-link-row">
+                <a class="theme-link-value" href="#" target="_blank" rel="noopener" id="theme-workflow-url">—</a>
+                <div class="modal-actions-row theme-link-actions" id="theme-workflow-controls">
+                  <button class="btn btn-ghost btn-sm" type="button" id="theme-workflow-copy">Copy</button>
+                  <button class="btn btn-ghost btn-sm" type="button" id="theme-workflow-open">Open</button>
+                </div>
               </div>
             </div>
           </div>
+          <div class="ui-meta-row review-meta-item">
+            <div class="review-meta-label">When Added</div>
+            <div class="review-meta-value" id="theme-workflow-added">—</div>
+          </div>
+          <div class="ui-meta-row review-meta-item clip-summary-row hidden" id="theme-workflow-clip">
+            <div class="clip-summary-label">Clip Window / Offset</div>
+            <div class="clip-summary-main" id="theme-workflow-clip-main">Length — · Offset 0:00</div>
+            <div class="clip-summary-sub" id="theme-workflow-clip-sub">Choose or review a source to see its saved clip window.</div>
+            <div class="clip-summary-warning" id="theme-workflow-clip-warning"></div>
+          </div>
         </div>
-        <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">When Added</div>
-          <div class="review-meta-value" id="theme-workflow-added">—</div>
-        </div>
+        <div class="modal-actions-row theme-workflow-actions" id="theme-workflow-actions"></div>
       </div>
-      <div class="clip-summary-card hidden" id="theme-workflow-clip">
-        <div class="clip-summary-label">Clip Window / Offset</div>
-        <div class="clip-summary-main" id="theme-workflow-clip-main">Length — · Offset 0:00</div>
-        <div class="clip-summary-sub" id="theme-workflow-clip-sub">Choose or review a source to see its saved clip window.</div>
-        <div class="clip-summary-warning" id="theme-workflow-clip-warning"></div>
-      </div>
-      <div class="modal-actions-row theme-workflow-actions" id="theme-workflow-actions"></div>
-    </div>
+    </details>
 
     <!-- Footer -->
     <div class="modal-footer">

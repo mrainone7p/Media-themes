@@ -16,11 +16,14 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
     def test_local_theme_section_contains_only_local_playback_metadata_and_actions(self):
         local_card_split = self.template_source.split('id="theme-local-card"', 1)[1].split('id="theme-workflow-card"', 1)[0]
         for snippet in (
+            'id="theme-local-toggle"',
+            'aria-controls="theme-local-body"',
             'id="theme-local-player"',
             'id="theme-modal-audio"',
             'id="theme-modal-local-state"',
             'id="theme-modal-file"',
             'id="theme-local-clip"',
+            'class="ui-meta-row review-meta-item clip-summary-row hidden"',
             'id="theme-local-actions"',
             'id="theme-modal-trim-btn"',
             'id="theme-modal-local-rematch-btn"',
@@ -42,13 +45,18 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
     def test_selected_source_section_contains_its_own_player_metadata_and_actions(self):
         source_card_split = self.template_source.split('id="theme-workflow-card"', 1)[1].split('<div class="modal-footer">', 1)[0]
         for snippet in (
+            'id="theme-workflow-toggle"',
+            'aria-controls="theme-workflow-body"',
             'id="theme-workflow-player"',
             'id="theme-workflow-audio"',
+            'Workflow State',
             'id="theme-workflow-state"',
+            'Source Type',
             'id="theme-workflow-origin"',
             'id="theme-workflow-url"',
             'id="theme-workflow-added"',
             'id="theme-workflow-clip"',
+            'class="ui-meta-row review-meta-item clip-summary-row hidden"',
             'id="theme-workflow-actions"',
             'id="theme-workflow-copy"',
             'id="theme-workflow-open"',
@@ -62,6 +70,16 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         ):
             self.assertNotIn(snippet, source_card_split)
 
+
+
+    def test_theme_modal_cards_use_collapsible_details_markup(self):
+        for snippet in (
+            '<details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-local-card">',
+            '<details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-workflow-card">',
+            'id="theme-local-toggle"',
+            'id="theme-workflow-toggle"',
+        ):
+            self.assertIn(snippet, self.template_source)
 
     def test_template_contains_updated_trim_source_label(self):
         self.assertIn('>Trim Source<', self.template_source)
@@ -85,6 +103,30 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "if(hasStoredSource) await _themeModalLoadSelectedSourcePreview(row);",
             "const _themeModalSourceAudio=bindModalAudio({audioId:'theme-workflow-audio'",
             'function themeModalSourceToggle(){ _themeModalSourceAudio.toggle(); }',
+        ):
+            self.assertIn(snippet, self.library_source)
+
+
+    def test_theme_modal_workflow_metadata_separates_state_from_type_without_duplicate_detail(self):
+        for snippet in (
+            "return _selectedSourceLabel(row);",
+            "return _selectedSourceStateText(row);",
+            "? _renderSourceStatePill(_themeModalSourceState(row), _themeModalSourceOriginClass(row), _themeModalSourceState(row))",
+            "if(originEl) originEl.innerHTML=hasSelected ? _themeModalSourceOriginMarkup(row) : '—';",
+        ):
+            self.assertIn(snippet, self.library_source)
+        self.assertNotIn('theme-workflow-detail', self.template_source)
+
+    def test_theme_modal_cards_persist_collapsed_state_with_sensible_defaults(self):
+        for snippet in (
+            "const _THEME_MODAL_CARD_STORAGE_KEY='mt-theme-modal-card-state';",
+            "function _themeModalCardDefaultOpen(cardId, row={}){",
+            "if(cardId==='theme-local-card') return hasLocal;",
+            "if(cardId==='theme-workflow-card') return hasSelected || !hasLocal;",
+            "function _themeModalPersistCardState(cardId, isOpen){",
+            "card.addEventListener('toggle', ()=>_themeModalPersistCardState(cardId, card.open));",
+            "_themeModalBindCardToggles();",
+            "_themeModalApplyCardState(row);",
         ):
             self.assertIn(snippet, self.library_source)
 
