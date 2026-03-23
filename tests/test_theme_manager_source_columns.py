@@ -17,6 +17,7 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         self.assertIn("sortTable('golden_state')", self.template_source)
         self.assertIn("sortTable('custom_state')", self.template_source)
         self.assertNotIn("sortTable('local_state')", self.template_source)
+        self.assertIn("Selected Source ↕", self.template_source)
         self.assertNotIn("Golden Source URL ↕", self.template_source)
         self.assertNotIn("Source URL ↕", self.template_source)
         self.assertNotIn("Start Offset (mm:ss) ↕", self.template_source)
@@ -36,8 +37,10 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
             "function _customSourceState(row={})",
             "function _localSourceState(row={})",
             "function _renderSourceStateStack(targetId,row={},opts={})",
-            "_renderSourceStateCell('Golden'",
-            "_renderSourceStateCell('Selected'",
+            "_renderSourceStateCell('Golden Source'",
+            "_renderSourceStateCell('Selected Source'",
+            "_sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow))",
+            "_themeModalSourceOriginMarkup(row)",
         ):
             self.assertIn(snippet, self.library_source)
 
@@ -61,6 +64,8 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         self.assertNotIn("if(col==='local_state')", self.library_source)
         self.assertNotIn("_sortCol==='local_state'", self.library_source)
         self.assertNotIn("_renderSourceStateCell('Local'", self.library_source)
+        self.assertNotIn("label:'Curated Source'", self.library_source)
+        self.assertNotIn("label:'Saved Source'", self.library_source)
 
     def test_library_js_status_cell_no_longer_renders_inline_status_editor(self):
         self.assertIn("function renderStatusCell(row)", self.library_source)
