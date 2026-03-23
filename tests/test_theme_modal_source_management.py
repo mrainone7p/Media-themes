@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -99,7 +101,11 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'function _themeModalUpdateLocalCard(row={}){',
             'function _themeModalUpdateWorkflowCard(row={}){',
             "_themeModalAudio.setHandlers({",
-            "onloadedmetadata:(audio)=>_themeModalUpdateLocalClipSummary(_themeModalContext?.row||row, audio.duration||0)",
+            "const localProbe=await _themeModalVerifyLocalPlayback(row, resolvedFolder);",
+            "function _themeModalProbeLocalAudio(folder=''){",
+            "function _themeModalApplyVerifiedLocalAvailability(row={}, exists=false, metadata={}){",
+            "const nextRow=_themeModalContext?.row||row;",
+            "_themeModalApplyVerifiedLocalAvailability(nextRow, true, {duration:audio.duration||0});",
             "if(hasStoredSource) await _themeModalLoadSelectedSourcePreview(row);",
             "const _themeModalSourceAudio=bindModalAudio({audioId:'theme-workflow-audio'",
             'function themeModalSourceToggle(){ _themeModalSourceAudio.toggle(); }',
@@ -195,6 +201,154 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "toast('Approved source — downloading now…','info');",
         ):
             self.assertIn(snippet, self.library_source)
+
+    def test_stale_local_theme_probe_promotes_local_playback_before_rendering(self):
+        start = self.library_source.index("function _themeModalHasVerifiedLocal(row={}){")
+        end = self.library_source.index("async function themeModalDownloadApproved(){")
+        modal_block = self.library_source[start:end]
+        node_script = f"""
+const clipSummaryDurations=[];
+const loadedAudioSrcs=[];
+const elements=new Map();
+function makeElement(id) {{
+  return {{
+    id,
+    textContent:'',
+    innerHTML:'',
+    value:id==='cfg-theme_filename' ? 'theme.mp3' : '',
+    src:'',
+    href:'#',
+    disabled:false,
+    hidden:false,
+    open:false,
+    dataset:{{}},
+    style:{{display:''}},
+    className:'',
+    onclick:null,
+    classList:{{toggle(){{}}, add(){{}}, remove(){{}}}},
+    addEventListener(){{}},
+    removeAttribute(name){{ if(name==='src') this.src=''; }},
+    setAttribute(){{}},
+  }};
+}}
+const document={{
+  getElementById(id){{
+    if(!elements.has(id)) elements.set(id, makeElement(id));
+    return elements.get(id);
+  }}
+}};
+let _themeModalContext=null;
+let _rows=[];
+let _filtered=[];
+let _rowMap={{}};
+let _activeLib='Movies';
+let _curKey='';
+let _maxDur=45;
+function _currentLib(){{ return 'Movies'; }}
+function stopAllAudio(){{}}
+function stopCurrentAudio(){{}}
+function setBio(){{}}
+function openModal(){{}}
+function displayStatus(status){{ return status; }}
+function apiUrl(url){{ return url; }}
+function fmt(value){{ return String(Number(value||0)); }}
+function parseTrim(value){{ return Number(value||0); }}
+function _normalizedOffsetValue(value){{ return String(value ?? '0'); }}
+function _setHidden(el, hidden, display=''){{ if(!el) return; el.hidden=!!hidden; el.style.display=display; }}
+function _renderSourceStatePill(label){{ return label; }}
+function _themeModalSourceOriginClass(){{ return 'is-custom'; }}
+function _themeModalSourceOriginMarkup(){{ return 'origin'; }}
+function themeModalCopyWorkflowSource(){{}}
+function themeModalOpenWorkflowSource(){{}}
+function _themeModalRenderWorkflowActions(){{ return ''; }}
+function _themeModalWorkflowActions(){{ return []; }}
+async function _themeModalLoadSelectedSourcePreview(){{ return true; }}
+function _themeModalSetLinkRow(){{}}
+function _setClipSummary(_summaryId, _mainId, _subId, _warningId, duration){{ clipSummaryDurations.push(Number(duration||0)); }}
+function _themeModalUpdateLocalClipSummary(_row={{}}, duration=0){{ clipSummaryDurations.push(Number(duration||0)); }}
+function _themeModalUpdateLocalCard(row={{}}){{ document.getElementById('theme-modal-local-status').textContent=_themeModalHasVerifiedLocal(row) ? 'On disk and ready to play or trim.' : 'No local theme file on disk yet.'; }}
+function _themeModalUpdateWorkflowCard(){{}}
+function _themeModalBindCardToggles(){{}}
+function _themeModalApplyCardState(){{}}
+function _themeModalUpdateStatusFlow(){{}}
+const localStorage={{ getItem(){{ return null; }}, setItem(){{}} }};
+function _normalizeSourceKind(value){{ const normalized=String(value||'').trim().toLowerCase(); return normalized==='golden' || normalized==='custom' ? normalized : ''; }}
+function _normalizeSourceMethod(value){{ return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''); }}
+function _legacySourceMethodFromOrigin(origin=''){{ const normalized=String(origin||'').trim().toLowerCase(); if(normalized.startsWith('golden_source')) return 'golden_source'; if(normalized.includes('playlist')) return 'playlist'; if(normalized.includes('direct')) return 'direct'; if(normalized==='manual' || normalized==='custom') return 'manual'; return ''; }}
+function _rowUsesGoldenSource(row){{ const sourceUrl=String(row?.url||'').trim(); const goldenUrl=String(row?.golden_source_url||'').trim(); return !!sourceUrl && !!goldenUrl && sourceUrl===goldenUrl; }}
+function _selectedSourceContract(row={{}}){{ const url=String(row?.url||'').trim(); if(!url) return {{kind:'', method:'', url:''}}; let kind=_normalizeSourceKind(row?.selected_source_kind); let method=_normalizeSourceMethod(row?.selected_source_method); if(!kind) kind=method==='golden_source' || _rowUsesGoldenSource(row) ? 'golden' : 'custom'; if(!method) method=kind==='golden' ? 'golden_source' : 'manual'; return {{kind, method, url}}; }}
+function _themeHasLocal(row){{ return String(row?.theme_exists||'')==='1'; }}
+function _effectiveRowStatus(row={{}}){{ const status=String(row?.status||'MISSING').toUpperCase(); const hasTheme=_themeHasLocal(row); const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim(); if(status==='AVAILABLE' && !hasTheme) return hasStoredSource ? 'STAGED' : 'MISSING'; return status; }}
+function _themeModalSourceState(){{ return 'Saved'; }}
+function _themeModalSourceAdded(row={{}}){{ return row.selected_source_recorded_at || '—'; }}
+function _themeModalSourceUrl(row={{}}){{ return String(row?.url||'').trim(); }}
+function _themeModalOffsetValue(row={{}}, layer='selected_source'){{ if(layer==='local_theme') return row?.local_source_offset ?? row?.start_offset ?? 0; return row?.start_offset || 0; }}
+function _clipLengthOffsetLabel(duration=0, offset=0){{ return `Length ${{duration}} · Offset ${{offset}}`; }}
+const _themeModalAudio={{
+  handlers:{{}},
+  audio:{{
+    src:'',
+    duration:12.5,
+    load(){{ loadedAudioSrcs.push(this.src||''); if(this.src && _themeModalAudio.handlers.onloadedmetadata) _themeModalAudio.handlers.onloadedmetadata(this); }},
+    removeAttribute(name){{ if(name==='src') this.src=''; }},
+  }},
+  cleanup(){{}},
+  setHandlers(handlers){{ this.handlers=handlers||{{}}; }}
+}};
+const _themeModalSourceAudio={{ audio:{{ removeAttribute(){{}}, load(){{}} }}, cleanup(){{}}, setHandlers(){{}} }};
+class Audio {{
+  constructor(){{ this.src=''; this.duration=12.5; this.preload=''; this.onloadedmetadata=null; this.oncanplaythrough=null; this.onerror=null; }}
+  pause(){{}}
+  removeAttribute(name){{ if(name==='src') this.src=''; }}
+  load(){{ if(this.onloadedmetadata) this.onloadedmetadata(); }}
+}}
+{modal_block}
+const row={{
+  rating_key:'1',
+  title:'Example',
+  year:'1999',
+  folder:'/media/example',
+  status:'AVAILABLE',
+  theme_exists:'0',
+  theme_duration:0,
+  url:'https://example.test/theme',
+  start_offset:'7',
+  source_origin:'manual',
+  selected_source_kind:'custom',
+  selected_source_method:'playlist',
+  selected_source_recorded_at:'2026-03-23 10:00:00',
+}};
+(async()=>{{
+  await openThemeModal('1', 'Example', '1999', '/media/example', row, 'Movies');
+  process.stdout.write(JSON.stringify({{
+    themeExists:row.theme_exists,
+    themeDuration:row.theme_duration,
+    localSourceUrl:row.local_source_url,
+    localSourceMethod:row.local_source_method,
+    loadedAudioSrcs,
+    clipSummaryDurations,
+    durMeta:document.getElementById('theme-modal-dur-meta').textContent,
+    localStatus:document.getElementById('theme-modal-local-status').textContent,
+  }}));
+}})().catch((error)=>{{ console.error(error); process.exit(1); }});
+"""
+        result = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual(1, payload["themeExists"])
+        self.assertEqual(12.5, payload["themeDuration"])
+        self.assertEqual("https://example.test/theme", payload["localSourceUrl"])
+        self.assertEqual("playlist", payload["localSourceMethod"])
+        self.assertIn("/api/theme?folder=%2Fmedia%2Fexample", payload["loadedAudioSrcs"])
+        self.assertIn(12.5, payload["clipSummaryDurations"])
+        self.assertEqual("Theme on disk", payload["durMeta"])
+        self.assertEqual("On disk and ready to play or trim.", payload["localStatus"])
+
 
 
 if __name__ == "__main__":
