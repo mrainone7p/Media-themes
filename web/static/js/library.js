@@ -1388,11 +1388,11 @@ function _themeModalSourceAdded(row={}){
 function _themeModalSourceEndOffset(row={}){
   return row?.end_offset||0;
 }
-function _themeModalUpdateSourceClipSummary(row={}){
-  const summary=document.getElementById('theme-modal-source-clip');
-  const main=document.getElementById('theme-modal-source-clip-main');
-  const sub=document.getElementById('theme-modal-source-clip-sub');
-  const warning=document.getElementById('theme-modal-source-clip-warning');
+function _themeModalUpdateSourceClipSummary(row={}, prefix='theme-modal'){
+  const summary=document.getElementById(`${prefix}-source-clip`);
+  const main=document.getElementById(`${prefix}-source-clip-main`);
+  const sub=document.getElementById(`${prefix}-source-clip-sub`);
+  const warning=document.getElementById(`${prefix}-source-clip-warning`);
   const selected=_selectedSourceContract(row);
   const hasSource=!!selected.url;
   const duration=0;
@@ -1405,7 +1405,7 @@ function _themeModalUpdateSourceClipSummary(row={}){
     if(warning) warning.textContent='';
     return;
   }
-  _setClipSummary('theme-modal-source-clip','theme-modal-source-clip-main','theme-modal-source-clip-sub','theme-modal-source-clip-warning',duration,offsetValue,Math.max(0, Number(_maxDur)||0),'preview');
+  _setClipSummary(`${prefix}-source-clip`,`${prefix}-source-clip-main`,`${prefix}-source-clip-sub`,`${prefix}-source-clip-warning`,duration,offsetValue,Math.max(0, Number(_maxDur)||0),'preview');
   if(sub){
     const endTrim=parseTrim(endOffsetValue||'0');
     if(endTrim>0){
@@ -1431,6 +1431,46 @@ function _themeModalUpdateInlinePreviewSummary(row={}, duration=0){
     return;
   }
   _setClipSummary('theme-modal-inline-play','theme-modal-inline-play-main','theme-modal-inline-play-sub','theme-modal-inline-play-warning',duration,offsetValue,maxDur,'preview');
+}
+function _themeModalPopulateSourceSection(row={}, opts={}){
+  const prefix=String(opts.prefix||'theme-modal');
+  const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim();
+  const sourceStateLabel=_themeModalSourceState(row);
+  const sourceUrl=_themeModalSourceUrl(row);
+  const sourceOffset=_themeModalSourceOffset(row);
+  const sourceAdded=_themeModalSourceAdded(row);
+  const summaryText=hasStoredSource
+    ? sourceStateLabel
+    : 'No selected source is saved yet.';
+  const summaryEl=document.getElementById(`${prefix}-source-summary`);
+  const originEl=document.getElementById(`${prefix}-source-origin`);
+  const urlEl=document.getElementById(`${prefix}-source-url`);
+  const offsetEl=document.getElementById(`${prefix}-source-offset`);
+  const addedEl=document.getElementById(`${prefix}-source-added`);
+  const pillEl=document.getElementById(`${prefix}-source-pill`);
+  const copyBtn=document.getElementById(`${prefix}-source-copy`);
+  const openBtn=document.getElementById(`${prefix}-source-open`);
+  const controlsEl=document.getElementById(`${prefix}-source-controls`);
+  const emptyEl=document.getElementById(prefix==='theme-modal'?'theme-source-empty':'');
+  const metaListEl=document.getElementById(`${prefix}-source-meta-list`);
+  if(summaryEl) summaryEl.textContent=summaryText;
+  if(originEl) originEl.innerHTML=_themeModalSourceOriginMarkup(row);
+  if(urlEl) urlEl.textContent=sourceUrl || '—';
+  if(offsetEl) offsetEl.textContent=sourceOffset;
+  if(addedEl) addedEl.textContent=sourceAdded;
+  if(pillEl) pillEl.textContent=hasStoredSource ? _selectedSourceStateSummary(row).stateLabel : 'Not Selected';
+  if(controlsEl) controlsEl.style.display=hasStoredSource?'':'none';
+  if(copyBtn){
+    copyBtn.disabled=!sourceUrl;
+    copyBtn.onclick=sourceUrl?themeModalCopySource:null;
+  }
+  if(openBtn){
+    openBtn.disabled=!sourceUrl;
+    openBtn.onclick=sourceUrl?themeModalOpenSource:null;
+  }
+  if(emptyEl) _setHidden(emptyEl, hasStoredSource, hasStoredSource?'':'block');
+  if(metaListEl) metaListEl.style.display=hasStoredSource?'flex':'none';
+  _themeModalUpdateSourceClipSummary(row, prefix);
 }
 async function _themeModalLoadSavedSourcePreview(row={}){
   const url=_themeModalPrimarySourceUrl(row);
@@ -1768,49 +1808,30 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-local-dur').textContent=hasLocalTheme
     ? _themeModalOffsetLabel(row, true, 'local_theme')
     :(showStoredSourcePreviewInLocalTheme?'Preview source loads below':'Duration: —');
-  const sourceStateLabel=_themeModalSourceState(row);
-  const sourceUrl=_themeModalSourceUrl(row);
-  const sourceOffset=_themeModalSourceOffset(row);
-  const sourceAdded=_themeModalSourceAdded(row);
-  document.getElementById('theme-modal-source-summary').textContent=hasStoredSource
-    ? sourceStateLabel
-    : 'No selected source is saved yet.';
-  document.getElementById('theme-modal-source-origin').innerHTML=_themeModalSourceOriginMarkup(row);
-  document.getElementById('theme-modal-source-url').textContent=sourceUrl || '—';
-  document.getElementById('theme-modal-source-offset').textContent=sourceOffset;
-  document.getElementById('theme-modal-source-added').textContent=sourceAdded;
-  _themeModalUpdateSourceClipSummary(row);
-  const sourceCopyBtn=document.getElementById('theme-modal-source-copy');
-  const sourceOpenBtn=document.getElementById('theme-modal-source-open');
-  const sourceControls=document.getElementById('theme-modal-source-controls');
-  if(sourceControls) sourceControls.style.display=hasStoredSource?'':'none';
-  if(sourceCopyBtn){
-    sourceCopyBtn.disabled=!sourceUrl;
-    sourceCopyBtn.onclick=sourceUrl?themeModalCopySource:null;
-  }
-  if(sourceOpenBtn){
-    sourceOpenBtn.disabled=!sourceUrl;
-    sourceOpenBtn.onclick=sourceUrl?themeModalOpenSource:null;
-  }
-
-  const sourceEmpty=document.getElementById('theme-source-empty');
-  const sourceMetaList=document.getElementById('theme-source-meta-list');
-  _setHidden(sourceEmpty, hasStoredSource, hasStoredSource?'':'block');
-  if(sourceMetaList) sourceMetaList.style.display=hasStoredSource?'flex':'none';
+  _themeModalPopulateSourceSection(row, {prefix:'theme-modal'});
+  _themeModalPopulateSourceSection(row, {prefix:'theme-local'});
 
   const localCard=document.getElementById('theme-local-card');
   const localMeta=document.getElementById('theme-local-meta');
   const localTrimBtn=document.getElementById('theme-modal-trim-btn');
   const localPlayer=document.getElementById('theme-local-player');
   const localPreviewEmpty=document.getElementById('theme-local-preview-empty');
+  const localSourceDetails=document.getElementById('theme-local-source-details');
   if(localCard) localCard.classList.toggle('compact', !hasLocalTheme && !showStoredSourcePreviewInLocalTheme);
   if(localMeta) localMeta.style.display='block';
   if(localTrimBtn) localTrimBtn.style.display=hasLocalTheme?'':'none';
+  const showNestedLocalSource=hasLocalTheme && hasStoredSource;
+  _setHidden(localSourceDetails, !showNestedLocalSource, showNestedLocalSource?'block':'');
+  if(localSourceDetails) localSourceDetails.open=false;
   _setHidden(localPlayer, !(hasLocalTheme || showStoredSourcePreviewInLocalTheme), (hasLocalTheme || showStoredSourcePreviewInLocalTheme)?'block':'');
   _setHidden(localPreviewEmpty, !showStoredSourcePreviewInLocalTheme, showStoredSourcePreviewInLocalTheme?'block':'');
   if(!showStoredSourcePreviewInLocalTheme) _setHidden(document.getElementById('theme-modal-inline-play'), true);
   const sourceCard=document.getElementById('theme-source-card');
+  const sourceLocalNote=document.getElementById('theme-source-local-note');
+  const showStandaloneSourceCard=!hasLocalTheme;
+  _setHidden(sourceCard, !showStandaloneSourceCard, showStandaloneSourceCard?'block':'');
   if(sourceCard) sourceCard.classList.toggle('compact', !hasStoredSource);
+  _setHidden(sourceLocalNote, !hasLocalTheme);
 
   const replaceBtn=document.getElementById('theme-replace-btn');
   const deleteSourceBtn=document.getElementById('theme-modal-delete-btn');

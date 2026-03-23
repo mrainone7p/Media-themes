@@ -1341,6 +1341,48 @@
       <div id="theme-local-meta">
         <div class="simple-line" id="theme-modal-file">File path: —</div>
         <div class="simple-line" id="theme-modal-local-dur">Duration: —</div>
+        <details class="theme-source-details theme-local-source-details hidden" id="theme-local-source-details">
+          <summary>
+            <span class="theme-source-summary-text">
+              <span>Local source info</span>
+              <span class="ui-pill muted-chip" id="theme-local-source-pill">Not Selected</span>
+            </span>
+            <span class="settings-chev">˅</span>
+          </summary>
+          <div class="review-card-subtitle" id="theme-local-source-summary">Review the saved source provenance for this local theme.</div>
+          <div class="ui-meta-list review-meta-list" id="theme-local-source-meta-list">
+            <div class="ui-meta-row review-meta-item">
+              <div class="review-meta-label">Source State</div>
+              <div class="review-meta-value" id="theme-local-source-origin">—</div>
+            </div>
+            <div class="ui-meta-row review-meta-item">
+              <div class="review-meta-label">Source URL</div>
+              <div class="review-meta-value">
+                <div class="inline-wrap spread" style="gap:10px;align-items:flex-start">
+                  <div id="theme-local-source-url" style="flex:1 1 auto;min-width:0">—</div>
+                  <div class="modal-actions-row" style="margin-top:0;justify-content:flex-start" id="theme-local-source-controls">
+                    <button class="btn btn-ghost btn-sm" type="button" id="theme-local-source-copy">Copy</button>
+                    <button class="btn btn-ghost btn-sm" type="button" id="theme-local-source-open">Open</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ui-meta-row review-meta-item">
+              <div class="review-meta-label">Offset</div>
+              <div class="review-meta-value" id="theme-local-source-offset">—</div>
+            </div>
+            <div class="ui-meta-row review-meta-item">
+              <div class="review-meta-label">When Added</div>
+              <div class="review-meta-value" id="theme-local-source-added">—</div>
+            </div>
+          </div>
+          <div class="clip-summary-card" id="theme-local-source-clip" style="margin-top:12px">
+            <div class="clip-summary-label">Saved clip window</div>
+            <div class="clip-summary-main" id="theme-local-source-clip-main">Length — · Offset 0:00</div>
+            <div class="clip-summary-sub" id="theme-local-source-clip-sub">Review the clip in Local Theme to confirm the kept portion before downloading.</div>
+            <div class="clip-summary-warning" id="theme-local-source-clip-warning"></div>
+          </div>
+        </details>
       </div>
       <div class="clip-summary-card hidden" id="theme-modal-inline-play" style="margin-top:12px">
         <div class="clip-summary-label">Preview clip window</div>
@@ -1361,6 +1403,7 @@
         </div>
       </div>
       <div class="review-empty hidden" id="theme-source-empty">No selected source is saved yet. Use Find Theme to choose one.</div>
+      <div class="review-card-subtitle hidden" id="theme-source-local-note">A local theme already exists. Source details are nested above under Local Theme.</div>
       <div class="ui-meta-list review-meta-list" id="theme-source-meta-list">
         <div class="ui-meta-row review-meta-item">
           <div class="review-meta-label">Source State</div>
