@@ -316,13 +316,11 @@ function _applyAutoScrollText(el, value, {fallback='—'}={}){
 
 function _renderSelectedSourceSummary(url, title){
   const sourceEl=document.getElementById('se-source-title');
-  const summaryEl=document.getElementById('se-source-url-summary');
   const copyBtn=document.getElementById('se-copy-btn');
   const openBtn=document.getElementById('se-open-btn');
   const cleanUrl=String(url||'').trim();
   const cleanTitle=String(title||'').trim()||_sourceTitleFromUrl(cleanUrl)||'—';
   _applyTruncatedText(sourceEl, cleanTitle, {fallback:'—', max:62});
-  _applyAutoScrollText(summaryEl, cleanUrl, {fallback:'No source URL selected'});
   if(copyBtn) copyBtn.disabled=!cleanUrl;
   if(openBtn) openBtn.disabled=!cleanUrl;
 }
@@ -1838,10 +1836,6 @@ async function openSearchModal(rk,title,year,lib){
     if(pasteEl) pasteEl.value='';
     if(urlEl) urlEl.value=existingUrl;
     if(offsetEl) offsetEl.value=existingOffset;
-    const startEl=document.getElementById('se-start-time');
-    const stopEl=document.getElementById('se-stop-time');
-    if(startEl) startEl.value=existingOffset;
-    if(stopEl) stopEl.value='';
     _step3PreparedUrl=existingUrl||'';
     _selectedSourceTitle=_sourceTitleFromUrl(existingUrl)||'';
     _renderSelectedSourceSummary(existingUrl,_selectedSourceTitle);
@@ -2112,44 +2106,30 @@ function searchPreviewToggle(){ _searchPreviewAudio.toggle(); }
 function _sourceEditorTrimMeta(){
   const audio=_sourceEditorAudio.audio;
   const total=Math.max(0, Number(audio?.duration)||0);
-  const offsetValue=document.getElementById('se-start-time')?.value || document.getElementById('se-offset')?.value || '0';
-  const stopRaw=String(document.getElementById('se-stop-time')?.value||'').trim();
+  const offsetValue=document.getElementById('se-offset')?.value || '0';
   const rawOffset=Math.max(0, parseTrim(offsetValue||'0'));
   const start=total>0?Math.min(rawOffset,total):rawOffset;
-  let end=total>0?(Math.max(0, Number(_maxDur)||0)>0?Math.min(total,start+Number(_maxDur)||0):total):0;
-  let explicitStop=false;
-  if(stopRaw && total>0){
-    explicitStop=true;
-    end=Math.min(total, Math.max(start, parseTrim(stopRaw)));
-  }
+  const maxDuration=Math.max(0, Number(_maxDur)||0);
+  const end=total>0?(maxDuration>0?Math.min(total,start+maxDuration):total):0;
   const length=total>0?Math.max(0,end-start):0;
   const endOffset=total>0?Math.max(0, Math.round(total-end)):0;
   const exceeds=total>0 && rawOffset>total;
-  const invalidStop=explicitStop && end<=start;
-  const short=total>0 && !invalidStop && length>0 && length<3;
-  return {total,rawOffset,start,end,length,endOffset,explicitStop,exceeds,invalidStop,short};
+  const short=total>0 && length>0 && length<3;
+  return {total,rawOffset,start,end,length,endOffset,exceeds,short};
 }
 
-function seSyncOffsetInputs(source='offset'){
+function seSyncOffsetInputs(){
   const offsetEl=document.getElementById('se-offset');
-  const startEl=document.getElementById('se-start-time');
-  if(!offsetEl || !startEl) return;
-  const sourceEl=source==='start'?startEl:offsetEl;
-  normalizeOffsetInput(sourceEl);
-  const normalized=sourceEl.value||'0:00';
-  offsetEl.value=normalized;
-  startEl.value=normalized;
+  if(!offsetEl) return;
+  normalizeOffsetInput(offsetEl);
   seUpdateTrim();
 }
 
 function seSnapOffsetToCurrent(){
   const a=document.getElementById('se-audio');
   const offsetEl=document.getElementById('se-offset');
-  const startEl=document.getElementById('se-start-time');
   if(!a || !offsetEl) return;
-  const snapped=fmt(a.currentTime||0);
-  offsetEl.value=snapped;
-  if(startEl) startEl.value=snapped;
+  offsetEl.value=fmt(a.currentTime||0);
   seUpdateTrim();
 }
 
@@ -2192,10 +2172,6 @@ function goToStep3(url, opts={}){
   if(_lastSearchResults.length) _renderResults(_lastSearchResults);
   document.getElementById('se-url').value=url||'';
   document.getElementById('se-offset').value=_normalizedOffsetValue(opts.startOffset||'0');
-  const startInput=document.getElementById('se-start-time');
-  if(startInput) startInput.value=_normalizedOffsetValue(opts.startOffset||'0');
-  const stopInput=document.getElementById('se-stop-time');
-  if(stopInput) stopInput.value='';
   document.getElementById('se-cur').textContent='0:00';
   document.getElementById('se-dur').textContent='—';
   document.getElementById('se-slider').value=0;
@@ -2298,7 +2274,7 @@ async function seLoadPreview(){
     _sourceEditorAudio.setHandlers({
       onloadedmetadata:(loaded)=>{
         if(loadSeq!==_sePreviewLoadSeq) return;
-        _applyAudioOffset(loaded, document.getElementById('se-start-time')?.value || document.getElementById('se-offset')?.value || '0');
+        _applyAudioOffset(loaded, document.getElementById('se-offset')?.value || '0');
         document.getElementById('se-info').textContent=`Duration: ${fmt(loaded.duration)}`;
         seUpdateTrim();
         _sourceEditorAudio.play().catch(()=>{});
@@ -2347,18 +2323,25 @@ function seUpdateTrim(){
   const endMarker=document.getElementById('se-trim-end');
   const startLabel=document.getElementById('se-trim-start-label');
   const endLabel=document.getElementById('se-trim-end-label');
-  const offsetValue=document.getElementById('se-start-time')?.value || document.getElementById('se-offset')?.value || '0';
+  const offsetValue=document.getElementById('se-offset')?.value || '0';
   const duration=audio?.duration||0;
   const infoEl=document.getElementById('se-info');
   if(!trimWindow || !audio || !audio.duration){
     if(trimWindow) trimWindow.style.display='none';
     if(startLabel) startLabel.textContent='Start 0:00';
     if(endLabel) endLabel.textContent='End —';
-    _setClipSummary('se-clip-summary','se-clip-summary-main','se-clip-summary-sub','se-clip-summary-warning',0,0,0,'preview');
-    if(infoEl){
-      const offsetFmt=_normalizedOffsetValue(offsetValue);
-      infoEl.textContent=`Offset ${offsetFmt} — load a preview to confirm the kept portion`;
+    const summary=document.getElementById('se-clip-summary');
+    const main=document.getElementById('se-clip-summary-main');
+    const sub=document.getElementById('se-clip-summary-sub');
+    const warning=document.getElementById('se-clip-summary-warning');
+    const offsetFmt=_normalizedOffsetValue(offsetValue);
+    if(main) main.textContent=`Offset ${offsetFmt} · Keep — · End —`;
+    if(sub) sub.textContent='Load a preview to confirm the kept portion.';
+    if(warning) warning.textContent='';
+    if(summary){
+      summary.classList.remove('is-short','is-zero','is-warning');
     }
+    if(infoEl) infoEl.textContent=`Offset ${offsetFmt} — load a preview to confirm the kept portion`;
     return;
   }
   const meta=_sourceEditorTrimMeta();
@@ -2375,27 +2358,25 @@ function seUpdateTrim(){
   const main=document.getElementById('se-clip-summary-main');
   const sub=document.getElementById('se-clip-summary-sub');
   const warning=document.getElementById('se-clip-summary-warning');
-  if(main) main.textContent=`Length ${fmt(meta.length)} · Start ${fmt(meta.start)} · Stop ${fmt(meta.end)}`;
-  if(sub) sub.textContent=`Keeps ${fmt(meta.start)} → ${fmt(meta.end)} of ${fmt(meta.total)} preview${meta.explicitStop?' · stop set manually':''}`;
+  if(main) main.textContent=`Offset ${fmt(meta.start)} · Keep ${fmt(meta.length)} · End ${fmt(meta.end)}`;
+  if(sub) sub.textContent=`Preview ${fmt(meta.total)} total · keeping ${fmt(meta.start)} → ${fmt(meta.end)}`;
   if(warning) warning.textContent=meta.exceeds
     ?`Offset ${fmt(meta.rawOffset)} exceeds preview duration ${fmt(meta.total)}.`
-    :(meta.invalidStop
-      ?'Stop time must be after the start time.'
-      :(meta.short ? `Very short result — only ${fmt(meta.length)} will be kept.` : ''));
+    :(meta.short ? `Very short result — only ${fmt(meta.length)} will be kept.` : '');
   if(summary){
-    summary.classList.toggle('is-short', !!meta.short && !meta.exceeds && !meta.invalidStop);
-    summary.classList.toggle('is-zero', !!meta.invalidStop);
+    summary.classList.toggle('is-short', !!meta.short && !meta.exceeds);
+    summary.classList.remove('is-zero');
     summary.classList.toggle('is-warning', !!meta.exceeds);
   }
   if(infoEl){
     const offsetFmt=_normalizedOffsetValue(offsetValue);
-    infoEl.textContent=`Preview ${fmt(duration)} total · keeping ${fmt(meta.length)} from ${offsetFmt} to ${fmt(meta.end)}`;
+    infoEl.textContent=`Offset ${offsetFmt} · keep ${fmt(meta.length)} · ends at ${fmt(meta.end)}`;
   }
 }
 
 function sePreviewFromOffset(){
   const audio=_sourceEditorAudio.audio;
-  const s=parseTrim(document.getElementById('se-start-time')?.value || document.getElementById('se-offset')?.value || '0');
+  const s=parseTrim(document.getElementById('se-offset')?.value || '0');
   if(!audio.src||audio.src===window.location.href){ seLoadPreview(); return; }
   stopAllAudio('se-audio');
   audio.currentTime=s;
