@@ -1437,35 +1437,64 @@
     </div>
 
     <!-- ── Playback ── -->
-    <div class="modal-section" style="padding-top:0">
-      <div class="modal-section-label">Playback</div>
-      <div class="modal-player-row">
-        <button class="play-btn" id="trim-modal-play" onclick="trimModalTogglePlay()">
-          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </button>
-        <button class="skip-btn" onclick="trimModalSkip(-5)">-5</button>
-        <button class="skip-btn" onclick="trimModalSkip(5)">+5</button>
-        <div class="modal-scrubber-wrap">
-          <input type="range" class="modal-slider" id="trim-modal-slider" min="0" max="100" value="0" oninput="trimModalSeek(this.value)">
-          <div class="modal-time-row"><span id="trim-modal-cur">0:00</span><span id="trim-modal-dur">—</span></div>
+    <div class="modal-section" style="padding-top:0;padding-bottom:0">
+      <div class="source-editor-card trim-modal-editor-card">
+        <div class="modal-section-label">Preview · Edit / trim local theme as needed</div>
+        <div class="modal-player-row trim-modal-player-row">
+          <button class="play-btn" id="trim-modal-play" onclick="trimModalTogglePlay()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <button class="skip-btn" onclick="trimModalSkip(-5)">-5</button>
+          <button class="skip-btn" onclick="trimModalSkip(5)">+5</button>
+          <div class="modal-scrubber-wrap">
+            <div class="source-editor-slider-wrap">
+              <div class="timeline-markers" id="trim-modal-timeline-markers" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <input type="range" class="modal-slider" id="trim-modal-slider" min="0" max="100" value="0" oninput="trimModalSeek(this.value)">
+              <div class="trim-window hidden" id="trim-modal-trim-window">
+                <div class="trim-shade" id="trim-modal-trim-left"></div>
+                <div class="trim-marker" id="trim-modal-trim-start"></div>
+                <div class="trim-marker end" id="trim-modal-trim-end"></div>
+                <div class="trim-shade right" id="trim-modal-trim-right"></div>
+              </div>
+            </div>
+            <div class="modal-time-row"><span id="trim-modal-cur">0:00</span><span id="trim-modal-dur">—</span></div>
+            <div class="trim-window-meta"><span id="trim-modal-trim-start-label">Start 0:00</span><span id="trim-modal-trim-end-label">End —</span></div>
+          </div>
         </div>
+        <div class="modal-status-txt" id="trim-modal-status" style="padding-left:0;padding-top:3px">Load playback to confirm the kept portion.</div>
+        <div class="clip-summary-card" id="trim-modal-summary">
+          <div class="clip-summary-label">Trim preview</div>
+          <div class="clip-summary-main" id="trim-modal-summary-main">Offset 0:00 · Keep — · End —</div>
+          <div class="clip-summary-sub" id="trim-modal-summary-sub">Load playback to confirm the kept portion.</div>
+          <div class="clip-summary-warning" id="trim-modal-summary-warning"></div>
+        </div>
+        <audio class="hidden" id="trim-modal-audio"></audio>
       </div>
-      <div class="clip-summary-card" id="trim-modal-summary">
-        <div class="clip-summary-label">Resulting clip</div>
-        <div class="clip-summary-main" id="trim-modal-summary-main">Length — · Offset 0:00</div>
-        <div class="clip-summary-sub" id="trim-modal-summary-sub">Adjust the offset to choose what portion will be kept.</div>
-        <div class="clip-summary-warning" id="trim-modal-summary-warning"></div>
-      </div>
-      <audio class="hidden" id="trim-modal-audio"></audio>
     </div>
 
     <!-- ── Start Offset — inline ── -->
-    <div class="modal-section" style="padding-top:4px;padding-bottom:16px">
-      <div class="modal-section-label">Start Offset <span style="font-weight:400;text-transform:none;font-size:10px">(seconds or m:ss)</span></div>
-      <div class="modal-field-row">
-        <input type="text" id="trim-modal-offset" value="0" placeholder="mm:ss" inputmode="numeric" style="width:72px" oninput="trimModalUpdateResult()">
+    <div class="modal-section" style="padding-top:8px;padding-bottom:16px">
+      <div class="source-editor-card mb-0">
+        <div class="source-editor-title">Trim Window <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
+        <div class="offset-inline-grid">
+          <div class="offset-inline-cell">
+            <span class="offset-inline-label">Offset</span>
+            <div class="offset-input-wrap">
+              <input type="text" id="trim-modal-offset" class="offset-input" value="0:00" placeholder="mm:ss" inputmode="numeric" oninput="trimModalSyncOffsetInputs()" onblur="normalizeOffsetInput(this);trimModalSyncOffsetInputs()">
+              <div class="offset-steps">
+                <button class="offset-step" type="button" aria-label="Decrease offset" onclick="adjustOffset(document.getElementById('trim-modal-offset'),-1);trimModalSyncOffsetInputs()">−</button>
+                <button class="offset-step" type="button" aria-label="Increase offset" onclick="adjustOffset(document.getElementById('trim-modal-offset'),1);trimModalSyncOffsetInputs()">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="offset-inline-actions">
+            <button class="btn btn-ghost btn-sm" onclick="trimModalPreview(true)">▶ Play from trim</button>
+            <button class="btn btn-ghost btn-sm" onclick="trimModalUseCurrent()">Use current</button>
+          </div>
+        </div>
         <div class="modal-trim-result" id="trim-modal-result"></div>
-        <button class="btn btn-purple btn-sm" onclick="trimModalPreview(true)">▶ Preview from offset</button>
       </div>
     </div>
 

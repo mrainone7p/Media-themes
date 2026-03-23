@@ -1573,10 +1573,19 @@ function _clipLengthOffsetLabel(duration=0, offset=0, maxDur=0){
   const meta=_clipWindowMeta(duration, offset, maxDur);
   return `Length ${meta.total>0?fmt(meta.length):'—'} · Offset ${fmt(meta.rawOffset)}`;
 }
+function _clipWindowPrimaryLabel(duration=0, offset=0, maxDur=0){
+  const meta=_clipWindowMeta(duration, offset, maxDur);
+  return `Offset ${fmt(meta.start)} · Keep ${meta.total>0?fmt(meta.length):'—'} · End ${meta.total>0?fmt(meta.end):'—'}`;
+}
 function _clipWindowRangeLabel(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
   const meta=_clipWindowMeta(duration, offset, maxDur);
   if(meta.total<=0) return `Load a ${scopeLabel} to confirm the kept portion.`;
   return `Keeps ${fmt(meta.start)} → ${fmt(meta.end)} of ${fmt(meta.total)} ${scopeLabel}`;
+}
+function _clipWindowDetailedRangeLabel(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
+  const meta=_clipWindowMeta(duration, offset, maxDur);
+  if(meta.total<=0) return `Load a ${scopeLabel} to confirm the kept portion.`;
+  return `${scopeLabel.charAt(0).toUpperCase()+scopeLabel.slice(1)} ${fmt(meta.total)} total · keeping ${fmt(meta.start)} → ${fmt(meta.end)}`;
 }
 function _clipWarningText(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
   const meta=_clipWindowMeta(duration, offset, maxDur);
@@ -1600,6 +1609,61 @@ function _setClipSummary(summaryId, mainId, subId, warningId, duration=0, offset
     summary.classList.toggle('is-zero', !!meta.zero && !meta.exceeds);
     summary.classList.toggle('is-warning', !!meta.exceeds);
   }
+}
+function _setClipSummaryState(summary, meta){
+  if(!summary) return;
+  summary.classList.toggle('is-short', !!meta.short && !meta.exceeds && !meta.zero);
+  summary.classList.toggle('is-zero', !!meta.zero && !meta.exceeds);
+  summary.classList.toggle('is-warning', !!meta.exceeds);
+}
+function _renderTrimWindow({windowId, leftShadeId, rightShadeId, startMarkerId, endMarkerId, startLabelId, endLabelId, duration=0, offset=0, maxDur=0}){
+  const trimWindow=document.getElementById(windowId);
+  const startShade=document.getElementById(leftShadeId);
+  const endShade=document.getElementById(rightShadeId);
+  const startMarker=document.getElementById(startMarkerId);
+  const endMarker=document.getElementById(endMarkerId);
+  const startLabel=document.getElementById(startLabelId);
+  const endLabel=document.getElementById(endLabelId);
+  const meta=_clipWindowMeta(duration, offset, maxDur);
+  if(!trimWindow || meta.total<=0){
+    if(trimWindow) trimWindow.style.display='none';
+    if(startLabel) startLabel.textContent='Start 0:00';
+    if(endLabel) endLabel.textContent='End —';
+    return meta;
+  }
+  const startPct=Math.max(0, Math.min(100, meta.start/meta.total*100));
+  const endPct=Math.max(startPct, Math.min(100, meta.end/meta.total*100));
+  trimWindow.style.display='block';
+  if(startShade) startShade.style.width=`${startPct}%`;
+  if(endShade) endShade.style.left=`${endPct}%`;
+  if(startMarker) startMarker.style.left=`${startPct}%`;
+  if(endMarker) endMarker.style.left=`${endPct}%`;
+  if(startLabel) startLabel.textContent=`Start ${fmt(meta.start)}`;
+  if(endLabel) endLabel.textContent=`End ${fmt(meta.end)}`;
+  return meta;
+}
+function _renderTrimWindowSummary({summaryId, mainId, subId, warningId, duration=0, offset=0, maxDur=0, scopeLabel='preview'}){
+  const summary=document.getElementById(summaryId);
+  const main=document.getElementById(mainId);
+  const sub=document.getElementById(subId);
+  const warning=document.getElementById(warningId);
+  const meta=_clipWindowMeta(duration, offset, maxDur);
+  if(main) main.textContent=_clipWindowPrimaryLabel(duration, offset, maxDur);
+  if(sub) sub.textContent=_clipWindowDetailedRangeLabel(duration, offset, maxDur, scopeLabel);
+  if(warning) warning.textContent=_clipWarningText(duration, offset, maxDur, scopeLabel);
+  _setClipSummaryState(summary, meta);
+  return meta;
+}
+function _renderTrimWindowUi({windowId, leftShadeId, rightShadeId, startMarkerId, endMarkerId, startLabelId, endLabelId, summaryId, mainId, subId, warningId, infoId='', duration=0, offset=0, maxDur=0, scopeLabel='preview', emptyInfo='Load a preview to confirm the kept portion.'}){
+  const meta=_renderTrimWindow({windowId, leftShadeId, rightShadeId, startMarkerId, endMarkerId, startLabelId, endLabelId, duration, offset, maxDur});
+  _renderTrimWindowSummary({summaryId, mainId, subId, warningId, duration, offset, maxDur, scopeLabel});
+  const infoEl=infoId?document.getElementById(infoId):null;
+  if(infoEl){
+    infoEl.textContent=meta.total>0
+      ? `Offset ${_normalizedOffsetValue(offset)} · keep ${fmt(meta.length)} · ends at ${fmt(meta.end)}`
+      : `Offset ${_normalizedOffsetValue(offset)} — ${emptyInfo.toLowerCase()}`;
+  }
+  return meta;
 }
 function _themeModalOffsetValue(row={}, layer='selected_source'){
   if(layer==='golden_source') return row?.golden_source_offset||0;
@@ -1892,12 +1956,12 @@ function themeModalEditTrim(){
   document.getElementById('trim-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(c.title||'',c.year||'')}" target="_blank" rel="noopener">TMDB</a>`;
   document.getElementById('trim-modal-info').textContent='Trim local theme start offset and preview the resulting clip.';
   setBio('trim-modal-bio', c.rk, _trimLib);
-  document.getElementById('trim-modal-offset').value=String(c.row?.start_offset||'0');
+  document.getElementById('trim-modal-offset').value=_normalizedOffsetValue(c.row?.start_offset||'0');
   trimModalUpdateResult();
   _trimModalAudio.cleanup({clearSrc:false});
   _trimModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(c.folder||''));
   openModal('trim-modal');
-  _trimModalAudio.setHandlers();
+  _trimModalSetAudioHandlers();
   _trimModalAudio.audio.load();
 }
 async function themeModalSyncFromDisk(){
@@ -2587,17 +2651,10 @@ function searchPreviewToggle(){ _searchPreviewAudio.toggle(); }
 
 function _sourceEditorTrimMeta(){
   const audio=_sourceEditorAudio.audio;
-  const total=Math.max(0, Number(audio?.duration)||0);
   const offsetValue=document.getElementById('se-offset')?.value || '0';
-  const rawOffset=Math.max(0, parseTrim(offsetValue||'0'));
-  const start=total>0?Math.min(rawOffset,total):rawOffset;
-  const maxDuration=Math.max(0, Number(_maxDur)||0);
-  const end=total>0?(maxDuration>0?Math.min(total,start+maxDuration):total):0;
-  const length=total>0?Math.max(0,end-start):0;
-  const endOffset=total>0?Math.max(0, Math.round(total-end)):0;
-  const exceeds=total>0 && rawOffset>total;
-  const short=total>0 && length>0 && length<3;
-  return {total,rawOffset,start,end,length,endOffset,exceeds,short};
+  const meta=_clipWindowMeta(Number(audio?.duration)||0, offsetValue, Math.max(0, Number(_maxDur)||0));
+  const endOffset=meta.total>0?Math.max(0, Math.round(meta.total-meta.end)):0;
+  return {...meta, endOffset};
 }
 
 function seSyncOffsetInputs(){
@@ -2801,62 +2858,26 @@ function seSkip(s){ _sourceEditorAudio.skip(s); }
 
 function seUpdateTrim(){
   const audio=_sourceEditorAudio.audio;
-  const trimWindow=document.getElementById('se-trim-window');
-  const startShade=document.getElementById('se-trim-left');
-  const endShade=document.getElementById('se-trim-right');
-  const startMarker=document.getElementById('se-trim-start');
-  const endMarker=document.getElementById('se-trim-end');
-  const startLabel=document.getElementById('se-trim-start-label');
-  const endLabel=document.getElementById('se-trim-end-label');
   const offsetValue=document.getElementById('se-offset')?.value || '0';
-  const duration=audio?.duration||0;
-  const infoEl=document.getElementById('se-info');
-  if(!trimWindow || !audio || !audio.duration){
-    if(trimWindow) trimWindow.style.display='none';
-    if(startLabel) startLabel.textContent='Start 0:00';
-    if(endLabel) endLabel.textContent='End —';
-    const summary=document.getElementById('se-clip-summary');
-    const main=document.getElementById('se-clip-summary-main');
-    const sub=document.getElementById('se-clip-summary-sub');
-    const warning=document.getElementById('se-clip-summary-warning');
-    const offsetFmt=_normalizedOffsetValue(offsetValue);
-    if(main) main.textContent=`Offset ${offsetFmt} · Keep — · End —`;
-    if(sub) sub.textContent='Load a preview to confirm the kept portion.';
-    if(warning) warning.textContent='';
-    if(summary){
-      summary.classList.remove('is-short','is-zero','is-warning');
-    }
-    if(infoEl) infoEl.textContent=`Offset ${offsetFmt} — load a preview to confirm the kept portion`;
-    return;
-  }
-  const meta=_sourceEditorTrimMeta();
-  const startPct=(meta.start/duration)*100;
-  const endPct=(meta.end/duration)*100;
-  trimWindow.style.display='block';
-  startShade.style.width=`${startPct}%`;
-  endShade.style.left=`${endPct}%`;
-  startMarker.style.left=`${startPct}%`;
-  endMarker.style.left=`${endPct}%`;
-  if(startLabel) startLabel.textContent=`Start ${fmt(meta.start)}`;
-  if(endLabel) endLabel.textContent=`End ${fmt(meta.end)}`;
-  const summary=document.getElementById('se-clip-summary');
-  const main=document.getElementById('se-clip-summary-main');
-  const sub=document.getElementById('se-clip-summary-sub');
-  const warning=document.getElementById('se-clip-summary-warning');
-  if(main) main.textContent=`Offset ${fmt(meta.start)} · Keep ${fmt(meta.length)} · End ${fmt(meta.end)}`;
-  if(sub) sub.textContent=`Preview ${fmt(meta.total)} total · keeping ${fmt(meta.start)} → ${fmt(meta.end)}`;
-  if(warning) warning.textContent=meta.exceeds
-    ?`Offset ${fmt(meta.rawOffset)} exceeds preview duration ${fmt(meta.total)}.`
-    :(meta.short ? `Very short result — only ${fmt(meta.length)} will be kept.` : '');
-  if(summary){
-    summary.classList.toggle('is-short', !!meta.short && !meta.exceeds);
-    summary.classList.remove('is-zero');
-    summary.classList.toggle('is-warning', !!meta.exceeds);
-  }
-  if(infoEl){
-    const offsetFmt=_normalizedOffsetValue(offsetValue);
-    infoEl.textContent=`Offset ${offsetFmt} · keep ${fmt(meta.length)} · ends at ${fmt(meta.end)}`;
-  }
+  _renderTrimWindowUi({
+    windowId:'se-trim-window',
+    leftShadeId:'se-trim-left',
+    rightShadeId:'se-trim-right',
+    startMarkerId:'se-trim-start',
+    endMarkerId:'se-trim-end',
+    startLabelId:'se-trim-start-label',
+    endLabelId:'se-trim-end-label',
+    summaryId:'se-clip-summary',
+    mainId:'se-clip-summary-main',
+    subId:'se-clip-summary-sub',
+    warningId:'se-clip-summary-warning',
+    infoId:'se-info',
+    duration:Number(audio?.duration)||0,
+    offset:offsetValue,
+    maxDur:Math.max(0, Number(_maxDur)||0),
+    scopeLabel:'preview',
+    emptyInfo:'Load a preview to confirm the kept portion.'
+  });
 }
 
 function sePreviewFromOffset(){
@@ -2988,30 +3009,103 @@ function resetActivePreviewBtn(){
 
 // ── Trim modal preview ────────────────────────────────────────────────────────
 let _trimRk='',_trimLib='';
-function trimModalUpdateResult(){
-  const row=_mediaRows.find(r=>r.rating_key===_trimRk); if(!row) return;
-  const offsetValue=document.getElementById('trim-modal-offset').value||'0';
-  const duration=Number(_trimModalAudio.audio?.duration)||Number(row.theme_duration)||Number(row.duration)||0;
-  document.getElementById('trim-modal-result').textContent=_clipLengthOffsetLabel(duration, offsetValue, 0);
-  _setClipSummary('trim-modal-summary','trim-modal-summary-main','trim-modal-summary-sub','trim-modal-summary-warning',duration,offsetValue,0,'preview');
+function _trimModalRow(){
+  return _mediaRows.find(r=>String(r.rating_key)===String(_trimRk));
 }
-
-function trimModalPreview(fromOffset){
-  const row=_mediaRows.find(r=>r.rating_key===_trimRk); if(!row) return;
-  _trimModalAudio.cleanup({clearSrc:false});
-  _trimModalAudio.audio.src=apiUrl(`/api/theme?folder=${encodeURIComponent(row.folder)}`);
-  const offset=fromOffset?parseTrim(document.getElementById('trim-modal-offset').value):0;
-  _trimModalAudio.setHandlers({
-    onloadedmetadata:(audio)=>{ audio.currentTime=offset; _trimModalAudio.play().catch(()=>{}); }
+function _trimModalDuration(row={}){
+  return Number(_trimModalAudio.audio?.duration)||Number(row?.theme_duration)||Number(row?.duration)||0;
+}
+function trimModalSyncOffsetInputs(){
+  const offsetEl=document.getElementById('trim-modal-offset');
+  if(!offsetEl) return;
+  normalizeOffsetInput(offsetEl);
+  trimModalUpdateResult();
+}
+function trimModalUseCurrent(){
+  const audio=_trimModalAudio.audio;
+  const offsetEl=document.getElementById('trim-modal-offset');
+  if(!audio || !offsetEl) return;
+  offsetEl.value=fmt(audio.currentTime||0);
+  trimModalUpdateResult();
+}
+function trimModalUpdateResult(){
+  const row=_trimModalRow(); if(!row) return;
+  const offsetValue=document.getElementById('trim-modal-offset')?.value||'0';
+  const duration=_trimModalDuration(row);
+  const meta=_renderTrimWindowUi({
+    windowId:'trim-modal-trim-window',
+    leftShadeId:'trim-modal-trim-left',
+    rightShadeId:'trim-modal-trim-right',
+    startMarkerId:'trim-modal-trim-start',
+    endMarkerId:'trim-modal-trim-end',
+    startLabelId:'trim-modal-trim-start-label',
+    endLabelId:'trim-modal-trim-end-label',
+    summaryId:'trim-modal-summary',
+    mainId:'trim-modal-summary-main',
+    subId:'trim-modal-summary-sub',
+    warningId:'trim-modal-summary-warning',
+    infoId:'trim-modal-status',
+    duration,
+    offset:offsetValue,
+    maxDur:0,
+    scopeLabel:'preview',
+    emptyInfo:'Load playback to confirm the kept portion.'
   });
-  _trimModalAudio.audio.load();
+  const resultEl=document.getElementById('trim-modal-result');
+  if(resultEl){
+    resultEl.textContent=meta.total>0
+      ? `Keep ${fmt(meta.start)} → ${fmt(meta.end)} · ${fmt(meta.length)} total`
+      : `Offset ${_normalizedOffsetValue(offsetValue)} · Keep — · End —`;
+  }
+}
+function _trimModalSetAudioHandlers({onloadedmetadata, ontimeupdate, onended, onerror}={}){
+  _trimModalAudio.setHandlers({
+    onloadedmetadata:(audio)=>{
+      trimModalUpdateResult();
+      if(typeof onloadedmetadata==='function') onloadedmetadata(audio);
+    },
+    ontimeupdate:(audio)=>{
+      if(typeof ontimeupdate==='function') ontimeupdate(audio);
+    },
+    onended,
+    onerror
+  });
+}
+function trimModalPreview(fromOffset){
+  const row=_trimModalRow(); if(!row) return;
+  const audio=_trimModalAudio.audio;
+  const src=apiUrl(`/api/theme?folder=${encodeURIComponent(row.folder)}`);
+  const offset=fromOffset?parseTrim(document.getElementById('trim-modal-offset')?.value):0;
+  const startPlayback=(player)=>{
+    player.currentTime=Math.min(offset, player.duration||offset);
+    _trimModalAudio.play().catch(()=>{});
+  };
+  if(audio.src===src && audio.duration){
+    stopAllAudio('trim-modal-audio');
+    startPlayback(audio);
+  }else{
+    _trimModalAudio.cleanup({clearSrc:false});
+    audio.src=src;
+    _trimModalSetAudioHandlers({ onloadedmetadata:startPlayback });
+    audio.load();
+  }
   toast(fromOffset?`Previewing from ${fmt(offset)}`:'Playing from start','info');
 }
-function trimModalTogglePlay(){ _trimModalAudio.toggle(); }
+function trimModalTogglePlay(){
+  const row=_trimModalRow();
+  if(!row) return;
+  const audio=_trimModalAudio.audio;
+  if(!audio.src || audio.src===window.location.href){
+    trimModalPreview(false);
+    return;
+  }
+  _trimModalAudio.toggle();
+}
 function trimModalSeek(val){ _trimModalAudio.seek(val); }
 function trimModalSkip(s){ _trimModalAudio.skip(s); }
 function closeTrimModal(){
   closeModal('trim-modal');
+  _trimRk='';
   _trimLib='';
   runModalMediaCleanup(()=>_trimModalAudio.cleanup());
 }
