@@ -518,7 +518,7 @@ function _renderSelectedSourceSummary(url, title){
   if(subtitleEl){
     subtitleEl.textContent=cleanUrl
       ? `${String(title||'').trim()||_sourceTitleFromUrl(cleanUrl)}`
-      : 'Review Golden, Selected, and Local layers before saving.';
+      : 'Review the saved source and local theme file before saving.';
   }
   if(copyBtn) copyBtn.disabled=!cleanUrl;
   if(openBtn) openBtn.disabled=!cleanUrl;
@@ -1390,34 +1390,34 @@ function _renderSourceStateStack(targetId,row={},opts={}){
   const local=_localSourceContract(row);
   const summaries=[
     {
-      label:'Golden',
-      stateLabel:_rowHasGoldenSource(row) ? 'Ready' : 'None',
+      label:'Curated Source',
+      stateLabel:_rowHasGoldenSource(row) ? 'Available' : 'None',
       className:_rowHasGoldenSource(row) ? 'is-golden' : 'is-unknown',
       chips:_rowHasGoldenSource(row) ? ['Curated'] : [],
       url:String(row?.golden_source_url||'').trim(),
       offset:_rowHasGoldenSource(row) ? _themeModalOffsetLabel(row, _themeHasLocal(row), 'golden_source') : '—',
       timestamp:_themeModalImportedAt(row),
-      note:_rowHasGoldenSource(row) ? 'Curated import' : 'No curated source recorded',
+      note:_rowHasGoldenSource(row) ? 'Curated source available' : 'No curated source saved',
     },
     {
-      label:'Selected',
+      label:'Saved Source',
       stateLabel:selected.url ? _selectedSourceStateText(previewRow) : 'None',
       className:selected.url ? _sourceKindClass(selected.kind) : 'is-unknown',
       chips:selected.url ? [_selectedSourceLabel(previewRow)] : [],
       url:selected.url,
       offset:selected.url ? _themeModalOffsetLabel(previewRow, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
       timestamp:selected.url ? _themeModalImportedAt(row) : '—',
-      note:selected.url ? 'Used for approval/download' : 'No selected source recorded',
+      note:selected.url ? 'Saved for approval or download' : 'No selected source saved',
     },
     {
-      label:'Local',
+      label:'Local Theme',
       stateLabel:_themeHasLocal(row) ? 'On disk' : 'Missing',
       className:_themeHasLocal(row) ? _sourceKindClass(local.kind) : 'is-unknown',
       chips:_themeHasLocal(row) && local.url ? [_sourceKindLabel(local.kind), _sourceMethodLabel(local.method)] : [],
       url:local.url,
       offset:_themeHasLocal(row) ? _themeModalOffsetLabel(row, true, 'local_theme') : '—',
       timestamp:String(row?.local_source_recorded_at||'').trim() || '—',
-      note:_themeHasLocal(row) ? 'Local theme provenance' : 'No local theme on disk',
+      note:_themeHasLocal(row) ? 'Local theme file found' : 'No local theme file found',
     }
   ];
   el.innerHTML=summaries.map(layer=>_renderSourceStateCard(layer,{compact:opts.compact===true})).join('');
@@ -1475,32 +1475,34 @@ function _themeModalOffsetLabel(row={}, hasTheme=false, layer='selected_source')
   const duration=hasTheme && Number(row?.theme_duration||0)>0?parseFloat(row.theme_duration||0):0;
   return _clipLengthOffsetLabel(duration, _themeModalOffsetValue(row, layer), 0);
 }
-function _themeModalNextAction(row={}, hasTheme=false){
+function _themeModalNextAction(row={}, hasTheme=false, hasStoredSource=false){
   const status=String(row?.status||'').toUpperCase();
-  if(status==='STAGED') return {label:'Approve Theme',className:'btn btn-amber',handler:'approve'};
-  if(status==='APPROVED') return {label:'Download Theme',className:'btn btn-green',handler:'download'};
-  if(!hasTheme) return {label:'Find Theme',className:'btn btn-amber',handler:'find'};
-  return null;
+  if(hasTheme) return null;
+  if(hasStoredSource){
+    if(status==='STAGED') return {label:'Approve Theme',className:'btn btn-amber',handler:'approve'};
+    return {label:'Download Theme',className:'btn btn-green',handler:'download'};
+  }
+  return {label:'Find Theme',className:'btn btn-amber',handler:'find'};
 }
 const THEME_MODAL_STATUS_HELPERS={
   MISSING:{
-    default:'No source is attached and no local theme file is on disk.',
-    sourceOnly:'A source is saved, but the theme file is not on disk yet.'
+    default:'No selected source is saved and no local theme file was found.',
+    sourceOnly:'A selected source is saved, but the local theme file is still missing.'
   },
   STAGED:{
-    default:'Source selected and waiting for approval. The theme file is not on disk yet.',
-    local:'Source selected and a local theme file is already on disk.'
+    default:'A selected source is waiting for approval, and the local theme file is still missing.',
+    local:'A selected source is saved and the local theme file is already on disk.'
   },
   APPROVED:{
-    default:'Source approved and ready to download. The theme file is not on disk yet.',
-    local:'Source approved and the local theme file is already on disk.'
+    default:'A selected source is approved and ready to download because the local theme file is missing.',
+    local:'A selected source is approved and the local theme file is already on disk.'
   },
   AVAILABLE:{
-    default:'Marked available, but no local theme file was found on disk.',
-    local:'Local theme file is on disk and ready for playback.'
+    default:'This item is marked Available, but the local theme file is missing.',
+    local:'The local theme file is on disk and ready for playback.'
   },
   FAILED:{
-    default:'Source or download needs attention before a local theme file is available.',
+    default:'Source or download needs attention because the local theme file is still missing.',
     local:'The last update failed, but an older local theme file is still on disk.'
   }
 };
@@ -1543,7 +1545,7 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
   document.getElementById('theme-modal-local-status').textContent=hasLocalTheme
     ?'Available locally'
-    :(isSourceOnly?'Not on disk yet':'Missing locally');
+    :(isSourceOnly?'Local file missing':'No local theme file found');
   document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
   document.getElementById('theme-modal-local-dur').textContent=hasLocalTheme
     ? _themeModalOffsetLabel(row, true, 'local_theme')
@@ -1555,7 +1557,7 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   const sourceAdded=_themeModalSourceAdded(row);
   document.getElementById('theme-modal-source-summary').textContent=hasStoredSource
     ? sourceStateLabel
-    : 'No source details are attached right now.';
+    : 'No selected source is saved yet.';
   document.getElementById('theme-modal-source-origin').textContent=sourceOriginLabel;
   document.getElementById('theme-modal-source-url').textContent=sourceUrl || '—';
   document.getElementById('theme-modal-source-offset').textContent=sourceOffset;
@@ -1593,8 +1595,8 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   const findBtn=document.getElementById('theme-find-btn');
   const nextStepBtn=document.getElementById('theme-next-step-btn');
   if(replaceBtn) replaceBtn.style.display=hasLocalTheme?'':'none';
-  _setHidden(findBtn, hasLocalTheme, hasLocalTheme?'':'');
-  const nextAction=_themeModalNextAction(row, hasLocalTheme);
+  _setHidden(findBtn, hasLocalTheme || hasStoredSource);
+  const nextAction=_themeModalNextAction(row, hasLocalTheme, hasStoredSource);
   if(nextStepBtn){
     if(nextAction && nextAction.handler!=='find'){
       _setHidden(nextStepBtn, false, '');
@@ -1649,7 +1651,7 @@ async function themeModalDownloadApproved(){
   const library=requireLibraryContext(_themeModalContext?.library||_activeLib,'download a theme');
   if(!library) return;
   const row=_themeModalContext?.row||{};
-  if(String(row?.status||'').toUpperCase()!=='APPROVED') return;
+  if(!String(_selectedSourceContract(row).url||'').trim()) return toast('No selected source URL on this item','info');
   const {ok,data}=await postJson('/api/theme/download-now',{library,rating_key:_themeModalContext?.rk||'',folder:_themeModalContext?.folder||'',tmdb_id:_themeModalContext?.row?.tmdb_id||''});
   if(!ok){
     toast(data.error||'Download failed','err');
