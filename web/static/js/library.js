@@ -209,7 +209,7 @@ function _customSourceState(row={}){
   const statusLabel=_selectedSourceStateText(row);
   const filterKey=_selectedSourceFilterKey(row);
   if(!selected.url){
-    return {key:'none', typeLabel:'Selected Source', statusLabel, pillLabel:'Selected Source', className:'is-unknown', detail:'No selected source saved', chips:[]};
+    return {key:'none', typeLabel:'Selected Method', statusLabel, pillLabel:'Selected Method', className:'is-unknown', detail:'No selected source saved', chips:[]};
   }
   return {
     key:filterKey,
@@ -1644,7 +1644,7 @@ function _selectedSourceStateSummary(row={}, opts={}){
   if(Object.prototype.hasOwnProperty.call(draft,'selectedUrl')) previewRow.url=draft.selectedUrl;
   const selected=_selectedSourceContract(previewRow);
   return {
-    label:'Selected Source',
+    label:'Selected Method',
     stateLabel:selected.url ? _sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow)) : 'Not Selected',
     className:selected.url ? _sourceStateClass(selected.kind, selected.method) : 'is-unknown',
     chips:[],
@@ -2645,17 +2645,41 @@ function _setSearchFooter(step){
     primary.className='btn btn-amber';
     primary.onclick=doSearch;
     _setHidden(dlnow, true);
+    dlnow.className='btn btn-green hidden';
+    dlnow.textContent='Download Theme';
+    dlnow.onclick=searchModalDownloadNow;
   } else if(step===2){
     back.style.display='';
     primary.style.display='none';
     _setHidden(dlnow, true);
+    dlnow.className='btn btn-green hidden';
+    dlnow.textContent='Download Theme';
+    dlnow.onclick=searchModalDownloadNow;
   } else if(step===3){
     back.style.display='';
     primary.style.display='';
-    primary.textContent='Approve';
-    primary.className='btn btn-amber';
-    primary.onclick=approveSourceEditor;
-    _setHidden(dlnow, false, '');
+    const row=_rowMap[_seKey||_searchKey]||_rows.find(r=>String(r.rating_key)===String(_seKey||_searchKey))||{};
+    const hasDraftUrl=!!String(document.getElementById('se-url')?.value||'').trim();
+    const status=_effectiveRowStatus(row);
+    const hasLocal=_themeHasLocal(row);
+    const canDownload=status==='APPROVED' && !hasLocal && hasDraftUrl;
+    if(canDownload){
+      primary.textContent='Save Approved Source';
+      primary.className='btn btn-ghost';
+      primary.onclick=approveSourceEditor;
+      _setHidden(dlnow, false, '');
+      dlnow.className='btn btn-green';
+      dlnow.textContent='Download Theme';
+      dlnow.onclick=searchModalDownloadNow;
+    } else {
+      primary.textContent='Approve Source';
+      primary.className='btn btn-amber';
+      primary.onclick=approveSourceEditor;
+      _setHidden(dlnow, true);
+      dlnow.className='btn btn-green hidden';
+      dlnow.textContent='Download Theme';
+      dlnow.onclick=searchModalDownloadNow;
+    }
   }
 }
 
@@ -3089,6 +3113,7 @@ function seUrlChanged(){
   const u=(document.getElementById('se-url').value||'').trim();
   if(u) _selectedSourceTitle=_sourceTitleFromUrl(u);
   _renderSelectedSourceSummary(u, u?_selectedSourceTitle:(_selectedSourceTitle||'—'));
+  _setSearchFooter(3);
   if(_seAutoLoadTimer) clearTimeout(_seAutoLoadTimer);
   if(!u) return;
   _seAutoLoadTimer=setTimeout(()=>{
