@@ -5,6 +5,8 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from datetime import datetime, timedelta
+
 from flask import Flask, jsonify, render_template, request
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -139,6 +141,10 @@ def create_app() -> Flask:
     def theme_library() -> str:
         return render_template("theme_library.html", themes=get_themes())
 
+    @app.route("/dashboard")
+    def dashboard() -> str:
+        return render_template("dashboard.html")
+
     @app.route("/configuration")
     def configuration() -> str:
         return render_template("configuration.html")
@@ -146,6 +152,77 @@ def create_app() -> Flask:
     @app.get("/health")
     def health() -> tuple[dict[str, str], int]:
         return {"status": "ok"}, 200
+
+    @app.get("/api/dashboard/summary")
+    def api_dashboard_summary():
+        library = request.args.get("library", "All")
+        range_qty = int(request.args.get("range_qty", "30"))
+        range_freq = request.args.get("range_freq", "Days")
+
+        lib_filter = ""
+        lib_params: list[Any] = []
+        if library and library != "All":
+            lib_filter = " AND folder_path LIKE ?"
+            lib_params = [f"/media/{library}/%"]
+
+        with get_connection() as conn:
+            # KPIs
+            kpi_rows = conn.execute(
+                f"SELECT status, COUNT(*) as cnt FROM theme_library WHERE 1=1{lib_filter} GROUP BY status",
+                lib_params,
+            ).fetchall()
+            kpis: dict[str, int] = {"total": 0}
+            for row in kpi_rows:
+                kpis[row["status"].lower()] = row["cnt"]
+                kpis["total"] += row["cnt"]
+
+            # Libraries
+            lib_rows = conn.execute(
+                "SELECT DISTINCT folder_path FROM theme_library"
+            ).fetchall()
+            libs = sorted(
+                {p["folder_path"].split("/")[2] for p in lib_rows if len(p["folder_path"].split("/")) > 2}
+            )
+
+            # Activity timeline
+            freq_map = {
+                "Days": ("DATE(updated_at)", "day"),
+                "Weeks": ("strftime('%Y-W%W', updated_at)", "day"),
+                "Months": ("strftime('%Y-%m', updated_at)", "day"),
+                "Years": ("strftime('%Y', updated_at)", "day"),
+            }
+            bucket_expr = freq_map.get(range_freq, freq_map["Days"])[0]
+
+            cutoff_days = {
+                "Days": range_qty,
+                "Weeks": range_qty * 7,
+                "Months": range_qty * 30,
+                "Years": range_qty * 365,
+            }.get(range_freq, range_qty)
+            cutoff_date = (datetime.now() - timedelta(days=cutoff_days)).strftime("%Y-%m-%d")
+
+            activity_rows = conn.execute(
+                f"SELECT {bucket_expr} as period, status, COUNT(*) as cnt "
+                f"FROM theme_library WHERE updated_at >= ?{lib_filter} "
+                f"GROUP BY period, status ORDER BY period ASC",
+                [cutoff_date] + lib_params,
+            ).fetchall()
+
+        activity: dict[str, dict[str, int]] = {}
+        for row in activity_rows:
+            period = row["period"] or "Unknown"
+            if period not in activity:
+                activity[period] = {}
+            activity[period][row["status"].lower()] = row["cnt"]
+
+        activity_list = [{"period": k, **v} for k, v in activity.items()]
+
+        return jsonify({
+            "kpis": kpis,
+            "activity": activity_list,
+            "libraries": libs,
+            "last_refreshed": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        })
 
     @app.get("/api/themes")
     def api_themes():
