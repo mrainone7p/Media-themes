@@ -1316,9 +1316,16 @@
       </div>
     </div>
 
-    <div class="review-card" id="theme-local-card">
-      <div class="hidden" id="theme-local-player" style="margin-bottom:10px">
-        <div class="modal-player-row">
+    <div class="review-card theme-section-card" id="theme-local-card">
+      <div class="review-card-header theme-section-header">
+        <div class="review-card-heading theme-section-heading">
+          <div class="modal-section-label mb-0">Local Theme</div>
+          <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
+        </div>
+      </div>
+      <div class="review-empty hidden" id="theme-local-empty">No local theme file is on disk yet.</div>
+      <div class="hidden theme-section-player" id="theme-local-player">
+        <div class="modal-player-row surface-panel compact">
           <button class="play-btn" id="theme-modal-play" onclick="themeModalToggle()">
             <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           </button>
@@ -1331,83 +1338,52 @@
         </div>
         <audio class="hidden" id="theme-modal-audio"></audio>
       </div>
-      <div class="review-card-header" style="align-items:flex-start">
-        <div class="review-card-heading" style="flex:1 1 auto">
-          <div class="modal-section-label mb-0">Local Theme</div>
-          <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
+      <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-local-meta">
+        <div class="ui-meta-row review-meta-item">
+          <div class="review-meta-label">Local State</div>
+          <div class="review-meta-value" id="theme-modal-local-state">—</div>
         </div>
-      </div>
-      <div class="review-empty hidden" id="theme-local-preview-empty">Saved source preview will load here for review.</div>
-      <div class="ui-meta-list review-meta-list theme-section-meta" id="theme-local-meta">
         <div class="ui-meta-row review-meta-item">
           <div class="review-meta-label">File Path</div>
           <div class="review-meta-value theme-detail-value is-path" id="theme-modal-file">—</div>
         </div>
-        <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">Clip Window / Offset</div>
-          <div class="review-meta-value" id="theme-modal-local-dur">—</div>
-        </div>
-        <details class="theme-source-details theme-local-source-details hidden" id="theme-local-source-details">
-          <summary>
-            <span class="theme-source-summary-text">
-              <span>Local source info</span>
-              <span class="ui-pill muted-chip" id="theme-local-source-pill">Not Selected</span>
-            </span>
-            <span class="settings-chev">˅</span>
-          </summary>
-          <div class="review-card-subtitle" id="theme-local-source-summary">Review the saved source provenance for this local theme.</div>
-          <div class="ui-meta-list review-meta-list" id="theme-local-source-meta-list">
-            <div class="ui-meta-row review-meta-item">
-              <div class="review-meta-label">Source State</div>
-              <div class="review-meta-value" id="theme-local-source-origin">—</div>
-            </div>
-            <div class="ui-meta-row review-meta-item">
-              <div class="review-meta-label">Source URL</div>
-              <div class="review-meta-value">
-                <div class="theme-link-row">
-                  <a class="theme-link-value" href="#" target="_blank" rel="noopener" id="theme-local-source-url">—</a>
-                  <div class="modal-actions-row theme-link-actions" id="theme-local-source-controls">
-                    <button class="btn btn-ghost btn-sm" type="button" id="theme-local-source-copy">Copy</button>
-                    <button class="btn btn-ghost btn-sm" type="button" id="theme-local-source-open">Open</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="ui-meta-row review-meta-item">
-              <div class="review-meta-label">When Added</div>
-              <div class="review-meta-value" id="theme-local-source-added">—</div>
-            </div>
-          </div>
-          <div class="clip-summary-card" id="theme-local-source-clip" style="margin-top:12px">
-            <div class="clip-summary-label">Clip Window / Offset</div>
-            <div class="clip-summary-main" id="theme-local-source-clip-main">Length — · Offset 0:00</div>
-            <div class="clip-summary-sub" id="theme-local-source-clip-sub">Review the clip in Local Theme to confirm the kept portion before downloading.</div>
-            <div class="clip-summary-warning" id="theme-local-source-clip-warning"></div>
-          </div>
-        </details>
       </div>
-      <div class="modal-actions-row theme-section-actions" id="theme-local-actions">
+      <div class="clip-summary-card hidden" id="theme-local-clip">
+        <div class="clip-summary-label">Clip Window / Offset</div>
+        <div class="clip-summary-main" id="theme-local-clip-main">Length — · Offset 0:00</div>
+        <div class="clip-summary-sub" id="theme-local-clip-sub">Preview the local theme to confirm the kept portion.</div>
+        <div class="clip-summary-warning" id="theme-local-clip-warning"></div>
+      </div>
+      <div class="modal-actions-row theme-section-actions hidden" id="theme-local-actions">
         <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim</button>
-        <button class="btn btn-ghost btn-sm hidden" id="theme-modal-local-replace-btn" onclick="themeModalOpenManualSearch()">Replace</button>
-        <button class="btn btn-danger-ghost btn-sm hidden" id="theme-modal-local-delete-btn" onclick="themeModalDeleteLocalTheme()">Delete Local Theme</button>
+        <button class="btn btn-ghost btn-sm" id="theme-modal-local-rematch-btn" onclick="themeModalOpenManualSearch()">Rematch</button>
+        <button class="btn btn-danger-ghost btn-sm" id="theme-modal-local-delete-btn" onclick="themeModalDeleteLocalTheme()">Delete</button>
       </div>
     </div>
 
-    <div class="review-card hidden" id="theme-workflow-card">
-      <div class="review-card-header">
-        <div class="review-card-heading">
+    <div class="review-card theme-section-card" id="theme-workflow-card">
+      <div class="review-card-header theme-section-header">
+        <div class="review-card-heading theme-section-heading">
           <div class="modal-section-label mb-0">Selected Source</div>
           <div class="review-card-subtitle" id="theme-workflow-subtitle">Review the saved source, confirm the clip window, and choose the next action.</div>
         </div>
       </div>
-      <div class="review-empty hidden" id="theme-workflow-empty">No source selected yet. Use Find Theme to choose one.</div>
-      <div class="clip-summary-card hidden" id="theme-modal-inline-play" style="margin-top:12px">
-        <div class="clip-summary-label">Preview / Clip Window</div>
-        <div class="clip-summary-main" id="theme-modal-inline-play-main">Length — · Offset 0:00</div>
-        <div class="clip-summary-sub" id="theme-modal-inline-play-sub">Load a preview to confirm the kept portion.</div>
-        <div class="clip-summary-warning" id="theme-modal-inline-play-warning"></div>
+      <div class="review-empty hidden" id="theme-workflow-empty">No selected source yet. Find a source to continue.</div>
+      <div class="hidden theme-section-player" id="theme-workflow-player">
+        <div class="modal-player-row surface-panel compact">
+          <button class="play-btn" id="theme-workflow-play" onclick="themeModalSourceToggle()">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <button class="skip-btn" onclick="themeModalSourceSkip(-5)">-5</button>
+          <button class="skip-btn" onclick="themeModalSourceSkip(5)">+5</button>
+          <div class="modal-scrubber-wrap">
+            <input type="range" class="modal-slider" id="theme-workflow-slider" min="0" max="100" value="0" oninput="themeModalSourceSeek(this.value)">
+            <div class="modal-time-row"><span id="theme-workflow-cur">0:00</span><span id="theme-workflow-dur">—</span></div>
+          </div>
+        </div>
+        <audio class="hidden" id="theme-workflow-audio"></audio>
       </div>
-      <div class="ui-meta-list review-meta-list theme-section-meta" id="theme-workflow-meta-list">
+      <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-workflow-meta-list">
         <div class="ui-meta-row review-meta-item">
           <div class="review-meta-label">Source State</div>
           <div class="review-meta-value" id="theme-workflow-state">—</div>
@@ -1429,15 +1405,11 @@
           </div>
         </div>
         <div class="ui-meta-row review-meta-item">
-          <div class="review-meta-label">Clip Window / Offset</div>
-          <div class="review-meta-value" id="theme-workflow-offset">—</div>
-        </div>
-        <div class="ui-meta-row review-meta-item">
           <div class="review-meta-label">When Added</div>
           <div class="review-meta-value" id="theme-workflow-added">—</div>
         </div>
       </div>
-      <div class="clip-summary-card" id="theme-workflow-clip" style="margin-top:12px">
+      <div class="clip-summary-card hidden" id="theme-workflow-clip">
         <div class="clip-summary-label">Clip Window / Offset</div>
         <div class="clip-summary-main" id="theme-workflow-clip-main">Length — · Offset 0:00</div>
         <div class="clip-summary-sub" id="theme-workflow-clip-sub">Choose or review a source to see its saved clip window.</div>
@@ -1449,7 +1421,6 @@
     <!-- Footer -->
     <div class="modal-footer">
       <div class="review-footer-actions footer-action-group">
-        <button class="btn btn-danger-ghost hidden" id="theme-modal-delete-btn" onclick="themeModalDeleteSource()">Delete Source</button>
         <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
       </div>
     </div>

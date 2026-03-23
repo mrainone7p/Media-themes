@@ -738,7 +738,7 @@ function stopAllAudio(keepId){
   const ga=_audioEl();
   if(ga){ ga.pause(); }
   const keep = new Set(Array.isArray(keepId) ? keepId : (keepId ? [keepId] : []));
-  ['yt-modal-audio','theme-modal-audio','trim-modal-audio','se-audio'].forEach(id=>{
+  ['yt-modal-audio','theme-modal-audio','theme-workflow-audio','trim-modal-audio','se-audio'].forEach(id=>{
     if(keep.has(id)) return;
     const a=document.getElementById(id);
     if(a){ a.pause(); a.onloadedmetadata=null; a.ontimeupdate=null; a.onended=null; a.src=''; }
@@ -1412,50 +1412,45 @@ function _themeModalLocalSourceOriginMarkup(row={}){
 function _themeModalSourceEndOffset(row={}){
   return row?.end_offset||0;
 }
-function _themeModalUpdateSourceClipSummary(row={}, prefix='theme-modal'){
-  const summary=document.getElementById(`${prefix}-source-clip`);
-  const main=document.getElementById(`${prefix}-source-clip-main`);
-  const sub=document.getElementById(`${prefix}-source-clip-sub`);
-  const warning=document.getElementById(`${prefix}-source-clip-warning`);
-  const isLocalPrefix=prefix==='theme-local';
-  const selected=isLocalPrefix ? _localSourceContract(row) : _selectedSourceContract(row);
-  const hasSource=!!selected.url;
-  const duration=0;
-  const offsetValue=_themeModalOffsetValue(row, isLocalPrefix ? 'local_theme' : 'selected_source');
-  const endOffsetValue=_themeModalSourceEndOffset(row);
-  _setHidden(summary, !hasSource, hasSource?'':'');
-  if(!hasSource){
+function _themeModalUpdateLocalClipSummary(row={}, duration=0){
+  const hasLocal=_themeHasLocal(row);
+  const summaryId='theme-local-clip';
+  _setHidden(document.getElementById(summaryId), !hasLocal, hasLocal?'':'');
+  if(!hasLocal){
+    const main=document.getElementById('theme-local-clip-main');
+    const sub=document.getElementById('theme-local-clip-sub');
+    const warning=document.getElementById('theme-local-clip-warning');
     if(main) main.textContent='Length — · Offset 0:00';
-    if(sub) sub.textContent='Review the clip in Local Theme to confirm the kept portion before downloading.';
+    if(sub) sub.textContent='Preview the local theme to confirm the kept portion.';
     if(warning) warning.textContent='';
     return;
   }
-  _setClipSummary(`${prefix}-source-clip`,`${prefix}-source-clip-main`,`${prefix}-source-clip-sub`,`${prefix}-source-clip-warning`,duration,offsetValue,Math.max(0, Number(_maxDur)||0),'preview');
-  if(sub){
-    const endTrim=parseTrim(endOffsetValue||'0');
-    if(endTrim>0){
-      sub.textContent=`Saved trim starts at ${fmt(parseTrim(offsetValue||'0'))} and ends ${fmt(endTrim)} before the source finishes after preview loads.`;
-    }else if(duration<=0){
-      sub.textContent='Review the clip in Local Theme to confirm the kept portion before downloading.';
-    }
-  }
+  _setClipSummary(summaryId,'theme-local-clip-main','theme-local-clip-sub','theme-local-clip-warning',duration,_themeModalOffsetValue(row,'local_theme'),Math.max(0, Number(_maxDur)||0),'local theme');
 }
-function _themeModalUpdateInlinePreviewSummary(row={}, duration=0){
-  const summary=document.getElementById('theme-modal-inline-play');
-  const hasPreview=!!Number(duration||0);
-  const offsetValue=_themeModalOffsetValue(row, 'selected_source');
-  const maxDur=Math.max(0, Number(_maxDur)||0);
-  _setHidden(summary, !hasPreview, hasPreview?'':'');
-  if(!hasPreview){
-    const main=document.getElementById('theme-modal-inline-play-main');
-    const sub=document.getElementById('theme-modal-inline-play-sub');
-    const warning=document.getElementById('theme-modal-inline-play-warning');
+function _themeModalUpdateSelectedSourceClipSummary(row={}, duration=0){
+  const selected=_selectedSourceContract(row);
+  const hasSelected=!!String(selected.url||'').trim();
+  const summaryId='theme-workflow-clip';
+  _setHidden(document.getElementById(summaryId), !hasSelected, hasSelected?'':'');
+  if(!hasSelected){
+    const main=document.getElementById('theme-workflow-clip-main');
+    const sub=document.getElementById('theme-workflow-clip-sub');
+    const warning=document.getElementById('theme-workflow-clip-warning');
     if(main) main.textContent='Length — · Offset 0:00';
-    if(sub) sub.textContent='Load a preview to confirm the kept portion.';
+    if(sub) sub.textContent='Choose a source to review its saved clip window.';
     if(warning) warning.textContent='';
     return;
   }
-  _setClipSummary('theme-modal-inline-play','theme-modal-inline-play-main','theme-modal-inline-play-sub','theme-modal-inline-play-warning',duration,offsetValue,maxDur,'preview');
+  const layer=selected.kind==='golden' ? 'golden_source' : 'selected_source';
+  _setClipSummary(summaryId,'theme-workflow-clip-main','theme-workflow-clip-sub','theme-workflow-clip-warning',duration,_themeModalOffsetValue(row, layer),Math.max(0, Number(_maxDur)||0),'source preview');
+  const sub=document.getElementById('theme-workflow-clip-sub');
+  const warning=document.getElementById('theme-workflow-clip-warning');
+  const endTrim=parseTrim(_themeModalSourceEndOffset(row)||'0');
+  if(sub && duration<=0) sub.textContent='Load a preview to confirm the kept portion.';
+  if(sub && endTrim>0){
+    sub.textContent=`Saved trim starts at ${fmt(parseTrim(_themeModalOffsetValue(row, layer)||'0'))} and ends ${fmt(endTrim)} before the source finishes once preview metadata loads.`;
+  }
+  if(warning && duration<=0 && !warning.textContent) warning.textContent='';
 }
 function _themeModalSetLinkRow({urlId, controlsId, copyId, openId, url='', copyHandler=null, openHandler=null}={}){
   const linkEl=document.getElementById(urlId||'');
@@ -1482,53 +1477,16 @@ function _themeModalSetLinkRow({urlId, controlsId, copyId, openId, url='', copyH
     openBtn.onclick=safeUrl && typeof openHandler==='function' ? openHandler : null;
   }
 }
-function _themeModalPopulateSourceSection(row={}, opts={}){
-  const prefix=String(opts.prefix||'theme-modal');
-  const isLocalPrefix=prefix==='theme-local';
-  const hasStoredSource=isLocalPrefix
-    ? !!String(_localSourceContract(row).url||'').trim()
-    : !!String(_selectedSourceContract(row).url||'').trim();
-  const sourceStateLabel=isLocalPrefix ? 'Downloaded' : _themeModalSourceState(row);
-  const sourceUrl=isLocalPrefix ? _themeModalLocalSourceUrl(row) : _themeModalSourceUrl(row);
-  const sourceOffset=isLocalPrefix ? _themeModalLocalSourceOffset(row) : _themeModalSourceOffset(row);
-  const sourceAdded=isLocalPrefix ? _themeModalLocalSourceAdded(row) : _themeModalSourceAdded(row);
-  const summaryText=hasStoredSource
-    ? sourceStateLabel
-    : (isLocalPrefix ? 'No local source is recorded yet.' : 'No selected source is saved yet.');
-  const summaryEl=document.getElementById(`${prefix}-source-summary`);
-  const originEl=document.getElementById(`${prefix}-source-origin`);
-  const offsetEl=document.getElementById(`${prefix}-source-offset`);
-  const addedEl=document.getElementById(`${prefix}-source-added`);
-  const pillEl=document.getElementById(`${prefix}-source-pill`);
-  const emptyEl=document.getElementById(prefix==='theme-modal'?'theme-source-empty':'');
-  const metaListEl=document.getElementById(`${prefix}-source-meta-list`);
-  if(summaryEl) summaryEl.textContent=summaryText;
-  if(originEl) originEl.innerHTML=isLocalPrefix ? _themeModalLocalSourceOriginMarkup(row) : _themeModalSourceOriginMarkup(row);
-  if(offsetEl) offsetEl.textContent=sourceOffset;
-  if(addedEl) addedEl.textContent=sourceAdded;
-  if(pillEl) pillEl.textContent=hasStoredSource
-    ? (isLocalPrefix ? _sourceStatePillLabel(_sourceKindLabel(_localSourceContract(row).kind), 'Downloaded') : _selectedSourceStateSummary(row).stateLabel)
-    : 'Not Selected';
-  _themeModalSetLinkRow({
-    urlId:`${prefix}-source-url`,
-    controlsId:`${prefix}-source-controls`,
-    copyId:`${prefix}-source-copy`,
-    openId:`${prefix}-source-open`,
-    url:sourceUrl,
-    copyHandler:isLocalPrefix ? themeModalCopyLocalSource : themeModalCopySource,
-    openHandler:isLocalPrefix ? themeModalOpenLocalSource : themeModalOpenSource,
-  });
-  if(emptyEl) _setHidden(emptyEl, hasStoredSource, hasStoredSource?'':'block');
-  if(metaListEl) metaListEl.style.display=hasStoredSource?'flex':'none';
-  _themeModalUpdateSourceClipSummary(row, prefix);
-}
-async function _themeModalLoadSavedSourcePreview(row={}){
-  const url=_themeModalPrimarySourceUrl(row);
+async function _themeModalLoadSelectedSourcePreview(row={}){
+  const selected=_selectedSourceContract(row);
+  const url=String(selected.url||'').trim();
+  const player=document.getElementById('theme-workflow-player');
   if(!url){
-    _themeModalAudio.cleanup({clearSrc:false});
-    _themeModalAudio.audio.removeAttribute('src');
-    _themeModalAudio.audio.load();
-    _themeModalUpdateInlinePreviewSummary(row, 0);
+    _themeModalSourceAudio.cleanup({clearSrc:false});
+    _themeModalSourceAudio.audio.removeAttribute('src');
+    _themeModalSourceAudio.audio.load();
+    _setHidden(player, true);
+    _themeModalUpdateSelectedSourceClipSummary(row, 0);
     return false;
   }
   try{
@@ -1542,19 +1500,24 @@ async function _themeModalLoadSavedSourcePreview(row={}){
       if(data?.ok) _previewCache[url]={audio_url:data.audio_url};
     }
     if(!data?.ok) throw new Error(data?.error||'Preview failed');
-    _themeModalAudio.cleanup({clearSrc:false});
-    _themeModalAudio.audio.src=apiUrl(data.audio_url);
-    _themeModalAudio.setHandlers({
+    const layer=selected.kind==='golden' ? 'golden_source' : 'selected_source';
+    _themeModalSourceAudio.cleanup({clearSrc:false});
+    _themeModalSourceAudio.audio.src=apiUrl(data.audio_url);
+    _themeModalSourceAudio.setHandlers({
       onloadedmetadata:(audio)=>{
-        const offsetValue=_themeModalOffsetValue(_themeModalContext?.row||row, 'selected_source');
-        _applyAudioOffset(audio, offsetValue);
-        _themeModalUpdateInlinePreviewSummary(_themeModalContext?.row||row, audio.duration||0);
+        _applyAudioOffset(audio, _themeModalOffsetValue(_themeModalContext?.row||row, layer));
+        _themeModalUpdateSelectedSourceClipSummary(_themeModalContext?.row||row, audio.duration||0);
+        _setHidden(player, false, 'block');
       }
     });
-    _themeModalAudio.audio.load();
+    _themeModalSourceAudio.audio.load();
     return true;
   }catch(e){
-    _themeModalUpdateInlinePreviewSummary(row, 0);
+    _themeModalSourceAudio.cleanup({clearSrc:false});
+    _themeModalSourceAudio.audio.removeAttribute('src');
+    _themeModalSourceAudio.audio.load();
+    _setHidden(player, true);
+    _themeModalUpdateSelectedSourceClipSummary(row, 0);
     toast(`Preview unavailable: ${String(e?.message||e||'Preview failed')}`,'info');
     return false;
   }
@@ -1567,7 +1530,7 @@ function _renderSourceStateCard(summary, opts={}){
   const actions=summary.url
     ? `<div class="source-state-actions">
         <button class="btn btn-ghost btn-xs" type="button" onclick='event.stopPropagation();_copyTextValue(${jsUrl},${jsCopied})'>Copy</button>
-        <button class="btn btn-ghost btn-xs" type="button" onclick='event.stopPropagation();window.open(${jsUrl},\"_blank\",\"noopener\")'>Open</button>
+        <button class="btn btn-ghost btn-xs" type="button" onclick='event.stopPropagation();window.open(${jsUrl},"_blank","noopener")'>Open</button>
       </div>`
     : '';
   return `<div class="source-state-card ${summary.url?'':'is-empty'}">
@@ -1775,155 +1738,101 @@ function _themeModalOffsetLabel(row={}, hasTheme=false, layer='selected_source')
   const duration=hasTheme && Number(row?.theme_duration||0)>0?parseFloat(row.theme_duration||0):0;
   return _clipLengthOffsetLabel(duration, _themeModalOffsetValue(row, layer), 0);
 }
-function _themeModalWorkflowState(row={}){
-  const hasLocal=_themeHasLocal(row);
-  const hasSelected=!!String(_selectedSourceContract(row).url||'').trim();
-  const hasGolden=_goldenSourceState(row).key==='available';
-  const status=_effectiveRowStatus(row);
-  if(hasLocal) return {key:'downloaded', label:'Downloaded', className:'is-direct', subtitle:'The local theme is already on disk. Trim it or replace the saved source as needed.'};
-  if(hasSelected && status==='APPROVED') return {key:'approved', label:'Approved', className:'is-direct', subtitle:'The selected source is approved and ready to download.'};
-  if(hasSelected && status==='STAGED') return {key:'staged', label:'Staged', className:'is-playlist', subtitle:'The selected source is staged and waiting for approval.'};
-  if(hasSelected || hasGolden) return {key:'identified', label:'Identified', className:'is-golden', subtitle:'A source has been identified. Review it, confirm the clip window, or replace it.'};
-  return {key:'none', label:'Not Selected', className:'is-unknown', subtitle:'No source is selected yet. Find or choose a source to start the workflow.'};
-}
-function _themeModalWorkflowSourceSummary(row={}){
-  const selected=_selectedSourceContract(row);
-  const local=_localSourceContract(row);
-  const golden=_goldenSourceState(row);
-  if(selected.url){
-    return {
-      layer:selected.kind==='golden' ? 'golden_source' : 'selected_source',
-      typeLabel:_selectedSourceLabel(row),
-      methodLabel:_sourceMethodLabel(selected.method),
-      detail:selected.url,
-      className:_sourceStateClass(selected.kind, selected.method),
-      hasSource:true,
-      hasPreview:true,
-    };
-  }
-  if(_themeHasLocal(row) && local.url){
-    return {
-      layer:'local_theme',
-      typeLabel:_sourceKindLabel(local.kind),
-      methodLabel:_sourceMethodLabel(local.method),
-      detail:local.url,
-      className:_sourceStateClass(local.kind, local.method),
-      hasSource:true,
-      hasPreview:false,
-    };
-  }
-  if(golden.key==='available'){
-    return {
-      layer:'golden_source',
-      typeLabel:'Golden Source',
-      methodLabel:'Curated Match',
-      detail:String(row?.golden_source_url||'').trim(),
-      className:golden.className,
-      hasSource:true,
-      hasPreview:false,
-    };
-  }
-  return {
-    layer:'selected_source',
-    typeLabel:'No Source',
-    methodLabel:'Choose a source',
-    detail:'No selected source is saved yet.',
-    className:'is-unknown',
-    hasSource:false,
-    hasPreview:false,
-  };
-}
-function _themeModalWorkflowAdded(row={}, source={}){
-  if(source.layer==='local_theme') return _themeModalLocalSourceAdded(row);
-  if(source.layer==='golden_source') return _themeModalImportedAt(row);
-  return _themeModalSourceAdded(row);
-}
 function _themeModalWorkflowActions(row={}){
-  const state=_themeModalWorkflowState(row);
   const selected=_selectedSourceContract(row);
-  const hasSelected=!!selected.url;
-  const canPreview=hasSelected;
+  const hasSelected=!!String(selected.url||'').trim();
+  const status=_effectiveRowStatus(row);
+  const hasLocal=_themeHasLocal(row);
   const actions=[];
   const push=(id,label,className,handler)=>{
     if(actions.some(action=>action.id===id)) return;
     actions.push({id,label,className,handler});
   };
-  if(state.key==='downloaded'){
-    push('trim-local','Trim Local Theme','btn btn-amber is-primary','themeModalEditTrim');
-    if(hasSelected) push('replace-source','Replace Source','btn btn-ghost','themeModalOpenManualSearch');
-    if(canPreview) push('preview-source','Preview / Trim Source','btn btn-ghost','themeModalPreviewSourceTrim');
-    push('clear-source','Clear Source','btn btn-ghost','themeModalDeleteSource');
+  if(!hasSelected){
+    push('find-source','Find Source','btn btn-amber is-primary','themeModalOpenManualSearch');
     return actions;
   }
-  if(state.key==='approved'){
-    push('download-now','Download Now','btn btn-green is-primary','themeModalDownloadApproved');
-    push('replace-source','Replace Source','btn btn-amber','themeModalOpenManualSearch');
-    push('open-source','Open Source','btn btn-ghost','themeModalOpenSource');
-    push('copy-source','Copy Source','btn btn-ghost','themeModalCopySource');
-    if(canPreview) push('preview-source','Preview / Trim','btn btn-ghost','themeModalPreviewSourceTrim');
+  push('trim-source','Trim','btn btn-ghost','themeModalPreviewSourceTrim');
+  push('clear-source','Clear Source','btn btn-ghost','themeModalDeleteSource');
+  if(status==='APPROVED'){
+    if(!hasLocal) push('download-now','Download','btn btn-green is-primary','themeModalDownloadApproved');
     return actions;
   }
-  if(state.key==='staged'){
+  if(status==='STAGED'){
     push('approve','Approve','btn btn-amber is-primary','themeModalApproveSource');
-    push('replace-source','Replace Source','btn btn-amber','themeModalOpenManualSearch');
-    push('open-source','Open Source','btn btn-ghost','themeModalOpenSource');
-    push('copy-source','Copy Source','btn btn-ghost','themeModalCopySource');
-    if(canPreview) push('preview-source','Preview / Trim','btn btn-ghost','themeModalPreviewSourceTrim');
     return actions;
   }
-  if(state.key==='identified'){
-    push('review-select','Review / Select Source','btn btn-amber is-primary','themeModalOpenManualSearch');
-    push('replace-source','Replace Source','btn btn-ghost','themeModalOpenManualSearch');
-    return actions;
-  }
-  push('find-source','Find Theme','btn btn-amber is-primary','themeModalOpenManualSearch');
+  push('stage','Stage','btn btn-amber is-primary','themeModalStageSource');
   return actions;
 }
 function _themeModalRenderWorkflowActions(actions=[]){
   if(!Array.isArray(actions) || !actions.length) return '';
   return actions.map(action=>`<button class="${_escapeAttr(action.className||'btn btn-ghost')}" type="button" onclick="${_escapeAttr(action.handler||'')}()">${_escapeHtml(action.label||'Action')}</button>`).join('');
 }
+function _themeModalUpdateLocalCard(row={}){
+  const hasLocal=_themeHasLocal(row);
+  const local=document.getElementById('theme-local-card');
+  const empty=document.getElementById('theme-local-empty');
+  const player=document.getElementById('theme-local-player');
+  const meta=document.getElementById('theme-local-meta');
+  const actions=document.getElementById('theme-local-actions');
+  const statusEl=document.getElementById('theme-modal-local-status');
+  const stateEl=document.getElementById('theme-modal-local-state');
+  const fileEl=document.getElementById('theme-modal-file');
+  const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
+  const folder=String(_themeModalContext?.folder||'').trim();
+  if(local) local.classList.toggle('compact', !hasLocal);
+  if(statusEl) statusEl.textContent=hasLocal ? 'On disk and ready to play or trim.' : 'No local theme file on disk yet.';
+  if(empty) empty.textContent=hasLocal ? '' : 'No local theme file is on disk yet. Review the selected source below or find one to continue.';
+  if(stateEl) stateEl.innerHTML=hasLocal
+    ? _renderSourceStatePill('On Disk', _themeModalSourceOriginClass(row), 'Local theme file detected on disk')
+    : '—';
+  if(fileEl) fileEl.textContent=folder ? `${folder}/${themeFilename}` : 'Unknown folder';
+  _setHidden(empty, hasLocal, hasLocal?'':'block');
+  _setHidden(player, !hasLocal, hasLocal?'block':'');
+  _setHidden(meta, !hasLocal, hasLocal?'block':'');
+  _setHidden(actions, !hasLocal, hasLocal?'flex':'');
+  _themeModalUpdateLocalClipSummary(row, hasLocal ? parseFloat(row?.theme_duration||0)||0 : 0);
+}
 function _themeModalUpdateWorkflowCard(row={}){
-  const card=document.getElementById('theme-workflow-card');
+  const selected=_selectedSourceContract(row);
+  const hasSelected=!!String(selected.url||'').trim();
   const subtitle=document.getElementById('theme-workflow-subtitle');
   const emptyEl=document.getElementById('theme-workflow-empty');
   const metaListEl=document.getElementById('theme-workflow-meta-list');
+  const player=document.getElementById('theme-workflow-player');
   const stateEl=document.getElementById('theme-workflow-state');
   const originEl=document.getElementById('theme-workflow-origin');
-  const urlEl='theme-workflow-url';
-  const offsetEl=document.getElementById('theme-workflow-offset');
   const addedEl=document.getElementById('theme-workflow-added');
   const actionsEl=document.getElementById('theme-workflow-actions');
-  const state=_themeModalWorkflowState(row);
-  const source=_themeModalWorkflowSourceSummary(row);
   const actions=_themeModalWorkflowActions(row);
-  const hasVisibleWorkflow=state.key!=='none' || actions.length>0;
-  _setHidden(card, !hasVisibleWorkflow, hasVisibleWorkflow?'block':'');
-  if(!hasVisibleWorkflow) return;
-  if(subtitle) subtitle.textContent=state.subtitle;
-  const hasSource=!!source.hasSource;
-  if(emptyEl) _setHidden(emptyEl, hasSource, hasSource?'':'block');
-  if(metaListEl) metaListEl.style.display=hasSource?'flex':'none';
-  if(stateEl) stateEl.innerHTML=hasSource?_renderSourceStatePill(state.label, state.className, state.subtitle):'No source';
-  if(originEl) originEl.innerHTML=hasSource?`${_renderSourceStatePill(source.typeLabel, source.className, source.detail)}<div class="theme-workflow-detail">${_escapeHtml(source.methodLabel)}</div>`:'No source';
-  const clipDuration=(source.layer==='local_theme' && Number(row?.theme_duration||0)>0) ? parseFloat(row.theme_duration||0) : 0;
-  if(offsetEl) offsetEl.textContent=hasSource?_themeModalOffsetLabel(row, source.layer==='local_theme', source.layer):'—';
-  if(addedEl) addedEl.textContent=hasSource?_themeModalWorkflowAdded(row, source):'—';
+  if(subtitle) subtitle.textContent=hasSelected
+    ? (_effectiveRowStatus(row)==='APPROVED'
+        ? 'Selected source is approved. Review the preview, clip window, and next step.'
+        : _effectiveRowStatus(row)==='STAGED'
+          ? 'Selected source is staged. Review it, trim if needed, or approve it.'
+          : 'Review the selected source, confirm the clip window, and choose the next action.')
+    : 'No selected source yet. Find a source to continue.';
+  _setHidden(emptyEl, hasSelected, hasSelected?'':'block');
+  _setHidden(metaListEl, !hasSelected, hasSelected?'block':'');
+  _setHidden(player, true);
+  if(stateEl) stateEl.innerHTML=hasSelected
+    ? _renderSourceStatePill(_selectedSourceStateSummary(row).stateLabel, _themeModalSourceOriginClass(row), _themeModalSourceUrl(row) || _themeModalSourceState(row))
+    : '—';
+  if(originEl) originEl.innerHTML=hasSelected
+    ? `${_themeModalSourceOriginMarkup(row)}<div class="theme-workflow-detail">${_escapeHtml(_sourceMethodLabel(selected.method))}</div>`
+    : '—';
+  if(addedEl) addedEl.textContent=hasSelected ? _themeModalSourceAdded(row) : '—';
   _themeModalSetLinkRow({
-    urlId:urlEl,
+    urlId:'theme-workflow-url',
     controlsId:'theme-workflow-controls',
     copyId:'theme-workflow-copy',
     openId:'theme-workflow-open',
-    url:hasSource ? source.detail : '',
+    url:hasSelected ? _themeModalSourceUrl(row) : '',
     copyHandler:themeModalCopyWorkflowSource,
     openHandler:themeModalOpenWorkflowSource,
   });
-  _setHidden(document.getElementById('theme-workflow-clip'), !hasSource, hasSource?'':'');
-  _setClipSummary('theme-workflow-clip','theme-workflow-clip-main','theme-workflow-clip-sub','theme-workflow-clip-warning',clipDuration,_themeModalOffsetValue(row, source.layer),Math.max(0, Number(_maxDur)||0),source.layer==='local_theme'?'local theme':'source');
-  const clipSub=document.getElementById('theme-workflow-clip-sub');
-  if(clipSub && source.layer==='golden_source' && !String(_selectedSourceContract(row).url||'').trim()){
-    clipSub.textContent='Curated source identified. Review it in Find Theme to confirm the kept clip before saving it as the selected source.';
-  }
+  _themeModalUpdateSelectedSourceClipSummary(row, 0);
   if(actionsEl) actionsEl.innerHTML=_themeModalRenderWorkflowActions(actions);
 }
 const THEME_MODAL_STATUS_HELPERS={
@@ -1965,60 +1874,23 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   stopAllAudio();
   const resolvedLibrary=String(library||row?.library||'').trim()||_activeLib||_currentLib();
   _themeModalContext={rk,title,year,folder,row,library:resolvedLibrary};
-  const hasTheme=_themeHasLocal(row);
-  const status=_effectiveRowStatus(row);
+  const hasLocalTheme=_themeHasLocal(row);
   const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim();
-  const hasLocalTheme=hasTheme;
+  const status=_effectiveRowStatus(row);
   const isDownloadable=!hasLocalTheme && hasStoredSource && status==='APPROVED';
-  const isSourceOnly=hasStoredSource && !hasLocalTheme;
-  const showStoredSourcePreviewInLocalTheme=isSourceOnly;
-  const canDeleteStoredSource=hasStoredSource;
-  const canDeleteLocalTheme=hasLocalTheme;
-  const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
-  const themeFile=folder?`${folder}/${themeFilename}`:'Unknown folder';
 
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
   document.getElementById('theme-modal-dur-meta').textContent=hasLocalTheme
-    ?'Theme on disk'
-    :(isSourceOnly?'Source saved only':'Theme missing');
+    ? 'Theme on disk'
+    : (hasStoredSource ? 'Selected source saved' : 'Theme missing');
   const statusBadge=document.getElementById('theme-modal-status-badge');
   if(statusBadge){
     statusBadge.className=`badge s-${status}`;
     statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
   }
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
-  document.getElementById('theme-modal-local-status').textContent=hasLocalTheme
-    ?'Available locally'
-    :(isSourceOnly?'Review saved source preview below':'No local theme file found');
-  document.getElementById('theme-modal-file').textContent=themeFile;
-  document.getElementById('theme-modal-local-dur').textContent=hasLocalTheme
-    ? _themeModalOffsetLabel(row, true, 'local_theme')
-    : (showStoredSourcePreviewInLocalTheme?'Preview clip appears in Selected Source below':'—');
-  _themeModalPopulateSourceSection(row, {prefix:'theme-local'});
-
-  const localCard=document.getElementById('theme-local-card');
-  const localMeta=document.getElementById('theme-local-meta');
-  const localTrimBtn=document.getElementById('theme-modal-trim-btn');
-  const localReplaceBtn=document.getElementById('theme-modal-local-replace-btn');
-  const localDeleteBtn=document.getElementById('theme-modal-local-delete-btn');
-  const localPlayer=document.getElementById('theme-local-player');
-  const localPreviewEmpty=document.getElementById('theme-local-preview-empty');
-  const localSourceDetails=document.getElementById('theme-local-source-details');
-  if(localCard) localCard.classList.toggle('compact', !hasLocalTheme && !showStoredSourcePreviewInLocalTheme);
-  if(localMeta) localMeta.style.display='block';
-  if(localTrimBtn) localTrimBtn.style.display=hasLocalTheme?'':'none';
-  if(localReplaceBtn) localReplaceBtn.style.display=hasLocalTheme?'':'none';
-  if(localDeleteBtn) localDeleteBtn.style.display=hasLocalTheme?'':'none';
-  const showNestedLocalSource=hasLocalTheme && hasStoredSource;
-  _setHidden(localSourceDetails, !showNestedLocalSource, showNestedLocalSource?'block':'');
-  if(localSourceDetails) localSourceDetails.open=false;
-  _setHidden(localPlayer, !!hasLocalTheme, hasLocalTheme?'block':'');
-  _setHidden(localPreviewEmpty, !(showStoredSourcePreviewInLocalTheme), showStoredSourcePreviewInLocalTheme?'block':'');
-  if(!showStoredSourcePreviewInLocalTheme) _setHidden(document.getElementById('theme-modal-inline-play'), true);
-
-  const deleteSourceBtn=document.getElementById('theme-modal-delete-btn');
-  if(deleteSourceBtn) deleteSourceBtn.style.display=canDeleteStoredSource?'':'none';
+  _themeModalUpdateLocalCard(row);
   _themeModalUpdateWorkflowCard(row);
 
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
@@ -2028,18 +1900,26 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-links').innerHTML=
     `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">TMDB</a>`;
   setBio('theme-modal-bio', rk, resolvedLibrary);
+
   _themeModalAudio.cleanup({clearSrc:false});
-  _themeModalAudio.setHandlers();
+  _themeModalAudio.setHandlers({
+    onloadedmetadata:(audio)=>_themeModalUpdateLocalClipSummary(_themeModalContext?.row||row, audio.duration||0)
+  });
   if(hasLocalTheme){
     _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
     _themeModalAudio.audio.load();
   }else{
     _themeModalAudio.audio.removeAttribute('src');
     _themeModalAudio.audio.load();
-    _themeModalUpdateInlinePreviewSummary(row, 0);
+    _themeModalUpdateLocalClipSummary(row, 0);
   }
+
+  _themeModalSourceAudio.cleanup({clearSrc:false});
+  _themeModalSourceAudio.audio.removeAttribute('src');
+  _themeModalSourceAudio.audio.load();
+
   openModal('theme-modal');
-  if(showStoredSourcePreviewInLocalTheme) await _themeModalLoadSavedSourcePreview(row);
+  if(hasStoredSource) await _themeModalLoadSelectedSourcePreview(row);
   if(_curKey) stopCurrentAudio();
 }
 async function themeModalDownloadApproved(){
@@ -2057,8 +1937,7 @@ async function themeModalDownloadApproved(){
 }
 
 function _themeModalWorkflowSourceUrl(row={}){
-  const summary=_themeModalWorkflowSourceSummary(row);
-  return summary?.hasSource ? String(summary.detail||'').trim() : '';
+  return _themeModalSourceUrl(row);
 }
 function themeModalOpenSource(){
   const url=_themeModalPrimarySourceUrl(_themeModalContext?.row||{});
@@ -2112,6 +1991,9 @@ function themeModalSetStatus(status){
   if(!key) return;
   updateRow(key,'status',status);
   closeThemeModal();
+}
+function themeModalStageSource(){
+  themeModalSetStatus('STAGED');
 }
 function themeModalApproveSource(){
   themeModalSetStatus('APPROVED');
@@ -2191,11 +2073,17 @@ function themeModalOpenManualSearch(){
 }
 function closeThemeModal(){
   closeModal('theme-modal');
-  runModalMediaCleanup(()=>_themeModalAudio.cleanup());
+  runModalMediaCleanup(()=>{
+    _themeModalAudio.cleanup();
+    _themeModalSourceAudio.cleanup();
+  });
 }
 function themeModalToggle(){ _themeModalAudio.toggle(); }
 function themeModalSkip(s){ _themeModalAudio.skip(s); }
 function themeModalSeek(val){ _themeModalAudio.seek(val); }
+function themeModalSourceToggle(){ _themeModalSourceAudio.toggle(); }
+function themeModalSourceSkip(s){ _themeModalSourceAudio.skip(s); }
+function themeModalSourceSeek(val){ _themeModalSourceAudio.seek(val); }
 
 // ── Column resize ────────────────────────────────────────────────────────────
 function initResizableCols(tableSelector){
@@ -3339,6 +3227,7 @@ let _ytModalKey=null,_ytModalLib='';
 
 const _ytModalAudio=bindModalAudio({audioId:'yt-modal-audio',playBtnId:'yt-modal-play',sliderId:'yt-modal-slider',curId:'yt-modal-cur',durId:'yt-modal-dur',statusId:'yt-modal-status'});
 const _themeModalAudio=bindModalAudio({audioId:'theme-modal-audio',playBtnId:'theme-modal-play',sliderId:'theme-modal-slider',curId:'theme-modal-cur',durId:'theme-modal-dur'});
+const _themeModalSourceAudio=bindModalAudio({audioId:'theme-workflow-audio',playBtnId:'theme-workflow-play',sliderId:'theme-workflow-slider',curId:'theme-workflow-cur',durId:'theme-workflow-dur'});
 const _trimModalAudio=bindModalAudio({audioId:'trim-modal-audio',playBtnId:'trim-modal-play',sliderId:'trim-modal-slider',curId:'trim-modal-cur',durId:'trim-modal-dur'});
 const _sourceEditorAudio=bindModalAudio({audioId:'se-audio',playBtnId:'se-play-btn',sliderId:'se-slider',curId:'se-cur',durId:'se-dur',statusId:'se-info'});
 
