@@ -422,9 +422,13 @@ async function saveRunSchedule(){
     const {ok,data}=await postJson('/api/config',cfg);
     if(ok){
       rememberConfigPatch(cfg);
+      const scheduledLibs=cfg.schedule_libraries||[];
+      syncDashboardScheduleHealthCache(cfg, scheduledLibs);
+      if(!enabled) _startCountdowns(null);
       toast(enabled ? 'Scheduler saved' : 'Automation disabled','ok');
       renderRunLibs();
       applyScheduleEnabledState();
+      if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboardActionStationFromConfig(cfg, scheduledLibs);
     }else{
       toast(data?.message || data?.error || 'Scheduler save failed','err');
     }

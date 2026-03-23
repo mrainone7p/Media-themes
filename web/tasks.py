@@ -123,7 +123,7 @@ def active_scheduler_source() -> dict:
     details["active_cron"] = active_cron
     details["schedule_enabled"] = bool(active_cron)
     if active_cron:
-        details["detail"] = f"Active schedule comes from {CRON_FILE_PATH}."
+        details["detail"] = "Automation is active."
     else:
         details["detail"] = f"No active Media Tracks cron entry is installed in {CRON_FILE_PATH}."
     return details
