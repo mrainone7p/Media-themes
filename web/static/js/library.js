@@ -1371,10 +1371,18 @@ function _themeModalSourceOriginMarkup(row={}){
 function _themeModalSourceUrl(row={}){
   return String(_selectedSourceContract(row).url||'').trim();
 }
+function _themeModalLocalSourceUrl(row={}){
+  return String(_localSourceContract(row).url||'').trim();
+}
 function _themeModalSourceOffset(row={}){
   const selected=_selectedSourceContract(row);
   if(!selected.url) return '—';
   return _themeModalOffsetLabel({...row, url:selected.url}, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source');
+}
+function _themeModalLocalSourceOffset(row={}){
+  const local=_localSourceContract(row);
+  if(!local.url) return '—';
+  return _themeModalOffsetLabel({...row, local_source_url:local.url}, _themeHasLocal(row), 'local_theme');
 }
 function _themeModalSourceAdded(row={}){
   if(!String(_selectedSourceContract(row).url||'').trim()) return '—';
@@ -1385,6 +1393,22 @@ function _themeModalSourceAdded(row={}){
   if(Number.isNaN(dt.getTime())) return raw;
   return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
+function _themeModalLocalSourceAdded(row={}){
+  if(!String(_localSourceContract(row).url||'').trim()) return '—';
+  const raw=String(row?.local_source_recorded_at||'').trim() || String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim();
+  if(!raw) return '—';
+  const iso=raw.replace(' ','T')+'Z';
+  const dt=new Date(iso);
+  if(Number.isNaN(dt.getTime())) return raw;
+  return dt.toLocaleString(undefined,{year:'numeric',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function _themeModalLocalSourceOriginMarkup(row={}){
+  const local=_localSourceContract(row);
+  if(!local.url) return _renderSourceStatePill('Not Recorded','is-unknown','No local source recorded');
+  const typeLabel=_sourceKindLabel(local.kind);
+  const stateLabel=_sourceStatePillLabel(typeLabel, 'Downloaded');
+  return _renderSourceStatePill(stateLabel, _sourceStateClass(local.kind, local.method), local.url);
+}
 function _themeModalSourceEndOffset(row={}){
   return row?.end_offset||0;
 }
@@ -1393,10 +1417,11 @@ function _themeModalUpdateSourceClipSummary(row={}, prefix='theme-modal'){
   const main=document.getElementById(`${prefix}-source-clip-main`);
   const sub=document.getElementById(`${prefix}-source-clip-sub`);
   const warning=document.getElementById(`${prefix}-source-clip-warning`);
-  const selected=_selectedSourceContract(row);
+  const isLocalPrefix=prefix==='theme-local';
+  const selected=isLocalPrefix ? _localSourceContract(row) : _selectedSourceContract(row);
   const hasSource=!!selected.url;
   const duration=0;
-  const offsetValue=_themeModalOffsetValue(row, 'selected_source');
+  const offsetValue=_themeModalOffsetValue(row, isLocalPrefix ? 'local_theme' : 'selected_source');
   const endOffsetValue=_themeModalSourceEndOffset(row);
   _setHidden(summary, !hasSource, hasSource?'':'');
   if(!hasSource){
@@ -1432,42 +1457,67 @@ function _themeModalUpdateInlinePreviewSummary(row={}, duration=0){
   }
   _setClipSummary('theme-modal-inline-play','theme-modal-inline-play-main','theme-modal-inline-play-sub','theme-modal-inline-play-warning',duration,offsetValue,maxDur,'preview');
 }
+function _themeModalSetLinkRow({urlId, controlsId, copyId, openId, url='', copyHandler=null, openHandler=null}={}){
+  const linkEl=document.getElementById(urlId||'');
+  const controlsEl=document.getElementById(controlsId||'');
+  const copyBtn=document.getElementById(copyId||'');
+  const openBtn=document.getElementById(openId||'');
+  const safeUrl=String(url||'').trim();
+  if(linkEl){
+    linkEl.textContent=safeUrl || '—';
+    if(linkEl.tagName==='A'){
+      linkEl.href=safeUrl || '#';
+      linkEl.classList.toggle('is-empty', !safeUrl);
+      if(!safeUrl) linkEl.setAttribute('aria-disabled','true');
+      else linkEl.removeAttribute('aria-disabled');
+    }
+  }
+  if(controlsEl) controlsEl.style.display=safeUrl ? '' : 'none';
+  if(copyBtn){
+    copyBtn.disabled=!safeUrl;
+    copyBtn.onclick=safeUrl && typeof copyHandler==='function' ? copyHandler : null;
+  }
+  if(openBtn){
+    openBtn.disabled=!safeUrl;
+    openBtn.onclick=safeUrl && typeof openHandler==='function' ? openHandler : null;
+  }
+}
 function _themeModalPopulateSourceSection(row={}, opts={}){
   const prefix=String(opts.prefix||'theme-modal');
-  const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim();
-  const sourceStateLabel=_themeModalSourceState(row);
-  const sourceUrl=_themeModalSourceUrl(row);
-  const sourceOffset=_themeModalSourceOffset(row);
-  const sourceAdded=_themeModalSourceAdded(row);
+  const isLocalPrefix=prefix==='theme-local';
+  const hasStoredSource=isLocalPrefix
+    ? !!String(_localSourceContract(row).url||'').trim()
+    : !!String(_selectedSourceContract(row).url||'').trim();
+  const sourceStateLabel=isLocalPrefix ? 'Downloaded' : _themeModalSourceState(row);
+  const sourceUrl=isLocalPrefix ? _themeModalLocalSourceUrl(row) : _themeModalSourceUrl(row);
+  const sourceOffset=isLocalPrefix ? _themeModalLocalSourceOffset(row) : _themeModalSourceOffset(row);
+  const sourceAdded=isLocalPrefix ? _themeModalLocalSourceAdded(row) : _themeModalSourceAdded(row);
   const summaryText=hasStoredSource
     ? sourceStateLabel
-    : 'No selected source is saved yet.';
+    : (isLocalPrefix ? 'No local source is recorded yet.' : 'No selected source is saved yet.');
   const summaryEl=document.getElementById(`${prefix}-source-summary`);
   const originEl=document.getElementById(`${prefix}-source-origin`);
-  const urlEl=document.getElementById(`${prefix}-source-url`);
   const offsetEl=document.getElementById(`${prefix}-source-offset`);
   const addedEl=document.getElementById(`${prefix}-source-added`);
   const pillEl=document.getElementById(`${prefix}-source-pill`);
-  const copyBtn=document.getElementById(`${prefix}-source-copy`);
-  const openBtn=document.getElementById(`${prefix}-source-open`);
-  const controlsEl=document.getElementById(`${prefix}-source-controls`);
   const emptyEl=document.getElementById(prefix==='theme-modal'?'theme-source-empty':'');
   const metaListEl=document.getElementById(`${prefix}-source-meta-list`);
   if(summaryEl) summaryEl.textContent=summaryText;
-  if(originEl) originEl.innerHTML=_themeModalSourceOriginMarkup(row);
-  if(urlEl) urlEl.textContent=sourceUrl || '—';
+  if(originEl) originEl.innerHTML=isLocalPrefix ? _themeModalLocalSourceOriginMarkup(row) : _themeModalSourceOriginMarkup(row);
   if(offsetEl) offsetEl.textContent=sourceOffset;
   if(addedEl) addedEl.textContent=sourceAdded;
-  if(pillEl) pillEl.textContent=hasStoredSource ? _selectedSourceStateSummary(row).stateLabel : 'Not Selected';
-  if(controlsEl) controlsEl.style.display=hasStoredSource?'':'none';
-  if(copyBtn){
-    copyBtn.disabled=!sourceUrl;
-    copyBtn.onclick=sourceUrl?themeModalCopySource:null;
-  }
-  if(openBtn){
-    openBtn.disabled=!sourceUrl;
-    openBtn.onclick=sourceUrl?themeModalOpenSource:null;
-  }
+  if(pillEl) pillEl.textContent=hasStoredSource
+    ? (isLocalPrefix ? _sourceStatePillLabel(_sourceKindLabel(_localSourceContract(row).kind), 'Downloaded') : _selectedSourceStateSummary(row).stateLabel)
+    : 'Not Selected';
+  _themeModalSetLinkRow({
+    urlId:`${prefix}-source-url`,
+    controlsId:`${prefix}-source-controls`,
+    copyId:`${prefix}-source-copy`,
+    openId:`${prefix}-source-open`,
+    url:sourceUrl,
+    copyHandler:isLocalPrefix ? themeModalCopyLocalSource : themeModalCopySource,
+    openHandler:isLocalPrefix ? themeModalOpenLocalSource : themeModalOpenSource,
+  });
   if(emptyEl) _setHidden(emptyEl, hasStoredSource, hasStoredSource?'':'block');
   if(metaListEl) metaListEl.style.display=hasStoredSource?'flex':'none';
   _themeModalUpdateSourceClipSummary(row, prefix);
@@ -1783,6 +1833,11 @@ function _themeModalWorkflowSourceSummary(row={}){
     hasPreview:false,
   };
 }
+function _themeModalWorkflowAdded(row={}, source={}){
+  if(source.layer==='local_theme') return _themeModalLocalSourceAdded(row);
+  if(source.layer==='golden_source') return _themeModalImportedAt(row);
+  return _themeModalSourceAdded(row);
+}
 function _themeModalWorkflowActions(row={}){
   const state=_themeModalWorkflowState(row);
   const selected=_selectedSourceContract(row);
@@ -1797,7 +1852,7 @@ function _themeModalWorkflowActions(row={}){
     push('trim-local','Trim Local Theme','btn btn-amber is-primary','themeModalEditTrim');
     if(hasSelected) push('replace-source','Replace Source','btn btn-ghost','themeModalOpenManualSearch');
     if(canPreview) push('preview-source','Preview / Trim Source','btn btn-ghost','themeModalPreviewSourceTrim');
-    push('delete-local','Delete Local Theme','btn btn-danger-ghost','themeModalDeleteLocalTheme');
+    push('clear-source','Clear Source','btn btn-ghost','themeModalDeleteSource');
     return actions;
   }
   if(state.key==='approved'){
@@ -1831,9 +1886,13 @@ function _themeModalRenderWorkflowActions(actions=[]){
 function _themeModalUpdateWorkflowCard(row={}){
   const card=document.getElementById('theme-workflow-card');
   const subtitle=document.getElementById('theme-workflow-subtitle');
+  const emptyEl=document.getElementById('theme-workflow-empty');
+  const metaListEl=document.getElementById('theme-workflow-meta-list');
   const stateEl=document.getElementById('theme-workflow-state');
   const originEl=document.getElementById('theme-workflow-origin');
+  const urlEl='theme-workflow-url';
   const offsetEl=document.getElementById('theme-workflow-offset');
+  const addedEl=document.getElementById('theme-workflow-added');
   const actionsEl=document.getElementById('theme-workflow-actions');
   const state=_themeModalWorkflowState(row);
   const source=_themeModalWorkflowSourceSummary(row);
@@ -1842,10 +1901,24 @@ function _themeModalUpdateWorkflowCard(row={}){
   _setHidden(card, !hasVisibleWorkflow, hasVisibleWorkflow?'block':'');
   if(!hasVisibleWorkflow) return;
   if(subtitle) subtitle.textContent=state.subtitle;
-  if(stateEl) stateEl.innerHTML=_renderSourceStatePill(state.label, state.className, state.subtitle);
-  if(originEl) originEl.innerHTML=`${_renderSourceStatePill(source.typeLabel, source.className, source.detail)}<div class="theme-workflow-detail">${_escapeHtml(source.methodLabel)}</div>`;
+  const hasSource=!!source.hasSource;
+  if(emptyEl) _setHidden(emptyEl, hasSource, hasSource?'':'block');
+  if(metaListEl) metaListEl.style.display=hasSource?'flex':'none';
+  if(stateEl) stateEl.innerHTML=hasSource?_renderSourceStatePill(state.label, state.className, state.subtitle):'No source';
+  if(originEl) originEl.innerHTML=hasSource?`${_renderSourceStatePill(source.typeLabel, source.className, source.detail)}<div class="theme-workflow-detail">${_escapeHtml(source.methodLabel)}</div>`:'No source';
   const clipDuration=(source.layer==='local_theme' && Number(row?.theme_duration||0)>0) ? parseFloat(row.theme_duration||0) : 0;
-  if(offsetEl) offsetEl.textContent=_themeModalOffsetLabel(row, source.layer==='local_theme', source.layer);
+  if(offsetEl) offsetEl.textContent=hasSource?_themeModalOffsetLabel(row, source.layer==='local_theme', source.layer):'—';
+  if(addedEl) addedEl.textContent=hasSource?_themeModalWorkflowAdded(row, source):'—';
+  _themeModalSetLinkRow({
+    urlId:urlEl,
+    controlsId:'theme-workflow-controls',
+    copyId:'theme-workflow-copy',
+    openId:'theme-workflow-open',
+    url:hasSource ? source.detail : '',
+    copyHandler:themeModalCopyWorkflowSource,
+    openHandler:themeModalOpenWorkflowSource,
+  });
+  _setHidden(document.getElementById('theme-workflow-clip'), !hasSource, hasSource?'':'');
   _setClipSummary('theme-workflow-clip','theme-workflow-clip-main','theme-workflow-clip-sub','theme-workflow-clip-warning',clipDuration,_themeModalOffsetValue(row, source.layer),Math.max(0, Number(_maxDur)||0),source.layer==='local_theme'?'local theme':'source');
   const clipSub=document.getElementById('theme-workflow-clip-sub');
   if(clipSub && source.layer==='golden_source' && !String(_selectedSourceContract(row).url||'').trim()){
@@ -1918,39 +1991,34 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-local-status').textContent=hasLocalTheme
     ?'Available locally'
     :(isSourceOnly?'Review saved source preview below':'No local theme file found');
-  document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
+  document.getElementById('theme-modal-file').textContent=themeFile;
   document.getElementById('theme-modal-local-dur').textContent=hasLocalTheme
     ? _themeModalOffsetLabel(row, true, 'local_theme')
-    :(showStoredSourcePreviewInLocalTheme?'Preview source loads below':'Duration: —');
-  _themeModalPopulateSourceSection(row, {prefix:'theme-modal'});
+    : (showStoredSourcePreviewInLocalTheme?'Preview clip appears in Selected Source below':'—');
   _themeModalPopulateSourceSection(row, {prefix:'theme-local'});
 
   const localCard=document.getElementById('theme-local-card');
   const localMeta=document.getElementById('theme-local-meta');
   const localTrimBtn=document.getElementById('theme-modal-trim-btn');
+  const localReplaceBtn=document.getElementById('theme-modal-local-replace-btn');
+  const localDeleteBtn=document.getElementById('theme-modal-local-delete-btn');
   const localPlayer=document.getElementById('theme-local-player');
   const localPreviewEmpty=document.getElementById('theme-local-preview-empty');
   const localSourceDetails=document.getElementById('theme-local-source-details');
   if(localCard) localCard.classList.toggle('compact', !hasLocalTheme && !showStoredSourcePreviewInLocalTheme);
   if(localMeta) localMeta.style.display='block';
   if(localTrimBtn) localTrimBtn.style.display=hasLocalTheme?'':'none';
+  if(localReplaceBtn) localReplaceBtn.style.display=hasLocalTheme?'':'none';
+  if(localDeleteBtn) localDeleteBtn.style.display=hasLocalTheme?'':'none';
   const showNestedLocalSource=hasLocalTheme && hasStoredSource;
   _setHidden(localSourceDetails, !showNestedLocalSource, showNestedLocalSource?'block':'');
   if(localSourceDetails) localSourceDetails.open=false;
-  _setHidden(localPlayer, !(hasLocalTheme || showStoredSourcePreviewInLocalTheme), (hasLocalTheme || showStoredSourcePreviewInLocalTheme)?'block':'');
-  _setHidden(localPreviewEmpty, !showStoredSourcePreviewInLocalTheme, showStoredSourcePreviewInLocalTheme?'block':'');
+  _setHidden(localPlayer, !!hasLocalTheme, hasLocalTheme?'block':'');
+  _setHidden(localPreviewEmpty, !(showStoredSourcePreviewInLocalTheme), showStoredSourcePreviewInLocalTheme?'block':'');
   if(!showStoredSourcePreviewInLocalTheme) _setHidden(document.getElementById('theme-modal-inline-play'), true);
-  const sourceCard=document.getElementById('theme-source-card');
-  const sourceLocalNote=document.getElementById('theme-source-local-note');
-  const showStandaloneSourceCard=!hasLocalTheme;
-  _setHidden(sourceCard, !showStandaloneSourceCard, showStandaloneSourceCard?'block':'');
-  if(sourceCard) sourceCard.classList.toggle('compact', !hasStoredSource);
-  _setHidden(sourceLocalNote, !hasLocalTheme);
 
   const deleteSourceBtn=document.getElementById('theme-modal-delete-btn');
-  const deleteLocalBtn=document.getElementById('theme-modal-delete-local-btn');
   if(deleteSourceBtn) deleteSourceBtn.style.display=canDeleteStoredSource?'':'none';
-  if(deleteLocalBtn) deleteLocalBtn.style.display=canDeleteLocalTheme?'':'none';
   _themeModalUpdateWorkflowCard(row);
 
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
@@ -1988,8 +2056,22 @@ async function themeModalDownloadApproved(){
   closeThemeModal();
 }
 
+function _themeModalWorkflowSourceUrl(row={}){
+  const summary=_themeModalWorkflowSourceSummary(row);
+  return summary?.hasSource ? String(summary.detail||'').trim() : '';
+}
 function themeModalOpenSource(){
   const url=_themeModalPrimarySourceUrl(_themeModalContext?.row||{});
+  if(!url) return toast('No source URL on this row','info');
+  window.open(url,'_blank');
+}
+function themeModalOpenLocalSource(){
+  const url=_themeModalLocalSourceUrl(_themeModalContext?.row||{});
+  if(!url) return toast('No local source URL on this row','info');
+  window.open(url,'_blank');
+}
+function themeModalOpenWorkflowSource(){
+  const url=_themeModalWorkflowSourceUrl(_themeModalContext?.row||{});
   if(!url) return toast('No source URL on this row','info');
   window.open(url,'_blank');
 }
@@ -2014,6 +2096,16 @@ async function themeModalCopySource(){
   }catch{
     toast('Could not copy source URL','err');
   }
+}
+async function themeModalCopyLocalSource(){
+  const url=_themeModalLocalSourceUrl(_themeModalContext?.row||{});
+  if(!url) return toast('No local source URL on this row','info');
+  return _copyTextValue(url,'Source URL copied');
+}
+async function themeModalCopyWorkflowSource(){
+  const url=_themeModalWorkflowSourceUrl(_themeModalContext?.row||{});
+  if(!url) return toast('No source URL on this row','info');
+  return _copyTextValue(url,'Source URL copied');
 }
 function themeModalSetStatus(status){
   const key=_themeModalContext?.rk;
