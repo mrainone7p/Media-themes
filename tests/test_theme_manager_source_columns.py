@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -22,14 +24,61 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         self.assertNotIn("Source URL ↕", self.template_source)
         self.assertNotIn("Start Offset (mm:ss) ↕", self.template_source)
 
-    def test_source_filter_options_match_new_states(self):
+    def test_source_filter_options_match_method_aware_states(self):
         for option in (
-            'value="CUSTOM">With Custom Source',
-            'value="NO_CUSTOM">Without Custom Source',
+            'value="PLAYLIST">Playlist-selected',
+            'value="DIRECT">Direct-selected',
+            'value="PASTE">Pasted URL-selected',
+            'value="MANUAL">Manual-selected',
             'value="LOCAL">Downloaded Locally',
             'value="NO_LOCAL">Not Downloaded Locally',
         ):
             self.assertIn(option, self.template_source)
+        self.assertNotIn('value="CUSTOM">With Custom Source', self.template_source)
+        self.assertNotIn('value="NO_CUSTOM">Without Custom Source', self.template_source)
+
+
+    def test_library_js_uses_selected_source_contract_for_playlist_labels_and_filtering(self):
+        start = self.library_source.index("function formatStatusLabel(value)")
+        end = self.library_source.index("function _localSourceState(row={})")
+        helper_block = self.library_source[start:end]
+        node_script = f"""
+{helper_block}
+const playlistRow = {{
+  url:'https://example.test/playlist',
+  golden_source_url:'https://example.test/golden',
+  status:'STAGED',
+  source_origin:'manual',
+  selected_source_kind:'custom',
+  selected_source_method:'playlist',
+}};
+const manualFallbackRow = {{
+  url:'https://example.test/manual',
+  status:'APPROVED',
+  source_origin:'manual',
+}};
+process.stdout.write(JSON.stringify({{
+  playlistLabel:_selectedSourceLabel(playlistRow),
+  playlistFilterKey:_selectedSourceFilterKey(playlistRow),
+  playlistState:_customSourceState(playlistRow),
+  manualFallbackLabel:_selectedSourceLabel(manualFallbackRow),
+  manualFallbackFilterKey:_selectedSourceFilterKey(manualFallbackRow),
+}}));
+"""
+        result = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual("Playlist", payload["playlistLabel"])
+        self.assertEqual("playlist", payload["playlistFilterKey"])
+        self.assertEqual("playlist", payload["playlistState"]["key"])
+        self.assertEqual("Playlist · Staged", payload["playlistState"]["pillLabel"])
+        self.assertEqual("Manual", payload["manualFallbackLabel"])
+        self.assertEqual("manual", payload["manualFallbackFilterKey"])
 
     def test_library_js_renders_new_source_state_cells(self):
         for snippet in (
