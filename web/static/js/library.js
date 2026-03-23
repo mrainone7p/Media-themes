@@ -1294,9 +1294,14 @@ function _setClipSummary(summaryId, mainId, subId, warningId, duration=0, offset
     summary.classList.toggle('is-warning', !!meta.exceeds);
   }
 }
-function _themeModalOffsetLabel(row={}, hasTheme=false){
+function _themeModalOffsetValue(row={}, layer='selected_source'){
+  if(layer==='golden_source') return row?.golden_source_offset||0;
+  if(layer==='local_theme') return row?.local_source_offset ?? row?.start_offset ?? 0;
+  return row?.start_offset||0;
+}
+function _themeModalOffsetLabel(row={}, hasTheme=false, layer='selected_source'){
   const duration=hasTheme && Number(row?.theme_duration||0)>0?parseFloat(row.theme_duration||0):0;
-  return _clipLengthOffsetLabel(duration, row?.start_offset||0, 0);
+  return _clipLengthOffsetLabel(duration, _themeModalOffsetValue(row, layer), 0);
 }
 function _themeModalNextAction(row={}, hasTheme=false){
   const status=String(row?.status||'').toUpperCase();
@@ -1372,14 +1377,17 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
     ?'Available locally'
     :(isSourceOnly?'Not on disk yet':'Missing locally');
   document.getElementById('theme-modal-file').textContent=`File path: ${themeFile}`;
-  document.getElementById('theme-modal-local-dur').textContent=`Duration: ${hasLocalTheme&&row?.theme_duration?fmt(parseFloat(row.theme_duration||0)):'—'}`;
+  document.getElementById('theme-modal-local-dur').textContent=hasLocalTheme
+    ? _themeModalOffsetLabel(row, true, 'local_theme')
+    : 'Duration: —';
   const sourceUrlEl=document.getElementById('theme-modal-source-url');
   if(sourceUrlEl){
     _applyAutoScrollText(sourceUrlEl, primarySourceUrl, {fallback:'—'});
   }
   document.getElementById('theme-modal-origin').textContent=hasStoredSource?sourceMeta.method:'—';
   document.getElementById('theme-modal-imported').textContent=hasStoredSource?_themeModalImportedAt(row):'—';
-  document.getElementById('theme-modal-offset').textContent=hasStoredSource?_themeModalOffsetLabel(row, hasLocalTheme):'—';
+  const sourceOffsetLayer=sourceMeta.type==='golden'?'golden_source':'selected_source';
+  document.getElementById('theme-modal-offset').textContent=hasStoredSource?_themeModalOffsetLabel(row, hasLocalTheme, sourceOffsetLayer):'—';
   document.getElementById('theme-modal-source-notes').textContent=hasStoredSource?(String(row?.notes||'').trim()||'No source notes recorded.'):'—';
   document.getElementById('theme-modal-source-summary').textContent=hasStoredSource
     ?(hasLocalTheme
@@ -1726,7 +1734,7 @@ function _goldenSourceMeta(row){
   const sourceRow=row||_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey))||{};
   return {
     url:String(sourceRow?.golden_source_url||'').trim(),
-    offset:_normalizedOffsetValue(sourceRow?.start_offset||'0')
+    offset:_normalizedOffsetValue(sourceRow?.golden_source_offset||'0')
   };
 }
 
@@ -1988,7 +1996,7 @@ async function openSearchModal(rk,title,year,lib){
   const goldenDesc=document.getElementById('sm-golden-desc');
   const goldenOffset=document.getElementById('sm-golden-offset');
   const goldenMeta=document.getElementById('sm-golden-meta');
-  const goldenOffsetValue=_normalizedOffsetValue(existingRow?.start_offset||'0');
+  const goldenOffsetValue=_normalizedOffsetValue(existingRow?.golden_source_offset||'0');
   if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
   if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
   if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item. If it fails, stay here to retry or replace the URL.':'No curated source is available for this item yet — choose another method to search alternatives.';
