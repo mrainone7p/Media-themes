@@ -1667,8 +1667,8 @@ function _themeModalUpdateLocalClipSummary(row={}, duration=0){
     const main=document.getElementById('theme-local-clip-main');
     const sub=document.getElementById('theme-local-clip-sub');
     const warning=document.getElementById('theme-local-clip-warning');
-    if(main) main.textContent='Length — · Offset 0:00';
-    if(sub) sub.textContent='Preview the local theme to confirm the kept portion.';
+    if(main) main.textContent='Offset 0:00 · Length —';
+    if(sub) sub.textContent='Load a local theme to confirm the kept portion.';
     if(warning) warning.textContent='';
     return;
   }
@@ -1683,8 +1683,8 @@ function _themeModalUpdateSelectedSourceClipSummary(row={}, duration=0){
     const main=document.getElementById('theme-workflow-clip-main');
     const sub=document.getElementById('theme-workflow-clip-sub');
     const warning=document.getElementById('theme-workflow-clip-warning');
-    if(main) main.textContent='Length — · Offset 0:00';
-    if(sub) sub.textContent='Choose a source to review its saved clip window.';
+    if(main) main.textContent='Offset 0:00 · Length —';
+    if(sub) sub.textContent='Choose a source to review its saved offset.';
     if(warning) warning.textContent='';
     return;
   }
@@ -1935,7 +1935,7 @@ function _clipWindowMeta(duration=0, offset=0, maxDur=0){
 }
 function _clipLengthOffsetLabel(duration=0, offset=0, maxDur=0){
   const meta=_clipWindowMeta(duration, offset, maxDur);
-  return `Length ${meta.total>0?fmt(meta.length):'—'} · Offset ${fmt(meta.rawOffset)}`;
+  return `Offset ${fmt(meta.rawOffset)} · Length ${meta.total>0?fmt(meta.length):'—'}`;
 }
 function _clipWindowPrimaryLabel(duration=0, offset=0, maxDur=0){
   const meta=_clipWindowMeta(duration, offset, maxDur);
@@ -2049,20 +2049,20 @@ function _themeModalWorkflowActions(row={}){
     actions.push({id,label,className,handler});
   };
   if(!hasSelected){
-    push('find-source','Find Source','btn btn-amber is-primary','themeModalOpenManualSearch');
+    push('find-source','Find Source','btn btn-amber btn-sm is-primary','themeModalOpenManualSearch');
     return actions;
   }
-  push('trim-source','Trim Source','btn btn-ghost','themeModalPreviewSourceTrim');
-  push('clear-source','Clear Source','btn btn-ghost','themeModalDeleteSource');
+  push('trim-source','Trim Source','btn btn-ghost btn-sm','themeModalPreviewSourceTrim');
+  push('clear-source','Clear Source','btn btn-ghost btn-sm','themeModalDeleteSource');
   if(status==='APPROVED'){
-    if(!hasLocal) push('download-now','Download','btn btn-green is-primary','themeModalDownloadApproved');
+    if(!hasLocal) push('download-now','Download','btn btn-green btn-sm is-primary','themeModalDownloadApproved');
     return actions;
   }
   if(status==='STAGED'){
-    push('approve','Approve','btn btn-amber is-primary','themeModalApproveSource');
+    push('approve','Approve','btn btn-amber btn-sm is-primary','themeModalApproveSource');
     return actions;
   }
-  push('stage','Stage','btn btn-amber is-primary','themeModalStageSource');
+  push('stage','Stage','btn btn-amber btn-sm is-primary','themeModalStageSource');
   return actions;
 }
 function _themeModalRenderWorkflowActions(actions=[]){
@@ -2899,7 +2899,7 @@ function _setSearchFooter(step){
   const dlnow = document.getElementById('search-modal-download-now');
   if(!back || !primary || !dlnow) return;
   if(step===1){
-    back.style.display='none';
+    back.style.display='';
     primary.style.display='';
     primary.textContent='🔍 Search';
     primary.className='btn btn-amber';
@@ -3100,6 +3100,10 @@ async function _searchByMethod(method, showStep=true){
   if(showStep){
     _renderResults(_lastSearchResults);
     _setSearchFooter(2);
+    if(method==='playlist' && _lastSearchResults.length){
+      const first=_lastSearchResults[0];
+      if(first?.url) setTimeout(()=>goToStep3(first.url,{skipPreview:false,sourceTitle:first.title||'1st result',entryMode:'playlist_auto'}),120);
+    }
   }
   return _lastSearchResults;
 }

@@ -1306,9 +1306,9 @@
             <div class="review-meta-value theme-detail-value is-path" id="theme-modal-file">—</div>
           </div>
           <div class="ui-meta-row review-meta-item clip-summary-row hidden" id="theme-local-clip">
-            <div class="clip-summary-label">Clip Window / Offset</div>
-            <div class="clip-summary-main" id="theme-local-clip-main">Length — · Offset 0:00</div>
-            <div class="clip-summary-sub" id="theme-local-clip-sub">Preview the local theme to confirm the kept portion.</div>
+            <div class="clip-summary-label">Offset</div>
+            <div class="clip-summary-main" id="theme-local-clip-main">Offset 0:00 · Length —</div>
+            <div class="clip-summary-sub" id="theme-local-clip-sub">Load a local theme to confirm the kept portion.</div>
             <div class="clip-summary-warning" id="theme-local-clip-warning"></div>
           </div>
         </div>
@@ -1374,9 +1374,9 @@
             <div class="review-meta-value" id="theme-workflow-added">—</div>
           </div>
           <div class="ui-meta-row review-meta-item clip-summary-row hidden" id="theme-workflow-clip">
-            <div class="clip-summary-label">Clip Window / Offset</div>
-            <div class="clip-summary-main" id="theme-workflow-clip-main">Length — · Offset 0:00</div>
-            <div class="clip-summary-sub" id="theme-workflow-clip-sub">Choose or review a source to see its saved clip window.</div>
+            <div class="clip-summary-label">Offset</div>
+            <div class="clip-summary-main" id="theme-workflow-clip-main">Offset 0:00 · Length —</div>
+            <div class="clip-summary-sub" id="theme-workflow-clip-sub">Choose or review a source to see its saved offset.</div>
             <div class="clip-summary-warning" id="theme-workflow-clip-warning"></div>
           </div>
         </div>
@@ -1385,7 +1385,8 @@
     </details>
 
     <!-- Footer -->
-    <div class="modal-footer">
+    <div class="modal-footer spread">
+      <button class="btn btn-ghost" onclick="closeThemeModal()">← Back</button>
       <div class="review-footer-actions footer-action-group">
         <button class="btn btn-ghost" onclick="closeThemeModal()">Close</button>
       </div>
@@ -1427,9 +1428,12 @@
     <div id="trim-modal-editor-root"></div>
 
     <!-- ── Footer ── -->
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeTrimModal()">Cancel</button>
-      <button class="btn btn-purple" onclick="applyTrimFromModal()">Apply Trim</button>
+    <div class="modal-footer spread">
+      <button class="btn btn-ghost" onclick="closeTrimModal()">← Back</button>
+      <div class="footer-action-group">
+        <button class="btn btn-ghost" onclick="closeTrimModal()">Cancel</button>
+        <button class="btn btn-purple" onclick="applyTrimFromModal()">Apply Trim</button>
+      </div>
     </div>
   </div>
 </div>
