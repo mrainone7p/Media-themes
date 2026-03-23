@@ -276,6 +276,12 @@ function _htmlAttr(s){
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
+function _setHidden(el, hidden=true, displayValue=''){
+  if(!el) return;
+  el.classList.toggle('hidden', !!hidden);
+  el.style.display=hidden?'none':displayValue;
+}
+
 function _truncateSourceText(value, {fallback='—', max=64, middle=false}={}){
   const raw=String(value||'').trim();
   if(!raw) return fallback;
@@ -930,30 +936,30 @@ async function setBio(elId,rk){
   const toggle=document.getElementById(`${elId}-toggle`);
   if(!el) return;
   if(!rk){
-    el.style.display='none';
-    if(wrap) wrap.style.display='none';
-    if(toggle) toggle.style.display='none';
+    _setHidden(el, true);
+    _setHidden(wrap, true);
+    _setHidden(toggle, true);
     return;
   }
   const bio=await fetchBio(rk);
   if(bio){
     el.textContent=bio;
-    el.style.display='';
     el.classList.add('is-clamped');
     el.dataset.expanded='false';
-    if(wrap) wrap.style.display='';
+    _setHidden(el, false);
+    _setHidden(wrap, false, 'flex');
     setTimeout(()=>{
       const needsToggle=(el.scrollHeight - el.clientHeight) > 2;
       if(toggle){
-        toggle.style.display=needsToggle?'inline-flex':'none';
+        _setHidden(toggle, !needsToggle, needsToggle?'inline-flex':'');
         toggle.textContent='More';
         toggle.setAttribute('aria-expanded','false');
       }
     }, 60);
   }else{
-    el.style.display='none';
-    if(wrap) wrap.style.display='none';
-    if(toggle) toggle.style.display='none';
+    _setHidden(el, true);
+    _setHidden(wrap, true);
+    _setHidden(toggle, true);
   }
 }
 
@@ -1251,7 +1257,7 @@ function openThemeModal(rk,title,year,folder,row={}){
   const sourceMetaList=document.getElementById('theme-source-meta-list');
   const sourceDetails=document.getElementById('theme-source-details');
   const openSourceBtn=document.getElementById('theme-open-source-btn');
-  if(sourceEmpty) sourceEmpty.style.display=hasSource?'none':'block';
+  _setHidden(sourceEmpty, hasSource, hasSource?'':'block');
   if(sourceMetaList) sourceMetaList.style.display=hasSource?'flex':'none';
   if(openSourceBtn) openSourceBtn.style.display=hasSource?'':'none';
   const copySourceBtn=document.getElementById('theme-copy-source-btn');
@@ -1268,11 +1274,11 @@ function openThemeModal(rk,title,year,folder,row={}){
   const localDeleteBtn=document.getElementById('theme-modal-delete-btn');
   if(localCard) localCard.classList.toggle('compact', !hasTheme);
   if(localMeta) localMeta.style.display=hasTheme?'block':'none';
-  if(localMissing) localMissing.style.display=hasTheme?'none':'block';
+  _setHidden(localMissing, hasTheme, hasTheme?'':'block');
   if(localTrimBtn) localTrimBtn.style.display=hasTheme?'':'none';
   if(localDeleteBtn) localDeleteBtn.style.display=hasTheme?'':'none';
   const localInlinePlay=document.getElementById('theme-modal-inline-play');
-  if(localInlinePlay) localInlinePlay.style.display=hasTheme?'inline-flex':'none';
+  _setHidden(localInlinePlay, !hasTheme, hasTheme?'inline-flex':'');
   const sourceCard=document.getElementById('theme-source-card');
   if(sourceCard) sourceCard.classList.toggle('compact', !hasSource);
 
@@ -1280,24 +1286,24 @@ function openThemeModal(rk,title,year,folder,row={}){
   const findBtn=document.getElementById('theme-find-btn');
   const nextStepBtn=document.getElementById('theme-next-step-btn');
   if(replaceBtn) replaceBtn.style.display=hasTheme?'':'none';
-  if(findBtn) findBtn.style.display=hasTheme?'none':'';
+  _setHidden(findBtn, hasTheme, hasTheme?'':'');
   const nextAction=_themeModalNextAction(row, hasTheme);
   if(nextStepBtn){
     if(nextAction && nextAction.handler!=='find'){
-      nextStepBtn.style.display='';
+      _setHidden(nextStepBtn, false, '');
       nextStepBtn.textContent=nextAction.label;
       nextStepBtn.className=nextAction.className;
       nextStepBtn.dataset.action=nextAction.handler;
     }else{
-      nextStepBtn.style.display='none';
+      _setHidden(nextStepBtn, true);
       nextStepBtn.dataset.action='';
       nextStepBtn.className='btn btn-ghost';
       nextStepBtn.textContent='Next Step';
     }
   }
 
-  document.getElementById('theme-local-player').style.display=hasTheme?'block':'none';
-  document.getElementById('theme-local-missing').style.display=hasTheme?'none':'block';
+  _setHidden(document.getElementById('theme-local-player'), !hasTheme, hasTheme?'block':'');
+  _setHidden(document.getElementById('theme-local-missing'), hasTheme, hasTheme?'':'block');
 
   document.getElementById('theme-modal-poster').src=apiUrl('/api/poster?key='+rk);
   document.getElementById('theme-modal-poster').style.display='';
@@ -1713,18 +1719,18 @@ function _setSearchFooter(step){
     primary.textContent='🔍 Search';
     primary.className='btn btn-amber';
     primary.onclick=doSearch;
-    dlnow.style.display='none';
+    _setHidden(dlnow, true);
   } else if(step===2){
     back.style.display='';
     primary.style.display='none';
-    dlnow.style.display='none';
+    _setHidden(dlnow, true);
   } else if(step===3){
     back.style.display='';
     primary.style.display='';
     primary.textContent='Approve';
     primary.className='btn btn-amber';
     primary.onclick=approveSourceEditor;
-    dlnow.style.display='';
+    _setHidden(dlnow, false, '');
   }
 }
 
@@ -1759,7 +1765,10 @@ async function openSearchModal(rk,title,year,lib){
   document.getElementById('search-modal-title').textContent=title||'Find Theme Source';
   document.getElementById('search-modal-year-meta').textContent=year||'';
   const posterEl=document.getElementById('search-modal-poster');
-  if(title){ posterEl.src=apiUrl('/api/poster/tmdb?title='+encodeURIComponent(title)+'&year='+encodeURIComponent(year||'')+'&size=w342'); posterEl.style.display=''; }
+  if(title){
+    posterEl.src=apiUrl('/api/poster/tmdb?title='+encodeURIComponent(title)+'&year='+encodeURIComponent(year||'')+'&size=w342');
+    _setHidden(posterEl, false, '');
+  }
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
   document.getElementById('search-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${tmdbUrl}" target="_blank" rel="noopener">🎬 TMDB</a>`;
   setBio('search-modal-bio',rk);
@@ -2495,7 +2504,8 @@ function openYtModal(rk,title,year,url,lib){
   _ytModalKey=rk;_ytModalLib=decodeURIComponent(lib);
   // Poster
   const posterEl=document.getElementById('yt-modal-poster');
-  posterEl.src=apiUrl('/api/poster?key='+rk); posterEl.style.display='';
+  posterEl.src=apiUrl('/api/poster?key='+rk);
+  _setHidden(posterEl, false, '');
   // Header info
   document.getElementById('yt-modal-title').textContent=title;
   document.getElementById('yt-modal-year-meta').textContent=year;
@@ -2511,7 +2521,7 @@ function openYtModal(rk,title,year,url,lib){
   document.getElementById('yt-modal-trim-info').textContent='';
   _ytModalAudio.setStatus('Resolving stream…');
   setBio('yt-modal-bio', rk);
-  document.getElementById('yt-modal-save').style.display='inline-flex';
+  _setHidden(document.getElementById('yt-modal-save'), false, 'inline-flex');
   _ytModalAudio.cleanup({clearSrc:false});
   document.getElementById('yt-modal-dur-val').textContent='—';
   openModal('yt-modal');
