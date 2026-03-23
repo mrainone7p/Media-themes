@@ -623,7 +623,7 @@
           <th style="width:10%" onclick="sortTable('status')">Status ↕</th>
           <th style="width:12%">Action</th>
           <th style="width:10%" onclick="sortTable('golden_state')">Golden ↕</th>
-          <th style="width:12%" onclick="sortTable('custom_state')">Custom ↕</th>
+          <th style="width:12%" onclick="sortTable('custom_state')">Selected ↕</th>
           <th style="width:11%" onclick="sortTable('local_state')">Local ↕</th>
           <th style="width:7%" onclick="sortTable('last_updated')">Updated ↕</th>
           <th style="width:9%" onclick="sortTable('notes')">Notes ↕</th>
@@ -1252,13 +1252,15 @@
           <div class="source-editor-title">Selected Source</div>
           <div class="modal-section-header-row source-summary-row">
             <div class="source-summary-meta">
-              <div id="se-source-title" class="source-summary-title">—</div>
+              <div class="source-summary-title">Source State</div>
+              <div id="se-source-summary-subtitle" class="review-card-subtitle">Review Golden, Selected, and Local layers before saving.</div>
             </div>
             <div class="source-summary-actions">
               <button class="btn btn-ghost btn-sm" id="se-copy-btn" onclick="seCopyUrl()">⧉ Copy</button>
               <button class="btn btn-ghost btn-sm" id="se-open-btn" onclick="seOpenUrl()">↗ Open</button>
             </div>
           </div>
+          <div class="source-state-stack source-state-stack-compact" id="se-source-state-stack"></div>
           <div class="source-edit-wrap">
             <label class="source-edit-label" for="se-url">Edit full URL only if needed</label>
             <input id="se-url" class="search-method-input is-muted" style="flex:1;margin-top:0" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
@@ -1350,40 +1352,19 @@
     <div class="review-card" id="theme-source-card">
       <div class="review-card-header">
         <div class="review-card-heading">
-          <div class="modal-section-label mb-0">Source Details</div>
-          <div class="review-card-subtitle" id="theme-modal-source-summary">Theme used for download and the details applied to it.</div>
+          <div class="modal-section-label mb-0">Source State</div>
+          <div class="review-card-subtitle" id="theme-modal-source-summary">Golden, Selected, and Local layers stay separate so each row shows the source lifecycle clearly.</div>
         </div>
-        <div class="ui-pill review-source-pill is-unknown" id="theme-modal-source-pill">Unknown</div>
+        <div class="ui-pill review-source-pill is-unknown" id="theme-modal-source-pill">3 Layers</div>
       </div>
-      <div class="review-empty hidden" id="theme-source-empty">No source is attached right now.</div>
+      <div class="review-empty hidden" id="theme-source-empty">No Golden, Selected, or Local source state is recorded yet.</div>
       <details class="surface-panel compact theme-source-details" id="theme-source-details">
         <summary>
-          <span class="theme-source-summary-text">Source metadata</span>
+          <span class="theme-source-summary-text">Layer details</span>
           <span class="settings-chev">▾</span>
         </summary>
+        <div class="source-state-stack source-state-stack-modal" id="theme-source-state-stack"></div>
         <div class="ui-meta-list review-meta-list" id="theme-source-meta-list">
-          <div class="ui-meta-row review-meta-item">
-            <div class="review-meta-label">Theme Source</div>
-            <div class="review-meta-value theme-source-url-row">
-              <span class="theme-source-url-text" id="theme-modal-source-url">—</span>
-              <span class="theme-source-url-actions">
-                <button class="btn btn-ghost btn-xs" id="theme-copy-source-btn" onclick="themeModalCopySource()">Copy</button>
-                <button class="btn btn-ghost btn-xs" id="theme-open-source-btn" onclick="themeModalOpenSource()">Open</button>
-              </span>
-            </div>
-          </div>
-          <div class="ui-meta-row review-meta-item">
-            <div class="review-meta-label">Imported</div>
-            <div class="review-meta-value" id="theme-modal-imported">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item">
-            <div class="review-meta-label">Pull Method</div>
-            <div class="review-meta-value" id="theme-modal-origin">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item">
-            <div class="review-meta-label">Length / Offset</div>
-            <div class="review-meta-value" id="theme-modal-offset">—</div>
-          </div>
           <div class="ui-meta-row review-meta-item">
             <div class="review-meta-label">Notes</div>
             <div class="review-meta-value" id="theme-modal-source-notes">—</div>

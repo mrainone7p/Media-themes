@@ -35,8 +35,9 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
             "function _goldenSourceState(row={})",
             "function _customSourceState(row={})",
             "function _localSourceState(row={})",
+            "function _renderSourceStateStack(targetId,row={},opts={})",
             "_renderSourceStateCell('Golden'",
-            "_renderSourceStateCell('Custom'",
+            "_renderSourceStateCell('Selected'",
             "_renderSourceStateCell('Local'",
         ):
             self.assertIn(snippet, self.library_source)
@@ -48,8 +49,6 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
             "if(layer==='golden_source') return row?.golden_source_offset||0;",
             "if(layer==='local_theme') return row?.local_source_offset ?? row?.start_offset ?? 0;",
             "return row?.start_offset||0;",
-            "const sourceOffsetLayer=sourceMeta.type==='golden'?'golden_source':'selected_source';",
-            "_themeModalOffsetLabel(row, hasLocalTheme, sourceOffsetLayer)",
             "_themeModalOffsetLabel(row, true, 'local_theme')",
             "_setMethodQuickPick('golden_source', golden.url ? {title:'Golden Source URL', url:golden.url, start_offset:golden.offset} : false);",
         ):

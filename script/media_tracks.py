@@ -69,11 +69,13 @@ from shared.storage import (
     TMDB_GUID_RE,
     clear_local_source_provenance,
     ffprobe_duration,
+    infer_selected_source_contract,
     ledger_path_for,
     load_ledger_map as load_ledger,
     now_str,
     read_golden_source_text,
     save_ledger_map as save_ledger,
+    set_selected_source_contract,
     stamp_local_source_provenance,
     sync_theme_cache,
 )
@@ -171,7 +173,8 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
                   year: str, folder: str, status: str, url: str = "",
                   start_offset=0, end_offset=0, notes: str = "", tmdb_id: str = "",
                   source_origin: str | None = None, golden_source_url: str = "",
-                  golden_source_offset=0):
+                  golden_source_offset=0, selected_source_kind: str = "",
+                  selected_source_method: str = ""):
     """Insert or update a row. Never overwrites a user-supplied URL."""
     existing = ledger.get(rating_key, {})
     if source_origin is None:
@@ -182,6 +185,8 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         "status":         status,
         "url":            url if url else existing.get("url", ""),
         "start_offset":   str(start_offset) if start_offset else existing.get("start_offset", "0"),
+        "selected_source_kind": existing.get("selected_source_kind", ""),
+        "selected_source_method": existing.get("selected_source_method", ""),
         "golden_source_url": golden_source_url if golden_source_url else existing.get("golden_source_url", ""),
         "golden_source_offset": str(golden_source_offset) if golden_source_offset else existing.get("golden_source_offset", "0"),
         "end_offset":     str(end_offset) if end_offset else existing.get("end_offset", "0"),
@@ -200,9 +205,20 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         "local_source_url": existing.get("local_source_url", ""),
         "local_source_offset": existing.get("local_source_offset", "0"),
         "local_source_origin": existing.get("local_source_origin", ""),
+        "local_source_kind": existing.get("local_source_kind", ""),
         "local_source_method": existing.get("local_source_method", ""),
         "local_source_recorded_at": existing.get("local_source_recorded_at", ""),
     }
+    if ledger[rating_key]["url"]:
+        existing_kind, existing_method = infer_selected_source_contract(existing)
+        set_selected_source_contract(
+            ledger[rating_key],
+            kind=selected_source_kind or existing_kind,
+            method=selected_source_method or existing_method,
+        )
+    else:
+        ledger[rating_key]["selected_source_kind"] = ""
+        ledger[rating_key]["selected_source_method"] = ""
 
 
 # ─── Plex API ─────────────────────────────────────────────────────────────────
@@ -785,6 +801,8 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
                 end_offset=match.get("end_offset", 0),
                 notes="Matched from Golden Source", tmdb_id=tmdb_id,
                 source_origin="golden_source",
+                selected_source_kind="golden",
+                selected_source_method="golden_source",
             )
             stats["staged"]         += 1
             stats["golden_matched"] += 1
@@ -869,6 +887,8 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
             ledger, key, plex_title, title, year, folder, ST_STAGED,
             url=url, notes=f"Found via {method_used} — awaiting approval", tmdb_id=tmdb_id,
             source_origin=f"youtube_{method_used}",
+            selected_source_kind="custom",
+            selected_source_method="playlist" if "playlist" in method_used else "direct",
         )
         stats["staged"] += 1
 
@@ -938,7 +958,7 @@ def pass3_download(ledger: dict, cfg: dict) -> dict:
             recorded_at         = now_str()
             row["last_updated"] = recorded_at
             row["notes"]        = message
-            stamp_local_source_provenance(row, recorded_at=recorded_at, method="pass3_download")
+            stamp_local_source_provenance(row, recorded_at=recorded_at)
             row, _              = sync_theme_cache(row, theme_filename, probe_duration=True)
             ledger[rk]          = row  # write back with updated theme cache
             stats["downloaded"] += 1

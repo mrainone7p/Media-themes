@@ -10,11 +10,13 @@ from shared.golden_source_csv import parse_golden_source_csv_rows
 from shared.storage import (
     LEDGER_HEADERS,
     ffprobe_duration,
+    infer_selected_source_contract,
     ledger_path_for,
     load_ledger_rows as load_ledger,
     now_str,
     read_golden_source_text,
     save_ledger_rows as save_ledger,
+    set_selected_source_contract,
     status_after_clearing_source,
     validate_manual_status_transition,
 )
@@ -109,7 +111,25 @@ def save_ledger_row_updates(row: dict, updates: dict, *, default_notes: str | No
     if "url" in updates:
         updated_url = str(updates.get("url") or "").strip()
         golden_url = str(row.get("golden_source_url", "") or "").strip()
-        row["source_origin"] = "golden_source" if updated_url and golden_url and updated_url == golden_url else ("manual" if updated_url else "unknown")
+        selected_method = str(updates.get("selected_source_method", "") or "").strip().lower()
+        if updated_url and golden_url and updated_url == golden_url:
+            row["source_origin"] = "golden_source"
+        elif updated_url and selected_method in {"playlist", "direct"}:
+            row["source_origin"] = f"youtube_{selected_method}"
+        else:
+            row["source_origin"] = "manual" if updated_url else "unknown"
+        set_selected_source_contract(
+            row,
+            kind=str(updates.get("selected_source_kind", "") or ""),
+            method=str(updates.get("selected_source_method", "") or ""),
+        )
+    elif "selected_source_kind" in updates or "selected_source_method" in updates:
+        selected_kind, selected_method = infer_selected_source_contract(candidate_row)
+        set_selected_source_contract(
+            row,
+            kind=str(updates.get("selected_source_kind", "") or selected_kind),
+            method=str(updates.get("selected_source_method", "") or selected_method),
+        )
     row["last_updated"] = now_str()
     if "notes" not in updates and default_notes is not None:
         row["notes"] = default_notes
@@ -143,6 +163,8 @@ def clear_source_urls_for_rows(rows: list[dict], *, keys=None, note: str, now: s
         row["url"] = ""
         row["start_offset"] = "0"
         row["source_origin"] = "unknown"
+        row["selected_source_kind"] = ""
+        row["selected_source_method"] = ""
         row["status"] = next_status
         row["last_updated"] = now
         row["notes"] = note
@@ -329,6 +351,7 @@ def golden_source_import_summary(data: dict):
             row["url"] = incoming_url
             row["start_offset"] = incoming_offset
             row["source_origin"] = "golden_source" if incoming_url else "unknown"
+            set_selected_source_contract(row, kind="golden" if incoming_url else "", method="golden_source" if incoming_url else "")
         if current_status == "UNMONITORED":
             pass
         elif not incoming_url and current_status != "AVAILABLE":
