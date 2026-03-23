@@ -107,7 +107,9 @@ def save_ledger_row_updates(row: dict, updates: dict, *, default_notes: str | No
         row["status"] = attempted_status
 
     if "url" in updates:
-        row["source_origin"] = "manual" if str(updates.get("url") or "").strip() else "unknown"
+        updated_url = str(updates.get("url") or "").strip()
+        golden_url = str(row.get("golden_source_url", "") or "").strip()
+        row["source_origin"] = "golden_source" if updated_url and golden_url and updated_url == golden_url else ("manual" if updated_url else "unknown")
     row["last_updated"] = now_str()
     if "notes" not in updates and default_notes is not None:
         row["notes"] = default_notes
