@@ -249,6 +249,50 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertEqual("https://example.test/local-theme", row["local_source_url"])
         self.assertEqual("golden_source", row["local_source_method"])
 
+
+    def test_stale_available_manual_source_save_and_approve_path_restages_then_approves(self):
+        row = {
+            "rating_key": "1",
+            "title": "Example",
+            "status": "AVAILABLE",
+            "url": "https://example.test/old-selected",
+            "start_offset": "2",
+            "selected_source_kind": "custom",
+            "selected_source_method": "direct",
+            "selected_source_recorded_at": "2026-03-21 08:30:00",
+            "theme_exists": "0",
+            "notes": "",
+        }
+
+        with (
+            patch("web.services.load_ledger", return_value=[row]),
+            patch("web.services.save_ledger"),
+            patch("web.ledger.now_str", return_value="2026-03-23 15:00:00"),
+            patch("shared.storage._now_str", return_value="2026-03-23 15:00:00"),
+        ):
+            payload, status = services.save_manual_source_payload({
+                "library": "Movies",
+                "rating_key": "1",
+                "url": "https://example.test/new-selected",
+                "start_offset": "11",
+                "selected_source_kind": "custom",
+                "selected_source_method": "playlist",
+                "target_status": "STAGED",
+                "notes": "Manual override",
+            })
+
+        self.assertEqual(200, status)
+        self.assertTrue(payload["ok"])
+        self.assertEqual("STAGED", row["status"])
+        self.assertEqual("https://example.test/new-selected", row["url"])
+
+        with patch("web.ledger.now_str", return_value="2026-03-23 15:05:00"):
+            saved_row, error = ledger.save_ledger_row_updates(row, {"status": "APPROVED"})
+
+        self.assertIs(saved_row, row)
+        self.assertIsNone(error)
+        self.assertEqual("APPROVED", row["status"])
+
     def test_status_only_edit_keeps_source_specific_timestamps_stable(self):
         row = {
             "rating_key": "1",

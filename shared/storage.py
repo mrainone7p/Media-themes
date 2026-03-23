@@ -101,8 +101,25 @@ def migrate_legacy_status(status: str | None) -> tuple[str, str | None]:
     return normalized, None
 
 
-def valid_manual_targets(current_status: str | None) -> tuple[str, ...]:
+def effective_manual_status(
+    current_status: str | None,
+    *,
+    has_url: bool = False,
+    has_theme: bool = False,
+) -> str:
     current = normalize_status(current_status)
+    if current == "AVAILABLE" and not has_theme:
+        return "STAGED" if has_url else "MISSING"
+    return current
+
+
+def valid_manual_targets(
+    current_status: str | None,
+    *,
+    has_url: bool = False,
+    has_theme: bool = False,
+) -> tuple[str, ...]:
+    current = effective_manual_status(current_status, has_url=has_url, has_theme=has_theme)
     targets = set(MANUAL_STATUS_TRANSITIONS.get(current, frozenset()))
     targets.add("UNMONITORED")
     return tuple(status for status in STATUS_ORDER if status in targets)
@@ -117,6 +134,7 @@ def validate_manual_status_transition(
 ) -> dict | None:
     attempted = normalize_status(attempted_status, default="")
     current = normalize_status(current_status, default="")
+    effective_current = effective_manual_status(current, has_url=has_url, has_theme=has_theme)
     if not attempted or attempted not in VALID_STATUSES:
         return {
             "error": "Invalid target status",
@@ -124,10 +142,10 @@ def validate_manual_status_transition(
             "current_status": current,
             "attempted_status": attempted,
         }
-    if attempted == current:
+    if attempted == effective_current:
         return None
 
-    supported_targets = list(valid_manual_targets(current))
+    supported_targets = list(valid_manual_targets(current, has_url=has_url, has_theme=has_theme))
     if attempted == "UNMONITORED":
         return None
     if attempted == "STAGED" and not has_url:
@@ -146,7 +164,7 @@ def validate_manual_status_transition(
             "attempted_status": attempted,
             "supported_targets": supported_targets,
         }
-    if attempted == "APPROVED" and current != "STAGED":
+    if attempted == "APPROVED" and effective_current != "STAGED":
         return {
             "error": "Only STAGED items can be approved",
             "reason_code": "APPROVAL_REQUIRES_STAGED",
@@ -155,12 +173,12 @@ def validate_manual_status_transition(
             "supported_targets": supported_targets,
         }
 
-    allowed = MANUAL_STATUS_TRANSITIONS.get(current, frozenset())
+    allowed = MANUAL_STATUS_TRANSITIONS.get(effective_current, frozenset())
     if attempted not in allowed:
         return {
             "error": (
                 f"Unsupported manual status transition: {current} -> {attempted}. "
-                f"Allowed manual targets from {current}: {', '.join(supported_targets)}"
+                f"Allowed manual targets from {effective_current}: {', '.join(supported_targets)}"
             ),
             "reason_code": "INVALID_STATUS_TRANSITION",
             "current_status": current,

@@ -195,7 +195,7 @@ function _selectedSourceStateText(row={}){
   const selectedUrl=String(row?.url||'').trim();
   if(!selectedUrl) return 'Not Selected';
   if(_hasLocalTheme(row)) return 'Downloaded';
-  const status=String(row?.status||'').toUpperCase();
+  const status=_effectiveRowStatus(row);
   if(status==='APPROVED') return 'Approved';
   if(status==='STAGED') return 'Staged';
   if(status==='FAILED') return 'Failed';
@@ -264,7 +264,7 @@ function _renderSourceStateCell(title, primary, secondary='', chips=[]){
 
 function _statusValidation(row, attemptedStatus){
   const attempted=String(attemptedStatus||'').toUpperCase();
-  const current=String(row?.status||'').toUpperCase();
+  const current=_effectiveRowStatus(row);
   if(!STATUSES.includes(attempted)){
     return {ok:false, reason:'That status is no longer available.'};
   }
@@ -286,7 +286,7 @@ function _statusValidation(row, attemptedStatus){
 }
 
 function allowedStatuses(row){
-  const current=String(row?.status||'').toUpperCase();
+  const current=_effectiveRowStatus(row);
   return STATUSES.filter(status=>status===current || _statusValidation(row,status).ok);
 }
 
@@ -411,7 +411,7 @@ function clearDbFilter(opts={}){
 }
 
 function rowActionType(row){
-  const status=String(row?.status||'').toUpperCase();
+  const status=_effectiveRowStatus(row);
   if(status==='STAGED') return 'APPROVE';
   if(status==='APPROVED') return 'DOWNLOAD';
   if(status==='MISSING' && !_hasSourceUrl(row)) return 'FIND_SOURCE';
@@ -1334,6 +1334,13 @@ function _themeHasLocal(row){
   if(!row) return false;
   return String(row.theme_exists||'')==='1';
 }
+function _effectiveRowStatus(row={}){
+  const status=String(row?.status||'MISSING').toUpperCase();
+  const hasTheme=_themeHasLocal(row);
+  const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim();
+  if(status==='AVAILABLE' && !hasTheme) return hasStoredSource ? 'STAGED' : 'MISSING';
+  return status;
+}
 function _themeModalPrimarySourceUrl(row={}){
   return String(_selectedSourceContract(row).url||'').trim();
 }
@@ -1604,13 +1611,17 @@ function _themeModalOffsetLabel(row={}, hasTheme=false, layer='selected_source')
   return _clipLengthOffsetLabel(duration, _themeModalOffsetValue(row, layer), 0);
 }
 function _themeModalNextAction(row={}, hasTheme=false, hasStoredSource=false){
-  const status=String(row?.status||'').toUpperCase();
+  const status=_effectiveRowStatus(row);
   if(hasTheme) return null;
   if(hasStoredSource){
     if(status==='STAGED') return {label:'Approve Theme',className:'btn btn-amber',handler:'approve'};
-    return {label:'Download Theme',className:'btn btn-green',handler:'download'};
+    if(status==='APPROVED') return {label:'Download Theme',className:'btn btn-green',handler:'download'};
+    return null;
   }
-  return {label:'Find Theme',className:'btn btn-amber',handler:'find'};
+  if(status==='MISSING' || status==='FAILED' || status==='UNMONITORED'){
+    return {label:'Find Theme',className:'btn btn-amber',handler:'find'};
+  }
+  return null;
 }
 const THEME_MODAL_STATUS_HELPERS={
   MISSING:{
@@ -1652,7 +1663,7 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   const resolvedLibrary=String(library||row?.library||'').trim()||_activeLib||_currentLib();
   _themeModalContext={rk,title,year,folder,row,library:resolvedLibrary};
   const hasTheme=_themeHasLocal(row);
-  const status=String(row?.status||'MISSING').toUpperCase();
+  const status=_effectiveRowStatus(row);
   const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim();
   const hasLocalTheme=hasTheme;
   const isDownloadable=!hasLocalTheme && hasStoredSource && status==='APPROVED';

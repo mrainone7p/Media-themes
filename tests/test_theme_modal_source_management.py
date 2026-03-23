@@ -70,5 +70,26 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             self.assertIn(snippet, self.library_source)
 
 
+
+    def test_theme_modal_next_action_normalizes_stale_available_before_exposing_actions(self):
+        for snippet in (
+            'function _effectiveRowStatus(row={}){',
+            "if(status==='AVAILABLE' && !hasTheme) return hasStoredSource ? 'STAGED' : 'MISSING';",
+            "const status=_effectiveRowStatus(row);",
+            "if(status==='APPROVED') return {label:'Download Theme',className:'btn btn-green',handler:'download'};",
+            "return null;",
+        ):
+            self.assertIn(snippet, self.library_source)
+
+    def test_search_modal_approve_then_download_path_still_saves_staged_first(self):
+        for snippet in (
+            "const status='STAGED';",
+            'await saveSourceEditor(true);',
+            "await updateRow(key,'status','APPROVED');",
+            'await approveSourceEditor(true);',
+            "toast('Approved source — downloading now…','info');",
+        ):
+            self.assertIn(snippet, self.library_source)
+
 if __name__ == "__main__":
     unittest.main()
