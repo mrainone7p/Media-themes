@@ -669,6 +669,7 @@ function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
       refreshBtn.disabled=false;
       refreshBtn.textContent='Refresh';
     }
+    if(!_dashboardHealthLoading) dashboardRefreshHealth(false).catch(err=>console.warn('Dashboard health refresh failed', err));
   }
 }
 function renderDashboardActionStation(health){
@@ -676,7 +677,12 @@ function renderDashboardActionStation(health){
   if(!el) return;
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   const scheduleActive=s.state==='ok'||s.state==='warning'||s.state==='warn';
-  const scheduleDetail=s.detail?`<div style="font-size:11px;color:var(--text3);margin-top:6px">${s.detail}</div>`:'';
+  const scheduleMetaParts=[];
+  if(!s.next_run && s.cron){
+    scheduleMetaParts.push(`<div class="dash-station-schedule-meta">Cron: <code>${s.cron}</code></div>`);
+  }
+  if(s.detail) scheduleMetaParts.push(`<div class="dash-station-schedule-meta">${s.detail}</div>`);
+  const scheduleMetaHtml=scheduleMetaParts.length?`<div class="dash-station-schedule-copy">${scheduleMetaParts.join('')}</div>`:'';
   // Next run block
   let nextRunHtml='';
   const nrFull=formatNextRunFull(s.next_run);
@@ -685,23 +691,24 @@ function renderDashboardActionStation(health){
     nextRunHtml=`<div class="dash-station-next-run">
       <div class="dash-station-next-label">Next Scheduled Run</div>
       <div class="dash-station-next-rel"><span id="dash-next-run-rel">${nrFull.rel}</span></div>
-      <div class="dash-station-next-abs">${nrFull.abs}</div>
-      ${scheduleDetail}
+      <div class="dash-station-next-abs">Runs ${nrFull.abs}</div>
+      ${scheduleMetaHtml}
     </div>`;
   } else if(scheduleActive){
     nextRunHtml=`<div class="dash-station-next-run">
       <div class="dash-station-next-label">Automation</div>
       <div style="margin-top:3px">${dashboardStatusBadge(s.label,s.state)}</div>
-      ${scheduleDetail}
+      ${scheduleMetaHtml}
     </div>`;
   } else {
     nextRunHtml=`<div class="dash-station-next-run" style="border-style:dashed">
       <div class="dash-station-next-label">Automation</div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">No schedule configured</div>
-      ${scheduleDetail}
+      ${scheduleMetaHtml}
     </div>`;
   }
-  const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Setup Schedule</button>`;
+  const scheduleBtnLabel=scheduleActive?'Edit Schedule':'Setup Schedule';
+  const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">${scheduleBtnLabel}</button>`;
   const runOrStopBtn=_dashRunActive
     ?`<button class="btn btn-red btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
     :`<button class="btn btn-green btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
@@ -714,8 +721,9 @@ function renderDashboardActionStationFromConfig(cfg, scheduledLibs){
       state:cfg.schedule_enabled ? (scheduledLibs.length ? 'ok' : 'warning') : 'off',
       label:cfg.schedule_enabled ? (scheduledLibs.length ? 'Configured' : 'No libraries selected') : 'Disabled',
       next_run:null,
+      cron:(cfg.cron_schedule||'0 3 * * *').trim(),
       detail:cfg.schedule_enabled
-        ? `Scheduled for ${scheduledLibs.length} librar${scheduledLibs.length===1?'y':'ies'}. Quick status will calculate the next run shortly.`
+        ? `Scheduled for ${scheduledLibs.length} librar${scheduledLibs.length===1?'y':'ies'}.`
         : 'Enable automation in Scheduler to run this pipeline automatically.',
     }
   });
@@ -1075,15 +1083,18 @@ function renderBarChart(){
   const padL=40, padR=10, padT=10, padB=30;
   const plotW=chartW-padL-padR;
   const plotH=chartH-padT-padB;
-  const barW=Math.max(8,Math.min(40,Math.floor(plotW/keys.length)-4));
-  const gap=Math.max(2,(plotW-barW*keys.length)/(keys.length||1));
+  const smallSeries=keys.length<=6;
+  const barW=Math.max(8,Math.min(smallSeries?80:40,Math.floor(plotW/Math.max(keys.length,1))-(smallSeries?10:4)));
+  const gap=smallSeries?Math.min(24, Math.max(8, Math.floor(plotW/(Math.max(keys.length,1)*3)))):Math.max(2,(plotW-barW*keys.length)/(keys.length||1));
+  const usedW=keys.length*barW+Math.max(0,keys.length-1)*gap;
+  const startX=padL+Math.max(0,(plotW-usedW)/2);
   // Y-axis scale
   const yScale=plotH/maxTotal;
   // Build bars
   let bars='';
   let labels='';
   keys.forEach((key,i)=>{
-    const x=padL+i*(barW+gap)+gap/2;
+    const x=startX+i*(barW+gap);
     let y=padT+plotH;
     BAR_STATUSES.forEach(st=>{
       const val=buckets[key][st]||0;
@@ -1282,7 +1293,7 @@ async function loadDashboard(force=false){
   if(_dashSelectedLib!=='all' && !_dashSummaryByLib[_dashSelectedLib]) _dashSelectedLib='all';
   _resetHowItWorks();
   renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs);
-  renderDashboardActionStationFromConfig(cfg, scheduledLibs);
+  if(!readDashboardHealthCache()) renderDashboardActionStationFromConfig(cfg, scheduledLibs);
   loadDashboardDeferredData(seq, cfg, enabledLibs).catch(err=>console.warn('Dashboard deferred load failed', err));
 }
 function setPendingTestBadge(elId, label='Working…'){
