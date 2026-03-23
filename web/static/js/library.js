@@ -215,7 +215,7 @@ function _customSourceState(row={}){
     key:filterKey,
     typeLabel,
     statusLabel,
-    pillLabel:_sourceStatePillLabel(typeLabel, statusLabel),
+    pillLabel:statusLabel,
     className:_sourceStateClass(selected.kind, selected.method),
     detail:selected.url,
     chips:[],
@@ -255,7 +255,7 @@ function _renderSourceStateChips(chips=[]){
 
 function _renderSourceStateCell(title, primary, secondary='', chips=[]){
   return `<div class="db-source-state">
-    <span class="db-source-title">${_escapeHtml(title)}</span>
+    ${title?`<span class="db-source-title">${_escapeHtml(title)}</span>`:''}
     ${primary}
     ${_renderSourceStateChips(chips)}
     ${secondary?`<div class="db-source-detail" title="${_escapeAttr(secondary)}">${_escapeHtml(secondary)}</div>`:''}
@@ -882,8 +882,8 @@ function renderTable(){
         ${renderStatusCell(row)}
       </td>
       <td>${renderRowActionCell(row)}</td>
-      <td>${_renderSourceStateCell('Golden Source', _renderSourceStatePill(_sourceStatePillLabel('Golden', goldenState.label), goldenState.className, goldenState.detail), '', goldenState.chips)}</td>
-      <td>${_renderSourceStateCell('Selected Source', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.statusLabel), '', customState.chips)}</td>
+      <td>${_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)}</td>
+      <td>${_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.statusLabel), '', customState.chips)}</td>
       <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
       <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
     </tr>`;
@@ -1664,8 +1664,6 @@ function openThemeModal(rk,title,year,folder,row={},library=''){
   if(localMeta) localMeta.style.display='block';
   if(localTrimBtn) localTrimBtn.style.display=hasLocalTheme?'':'none';
   if(localDeleteBtn) localDeleteBtn.style.display=hasLocalTheme?'':'none';
-  const localInlinePlay=document.getElementById('theme-modal-inline-play');
-  _setHidden(localInlinePlay, !hasLocalTheme, hasLocalTheme?'inline-flex':'');
   const sourceCard=document.getElementById('theme-source-card');
   if(sourceCard) sourceCard.classList.toggle('compact', !hasStoredSource);
 

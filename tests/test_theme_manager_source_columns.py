@@ -19,6 +19,7 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         self.assertIn("sortTable('golden_state')", self.template_source)
         self.assertIn("sortTable('custom_state')", self.template_source)
         self.assertNotIn("sortTable('local_state')", self.template_source)
+        self.assertIn("Golden Source ↕", self.template_source)
         self.assertIn("Selected Source ↕", self.template_source)
         self.assertNotIn("Golden Source URL ↕", self.template_source)
         self.assertNotIn("Source URL ↕", self.template_source)
@@ -76,7 +77,7 @@ process.stdout.write(JSON.stringify({{
         self.assertEqual("Playlist", payload["playlistLabel"])
         self.assertEqual("playlist", payload["playlistFilterKey"])
         self.assertEqual("playlist", payload["playlistState"]["key"])
-        self.assertEqual("Playlist · Staged", payload["playlistState"]["pillLabel"])
+        self.assertEqual("Staged", payload["playlistState"]["pillLabel"])
         self.assertEqual("Manual", payload["manualFallbackLabel"])
         self.assertEqual("manual", payload["manualFallbackFilterKey"])
 
@@ -88,8 +89,8 @@ process.stdout.write(JSON.stringify({{
             "function _renderSourceStateStack(targetId,row={},opts={})",
             "String(row?.golden_source_imported_at||'').trim() || String(row?.last_updated||'').trim()",
             "String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim()",
-            "_renderSourceStateCell('Golden Source'",
-            "_renderSourceStateCell('Selected Source'",
+            "_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)",
+            "_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.statusLabel), '', customState.chips)",
             "_sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow))",
             "_themeModalSourceOriginMarkup(row)",
         ):
