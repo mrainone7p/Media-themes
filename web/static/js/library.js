@@ -1513,8 +1513,52 @@ function _themeModalSetLinkRow({urlId, controlsId, copyId, openId, url='', copyH
     openBtn.onclick=safeUrl && typeof openHandler==='function' ? openHandler : null;
   }
 }
+function _themeModalSourceRetryVisible(visible=false){
+  const retryBtn=document.getElementById('theme-workflow-retry');
+  _setHidden(retryBtn, !visible, visible?'inline-flex':'');
+}
+function _themeModalSetSourcePreviewStatus(message='', retryVisible=false){
+  _themeModalSourceAudio.setStatus(message);
+  _themeModalSourceRetryVisible(retryVisible);
+}
+function _themeModalSetLocalPreviewStatus(message=''){
+  _themeModalAudio.setStatus(message);
+}
+async function _themeModalLoadLocalPreview(row={}){
+  const nextRow=_themeModalContext?.row||row||{};
+  const folder=String(_themeModalContext?.folder||nextRow?.folder||'').trim();
+  const player=document.getElementById('theme-local-player');
+  if(!_themeModalHasVerifiedLocal(nextRow) || !folder){
+    _themeModalAudio.cleanup({clearSrc:false});
+    _themeModalAudio.audio.removeAttribute('src');
+    _themeModalAudio.audio.load();
+    _themeModalSetLocalPreviewStatus('Preview unavailable');
+    return false;
+  }
+  _setHidden(player, false, 'block');
+  _themeModalSetLocalPreviewStatus('Loading preview…');
+  _themeModalAudio.cleanup({clearSrc:false});
+  _themeModalAudio.setHandlers({
+    onloadedmetadata:(audio)=>{
+      const currentRow=_themeModalContext?.row||nextRow;
+      _themeModalApplyVerifiedLocalAvailability(currentRow, true, {duration:audio.duration||0});
+      _themeModalRememberRow(currentRow);
+      _themeModalUpdateLocalCard(currentRow);
+      _themeModalUpdateLocalClipSummary(currentRow, audio.duration||0);
+      _themeModalSetLocalPreviewStatus('Ready');
+    },
+    onerror:()=>{
+      _themeModalSetLocalPreviewStatus('Preview unavailable');
+      _themeModalUpdateLocalClipSummary(_themeModalContext?.row||nextRow, 0);
+    }
+  });
+  _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
+  _themeModalAudio.audio.load();
+  return true;
+}
 async function _themeModalLoadSelectedSourcePreview(row={}){
-  const selected=_selectedSourceContract(row);
+  const currentRow=_themeModalContext?.row||row||{};
+  const selected=_selectedSourceContract(currentRow);
   const url=String(selected.url||'').trim();
   const player=document.getElementById('theme-workflow-player');
   if(!url){
@@ -1522,9 +1566,12 @@ async function _themeModalLoadSelectedSourcePreview(row={}){
     _themeModalSourceAudio.audio.removeAttribute('src');
     _themeModalSourceAudio.audio.load();
     _setHidden(player, true);
-    _themeModalUpdateSelectedSourceClipSummary(row, 0);
+    _themeModalUpdateSelectedSourceClipSummary(currentRow, 0);
+    _themeModalSetSourcePreviewStatus('Preview unavailable', false);
     return false;
   }
+  _setHidden(player, false, 'block');
+  _themeModalSetSourcePreviewStatus('Loading preview…', false);
   try{
     const cached=_previewCache[url];
     let data=null;
@@ -1541,9 +1588,14 @@ async function _themeModalLoadSelectedSourcePreview(row={}){
     _themeModalSourceAudio.audio.src=apiUrl(data.audio_url);
     _themeModalSourceAudio.setHandlers({
       onloadedmetadata:(audio)=>{
-        _applyAudioOffset(audio, _themeModalOffsetValue(_themeModalContext?.row||row, layer));
-        _themeModalUpdateSelectedSourceClipSummary(_themeModalContext?.row||row, audio.duration||0);
+        _applyAudioOffset(audio, _themeModalOffsetValue(_themeModalContext?.row||currentRow, layer));
+        _themeModalUpdateSelectedSourceClipSummary(_themeModalContext?.row||currentRow, audio.duration||0);
+        _themeModalSetSourcePreviewStatus('Ready', false);
         _setHidden(player, false, 'block');
+      },
+      onerror:()=>{
+        _themeModalSetSourcePreviewStatus('Preview unavailable', true);
+        _themeModalUpdateSelectedSourceClipSummary(_themeModalContext?.row||currentRow, 0);
       }
     });
     _themeModalSourceAudio.audio.load();
@@ -1552,8 +1604,9 @@ async function _themeModalLoadSelectedSourcePreview(row={}){
     _themeModalSourceAudio.cleanup({clearSrc:false});
     _themeModalSourceAudio.audio.removeAttribute('src');
     _themeModalSourceAudio.audio.load();
-    _setHidden(player, true);
-    _themeModalUpdateSelectedSourceClipSummary(row, 0);
+    _setHidden(player, false, 'block');
+    _themeModalUpdateSelectedSourceClipSummary(currentRow, 0);
+    _themeModalSetSourcePreviewStatus('Preview unavailable', true);
     toast(`Preview unavailable: ${String(e?.message||e||'Preview failed')}`,'info');
     return false;
   }
@@ -1886,7 +1939,8 @@ function _themeModalUpdateWorkflowCard(row={}){
     : 'No selected source yet. Find a source to continue.';
   _setHidden(emptyEl, hasSelected, hasSelected?'':'block');
   _setHidden(metaListEl, !hasSelected, hasSelected?'block':'');
-  _setHidden(player, true);
+  _setHidden(player, !hasSelected, hasSelected?'block':'');
+  if(!hasSelected) _themeModalSetSourcePreviewStatus('', false);
   if(stateEl) stateEl.innerHTML=hasSelected
     ? _renderSourceStatePill(_themeModalSourceState(row), _themeModalSourceOriginClass(row), _themeModalSourceState(row))
     : '—';
@@ -2054,33 +2108,24 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   setBio('theme-modal-bio', rk, resolvedLibrary);
 
   _themeModalAudio.cleanup({clearSrc:false});
-  _themeModalAudio.setHandlers({
-    onloadedmetadata:(audio)=>{
-      const nextRow=_themeModalContext?.row||row;
-      _themeModalApplyVerifiedLocalAvailability(nextRow, true, {duration:audio.duration||0});
-      _themeModalRememberRow(nextRow);
-      _themeModalUpdateLocalCard(nextRow);
-      _themeModalUpdateLocalClipSummary(nextRow, audio.duration||0);
-    }
-  });
+  _themeModalAudio.audio.removeAttribute('src');
+  _themeModalAudio.audio.load();
+  _themeModalSourceAudio.cleanup({clearSrc:false});
+  _themeModalSourceAudio.audio.removeAttribute('src');
+  _themeModalSourceAudio.audio.load();
+  _themeModalSetLocalPreviewStatus(hasLocalTheme ? 'Loading preview…' : 'Preview unavailable');
+  _themeModalSetSourcePreviewStatus(hasStoredSource ? 'Loading preview…' : '', false);
+
+  openModal('theme-modal');
   if(hasLocalTheme){
-    _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(resolvedFolder));
-    _themeModalAudio.audio.load();
+    await _themeModalLoadLocalPreview(row);
     if(Number(localProbe?.duration||0)>0){
       row.theme_duration=Number(localProbe.duration)||0;
       _themeModalUpdateLocalClipSummary(row, row.theme_duration);
     }
   }else{
-    _themeModalAudio.audio.removeAttribute('src');
-    _themeModalAudio.audio.load();
     _themeModalUpdateLocalClipSummary(row, 0);
   }
-
-  _themeModalSourceAudio.cleanup({clearSrc:false});
-  _themeModalSourceAudio.audio.removeAttribute('src');
-  _themeModalSourceAudio.audio.load();
-
-  openModal('theme-modal');
   if(hasStoredSource) await _themeModalLoadSelectedSourcePreview(row);
   if(_curKey) stopCurrentAudio();
 }
@@ -2243,10 +2288,29 @@ function closeThemeModal(){
     _themeModalSourceAudio.cleanup();
   });
 }
-function themeModalToggle(){ _themeModalAudio.toggle(); }
+async function themeModalToggle(){
+  const row=_themeModalContext?.row||{};
+  if(!_themeModalAudio.audio?.src && _themeModalHasVerifiedLocal(row)){
+    const loaded=await _themeModalLoadLocalPreview(row);
+    if(!loaded) return false;
+    return false;
+  }
+  return _themeModalAudio.toggle();
+}
 function themeModalSkip(s){ _themeModalAudio.skip(s); }
 function themeModalSeek(val){ _themeModalAudio.seek(val); }
-function themeModalSourceToggle(){ _themeModalSourceAudio.toggle(); }
+async function themeModalSourceToggle(){
+  const row=_themeModalContext?.row||{};
+  if(!_themeModalSourceAudio.audio?.src){
+    const loaded=await _themeModalLoadSelectedSourcePreview(_themeModalContext?.row || {});
+    if(!loaded) return false;
+    return false;
+  }
+  return _themeModalSourceAudio.toggle();
+}
+async function themeModalSourceRetry(){
+  return _themeModalLoadSelectedSourcePreview(_themeModalContext?.row || {});
+}
 function themeModalSourceSkip(s){ _themeModalSourceAudio.skip(s); }
 function themeModalSourceSeek(val){ _themeModalSourceAudio.seek(val); }
 
@@ -3393,8 +3457,8 @@ async function applyTrimFromModal(){
 let _ytModalKey=null,_ytModalLib='';
 
 const _ytModalAudio=bindModalAudio({audioId:'yt-modal-audio',playBtnId:'yt-modal-play',sliderId:'yt-modal-slider',curId:'yt-modal-cur',durId:'yt-modal-dur',statusId:'yt-modal-status'});
-const _themeModalAudio=bindModalAudio({audioId:'theme-modal-audio',playBtnId:'theme-modal-play',sliderId:'theme-modal-slider',curId:'theme-modal-cur',durId:'theme-modal-dur'});
-const _themeModalSourceAudio=bindModalAudio({audioId:'theme-workflow-audio',playBtnId:'theme-workflow-play',sliderId:'theme-workflow-slider',curId:'theme-workflow-cur',durId:'theme-workflow-dur'});
+const _themeModalAudio=bindModalAudio({audioId:'theme-modal-audio',playBtnId:'theme-modal-play',sliderId:'theme-modal-slider',curId:'theme-modal-cur',durId:'theme-modal-dur',statusId:'theme-modal-status'});
+const _themeModalSourceAudio=bindModalAudio({audioId:'theme-workflow-audio',playBtnId:'theme-workflow-play',sliderId:'theme-workflow-slider',curId:'theme-workflow-cur',durId:'theme-workflow-dur',statusId:'theme-workflow-status'});
 const _trimModalAudio=bindModalAudio({audioId:'trim-modal-audio',playBtnId:'trim-modal-play',sliderId:'trim-modal-slider',curId:'trim-modal-cur',durId:'trim-modal-dur'});
 const _sourceEditorAudio=bindModalAudio({audioId:'se-audio',playBtnId:'se-play-btn',sliderId:'se-slider',curId:'se-cur',durId:'se-dur',statusId:'se-info'});
 

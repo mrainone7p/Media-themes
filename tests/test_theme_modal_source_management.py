@@ -22,6 +22,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'aria-controls="theme-local-body"',
             'id="theme-local-player"',
             'id="theme-modal-audio"',
+            'id="theme-modal-status"',
             'id="theme-modal-local-state"',
             'id="theme-modal-file"',
             'id="theme-local-clip"',
@@ -51,6 +52,8 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'aria-controls="theme-workflow-body"',
             'id="theme-workflow-player"',
             'id="theme-workflow-audio"',
+            'id="theme-workflow-status"',
+            'id="theme-workflow-retry"',
             'Workflow State',
             'id="theme-workflow-state"',
             'Source Type',
@@ -97,18 +100,23 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         for snippet in (
             'function _themeModalUpdateLocalClipSummary(row={}, duration=0){',
             'function _themeModalUpdateSelectedSourceClipSummary(row={}, duration=0){',
+            'async function _themeModalLoadLocalPreview(row={}){',
             'async function _themeModalLoadSelectedSourcePreview(row={}){',
             'function _themeModalUpdateLocalCard(row={}){',
             'function _themeModalUpdateWorkflowCard(row={}){',
-            "_themeModalAudio.setHandlers({",
+            "function _themeModalSetSourcePreviewStatus(message='', retryVisible=false){",
+            "function _themeModalSetLocalPreviewStatus(message=''){",
             "const localProbe=await _themeModalVerifyLocalPlayback(row, resolvedFolder);",
             "function _themeModalProbeLocalAudio(folder=''){",
             "function _themeModalApplyVerifiedLocalAvailability(row={}, exists=false, metadata={}){",
-            "const nextRow=_themeModalContext?.row||row;",
-            "_themeModalApplyVerifiedLocalAvailability(nextRow, true, {duration:audio.duration||0});",
+            "const currentRow=_themeModalContext?.row||nextRow;",
+            "_themeModalApplyVerifiedLocalAvailability(currentRow, true, {duration:audio.duration||0});",
             "if(hasStoredSource) await _themeModalLoadSelectedSourcePreview(row);",
-            "const _themeModalSourceAudio=bindModalAudio({audioId:'theme-workflow-audio'",
-            'function themeModalSourceToggle(){ _themeModalSourceAudio.toggle(); }',
+            "const _themeModalAudio=bindModalAudio({audioId:'theme-modal-audio',playBtnId:'theme-modal-play',sliderId:'theme-modal-slider',curId:'theme-modal-cur',durId:'theme-modal-dur',statusId:'theme-modal-status'});",
+            "const _themeModalSourceAudio=bindModalAudio({audioId:'theme-workflow-audio',playBtnId:'theme-workflow-play',sliderId:'theme-workflow-slider',curId:'theme-workflow-cur',durId:'theme-workflow-dur',statusId:'theme-workflow-status'});",
+            'async function themeModalToggle(){',
+            'async function themeModalSourceToggle(){',
+            'async function themeModalSourceRetry(){',
         ):
             self.assertIn(snippet, self.library_source)
 
@@ -203,7 +211,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             self.assertIn(snippet, self.library_source)
 
     def test_stale_local_theme_probe_promotes_local_playback_before_rendering(self):
-        start = self.library_source.index("function _themeModalHasVerifiedLocal(row={}){")
+        start = self.library_source.index("function _themeModalSetLocalPreviewStatus(message=''){")
         end = self.library_source.index("async function themeModalDownloadApproved(){")
         modal_block = self.library_source[start:end]
         node_script = f"""
@@ -286,6 +294,7 @@ function _themeModalOffsetValue(row={{}}, layer='selected_source'){{ if(layer===
 function _clipLengthOffsetLabel(duration=0, offset=0){{ return `Length ${{duration}} · Offset ${{offset}}`; }}
 const _themeModalAudio={{
   handlers:{{}},
+  status:'',
   audio:{{
     src:'',
     duration:12.5,
@@ -293,9 +302,10 @@ const _themeModalAudio={{
     removeAttribute(name){{ if(name==='src') this.src=''; }},
   }},
   cleanup(){{}},
-  setHandlers(handlers){{ this.handlers=handlers||{{}}; }}
+  setHandlers(handlers){{ this.handlers=handlers||{{}}; }},
+  setStatus(message){{ this.status=message; }}
 }};
-const _themeModalSourceAudio={{ audio:{{ removeAttribute(){{}}, load(){{}} }}, cleanup(){{}}, setHandlers(){{}} }};
+const _themeModalSourceAudio={{ audio:{{ removeAttribute(){{}}, load(){{}} }}, cleanup(){{}}, setHandlers(){{}}, setStatus(){{}} }};
 class Audio {{
   constructor(){{ this.src=''; this.duration=12.5; this.preload=''; this.onloadedmetadata=null; this.oncanplaythrough=null; this.onerror=null; }}
   pause(){{}}
@@ -303,6 +313,9 @@ class Audio {{
   load(){{ if(this.onloadedmetadata) this.onloadedmetadata(); }}
 }}
 {modal_block}
+function _themeModalUpdateWorkflowCard(){{}}
+function _themeModalSetSourcePreviewStatus(){{}}
+async function _themeModalLoadSelectedSourcePreview(){{ return true; }}
 const row={{
   rating_key:'1',
   title:'Example',

@@ -18,8 +18,15 @@ function bindModalAudio({audioId, playBtnId, sliderId, curId, durId, statusId}){
   const curEl=document.getElementById(curId);
   const durEl=document.getElementById(durId);
   const statusEl=statusId?document.getElementById(statusId):null;
+  const controlRow=playBtn?.closest('.modal-player-row')||slider?.closest('.modal-player-row')||null;
+  const skipBtns=controlRow?[...controlRow.querySelectorAll('.skip-btn')]:[];
   const setPlaying=(isPlaying)=>{ if(playBtn) playBtn.innerHTML=isPlaying?PAUSE_ICON_SVG:PLAY_ICON_SVG; };
   const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+  const setControlsReady=(isReady)=>{
+    if(controlRow) controlRow.classList.toggle('is-not-ready', !isReady);
+    if(slider) slider.disabled=!isReady;
+    skipBtns.forEach(btn=>{ btn.disabled=!isReady; });
+  };
   const syncDuration=()=>{ if(durEl) durEl.textContent=audio.duration?fmt(audio.duration):'—'; };
   const syncProgress=()=>{
     const dur=audio.duration||0;
@@ -27,26 +34,30 @@ function bindModalAudio({audioId, playBtnId, sliderId, curId, durId, statusId}){
     if(slider && dur) slider.value=(cur/dur*100);
     if(curEl) curEl.textContent=fmt(cur);
   };
+  setControlsReady(false);
   return {
     audio,
     setHandlers({onloadedmetadata, ontimeupdate, onended, onerror}={}){
-      audio.onloadedmetadata=()=>{ syncDuration(); if(typeof onloadedmetadata==='function') onloadedmetadata(audio); };
+      setControlsReady(false);
+      audio.onloadedmetadata=()=>{ syncDuration(); setControlsReady(true); if(typeof onloadedmetadata==='function') onloadedmetadata(audio); };
       audio.ontimeupdate=()=>{ syncProgress(); if(typeof ontimeupdate==='function') ontimeupdate(audio); };
       audio.onended=()=>{ setPlaying(false); if(typeof onended==='function') onended(audio); };
-      audio.onerror=()=>{ setPlaying(false); if(typeof onerror==='function') onerror(audio); };
+      audio.onerror=()=>{ setControlsReady(false); setPlaying(false); if(typeof onerror==='function') onerror(audio); };
     },
     toggle(){
+      if(!audio.duration) return Promise.resolve(false);
       if(audio.paused){
         stopAllAudio(audioId);
-        audio.play().then(()=>setPlaying(true)).catch(()=>{});
-      }else{
-        audio.pause();
-        setPlaying(false);
+        return audio.play().then(()=>{ setPlaying(true); return true; }).catch(()=>false);
       }
+      audio.pause();
+      setPlaying(false);
+      return Promise.resolve(true);
     },
     play(){
+      if(!audio.duration) return Promise.resolve(false);
       stopAllAudio(audioId);
-      return audio.play().then(()=>setPlaying(true));
+      return audio.play().then(()=>{ setPlaying(true); return true; });
     },
     seek(val){
       if(!audio.duration) return;
@@ -68,11 +79,13 @@ function bindModalAudio({audioId, playBtnId, sliderId, curId, durId, statusId}){
       if(curEl) curEl.textContent='0:00';
       if(durEl) durEl.textContent='—';
       if(statusEl) statusEl.textContent='';
+      setControlsReady(false);
       setPlaying(false);
     },
     syncDuration,
     syncProgress,
     setStatus(msg){ if(statusEl) statusEl.textContent=msg; },
+    setControlsReady,
     setPlaying
   };
 }
