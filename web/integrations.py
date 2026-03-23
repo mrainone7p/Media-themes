@@ -210,6 +210,26 @@ def test_tmdb_key(key: str) -> dict:
 
 # ── yt-dlp / ffmpeg helpers ──────────────────────────────────────────────────
 
+def _parse_yt_dlp_rows(stdout: str, *, include_index: bool = False) -> list[dict]:
+    rows: list[dict] = []
+    for line in (stdout or "").strip().splitlines():
+        parts = line.split("\t")
+        if include_index:
+            if len(parts) >= 4 and parts[2].startswith("https://"):
+                rows.append(
+                    {
+                        "playlist_index": parts[0],
+                        "title": parts[1],
+                        "url": parts[2],
+                        "duration": parts[3] if len(parts) > 3 else "",
+                    }
+                )
+        else:
+            if len(parts) >= 2 and parts[1].startswith("https://"):
+                rows.append({"title": parts[0], "url": parts[1], "duration": parts[2] if len(parts) > 2 else ""})
+    return rows
+
+
 def youtube_search(query: str, cookies_file: str | None = None) -> list[dict]:
     cache_key = f"{str(query or '').strip().lower()}|{str(cookies_file or '').strip()}"
     now = time.time()
@@ -230,14 +250,46 @@ def youtube_search(query: str, cookies_file: str | None = None) -> list[dict]:
         ],
         timeout=30,
     )
-    rows = []
-    for line in result.stdout.strip().splitlines():
-        parts = line.split("\t")
-        if len(parts) >= 2 and parts[1].startswith("https://"):
-            rows.append({"title": parts[0], "url": parts[1], "duration": parts[2] if len(parts) > 2 else ""})
+    rows = _parse_yt_dlp_rows(result.stdout)
     with _cache_lock:
         _youtube_search_cache[cache_key] = (now, [dict(row) for row in rows])
     return rows
+
+
+def youtube_playlist_entries(playlist_url: str, cookies_file: str | None = None) -> list[dict]:
+    normalized_url = str(playlist_url or "").strip()
+    if not normalized_url:
+        return []
+    result = run_command(
+        _yt_dlp_base_flags(cookies_file) + [
+            "--flat-playlist",
+            "--print",
+            "%(playlist_index)s\t%(title)s\t%(url)s\t%(duration_string)s",
+            "--playlist-items",
+            "1:15",
+            "--yes-playlist",
+            normalized_url,
+        ],
+        timeout=30,
+    )
+    rows = _parse_yt_dlp_rows(result.stdout, include_index=True)
+    for row in rows:
+        row["playlist_url"] = normalized_url
+    return rows
+
+
+def youtube_playlist_search(query: str, cookies_file: str | None = None) -> list[dict]:
+    playlist_results = youtube_search(query, cookies_file)
+    if not playlist_results:
+        return []
+    first_playlist = playlist_results[0]
+    entries = youtube_playlist_entries(first_playlist.get("url", ""), cookies_file)
+    if entries:
+        for entry in entries:
+            entry["playlist_title"] = first_playlist.get("title", "")
+            entry["playlist_url"] = first_playlist.get("url", "")
+        return entries
+    return [dict(first_playlist)]
 
 
 def _preview_cache_key(url: str, cookies_file: str | None = None) -> str:

@@ -1037,10 +1037,12 @@
       <img class="modal-poster hidden" id="search-modal-poster" src="" onerror="this.style.display='none'">
       <div class="modal-movie-info">
         <div class="modal-movie-title-row">
-          <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
+          <div class="modal-movie-title-wrap">
+            <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
+            <div class="modal-movie-meta text-muted"><span id="search-modal-year-meta"></span></div>
+          </div>
           <div class="modal-movie-links" id="search-modal-links"></div>
         </div>
-        <div class="modal-movie-meta text-muted"><span id="search-modal-year-meta"></span></div>
         <div class="modal-inline-bio hidden" id="search-modal-bio-wrap">
           <div class="modal-bio modal-bio-inline is-clamped" id="search-modal-bio"></div>
           <button class="bio-toggle hidden" id="search-modal-bio-toggle" type="button" onclick="toggleBio('search-modal-bio')">More</button>
@@ -1244,12 +1246,14 @@
       <img class="modal-poster" id="theme-modal-poster" src="" onerror="this.style.display='none'">
       <div class="modal-movie-info">
         <div class="modal-movie-title-row">
-          <div class="modal-movie-title" id="theme-modal-title"></div>
-          <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
-        </div>
-        <div class="modal-movie-meta">
-          <span id="theme-modal-year"></span>
-          <span class="text-green" id="theme-modal-dur-meta"></span>
+          <div class="modal-movie-title-wrap">
+            <div class="modal-movie-title" id="theme-modal-title"></div>
+            <div class="modal-movie-meta">
+              <span id="theme-modal-year"></span>
+              <span class="text-green" id="theme-modal-dur-meta"></span>
+              <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
+            </div>
+          </div>
           <div class="modal-movie-links" id="theme-modal-links"></div>
         </div>
         <div class="modal-inline-bio hidden" id="theme-modal-bio-wrap">
@@ -1307,8 +1311,8 @@
           </div>
           <div class="ui-meta-row review-meta-item clip-summary-row hidden" id="theme-local-clip">
             <div class="clip-summary-label">Offset</div>
-            <div class="clip-summary-main" id="theme-local-clip-main">Offset 0:00 · Length —</div>
-            <div class="clip-summary-sub" id="theme-local-clip-sub">Load a local theme to confirm the kept portion.</div>
+            <div class="clip-summary-main" id="theme-local-clip-main">Offset Start 0:00 · Theme Length —</div>
+            <div class="clip-summary-sub" id="theme-local-clip-sub">Load a local theme to confirm the saved start time and theme length.</div>
             <div class="clip-summary-warning" id="theme-local-clip-warning"></div>
           </div>
         </div>
@@ -1375,7 +1379,7 @@
           </div>
           <div class="ui-meta-row review-meta-item clip-summary-row hidden" id="theme-workflow-clip">
             <div class="clip-summary-label">Offset</div>
-            <div class="clip-summary-main" id="theme-workflow-clip-main">Offset 0:00 · Length —</div>
+            <div class="clip-summary-main" id="theme-workflow-clip-main">Offset Start 0:00 · Theme Length —</div>
             <div class="clip-summary-sub" id="theme-workflow-clip-sub">Choose or review a source to see its saved offset.</div>
             <div class="clip-summary-warning" id="theme-workflow-clip-warning"></div>
           </div>
@@ -1402,9 +1406,13 @@
     <div class="modal-header">
       <img class="modal-poster" id="trim-modal-poster" src="" onerror="this.style.display='none'">
       <div class="modal-movie-info">
-        <div class="modal-movie-title" id="trim-modal-title">Edit Trim</div>
-        <div class="modal-movie-meta"><span id="trim-modal-meta"></span></div>
-        <div class="modal-movie-links" id="trim-modal-links"></div>
+        <div class="modal-movie-title-row">
+          <div class="modal-movie-title-wrap">
+            <div class="modal-movie-title" id="trim-modal-title">Edit Trim</div>
+            <div class="modal-movie-meta"><span id="trim-modal-meta"></span></div>
+          </div>
+          <div class="modal-movie-links" id="trim-modal-links"></div>
+        </div>
         <div class="modal-inline-bio hidden" id="trim-modal-bio-wrap">
           <div class="modal-bio modal-bio-inline is-clamped" id="trim-modal-bio"></div>
           <button class="bio-toggle hidden" id="trim-modal-bio-toggle" type="button" onclick="toggleBio('trim-modal-bio')">More</button>
