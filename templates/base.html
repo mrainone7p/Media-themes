@@ -18,6 +18,7 @@
           <p class="sidebar-copy">Manage Plex sidecar theme files, review sources, and configure discovery pipeline connections.</p>
         </div>
         <nav class="nav-list">
+          <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
           <a href="{{ url_for('theme_library') }}" class="nav-link {% if request.endpoint in ['index', 'theme_library'] %}active{% endif %}">Theme Library</a>
           <a href="{{ url_for('configuration') }}" class="nav-link {% if request.endpoint == 'configuration' %}active{% endif %}">Configuration</a>
         </nav>
