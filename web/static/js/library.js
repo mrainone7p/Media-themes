@@ -344,7 +344,7 @@ function _sharedTrimEditorMarkup({
     </div>
     <div class="modal-section" style="padding-top:8px;padding-bottom:0">
       <div class="source-editor-card">
-        <div class="source-editor-title">Trim Window Controls <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
+        <div class="source-editor-title">Offset Controls <span style="font-weight:400;text-transform:none;font-size:10px">(mm:ss)</span></div>
         <div class="review-card-subtitle">${controlsHelper}</div>
         <div class="offset-inline-grid">
           <div class="offset-inline-cell">
@@ -366,11 +366,11 @@ function _sharedTrimEditorMarkup({
     </div>
     <div class="modal-section" style="padding-top:8px;padding-bottom:${variant==='search'?'0':'16px'}">
       <div class="${summaryCardClasses}">
-        <div class="source-editor-title">Summary State</div>
+        <div class="source-editor-title">Offset Summary</div>
         <div class="review-card-subtitle">${summaryHelper}</div>
         <div class="clip-summary-card" id="${summaryId}">
-          <div class="clip-summary-label">Offset Summary</div>
-          <div class="clip-summary-main" id="${summaryMainId}">Offset Start 0:00 · Theme Length —</div>
+          <div class="clip-summary-label">Offset &amp; Length</div>
+          <div class="clip-summary-main" id="${summaryMainId}">Offset 0:00 · Theme Length —</div>
           <div class="clip-summary-sub" id="${summarySubId}">Load a preview to confirm the saved start time and theme length.</div>
           <div class="clip-summary-warning" id="${summaryWarningId}"></div>
         </div>
@@ -410,9 +410,9 @@ const _sharedTrimEditorVariants={
     summaryMainId:'se-clip-summary-main',
     summarySubId:'se-clip-summary-sub',
     summaryWarningId:'se-clip-summary-warning',
-    previewHelper:'Preview the selected source and confirm the trim window before saving.',
-    controlsHelper:'Set the saved start offset or jump to the current playback time.',
-    summaryHelper:'Review the kept clip window and warning state before saving.',
+    previewHelper:'Preview the selected source and confirm the saved offset before saving.',
+    controlsHelper:'Set the saved offset start time or jump to the current playback time.',
+    summaryHelper:'Review the saved offset and resulting theme length before saving.',
     extraPreviewHtml:`<div class="surface-panel compact hidden" id="se-golden-error" style="margin-top:10px">
           <div class="section-label" style="margin-bottom:6px">Curated source needs attention</div>
           <div class="body-copy compact" id="se-golden-error-msg" style="margin-bottom:10px"></div>
@@ -457,9 +457,9 @@ const _sharedTrimEditorVariants={
     summaryWarningId:'trim-modal-summary-warning',
     resultId:'trim-modal-result',
     resultDefault:'',
-    previewHelper:'Preview the local theme and confirm the trim window before applying changes.',
-    controlsHelper:'Set the saved start offset or jump to the current playback time.',
-    summaryHelper:'Review the kept clip window and warning state before applying the trim.',
+    previewHelper:'Preview the local theme and confirm the saved offset before applying changes.',
+    controlsHelper:'Set the saved offset start time or jump to the current playback time.',
+    summaryHelper:'Review the saved offset and resulting theme length before applying the trim.',
   }
 };
 
@@ -1670,7 +1670,7 @@ function _themeModalUpdateLocalClipSummary(row={}, duration=0){
     const main=document.getElementById('theme-local-clip-main');
     const sub=document.getElementById('theme-local-clip-sub');
     const warning=document.getElementById('theme-local-clip-warning');
-    if(main) main.textContent='Offset Start 0:00 · Theme Length —';
+    if(main) main.textContent='Offset 0:00 · Theme Length —';
     if(sub) sub.textContent='Load a local theme to confirm the saved start time and theme length.';
     if(warning) warning.textContent='';
     return;
@@ -1686,7 +1686,7 @@ function _themeModalUpdateSelectedSourceClipSummary(row={}, duration=0){
     const main=document.getElementById('theme-workflow-clip-main');
     const sub=document.getElementById('theme-workflow-clip-sub');
     const warning=document.getElementById('theme-workflow-clip-warning');
-    if(main) main.textContent='Offset Start 0:00 · Theme Length —';
+    if(main) main.textContent='Offset 0:00 · Theme Length —';
     if(sub) sub.textContent='Choose a source to review its saved start time and theme length.';
     if(warning) warning.textContent='';
     return;
@@ -1938,7 +1938,7 @@ function _clipWindowMeta(duration=0, offset=0, maxDur=0){
 }
 function _clipLengthOffsetLabel(duration=0, offset=0, maxDur=0){
   const meta=_clipWindowMeta(duration, offset, maxDur);
-  return `Offset Start ${fmt(meta.rawOffset)} · Theme Length ${meta.total>0?fmt(meta.length):'—'}`;
+  return `Offset ${fmt(meta.rawOffset)} · Theme Length ${meta.total>0?fmt(meta.length):'—'}`;
 }
 function _clipWindowPrimaryLabel(duration=0, offset=0, maxDur=0){
   const meta=_clipWindowMeta(duration, offset, maxDur);
@@ -1947,7 +1947,7 @@ function _clipWindowPrimaryLabel(duration=0, offset=0, maxDur=0){
 function _clipWindowRangeLabel(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
   const meta=_clipWindowMeta(duration, offset, maxDur);
   if(meta.total<=0) return `Load a ${scopeLabel} to confirm the theme length.`;
-  return `Starts at ${fmt(meta.start)} and runs ${fmt(meta.length)} of the ${fmt(meta.total)} ${scopeLabel}.`;
+  return `Starts at ${fmt(meta.start)} and keeps ${fmt(meta.length)} from the ${fmt(meta.total)} ${scopeLabel}.`;
 }
 function _clipWindowDetailedRangeLabel(duration=0, offset=0, maxDur=0, scopeLabel='preview'){
   const meta=_clipWindowMeta(duration, offset, maxDur);
@@ -3141,8 +3141,11 @@ async function _fallbackFromGoldenValidation(errorMessage){
 function _renderResults(results){
   const el=document.getElementById('search-results');
   const countEl=document.getElementById('sm-results-count');
+  const playlistTitle=String(results?.[0]?.playlist_title||'').trim();
   if(countEl) countEl.textContent=results.length
-    ? (_searchMethod==='playlist' ? `${results.length} tracks from the first playlist` : `${results.length} results`)
+    ? (_searchMethod==='playlist'
+      ? `${results.length} tracks from the first playlist${playlistTitle?` · ${playlistTitle}`:''}`
+      : `${results.length} results`)
     : '';
   if(!results.length){
     el.innerHTML='<div class="search-results-state">No results found.</div>';
@@ -3154,12 +3157,16 @@ function _renderResults(results){
     const safeTitle=String(r.title||'').replace(/</g,'&lt;');
     const safeTitleAttr=safeTitle.replace(/"/g,'&quot;');
     const safeTitleJs=String(r.title||'').replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    const safePlaylistTitle=String(r.playlist_title||'').replace(/</g,'&lt;').replace(/"/g,'&quot;');
     return `
     <div class="search-result-card ${i===0?'recommended':''}">
       <div class="result-idx">${i+1}.</div>
       <div class="search-result-main">
-        ${i===0?`<span class="search-result-inline-badge">${_searchMethod==='playlist'?'Default':'Top'}</span>`:''}
-        <a href="${safeHref}" target="_blank" rel="noopener" class="search-result-title" title="${safeTitleAttr}"><span class="search-result-title-text">${safeTitle}</span><span class="search-result-link-icon">↗</span></a>
+        <div class="search-result-main-meta">
+          ${i===0?`<span class="search-result-inline-badge">${_searchMethod==='playlist'?'Default':'Top'}</span>`:''}
+          <a href="${safeHref}" target="_blank" rel="noopener" class="search-result-title" title="${safeTitleAttr}"><span class="search-result-title-text">${safeTitle}</span><span class="search-result-link-icon">↗</span></a>
+        </div>
+        ${safePlaylistTitle?`<div class="search-result-playlist" title="${safePlaylistTitle}">Playlist: ${safePlaylistTitle}</div>`:''}
       </div>
       <div class="search-result-actions">
         <span class="search-result-duration">${r.duration||'—'}</span>
@@ -3185,7 +3192,6 @@ function _renderMethodQuickPick(method, result, opts={}){
   const safeTitleJs=rawTitle.replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const safeOffset=String(result.start_offset||'0').replace(/'/g,"\\'");
   const label=opts.label || 'First match';
-  const showOpen=opts.showOpen===true;
   const titleText=opts.scrollTitle===true
     ? rawDisplayTitle
     : _truncateSourceText(rawDisplayTitle, {fallback:'1st result', max:52, middle:!!opts.truncateMiddle});
@@ -3194,15 +3200,12 @@ function _renderMethodQuickPick(method, result, opts={}){
     : titleText;
   const titleMarkup=opts.linkTitle===false
     ? `<span class="sm-quickpick-title" title="${safeTitleAttr}">${titleInner}</span>`
-    : `<a class="sm-quickpick-link sm-quickpick-title" href="${safeHref}" target="_blank" rel="noopener" title="${safeTitleAttr}">${titleInner}<span>↗</span></a>`;
+    : `<a class="sm-quickpick-link sm-quickpick-title" href="${safeHref}" target="_blank" rel="noopener" title="${safeTitleAttr}" onclick="event.stopPropagation()">${titleInner}<span>↗</span></a>`;
   const offsetMarkup=result.start_offset
     ? `<span class="ui-pill muted-chip" style="margin:4px 0 0">Offset ${_normalizedOffsetValue(result.start_offset)}</span>`
     : '';
-  const openMarkup=showOpen
-    ? `<a class="btn btn-ghost btn-xs" href="${safeHref}" target="_blank" rel="noopener" onclick="event.stopPropagation()">↗ Open</a>`
-    : '';
   const selectLabel=opts.selectLabel || 'Pick';
-  return `<span class="sm-quickpick-label">${label}</span>${titleMarkup}${offsetMarkup}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${safeMethod}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${safeMethod}','${safeUrl}','${safeTitleJs}','${safeOffset}')">${selectLabel}</button>${openMarkup}</div>`;
+  return `<span class="sm-quickpick-label">${label}</span>${titleMarkup}${offsetMarkup}<div class="sm-quickpick-buttons"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();previewQuickPick('${safeMethod}','${safeUrl}',this)">▶ Preview</button><button class="btn btn-amber btn-xs" onclick="event.stopPropagation();quickPickSelect('${safeMethod}','${safeUrl}','${safeTitleJs}','${safeOffset}')">${selectLabel}</button></div>`;
 }
 
 function _setMethodQuickPick(method, result){
@@ -3210,8 +3213,8 @@ function _setMethodQuickPick(method, result){
   if(!el) return;
   if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
   const quickPickOpts=method==='golden_source'
-    ? {label:'Quick pick', title:'Golden Source URL', displayTitle:(result&&result.url)||'Golden Source URL', showOpen:true, linkTitle:false, selectLabel:'Pick', scrollTitle:true}
-    : {label:'Quick pick'};
+    ? {label:'Quick pick', title:'Golden Source URL', displayTitle:(result&&result.url)||'Golden Source URL', linkTitle:true, selectLabel:'Pick', scrollTitle:true}
+    : {label:'Quick pick', scrollTitle:true};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
 }
 
@@ -3695,8 +3698,8 @@ function trimModalUpdateResult(){
   const resultEl=document.getElementById('trim-modal-result');
   if(resultEl){
     resultEl.textContent=meta.total>0
-      ? `Keep ${fmt(meta.start)} → ${fmt(meta.end)} · ${fmt(meta.length)} total`
-      : `Offset ${_normalizedOffsetValue(offsetValue)} · Keep — · End —`;
+      ? `Start ${fmt(meta.start)} · End ${fmt(meta.end)} · Theme Length ${fmt(meta.length)}`
+      : `Offset ${_normalizedOffsetValue(offsetValue)} · Theme Length —`;
   }
 }
 function _trimModalSetAudioHandlers({onloadedmetadata, ontimeupdate, onended, onerror}={}){
