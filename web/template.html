@@ -913,7 +913,7 @@
     <!-- Section heading -->
     <div class="modal-subsection">
       <div class="modal-subsection-title">Preview &amp; Set Offset</div>
-      <div class="panel-divider"></div>
+      <div class="modal-section-divider"></div>
     </div>
 
     <!-- Start Offset — inline -->
@@ -1015,10 +1015,10 @@
 
 <!-- ══════════════ MANUAL SEARCH MODAL (3-step) ══════════════ -->
 <div class="modal-overlay" id="search-modal">
-  <div class="modal" style="max-width:640px;position:relative;padding:0;display:flex;flex-direction:column;max-height:92vh">
+  <div class="modal modal-shell">
 
     <!-- Step rail - TOP -->
-    <div class="inline-wrap" style="gap:0;padding:10px 22px;background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0" id="search-step-rail">
+    <div class="inline-wrap" id="search-step-rail">
       <div class="srail-step active" id="srail-1" onclick="_srailClick(1)">
         <span class="srail-num">1.</span><span class="srail-label">Choose Search Method</span>
       </div>
@@ -1033,12 +1033,12 @@
     </div>
 
     <!-- Movie header -->
-    <div class="modal-header" style="flex-shrink:0">
+    <div class="modal-header">
       <img class="modal-poster hidden" id="search-modal-poster" src="" onerror="this.style.display='none'">
       <div class="modal-movie-info">
-        <div class="inline-wrap spread" style="align-items:flex-start">
+        <div class="modal-movie-title-row">
           <div class="modal-movie-title" id="search-modal-title">Find Theme Source</div>
-          <div class="modal-movie-links" id="search-modal-links" style="margin-top:0"></div>
+          <div class="modal-movie-links" id="search-modal-links"></div>
         </div>
         <div class="modal-movie-meta text-muted"><span id="search-modal-year-meta"></span></div>
         <div class="modal-inline-bio hidden" id="search-modal-bio-wrap">
@@ -1050,9 +1050,13 @@
     <div class="modal-divider"></div>
 
     <!-- Step 1: Choose Method -->
-    <div id="search-step-1" class="search-step-body" style="overflow-y:auto;flex:1">
-      <div class="modal-section" style="padding-bottom:0">
-        <div class="search-method-head">Choose Search Method</div>
+    <div id="search-step-1" class="search-step-body">
+      <div class="modal-section modal-section--dense">
+        <div class="modal-section-header search-step-section-head">
+          <div class="modal-section-heading">
+            <div class="search-method-head">Choose Search Method</div>
+          </div>
+        </div>
         <div class="search-method-grid">
           <div class="manual-methods" id="sm-primary-methods">
             <div class="search-method-card golden-source" id="sm-card-golden" onclick="selectSearchMethod('golden_source')">
@@ -1150,14 +1154,16 @@
     </div>
 
     <!-- Step 2: Review Results -->
-    <div id="search-step-2" class="search-step-body" style="display:none;overflow:hidden;flex:1;min-height:0">
-      <div class="inline-wrap spread" style="padding:12px 22px 8px;flex-shrink:0">
-        <div>
-          <div class="section-label">Results · Pick the best source match</div>
-          <div class="search-method-chosen">Chosen method: <span id="sm-results-method" class="ui-pill review-source-pill is-unknown">—</span></div>
+    <div id="search-step-2" class="search-step-body">
+      <div class="modal-section modal-section--dense search-step-section-head">
+        <div class="modal-section-header">
+          <div class="modal-section-heading">
+            <div class="section-label">Results · Pick the best source match</div>
+            <div class="search-method-chosen">Chosen method: <span id="sm-results-method" class="ui-pill review-source-pill is-unknown">—</span></div>
+          </div>
         </div>
       </div>
-      <div style="padding:0 22px 8px;flex-shrink:0">
+      <div class="modal-section modal-section--dense search-step-preview">
         <div class="modal-player-row surface-panel compact">
           <button class="play-btn" id="sm-preview-play" onclick="searchPreviewToggle()">
             <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -1174,38 +1180,45 @@
         <div id="search-results" class="search-step-results-list"></div>
       </div>
       <div class="inline-wrap spread search-step-results-footer">
-        <div id="sm-results-count" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></div>
+        <div id="sm-results-count" class="search-step-results-count"></div>
       </div>
     </div>
 
     <!-- Step 3: Confirm Source -->
-    <div id="search-step-3" class="search-step-body" style="display:none;overflow-y:auto;flex:1">
+    <div id="search-step-3" class="search-step-body">
       <div id="se-trim-editor-root"></div>
 
-      <div class="modal-section" style="padding-top:8px;padding-bottom:16px">
+      <div class="modal-section search-step-confirm">
         <div class="source-editor-card mb-0">
-          <div class="source-editor-title">Confirm Selected Source</div>
-          <div class="modal-section-header-row source-summary-row">
-            <div class="source-summary-meta">
-              <div class="source-summary-title">Current Selection</div>
-              <div id="se-source-summary-subtitle" class="review-card-subtitle">Review the currently selected source before saving.</div>
-            </div>
-            <div class="source-summary-actions">
-              <button class="btn btn-ghost btn-sm" id="se-copy-btn" onclick="seCopyUrl()">⧉ Copy</button>
-              <button class="btn btn-ghost btn-sm" id="se-open-btn" onclick="seOpenUrl()">↗ Open</button>
+          <div class="modal-section-header">
+            <div class="modal-section-heading">
+              <div class="source-editor-title">Confirm Selected Source</div>
+              <div class="modal-section-subtext">Review and adjust the saved source details if needed.</div>
             </div>
           </div>
-          <div class="source-state-stack source-state-stack-compact" id="se-source-state-stack"></div>
-          <div class="source-edit-wrap">
-            <label class="source-edit-label" for="se-url">Edit full URL only if needed</label>
-            <input id="se-url" class="search-method-input is-muted" style="flex:1;margin-top:0" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
+          <div class="modal-section-body">
+            <div class="modal-section-header-row source-summary-row">
+              <div class="source-summary-meta">
+                <div class="source-summary-title">Current Selection</div>
+                <div id="se-source-summary-subtitle" class="modal-section-subtext">Review the currently selected source before saving.</div>
+              </div>
+              <div class="source-summary-actions modal-section-actions">
+                <button class="btn btn-ghost btn-sm" id="se-copy-btn" onclick="seCopyUrl()">⧉ Copy</button>
+                <button class="btn btn-ghost btn-sm" id="se-open-btn" onclick="seOpenUrl()">↗ Open</button>
+              </div>
+            </div>
+            <div class="source-state-stack source-state-stack-compact" id="se-source-state-stack"></div>
+            <div class="source-edit-wrap">
+              <label class="source-edit-label" for="se-url">Edit full URL only if needed</label>
+              <input id="se-url" class="search-method-input is-muted" placeholder="https://www.youtube.com/watch?v=…" oninput="seUrlChanged()">
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Footer -->
-    <div class="modal-footer" id="search-modal-footer" style="flex-shrink:0;justify-content:space-between">
+    <div class="modal-footer" id="search-modal-footer">
       <button class="btn btn-ghost" id="search-modal-back" onclick="searchModalBack()">← Back</button>
       <div class="modal-actions-row footer-action-group">
         <button class="btn btn-ghost" onclick="closeSearchModal()">Cancel</button>
@@ -1218,7 +1231,7 @@
 
 <!-- Review Modal (decision center for any item state) -->
 <div class="modal-overlay" id="theme-modal">
-  <div class="modal" style="max-width:540px;position:relative;padding:0">
+  <div class="modal modal-shell">
 
     <!-- Movie header -->
     <div class="modal-header">
@@ -1239,26 +1252,28 @@
         </div>
       </div>
     </div>
-    <div class="review-section-divider"></div>
+    <div class="modal-section-divider theme-modal-divider"></div>
 
-    <div class="review-panel-head">
-      <div class="review-panel-heading">
-        <div class="review-panel-title hidden" id="theme-modal-summary">Manage Theme</div>
-        <div class="theme-status-flow-wrap">
-          <div class="theme-status-helper" id="theme-modal-status-helper">No selected source saved and no local theme file found yet.</div>
+    <div class="modal-section modal-section--dense">
+      <div class="modal-section-header review-panel-head">
+        <div class="modal-section-heading review-panel-heading">
+          <div class="review-panel-title hidden" id="theme-modal-summary">Manage Theme</div>
+          <div class="theme-status-flow-wrap">
+            <div class="theme-status-helper" id="theme-modal-status-helper">No selected source saved and no local theme file found yet.</div>
+          </div>
         </div>
       </div>
     </div>
 
     <details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-local-card">
       <summary class="review-card-header theme-section-header theme-card-toggle" id="theme-local-toggle" aria-controls="theme-local-body">
-        <div class="review-card-heading theme-section-heading">
-          <div class="modal-section-label mb-0">Local Theme</div>
-          <div class="review-card-subtitle" id="theme-modal-local-status">Missing</div>
+        <div class="review-card-heading theme-section-heading modal-section-heading">
+          <div class="modal-section-label">Local Theme</div>
+          <div class="modal-section-subtext" id="theme-modal-local-status">Missing</div>
         </div>
         <span class="settings-chev" aria-hidden="true">˅</span>
       </summary>
-      <div class="theme-section-body" id="theme-local-body">
+      <div class="theme-section-body modal-section-body" id="theme-local-body">
         <div class="review-empty hidden" id="theme-local-empty">No local theme file is on disk yet.</div>
         <div class="hidden theme-section-player" id="theme-local-player">
           <div class="modal-player-row surface-panel compact" id="theme-local-player-controls">
@@ -1291,7 +1306,7 @@
             <div class="clip-summary-warning" id="theme-local-clip-warning"></div>
           </div>
         </div>
-        <div class="modal-actions-row theme-section-actions hidden" id="theme-local-actions">
+        <div class="modal-actions-row modal-section-actions theme-section-actions hidden" id="theme-local-actions">
           <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim Local Theme</button>
           <button class="btn btn-ghost btn-sm" id="theme-modal-local-rematch-btn" onclick="themeModalOpenManualSearch()">Rematch</button>
           <button class="btn btn-danger-ghost btn-sm" id="theme-modal-local-delete-btn" onclick="themeModalDeleteLocalTheme()">Delete</button>
@@ -1301,13 +1316,13 @@
 
     <details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-workflow-card">
       <summary class="review-card-header theme-section-header theme-card-toggle" id="theme-workflow-toggle" aria-controls="theme-workflow-body">
-        <div class="review-card-heading theme-section-heading">
-          <div class="modal-section-label mb-0">Selected Source</div>
-          <div class="review-card-subtitle" id="theme-workflow-subtitle">Review the saved source, confirm the clip window, and choose the next action.</div>
+        <div class="review-card-heading theme-section-heading modal-section-heading">
+          <div class="modal-section-label">Selected Source</div>
+          <div class="modal-section-subtext" id="theme-workflow-subtitle">Review the saved source, confirm the clip window, and choose the next action.</div>
         </div>
         <span class="settings-chev" aria-hidden="true">˅</span>
       </summary>
-      <div class="theme-section-body" id="theme-workflow-body">
+      <div class="theme-section-body modal-section-body" id="theme-workflow-body">
         <div class="review-empty hidden" id="theme-workflow-empty">No selected source yet. Find a source to continue.</div>
         <div class="hidden theme-section-player" id="theme-workflow-player">
           <div class="modal-player-row surface-panel compact" id="theme-workflow-player-controls">
@@ -1359,7 +1374,7 @@
             <div class="clip-summary-warning" id="theme-workflow-clip-warning"></div>
           </div>
         </div>
-        <div class="modal-actions-row theme-workflow-actions" id="theme-workflow-actions"></div>
+        <div class="modal-actions-row modal-section-actions theme-workflow-actions" id="theme-workflow-actions"></div>
       </div>
     </details>
 
@@ -1374,7 +1389,7 @@
 
 <!-- Trim Editor Modal (trim existing local theme file) -->
 <div class="modal-overlay" id="trim-modal">
-  <div class="modal" style="max-width:540px;position:relative;padding:0">
+  <div class="modal modal-shell">
 
     <!-- ── Movie header ── -->
     <div class="modal-header">
@@ -1394,9 +1409,13 @@
     <div class="modal-bio" id="trim-modal-info"></div>
 
     <!-- ── Section heading ── -->
-    <div class="modal-subsection">
-      <div class="modal-subsection-title">Trim Local Theme</div>
-      <div class="panel-divider"></div>
+    <div class="modal-section modal-section--dense">
+      <div class="modal-section-header">
+        <div class="modal-section-heading">
+          <div class="modal-subsection-title">Trim Local Theme</div>
+        </div>
+      </div>
+      <div class="modal-section-divider"></div>
     </div>
 
     <div id="trim-modal-editor-root"></div>
