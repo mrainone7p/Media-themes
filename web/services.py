@@ -1185,6 +1185,7 @@ def save_manual_source_payload(data: dict):
     saved_row, error = ledger.save_ledger_row_updates(row, {
         "url": url,
         "start_offset": data.get("start_offset", "0"),
+        "end_offset": data.get("end_offset", "0"),
         "notes": data.get("notes", ""),
         "status": target_status,
     })

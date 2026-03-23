@@ -60,6 +60,9 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
         self.assertIn('def trigger_scan():\n    # Legacy compatibility alias for older clients that still invoke scan directly.\n    return trigger_pass(1)', self.app_source)
         self.assertNotIn("def trigger_scan_payload(", self.services_source)
 
+    def test_manual_source_service_persists_end_offset(self):
+        self.assertIn('"end_offset": data.get("end_offset", "0"),', self.services_source)
+
     def test_legacy_theme_routes_removed_from_app(self):
         self.assertNotIn('@app.route("/api/theme/info")', self.app_source)
         self.assertNotIn('@app.route("/api/media")', self.app_source)
