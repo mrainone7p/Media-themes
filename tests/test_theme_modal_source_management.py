@@ -25,6 +25,14 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'id="theme-modal-status"',
             'id="theme-modal-local-state"',
             'id="theme-modal-file"',
+            'id="theme-local-origin"',
+            'id="theme-local-url"',
+            'id="theme-local-controls"',
+            'id="theme-local-copy"',
+            'id="theme-local-open"',
+            'id="theme-local-added"',
+            'id="theme-local-offset"',
+            'id="theme-local-offset-row"',
             'id="theme-local-clip"',
             'class="ui-meta-row review-meta-item clip-summary-row hidden"',
             'id="theme-local-actions"',
@@ -38,6 +46,9 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         for snippet in (
             'theme-workflow-copy',
             'theme-workflow-open',
+            'theme-workflow-origin',
+            'theme-workflow-url',
+            'theme-workflow-added',
             'themeModalDeleteSource',
             '>Clear Source<',
             '>Approve<',
@@ -72,6 +83,12 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'theme-modal-local-delete-btn',
             'theme-modal-file',
             'theme-modal-local-state',
+            'theme-local-origin',
+            'theme-local-url',
+            'theme-local-copy',
+            'theme-local-open',
+            'theme-local-added',
+            'theme-local-offset',
         ):
             self.assertNotIn(snippet, source_card_split)
 
@@ -128,6 +145,13 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "return _selectedSourceStateText(row);",
             "? _renderSourceStatePill(_themeModalSourceState(row), _themeModalSourceOriginClass(row), _themeModalSourceState(row))",
             "if(originEl) originEl.innerHTML=hasSelected ? _themeModalSourceOriginMarkup(row) : '—';",
+            "if(originEl) originEl.innerHTML=hasLocal ? _themeModalLocalSourceOriginMarkup(row) : '—';",
+            "urlId:'theme-local-url',",
+            "copyHandler:themeModalCopyLocalSource,",
+            "openHandler:themeModalOpenLocalSource,",
+            "const localSourceUrl=hasLocal ? _themeModalLocalSourceUrl(row) : '';",
+            "const localOffset=hasLocal ? _themeModalLocalSourceOffset(row) : '—';",
+            "if(addedEl) addedEl.textContent=hasLocal ? _themeModalLocalSourceAdded(row) : '—';",
         ):
             self.assertIn(snippet, self.library_source)
         self.assertNotIn('theme-workflow-detail', self.template_source)
@@ -323,6 +347,8 @@ function _themeModalSourceOriginClass(){{ return 'is-custom'; }}
 function _themeModalSourceOriginMarkup(){{ return 'origin'; }}
 function themeModalCopyWorkflowSource(){{}}
 function themeModalOpenWorkflowSource(){{}}
+function themeModalCopyLocalSource(){{}}
+function themeModalOpenLocalSource(){{}}
 function _themeModalRenderWorkflowActions(){{ return ''; }}
 function _themeModalWorkflowActions(){{ return []; }}
 async function _themeModalLoadSelectedSourcePreview(){{ return true; }}
@@ -346,6 +372,11 @@ function _effectiveRowStatus(row={{}}){{ const status=String(row?.status||'MISSI
 function _themeModalSourceState(){{ return 'Saved'; }}
 function _themeModalSourceAdded(row={{}}){{ return row.selected_source_recorded_at || '—'; }}
 function _themeModalSourceUrl(row={{}}){{ return String(row?.url||'').trim(); }}
+function _themeModalLocalSourceUrl(row={{}}){{ return String(row?.local_source_url||row?.url||'').trim(); }}
+function _themeModalLocalSourceOffset(row={{}}){{ return _themeModalOffsetLabel(row, _themeHasVerifiedLocal(row), 'local_theme'); }}
+function _themeModalLocalSourceAdded(row={{}}){{ return row.local_source_recorded_at || row.selected_source_recorded_at || '—'; }}
+function _themeModalLocalSourceOriginMarkup(){{ return 'local-origin'; }}
+function _themeModalLocalSourceLengthText(_row={{}}, duration=0){{ return duration>0 ? `Theme Length ${{fmt(duration)}}` : 'Theme Length —'; }}
 function _themeModalOffsetValue(row={{}}, layer='selected_source'){{ if(layer==='local_theme') return row?.local_source_offset ?? row?.start_offset ?? 0; return row?.start_offset || 0; }}
 function _clipLengthOffsetLabel(duration=0, offset=0){{ return `Length ${{duration}} · Offset ${{offset}}`; }}
 const _themeModalAudio={{

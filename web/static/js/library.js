@@ -1660,9 +1660,19 @@ function _themeModalLocalSourceAdded(row={}){
 function _themeModalLocalSourceOriginMarkup(row={}){
   const local=_localSourceContract(row);
   if(!local.url) return _renderSourceStatePill('Not Recorded','is-unknown','No local source recorded');
-  const typeLabel=_sourceKindLabel(local.kind);
-  const stateLabel=_sourceStatePillLabel(typeLabel, 'Downloaded');
-  return _renderSourceStatePill(stateLabel, _sourceStateClass(local.kind, local.method), local.url);
+  const methodLabel=_sourceMethodLabel(local.method);
+  const typeMethodLabel=`${_sourceKindLabel(local.kind)} / ${methodLabel}`;
+  return _renderSourceStatePill(typeMethodLabel, _sourceStateClass(local.kind, local.method), local.url);
+}
+function _themeModalLocalSourceLengthText(row={}, duration=0){
+  const local=_localSourceContract(row);
+  if(!local.url) return '—';
+  const safeDuration=Number(duration||row?.theme_duration||0)||0;
+  if(safeDuration<=0) return 'Theme Length —';
+  const offset=parseTrim(_themeModalOffsetValue(row,'local_theme')||'0');
+  const endTrim=parseTrim(_themeModalSourceEndOffset(row)||'0');
+  const usable=Math.max(0, safeDuration-offset-endTrim);
+  return `Theme Length ${fmt(usable)}`;
 }
 function _themeModalSourceEndOffset(row={}){
   return row?.end_offset||0;
@@ -2087,6 +2097,12 @@ function _themeModalUpdateLocalCard(row={}){
   const statusEl=document.getElementById('theme-modal-local-status');
   const stateEl=document.getElementById('theme-modal-local-state');
   const fileEl=document.getElementById('theme-modal-file');
+  const originEl=document.getElementById('theme-local-origin');
+  const addedEl=document.getElementById('theme-local-added');
+  const offsetEl=document.getElementById('theme-local-offset');
+  const localSourceUrl=hasLocal ? _themeModalLocalSourceUrl(row) : '';
+  const localOffset=hasLocal ? _themeModalLocalSourceOffset(row) : '—';
+  const localLength=hasLocal ? _themeModalLocalSourceLengthText(row, parseFloat(row?.theme_duration||0)||0) : '—';
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const folder=String(_themeModalContext?.folder||'').trim();
   if(local) local.classList.toggle('compact', !hasLocal);
@@ -2096,6 +2112,18 @@ function _themeModalUpdateLocalCard(row={}){
     ? _renderSourceStatePill('On Disk', _themeModalSourceOriginClass(row), 'Local theme file detected on disk')
     : '—';
   if(fileEl) fileEl.textContent=folder ? `${folder}/${themeFilename}` : 'Unknown folder';
+  if(originEl) originEl.innerHTML=hasLocal ? _themeModalLocalSourceOriginMarkup(row) : '—';
+  if(addedEl) addedEl.textContent=hasLocal ? _themeModalLocalSourceAdded(row) : '—';
+  if(offsetEl) offsetEl.textContent=hasLocal ? `${localOffset} · ${localLength}` : '—';
+  _themeModalSetLinkRow({
+    urlId:'theme-local-url',
+    controlsId:'theme-local-controls',
+    copyId:'theme-local-copy',
+    openId:'theme-local-open',
+    url:localSourceUrl,
+    copyHandler:themeModalCopyLocalSource,
+    openHandler:themeModalOpenLocalSource,
+  });
   _setHidden(empty, hasLocal, hasLocal?'':'block');
   _setHidden(player, !hasLocal, hasLocal?'block':'');
   _setHidden(meta, !hasLocal, hasLocal?'block':'');
