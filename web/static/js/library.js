@@ -1584,10 +1584,15 @@ function _themeHasLocal(row){
   if(!row) return false;
   return String(row.theme_exists||'')==='1';
 }
+function _themeHasVerifiedLocal(row={}){
+  if(Object.prototype.hasOwnProperty.call(row,'_verifiedThemeExists')) return !!row._verifiedThemeExists;
+  return _themeHasLocal(row);
+}
 function _effectiveRowStatus(row={}){
   const status=String(row?.status||'MISSING').toUpperCase();
-  const hasTheme=_themeHasLocal(row);
+  const hasTheme=_themeHasVerifiedLocal(row);
   const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim();
+  if(['MISSING','STAGED','APPROVED'].includes(status) && hasTheme) return 'AVAILABLE';
   if(status==='AVAILABLE' && !hasTheme) return hasStoredSource ? 'STAGED' : 'MISSING';
   return status;
 }
@@ -2045,7 +2050,7 @@ function _themeModalWorkflowActions(row={}){
   const selected=_selectedSourceContract(row);
   const hasSelected=!!String(selected.url||'').trim();
   const status=_effectiveRowStatus(row);
-  const hasLocal=_themeHasLocal(row);
+  const hasLocal=_themeHasVerifiedLocal(row);
   const actions=[];
   const push=(id,label,className,handler)=>{
     if(actions.some(action=>action.id===id)) return;
@@ -2173,8 +2178,7 @@ function _themeModalUpdateWorkflowCard(row={}){
   if(actionsEl) actionsEl.innerHTML=_themeModalRenderWorkflowActions(actions);
 }
 function _themeModalHasVerifiedLocal(row={}){
-  if(Object.prototype.hasOwnProperty.call(row,'_verifiedThemeExists')) return !!row._verifiedThemeExists;
-  return _themeHasLocal(row);
+  return _themeHasVerifiedLocal(row);
 }
 function _themeModalNeedsLocalProbe(row={}, folder=''){
   const normalizedFolder=String(folder||row?.folder||'').trim();

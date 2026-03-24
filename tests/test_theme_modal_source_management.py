@@ -211,6 +211,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
     def test_theme_modal_next_action_normalizes_stale_available_before_exposing_actions(self):
         for snippet in (
             'function _effectiveRowStatus(row={}){',
+            "if(['MISSING','STAGED','APPROVED'].includes(status) && hasTheme) return 'AVAILABLE';",
             "if(status==='AVAILABLE' && !hasTheme) return hasStoredSource ? 'STAGED' : 'MISSING';",
             "const status=_effectiveRowStatus(row);",
             "if(status==='APPROVED'){",
@@ -340,6 +341,7 @@ function _legacySourceMethodFromOrigin(origin=''){{ const normalized=String(orig
 function _rowUsesGoldenSource(row){{ const sourceUrl=String(row?.url||'').trim(); const goldenUrl=String(row?.golden_source_url||'').trim(); return !!sourceUrl && !!goldenUrl && sourceUrl===goldenUrl; }}
 function _selectedSourceContract(row={{}}){{ const url=String(row?.url||'').trim(); if(!url) return {{kind:'', method:'', url:''}}; let kind=_normalizeSourceKind(row?.selected_source_kind); let method=_normalizeSourceMethod(row?.selected_source_method); if(!kind) kind=method==='golden_source' || _rowUsesGoldenSource(row) ? 'golden' : 'custom'; if(!method) method=kind==='golden' ? 'golden_source' : 'manual'; return {{kind, method, url}}; }}
 function _themeHasLocal(row){{ return String(row?.theme_exists||'')==='1'; }}
+function _themeHasVerifiedLocal(row={{}}){{ if(Object.prototype.hasOwnProperty.call(row,'_verifiedThemeExists')) return !!row._verifiedThemeExists; return _themeHasLocal(row); }}
 function _effectiveRowStatus(row={{}}){{ const status=String(row?.status||'MISSING').toUpperCase(); const hasTheme=_themeHasLocal(row); const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim(); if(status==='AVAILABLE' && !hasTheme) return hasStoredSource ? 'STAGED' : 'MISSING'; return status; }}
 function _themeModalSourceState(){{ return 'Saved'; }}
 function _themeModalSourceAdded(row={{}}){{ return row.selected_source_recorded_at || '—'; }}
@@ -484,6 +486,92 @@ function _themeModalRememberRow(current={{}}){{
         self.assertTrue(payload["remembered"])
         self.assertTrue(payload["closed"])
         self.assertTrue(payload["reloaded"])
+
+    def test_verified_local_probe_promotes_effective_status_to_available_for_badge_helper_and_actions(self):
+        start = self.library_source.index("function _themeHasLocal(row){")
+        end = self.library_source.index("async function openThemeModal(", start)
+        shared_block = self.library_source[start:end]
+        node_script = f"""
+const elements=new Map();
+function makeElement(id){{
+  return {{
+    id,
+    textContent:'',
+    innerHTML:'',
+    className:'',
+    style:{{display:''}},
+    hidden:false,
+    classList:{{toggle(){{}}, add(){{}}, remove(){{}}}},
+  }};
+}}
+const document={{
+  getElementById(id){{
+    if(!elements.has(id)) elements.set(id, makeElement(id));
+    return elements.get(id);
+  }}
+}};
+function displayStatus(status){{ return status; }}
+function _normalizeSourceKind(value){{ const normalized=String(value||'').trim().toLowerCase(); return normalized==='golden' || normalized==='custom' ? normalized : ''; }}
+function _normalizeSourceMethod(value){{ return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''); }}
+function _legacySourceMethodFromOrigin(origin=''){{ const normalized=String(origin||'').trim().toLowerCase(); if(normalized.startsWith('golden_source')) return 'golden_source'; if(normalized.includes('playlist')) return 'playlist'; if(normalized.includes('direct')) return 'direct'; if(normalized==='manual' || normalized==='custom') return 'manual'; return ''; }}
+function _rowUsesGoldenSource(row){{ const sourceUrl=String(row?.url||'').trim(); const goldenUrl=String(row?.golden_source_url||'').trim(); return !!sourceUrl && !!goldenUrl && sourceUrl===goldenUrl; }}
+function _selectedSourceContract(row={{}}){{ const url=String(row?.url||'').trim(); if(!url) return {{kind:'', method:'', url:''}}; let kind=_normalizeSourceKind(row?.selected_source_kind); let method=_normalizeSourceMethod(row?.selected_source_method); if(!kind) kind=method==='golden_source' || _rowUsesGoldenSource(row) ? 'golden' : 'custom'; if(!method) method=kind==='golden' ? 'golden_source' : 'manual'; return {{kind, method, url}}; }}
+let _rowMap={{}};
+let _rows=[];
+let _filtered=[];
+function apiUrl(url){{ return url; }}
+class Audio {{
+  constructor(){{ this.src=''; this.duration=9.75; this.preload=''; this.onloadedmetadata=null; this.oncanplaythrough=null; this.onerror=null; }}
+  pause(){{}}
+  removeAttribute(name){{ if(name==='src') this.src=''; }}
+  load(){{ if(this.onloadedmetadata) this.onloadedmetadata(); }}
+}}
+{shared_block}
+const row={{
+  rating_key:'1',
+  folder:'/media/example',
+  status:'APPROVED',
+  theme_exists:'0',
+  url:'https://example.test/theme',
+  selected_source_kind:'custom',
+  selected_source_method:'playlist',
+}};
+(async()=>{{
+  const probe=await _themeModalVerifyLocalPlayback(row, row.folder);
+  const status=_effectiveRowStatus(row);
+  const badge=document.getElementById('theme-modal-status-badge');
+  badge.className=`badge s-${{status}}`;
+  badge.innerHTML=`<span class="si"></span>${{displayStatus(status)}}`;
+  _themeModalUpdateStatusFlow(status, {{hasTheme:_themeModalHasVerifiedLocal(row), hasStoredSource:!!String(_selectedSourceContract(row).url||'').trim()}});
+  const actionIds=_themeModalWorkflowActions(row).map((action)=>action.id);
+  process.stdout.write(JSON.stringify({{
+    probeOk:probe.ok,
+    themeExists:row.theme_exists,
+    verified:row._verifiedThemeExists,
+    status,
+    badgeClass:badge.className,
+    badgeText:badge.innerHTML,
+    helper:document.getElementById('theme-modal-status-helper').textContent,
+    actionIds,
+  }}));
+}})().catch((error)=>{{ console.error(error); process.exit(1); }});
+"""
+        result = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["probeOk"])
+        self.assertEqual(1, payload["themeExists"])
+        self.assertTrue(payload["verified"])
+        self.assertEqual("AVAILABLE", payload["status"])
+        self.assertEqual("badge s-AVAILABLE", payload["badgeClass"])
+        self.assertIn("AVAILABLE", payload["badgeText"])
+        self.assertEqual("The local theme file is on disk and ready for playback.", payload["helper"])
+        self.assertEqual(["trim-source", "clear-source", "stage"], payload["actionIds"])
 
 
 
