@@ -416,6 +416,75 @@ const row={{
         self.assertEqual("Theme on disk", payload["durMeta"])
         self.assertEqual("On disk and ready to play or trim.", payload["localStatus"])
 
+    def test_clear_source_keeps_available_status_when_local_theme_exists(self):
+        start = self.library_source.index("async function themeModalDeleteSource(){")
+        end = self.library_source.index("function themeModalDeleteLocalTheme(){", start)
+        delete_block = self.library_source[start:end]
+        node_script = f"""
+let remembered=false;
+let closed=false;
+let reloaded=false;
+const row={{
+  rating_key:'1',
+  title:'Example',
+  status:'STAGED',
+  theme_exists:'1',
+  url:'https://example.test/theme.mp3',
+  selected_source_kind:'custom',
+  selected_source_method:'playlist',
+  selected_source_recorded_at:'2026-03-23 10:00:00',
+}};
+let _rows=[row];
+let _filtered=[row];
+let _rowMap={{'1':row}};
+let _activeLib='Movies';
+let _themeModalContext={{rk:'1',title:'Example',library:'Movies'}};
+function requireLibraryContext(){{ return 'Movies'; }}
+async function openConfirmModal(){{ return true; }}
+function apiUrl(url){{ return url; }}
+async function postJson(){{ return {{ok:true,data:{{}}}}; }}
+function toast(){{}}
+function closeThemeModal(){{ closed=true; }}
+async function loadDatabase(){{ reloaded=true; }}
+function _themeHasLocal(current={{}}){{ return String(current?.theme_exists||'')==='1'; }}
+function _themeModalHasVerifiedLocal(current={{}}){{
+  if(Object.prototype.hasOwnProperty.call(current,'_verifiedThemeExists')) return !!current._verifiedThemeExists;
+  return _themeHasLocal(current);
+}}
+function _themeModalRememberRow(current={{}}){{
+  remembered=true;
+  const rk=String(current?.rating_key||'');
+  _rowMap[rk]=current;
+  _rows=_rows.map(item=>String(item?.rating_key||'')===rk ? current : item);
+  _filtered=_filtered.map(item=>String(item?.rating_key||'')===rk ? current : item);
+  return current;
+}}
+{delete_block}
+(async()=>{{
+  await themeModalDeleteSource();
+  process.stdout.write(JSON.stringify({{
+    status:row.status,
+    url:row.url,
+    remembered,
+    closed,
+    reloaded
+  }}));
+}})().catch((error)=>{{ console.error(error); process.exit(1); }});
+"""
+        result = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual("AVAILABLE", payload["status"])
+        self.assertEqual("", payload["url"])
+        self.assertTrue(payload["remembered"])
+        self.assertTrue(payload["closed"])
+        self.assertTrue(payload["reloaded"])
+
 
 
 if __name__ == "__main__":
