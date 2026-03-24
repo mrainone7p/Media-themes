@@ -2445,11 +2445,20 @@ async function themeModalDeleteSource(){
   }
   const current=_rowMap[c.rk]||_rows.find(r=>String(r.rating_key)===String(c.rk));
   if(current){
+    const priorStatus=String(current.status||'').toUpperCase();
     current.url='';
     current.selected_source_kind='';
     current.selected_source_method='';
     current.selected_source_recorded_at='';
-    if(String(current.status||'').toUpperCase()!=='AVAILABLE') current.status='MISSING';
+    const hasLocal=_themeModalHasVerifiedLocal(current) || _themeHasLocal(current);
+    if(hasLocal){
+      current.status='AVAILABLE';
+    }else if(priorStatus==='UNMONITORED' || priorStatus==='FAILED'){
+      current.status=priorStatus;
+    }else{
+      current.status='MISSING';
+    }
+    _themeModalRememberRow(current);
   }
   toast('Saved source deleted','ok');
   closeThemeModal();
