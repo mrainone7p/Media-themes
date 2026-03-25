@@ -970,8 +970,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 #search-modal .search-step-confirm{padding-top:8px;padding-bottom:16px}
 #search-modal .search-step-results-count{font-size:11px;font-family:var(--mono);color:var(--text3)}
 #search-modal-footer{justify-content:space-between}
-#theme-modal .modal-header{gap:12px}
-#theme-modal .modal-poster{width:58px;height:88px}
+#theme-modal .modal-header{gap:12px;align-items:flex-end}
+#theme-modal .modal-poster{width:72px;height:108px}
 #theme-modal .review-panel-head{padding:0 var(--modal-pad-x) 6px}
 #theme-modal .review-card{margin:0 var(--modal-pad-x) 12px;padding:12px;border-radius:14px}
 #theme-local-card,#theme-workflow-card{border-left:2px solid color-mix(in srgb,var(--border) 78%, transparent);background:var(--surface2)}
@@ -987,18 +987,18 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 #theme-modal .simple-line{margin-bottom:3px}
 #theme-modal .theme-status-flow-wrap{gap:2px}
 .theme-modal-summary-header .modal-movie-title{font-size:20px}
-.theme-summary-copy{font-size:12px;color:var(--text2);line-height:1.45;margin-top:6px}
-.theme-summary-next-action{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.theme-summary-copy{display:none}
+.theme-summary-next-action{display:none}
 .theme-summary-next-label{font-size:10px;letter-spacing:.03em;text-transform:uppercase;color:var(--text3);font-weight:700}
 #theme-modal-status-badge{font-size:12px;padding:5px 10px}
 #theme-modal-supporting-badge{font-size:11px}
 .theme-section-card{display:flex;flex-direction:column;gap:10px}
 .theme-section-header{align-items:flex-start}
 .theme-section-body{display:flex;flex-direction:column;gap:10px}
-.theme-section-heading .modal-section-subtext{font-size:14px;color:var(--text);line-height:1.4;font-weight:650}
+.theme-section-heading .modal-section-subtext{font-size:12px;color:var(--text2);line-height:1.35;font-weight:600}
 .theme-section-meta .clip-summary-row{margin-top:0;border:none;border-top:1px solid var(--border);border-radius:0;background:transparent;box-shadow:none;padding:8px 10px}
 .theme-section-heading{gap:4px}
-.theme-section-heading .modal-section-label{display:block;padding:0;border-radius:0;font-size:16px;font-weight:800;letter-spacing:.01em;color:var(--text)}
+.theme-section-heading .modal-section-label{display:block;padding:0;border-radius:0;font-size:14px;font-weight:700;letter-spacing:.01em;color:var(--text)}
 .theme-section-player{margin-top:2px}
 .theme-section-player .modal-player-row{margin-bottom:0}
 .theme-section-details{border:1px solid color-mix(in srgb,var(--border) 90%, transparent);border-radius:10px;background:color-mix(in srgb,var(--surface) 40%, transparent)}
@@ -1013,10 +1013,13 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-preview-feedback .modal-status-txt{padding-left:0;padding-top:5px;padding-bottom:0}
 .theme-section-meta{gap:0}
 .theme-detail-grid{display:grid;grid-template-columns:1fr;column-gap:0;row-gap:0}
-.theme-detail-item{border:none;border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent);border-radius:0;background:transparent;padding:8px 10px}
+.theme-detail-item{border:none;border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent);border-radius:0;background:transparent;padding:8px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .theme-detail-grid .theme-detail-item:first-child{border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent)}
-.theme-detail-item .review-meta-label{font-size:10px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--text3)}
-.theme-detail-item .review-meta-value{font-size:12px;font-weight:600;color:var(--text)}
+.theme-detail-item .review-meta-label{font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--text3)}
+.theme-detail-item .review-meta-value{font-size:12px;font-weight:600;color:var(--text);display:inline-flex;align-items:center;gap:8px}
+.theme-detail-item .review-meta-label::after{content:":";margin-left:2px}
+#theme-modal #theme-local-empty,
+#theme-modal #theme-workflow-empty{display:none !important}
 .theme-detail-item-wide{grid-column:1 / -1}
 .theme-detail-value.is-path{font-family:var(--mono);font-size:11px;word-break:break-word}
 .theme-link-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;min-width:0}
