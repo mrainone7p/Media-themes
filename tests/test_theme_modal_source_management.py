@@ -24,7 +24,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'id="theme-modal-status"',
             'id="theme-modal-local-state"',
             'id="theme-modal-file"',
-            'id="theme-local-origin"',
+            'id="theme-local-header-chips"',
             'id="theme-local-url"',
             'id="theme-local-controls"',
             'id="theme-local-copy"',
@@ -63,10 +63,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'id="theme-workflow-audio"',
             'id="theme-workflow-status"',
             'id="theme-workflow-retry"',
-            'Workflow State',
-            'id="theme-workflow-state"',
-            'Source Type',
-            'id="theme-workflow-origin"',
+            'id="theme-workflow-header-chips"',
             'id="theme-workflow-url"',
             'id="theme-workflow-added"',
             'id="theme-workflow-clip"',
@@ -81,7 +78,6 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'theme-modal-local-delete-btn',
             'theme-modal-file',
             'theme-modal-local-state',
-            'theme-local-origin',
             'theme-local-url',
             'theme-local-copy',
             'theme-local-open',
@@ -143,9 +139,10 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         for snippet in (
             "return _selectedSourceLabel(row);",
             "return _selectedSourceStateText(row);",
-            "? _renderSourceStatePill(_themeModalSourceState(row), _themeModalSourceOriginClass(row), _themeModalSourceState(row))",
-            "if(originEl) originEl.innerHTML=hasSelected ? _themeModalSourceOriginMarkup(row) : '—';",
-            "if(originEl) originEl.innerHTML=hasLocal ? _themeModalLocalSourceOriginMarkup(row) : '—';",
+            "const stateChip=hasSelected",
+            "const typeChip=hasSelected ? _themeModalSourceOriginMarkup(row) : '';",
+            "if(headerChips) headerChips.innerHTML=hasLocal",
+            "? _themeModalLocalSourceOriginMarkup(row)",
             "urlId:'theme-local-url',",
             "copyHandler:themeModalCopyLocalSource,",
             "openHandler:themeModalOpenLocalSource,",
@@ -161,7 +158,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "const _THEME_MODAL_CARD_STORAGE_KEY='mt-theme-modal-card-state';",
             "function _themeModalCardDefaultOpen(cardId, row={}){",
             "if(cardId==='theme-local-details') return false;",
-            "if(cardId==='theme-workflow-details') return hasSelected && !hasLocal;",
+            "if(cardId==='theme-workflow-details') return false;",
             "function _themeModalPersistCardState(cardId, isOpen){",
             "card.addEventListener('toggle', ()=>_themeModalPersistCardState(cardId, card.open));",
             "_themeModalBindCardToggles();",
@@ -345,6 +342,7 @@ function _setHidden(el, hidden, display=''){{ if(!el) return; el.hidden=!!hidden
 function _renderSourceStatePill(label){{ return label; }}
 function _themeModalSourceOriginClass(){{ return 'is-custom'; }}
 function _themeModalSourceOriginMarkup(){{ return 'origin'; }}
+function _plexPill(){{ return ''; }}
 function themeModalCopyWorkflowSource(){{}}
 function themeModalOpenWorkflowSource(){{}}
 function themeModalCopyLocalSource(){{}}
