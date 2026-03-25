@@ -25,6 +25,13 @@ async function openTmdb(title, year, evt){
 }
 function _tmdbPill(title,year){ return `<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(title,year)}" target="_blank" rel="noopener">🎬 TMDB</a>`; }
 function _ytLink(url){ return url?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:''; }
+function _plexLink(ratingKey){
+  const rk=String(ratingKey||'').trim();
+  const base=String(document.getElementById('cfg-plex_url')?.value||'').trim().replace(/\/+$/,'');
+  if(!rk || !base) return '';
+  const path=`/web/index.html#!/details?key=${encodeURIComponent(`/library/metadata/${rk}`)}`;
+  return `${base}${path}`;
+}
 function _escapeHtml(value){
   return String(value ?? '')
     .replace(/&/g,'&amp;')
@@ -2146,6 +2153,8 @@ function _themeModalUpdateLocalCard(row={}){
   const originEl=document.getElementById('theme-local-origin');
   const addedEl=document.getElementById('theme-local-added');
   const offsetEl=document.getElementById('theme-local-offset');
+  const localStatusChip=document.getElementById('theme-local-status-chip');
+  const localTypeChip=document.getElementById('theme-local-type-chip');
   const localSourceUrl=hasLocal ? _themeModalLocalSourceUrl(row) : '';
   const localOffset=hasLocal ? _themeModalLocalSourceOffset(row) : '—';
   const localLength=hasLocal ? _themeModalLocalSourceLengthText(row, parseFloat(row?.theme_duration||0)||0) : '—';
@@ -2161,6 +2170,27 @@ function _themeModalUpdateLocalCard(row={}){
   if(originEl) originEl.innerHTML=hasLocal ? _themeModalLocalSourceOriginMarkup(row) : '—';
   if(addedEl) addedEl.textContent=hasLocal ? _themeModalLocalSourceAdded(row) : '—';
   if(offsetEl) offsetEl.textContent=hasLocal ? `${localOffset} · ${localLength}` : '—';
+  if(localStatusChip){
+    localStatusChip.className=`badge s-${hasLocal ? 'AVAILABLE' : 'MISSING'}`;
+    localStatusChip.innerHTML=`<span class="si"></span>${hasLocal ? 'Available' : 'Missing'}`;
+  }
+  if(localTypeChip){
+    const localUrl=String(row?.local_source_url||row?.url||'').trim();
+    const localKind=_normalizeSourceKind(row?.local_source_kind)||'custom';
+    const localMethod=_normalizeSourceMethod(row?.local_source_method)||'manual';
+    const localKindLabel=typeof _sourceKindLabel==='function'
+      ? _sourceKindLabel(localKind)
+      : (String(localKind||'custom').charAt(0).toUpperCase()+String(localKind||'custom').slice(1));
+    const localChipClass=typeof _sourceStateClass==='function' ? _sourceStateClass(localKind, localMethod) : 'is-info';
+    if(hasLocal && localUrl){
+      localTypeChip.textContent=localKindLabel;
+      localTypeChip.className=`ui-pill ${localChipClass}`;
+      _setHidden(localTypeChip, false, 'inline-flex');
+    }else{
+      localTypeChip.textContent='';
+      _setHidden(localTypeChip, true);
+    }
+  }
   _themeModalSetLinkRow({
     urlId:'theme-local-url',
     controlsId:'theme-local-controls',
@@ -2212,6 +2242,12 @@ function _themeModalBindCardToggles(){
     card.addEventListener('toggle', ()=>_themeModalPersistCardState(cardId, card.open));
   });
 }
+function _themeModalForceDetailsClosed(){
+  ['theme-local-details','theme-workflow-details'].forEach(cardId=>{
+    const card=document.getElementById(cardId);
+    if(card) card.open=false;
+  });
+}
 function _themeModalUpdateWorkflowCard(row={}){
   const selected=_selectedSourceContract(row);
   const hasSelected=!!String(selected.url||'').trim();
@@ -2224,6 +2260,8 @@ function _themeModalUpdateWorkflowCard(row={}){
   const originEl=document.getElementById('theme-workflow-origin');
   const addedEl=document.getElementById('theme-workflow-added');
   const actionsEl=document.getElementById('theme-workflow-actions');
+  const workflowStatusChip=document.getElementById('theme-workflow-status-chip');
+  const workflowTypeChip=document.getElementById('theme-workflow-type-chip');
   const statusText=document.getElementById('theme-workflow-subtitle');
   const actions=_themeModalWorkflowActions(row);
   if(subtitle) subtitle.textContent=hasSelected
@@ -2246,6 +2284,25 @@ function _themeModalUpdateWorkflowCard(row={}){
     : '—';
   if(originEl) originEl.innerHTML=hasSelected ? _themeModalSourceOriginMarkup(row) : '—';
   if(addedEl) addedEl.textContent=hasSelected ? _themeModalSourceAdded(row) : '—';
+  if(workflowStatusChip){
+    const workflowStatus=hasSelected ? _effectiveRowStatus(row) : 'MISSING';
+    workflowStatusChip.className=`badge s-${workflowStatus}`;
+    workflowStatusChip.innerHTML=`<span class="si"></span>${displayStatus(workflowStatus)}`;
+  }
+  if(workflowTypeChip){
+    const selectedKindLabel=typeof _sourceKindLabel==='function'
+      ? _sourceKindLabel(selected.kind)
+      : (String(selected.kind||'custom').charAt(0).toUpperCase()+String(selected.kind||'custom').slice(1));
+    const selectedChipClass=typeof _sourceStateClass==='function' ? _sourceStateClass(selected.kind, selected.method) : 'is-info';
+    if(hasSelected){
+      workflowTypeChip.textContent=selectedKindLabel;
+      workflowTypeChip.className=`ui-pill ${selectedChipClass}`;
+      _setHidden(workflowTypeChip, false, 'inline-flex');
+    }else{
+      workflowTypeChip.textContent='';
+      _setHidden(workflowTypeChip, true);
+    }
+  }
   _themeModalSetLinkRow({
     urlId:'theme-workflow-url',
     controlsId:'theme-workflow-controls',
@@ -2387,15 +2444,11 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-dur-meta').textContent=hasLocalTheme
     ? 'Theme on disk'
     : (hasStoredSource ? 'Selected source saved' : 'Theme missing');
-  const statusBadge=document.getElementById('theme-modal-status-badge');
-  if(statusBadge){
-    statusBadge.className=`badge s-${status}`;
-    statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
-  }
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
   _themeModalApplyHeaderActions(row);
   _themeModalBindCardToggles();
   _themeModalApplyCardState(row);
+  _themeModalForceDetailsClosed();
   _themeModalUpdateLocalCard(row);
   _themeModalUpdateWorkflowCard(row);
 
@@ -2403,8 +2456,10 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-poster').style.display='';
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
   const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
+  const plexLink=typeof _plexLink==='function' ? _plexLink(rk) : '';
   document.getElementById('theme-modal-links').innerHTML=
-    `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">🎬 TMDB</a>`;
+    `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">🎬 TMDB</a>`+
+    (plexLink?`<a class="modal-link-pill plex-pill" href="${_escapeAttr(plexLink)}" target="_blank" rel="noopener">🍿 Plex</a>`:'');
   setBio('theme-modal-bio', rk, resolvedLibrary);
 
   _themeModalAudio.cleanup({clearSrc:false});

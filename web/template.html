@@ -1250,8 +1250,6 @@
             <div class="modal-movie-meta">
               <span id="theme-modal-year"></span>
               <span class="text-green" id="theme-modal-dur-meta"></span>
-              <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
-              <span class="ui-pill muted-chip hidden" id="theme-modal-supporting-badge"></span>
             </div>
           </div>
           <div class="modal-movie-links" id="theme-modal-links"></div>
@@ -1273,7 +1271,11 @@
       <div class="review-card-header theme-section-header" id="theme-local-toggle">
         <div class="review-card-heading theme-section-heading modal-section-heading">
           <div class="modal-section-label">Local Theme</div>
-          <div class="modal-section-subtext" id="theme-modal-local-status">Missing</div>
+          <div class="modal-section-subtext" id="theme-modal-local-status">No local theme file on disk yet.</div>
+        </div>
+        <div class="theme-section-header-chips" id="theme-local-header-chips">
+          <span class="badge s-MISSING" id="theme-local-status-chip"><span class="si"></span>Missing</span>
+          <span class="ui-pill hidden" id="theme-local-type-chip"></span>
         </div>
       </div>
       <div class="theme-section-body modal-section-body" id="theme-local-body">
@@ -1354,6 +1356,10 @@
         <div class="review-card-heading theme-section-heading modal-section-heading">
           <div class="modal-section-label">Selected Source</div>
           <div class="modal-section-subtext" id="theme-workflow-subtitle">Review the saved source, confirm the clip window, and choose the next action.</div>
+        </div>
+        <div class="theme-section-header-chips" id="theme-workflow-header-chips">
+          <span class="badge s-MISSING" id="theme-workflow-status-chip"><span class="si"></span>Missing</span>
+          <span class="ui-pill hidden" id="theme-workflow-type-chip"></span>
         </div>
       </div>
       <div class="theme-section-body modal-section-body" id="theme-workflow-body">
