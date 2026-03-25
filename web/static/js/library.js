@@ -1747,10 +1747,22 @@ function _themeModalSourceRetryVisible(visible=false){
   _setHidden(retryBtn, !visible, visible?'inline-flex':'');
 }
 function _themeModalSetSourcePreviewStatus(message='', retryVisible=false){
+  const unavailableEl=document.getElementById('theme-workflow-preview-unavailable');
+  const player=document.getElementById('theme-workflow-player');
+  const isUnavailable=String(message||'').toLowerCase().includes('unavailable');
+  _setHidden(unavailableEl, !isUnavailable, isUnavailable?'block':'');
+  if(isUnavailable) _setHidden(player, true);
+  else if(String(message||'').trim()) _setHidden(player, false, 'block');
   _themeModalSourceAudio.setStatus(message);
   _themeModalSourceRetryVisible(retryVisible);
 }
 function _themeModalSetLocalPreviewStatus(message=''){
+  const unavailableEl=document.getElementById('theme-local-preview-unavailable');
+  const player=document.getElementById('theme-local-player');
+  const isUnavailable=String(message||'').toLowerCase().includes('unavailable');
+  _setHidden(unavailableEl, !isUnavailable, isUnavailable?'block':'');
+  if(isUnavailable) _setHidden(player, true);
+  else if(String(message||'').trim()) _setHidden(player, false, 'block');
   _themeModalAudio.setStatus(message);
 }
 async function _themeModalLoadLocalPreview(row={}){
@@ -2085,7 +2097,63 @@ function _themeModalWorkflowActions(row={}){
 }
 function _themeModalRenderWorkflowActions(actions=[]){
   if(!Array.isArray(actions) || !actions.length) return '';
-  return actions.map(action=>`<button class="${_escapeAttr(action.className||'btn btn-ghost')}" type="button" onclick="${_escapeAttr(action.handler||'')}()">${_escapeHtml(action.label||'Action')}</button>`).join('');
+  const primary=actions.find(action=>String(action.className||'').includes('is-primary'));
+  return actions.map(action=>{
+    const classes=[action.className||'btn btn-ghost'];
+    if(action.id==='clear-source') classes.push('btn-destructive');
+    if(primary && action.id!==primary.id && !String(action.className||'').includes('btn-destructive')) classes.push('btn-utility');
+    return `<button class="${_escapeAttr(classes.join(' '))}" type="button" onclick="${_escapeAttr(action.handler||'')}()">${_escapeHtml(action.label||'Action')}</button>`;
+  }).join('');
+}
+function _themeModalSupportingBadge(row={}){
+  if(_themeModalHasVerifiedLocal(row)) return {label:'On Disk', className:'is-success'};
+  const selected=_selectedSourceContract(row);
+  if(!String(selected.url||'').trim()) return null;
+  if(selected.kind==='golden') return {label:'Golden Source', className:'is-info'};
+  if(selected.kind==='playlist') return {label:'Playlist', className:'is-info'};
+  if(selected.kind==='direct') return {label:'Direct Source', className:'is-info'};
+  return null;
+}
+function _themeModalPrimaryAction(row={}){
+  const hasLocal=_themeModalHasVerifiedLocal(row);
+  if(hasLocal) return {label:'Trim Local Theme', handler:'themeModalEditTrim', className:'btn btn-amber'};
+  const actions=_themeModalWorkflowActions(row);
+  const primary=actions.find(action=>String(action.className||'').includes('is-primary'))||actions[0];
+  if(!primary) return {label:'Find Source', handler:'themeModalOpenManualSearch', className:'btn btn-amber'};
+  return {label:primary.label, handler:primary.handler, className:primary.className?.replace('is-primary','').trim()||'btn btn-amber'};
+}
+function _themeModalApplyHeaderActions(row={}){
+  const helper=document.getElementById('theme-modal-status-helper');
+  const actionBtn=document.getElementById('theme-modal-next-action');
+  const supportingEl=document.getElementById('theme-modal-supporting-badge');
+  const supporting=_themeModalSupportingBadge(row);
+  const primary=_themeModalPrimaryAction(row);
+  if(actionBtn){
+    actionBtn.textContent=primary.label;
+    actionBtn.className=`${primary.className} btn-sm`.trim();
+    actionBtn.onclick=()=>{ if(primary.handler && typeof window[primary.handler]==='function') window[primary.handler](); };
+  }
+  if(supportingEl){
+    if(supporting){
+      supportingEl.textContent=supporting.label;
+      supportingEl.className=`ui-pill muted-chip ${supporting.className}`;
+      _setHidden(supportingEl, false, 'inline-flex');
+    }else{
+      _setHidden(supportingEl, true);
+      supportingEl.textContent='';
+    }
+  }
+  if(helper) helper.classList.toggle('is-compact', !String(helper.textContent||'').trim());
+}
+function _themeModalWorkflowStateLabel(row={}){
+  const hasSelected=!!String(_selectedSourceContract(row).url||'').trim();
+  if(!hasSelected) return 'None Selected';
+  const status=_effectiveRowStatus(row);
+  if(status==='APPROVED') return 'Approved';
+  if(status==='STAGED') return 'Saved';
+  if(status==='FAILED') return 'Failed';
+  if(status==='UNMONITORED') return 'Ignored';
+  return 'Needs Review';
 }
 function _themeModalUpdateLocalCard(row={}){
   const hasLocal=_themeModalHasVerifiedLocal(row);
@@ -2105,6 +2173,8 @@ function _themeModalUpdateLocalCard(row={}){
   const localLength=hasLocal ? _themeModalLocalSourceLengthText(row, parseFloat(row?.theme_duration||0)||0) : '—';
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const folder=String(_themeModalContext?.folder||'').trim();
+  const stateChip=document.getElementById('theme-local-state-chip');
+  const details=document.getElementById('theme-local-tech');
   if(local) local.classList.toggle('compact', !hasLocal);
   if(statusEl) statusEl.textContent=hasLocal ? 'On disk and ready to play or trim.' : 'No local theme file on disk yet.';
   if(empty) empty.textContent=hasLocal ? '' : 'No local theme file is on disk yet. Review the selected source below or find one to continue.';
@@ -2115,6 +2185,11 @@ function _themeModalUpdateLocalCard(row={}){
   if(originEl) originEl.innerHTML=hasLocal ? _themeModalLocalSourceOriginMarkup(row) : '—';
   if(addedEl) addedEl.textContent=hasLocal ? _themeModalLocalSourceAdded(row) : '—';
   if(offsetEl) offsetEl.textContent=hasLocal ? `${localOffset} · ${localLength}` : '—';
+  if(stateChip) stateChip.textContent=hasLocal ? 'On Disk' : 'Missing';
+  if(details){
+    _setHidden(details, !hasLocal, hasLocal?'block':'');
+    if(hasLocal) details.open=false;
+  }
   _themeModalSetLinkRow({
     urlId:'theme-local-url',
     controlsId:'theme-local-controls',
@@ -2176,16 +2251,27 @@ function _themeModalUpdateWorkflowCard(row={}){
   const originEl=document.getElementById('theme-workflow-origin');
   const addedEl=document.getElementById('theme-workflow-added');
   const actionsEl=document.getElementById('theme-workflow-actions');
+  const stateChip=document.getElementById('theme-workflow-state-chip');
+  const details=document.getElementById('theme-workflow-tech');
+  const statusText=document.getElementById('theme-workflow-subtitle');
   const actions=_themeModalWorkflowActions(row);
   if(subtitle) subtitle.textContent=hasSelected
     ? (_effectiveRowStatus(row)==='APPROVED'
-        ? 'Selected source is approved. Review the preview, clip window, and next step.'
+        ? 'Selected Source · Approved'
         : _effectiveRowStatus(row)==='STAGED'
-          ? 'Selected source is staged. Review it, trim if needed, or approve it.'
-          : 'Review the selected source, confirm the clip window, and choose the next action.')
+          ? 'Selected Source · Saved'
+          : 'Selected Source · Needs Review')
     : 'No selected source yet. Find a source to continue.';
+  if(statusText && hasSelected && _themeModalSourceAudio.statusEl && String(_themeModalSourceAudio.statusEl.textContent||'').toLowerCase().includes('unavailable')){
+    statusText.textContent='Selected Source · Preview Unavailable';
+  }
+  if(stateChip) stateChip.textContent=hasSelected ? _themeModalWorkflowStateLabel(row) : 'None Selected';
   _setHidden(emptyEl, hasSelected, hasSelected?'':'block');
   _setHidden(metaListEl, !hasSelected, hasSelected?'block':'');
+  if(details){
+    _setHidden(details, !hasSelected, hasSelected?'block':'');
+    if(hasSelected) details.open=false;
+  }
   _setHidden(player, !hasSelected, hasSelected?'block':'');
   if(!hasSelected) _themeModalSetSourcePreviewStatus('', false);
   if(stateEl) stateEl.innerHTML=hasSelected
@@ -2340,6 +2426,7 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
     statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
   }
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
+  _themeModalApplyHeaderActions(row);
   _themeModalBindCardToggles();
   _themeModalApplyCardState(row);
   _themeModalUpdateLocalCard(row);
