@@ -772,10 +772,10 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .modal-movie-links{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:flex-start;flex-shrink:0}
 .modal-link-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--text2);background:var(--surface2);transition:all .15s;white-space:nowrap}
 .modal-link-pill:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
-.modal-link-pill.tmdb-pill{border-color:rgba(245,166,35,.4);color:var(--amber);background:var(--amber-soft)}
-.modal-link-pill.tmdb-pill:hover{border-color:var(--amber);color:var(--amber);background:color-mix(in srgb, var(--amber-soft) 82%, var(--surface2))}
-.modal-link-pill.plex-pill{border-color:rgba(99,102,241,.4);color:var(--blue);background:color-mix(in srgb,var(--blue-soft) 65%,var(--surface2))}
-.modal-link-pill.plex-pill:hover{border-color:var(--blue);color:var(--blue);background:color-mix(in srgb,var(--blue-soft) 84%,var(--surface2))}
+.modal-link-pill.tmdb-pill{border-color:var(--border);color:var(--text2);background:var(--surface2)}
+.modal-link-pill.tmdb-pill:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.modal-link-pill.plex-pill{border-color:var(--border);color:var(--text2);background:var(--surface2)}
+.modal-link-pill.plex-pill:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
 .modal-link-pill.yt-pill{border-color:rgba(220,50,50,.35);color:#cc3030;background:rgba(220,50,50,.05)}
 .modal-link-pill.yt-pill:hover{border-color:#cc3030;background:rgba(220,50,50,.1)}
 .modal-shell{position:relative;padding:0;display:flex;flex-direction:column}
@@ -1032,7 +1032,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 #theme-modal #theme-local-empty,
 #theme-modal #theme-workflow-empty{display:none !important}
 .theme-detail-item-wide{grid-column:1 / -1}
-.theme-detail-value.is-path{font-family:var(--mono);font-size:11px;word-break:break-word}
+.theme-detail-value.is-path{font-family:var(--ui);font-size:12px;font-weight:600;word-break:break-word}
 .theme-link-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;min-width:0}
 .theme-link-value{flex:1 1 auto;min-width:0;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);text-decoration:none}
 .theme-link-value:hover{text-decoration:underline;color:var(--amber)}
