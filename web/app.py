@@ -144,6 +144,8 @@ def _log_request(response: Response):
         should_log = elapsed_ms >= 2000 or is_mutating
     if should_log:
         level = logging.WARNING if response.status_code >= 400 else logging.INFO
+        if path == "/api/theme" and response.status_code == 404:
+            level = logging.INFO
         if rule is not None and rule.get("label"):
             REQUEST_LOG.log(level, "%s -> %s in %.1fs [%s %s]", rule["label"], response.status_code, elapsed_ms / 1000.0, request.method, path)
         else:

@@ -28,10 +28,7 @@ function _plexPill(row={}){
   const ratingKey=String(row?.rating_key||'').trim();
   if(!ratingKey) return '';
   const keyPath=encodeURIComponent(`/library/metadata/${ratingKey}`);
-  const configuredPlexUrl=String(document.getElementById('cfg-plex_url')?.value||'').trim().replace(/\/+$/,'');
-  const plexHref=configuredPlexUrl
-    ? `${configuredPlexUrl}/web/index.html#!/details?key=${keyPath}`
-    : `https://app.plex.tv/desktop#!/details?key=${keyPath}`;
+  const plexHref=`https://app.plex.tv/desktop/#!/details?key=${keyPath}`;
   return `<a class="modal-link-pill plex-pill" href="${plexHref}" target="_blank" rel="noopener">🟨 Plex</a>`;
 }
 function _ytLink(url){ return url?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:''; }
@@ -1790,7 +1787,7 @@ async function _themeModalLoadLocalPreview(row={}){
       _themeModalSetLocalPreviewStatus('Ready');
     },
     onerror:()=>{
-      _themeModalSetLocalPreviewStatus('Preview unavailable');
+      _themeModalSetLocalPreviewStatus('Preview unavailable — local file is missing or unreadable. Run Refresh Themes to resync.');
       _themeModalUpdateLocalClipSummary(_themeModalContext?.row||nextRow, 0);
     }
   });
@@ -2167,9 +2164,12 @@ function _themeModalUpdateLocalCard(row={}){
   if(local) local.classList.toggle('compact', !hasLocal);
   if(statusEl) statusEl.textContent=hasLocal ? 'On disk and ready to play or trim.' : 'No local theme file on disk yet.';
   if(empty) empty.textContent=hasLocal ? '' : 'No local theme file is on disk yet. Review the selected source below or find one to continue.';
-  if(stateEl) stateEl.innerHTML=hasLocal
-    ? _renderSourceStatePill('On Disk', _themeModalSourceOriginClass(row), 'Local theme file detected on disk')
-    : '—';
+  if(stateEl){
+    const localMethodRaw=String(row?.local_source_method||row?.selected_source_method||'').trim();
+    const normalizedMethod=_normalizeSourceMethod(localMethodRaw);
+    const methodLabelMap={golden_source:'Golden Source',playlist:'Playlist',direct:'Direct',custom:'Custom',paste:'Custom',manual:'Custom',existing:'Existing'};
+    stateEl.textContent=hasLocal && normalizedMethod ? (methodLabelMap[normalizedMethod]||localMethodRaw) : '—';
+  }
   if(headerChips) headerChips.innerHTML=hasLocal
     ? _themeModalLocalSourceOriginMarkup(row)
     : _renderSourceStatePill('Missing', 'is-unknown', 'No local theme file on disk');
@@ -2193,6 +2193,8 @@ function _themeModalUpdateLocalCard(row={}){
   _themeModalUpdateLocalClipSummary(row, hasLocal ? parseFloat(row?.theme_duration||0)||0 : 0);
 }
 function _themeModalCardDefaultOpen(cardId, row={}){
+  const persisted=_themeModalReadCardState();
+  if(Object.prototype.hasOwnProperty.call(persisted, cardId)) return !!persisted[cardId];
   if(cardId==='theme-local-details') return false;
   if(cardId==='theme-workflow-details') return false;
   return false;
@@ -2206,7 +2208,12 @@ function _themeModalApplyCardState(row={}){
   });
 }
 function _themeModalBindCardToggles(){
-  // Keep details collapsed by default on every modal open.
+  ['theme-local-details','theme-workflow-details'].forEach(cardId=>{
+    const card=document.getElementById(cardId);
+    if(!card || card.dataset.boundCardState==='1') return;
+    card.dataset.boundCardState='1';
+    card.addEventListener('toggle', ()=>_themeModalPersistCardState(cardId, card.open));
+  });
 }
 function _themeModalUpdateWorkflowCard(row={}){
   const selected=_selectedSourceContract(row);
@@ -2356,6 +2363,22 @@ const THEME_MODAL_STATUS_HELPERS={
     local:'The last update failed, but an older local theme file is still on disk.'
   }
 };
+const _THEME_MODAL_CARD_STORAGE_KEY='mt-theme-modal-card-state';
+function _themeModalReadCardState(){
+  try{
+    const raw=localStorage.getItem(_THEME_MODAL_CARD_STORAGE_KEY);
+    if(!raw) return {};
+    const parsed=JSON.parse(raw);
+    return parsed && typeof parsed==='object' ? parsed : {};
+  }catch(_err){
+    return {};
+  }
+}
+function _themeModalPersistCardState(cardId, isOpen){
+  if(!cardId) return;
+  const next={..._themeModalReadCardState(), [cardId]:!!isOpen};
+  try{ localStorage.setItem(_THEME_MODAL_CARD_STORAGE_KEY, JSON.stringify(next)); }catch(_err){}
+}
 function _themeModalUpdateStatusFlow(status='MISSING', state={}){
   const normalized=String(status||'MISSING').toUpperCase();
   const helper=document.getElementById('theme-modal-status-helper');
@@ -2383,7 +2406,7 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
   const durMeta=document.getElementById('theme-modal-dur-meta');
-  if(durMeta) durMeta.textContent='';
+  if(durMeta) durMeta.textContent=hasLocalTheme ? 'Theme on disk' : 'Local theme missing';
   const statusBadge=document.getElementById('theme-modal-status-badge');
   if(statusBadge) statusBadge.innerHTML='';
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
