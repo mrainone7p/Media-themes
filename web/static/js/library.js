@@ -2085,7 +2085,53 @@ function _themeModalWorkflowActions(row={}){
 }
 function _themeModalRenderWorkflowActions(actions=[]){
   if(!Array.isArray(actions) || !actions.length) return '';
-  return actions.map(action=>`<button class="${_escapeAttr(action.className||'btn btn-ghost')}" type="button" onclick="${_escapeAttr(action.handler||'')}()">${_escapeHtml(action.label||'Action')}</button>`).join('');
+  const primary=actions.find(action=>String(action.className||'').includes('is-primary'));
+  return actions.map(action=>{
+    const classes=[action.className||'btn btn-ghost'];
+    if(action.id==='clear-source') classes.push('btn-destructive');
+    if(primary && action.id!==primary.id && !String(action.className||'').includes('btn-destructive')) classes.push('btn-utility');
+    return `<button class="${_escapeAttr(classes.join(' '))}" type="button" onclick="${_escapeAttr(action.handler||'')}()">${_escapeHtml(action.label||'Action')}</button>`;
+  }).join('');
+}
+function _themeModalSupportingBadge(row={}){
+  if(_themeModalHasVerifiedLocal(row)) return {label:'On Disk', className:'is-success'};
+  const selected=_selectedSourceContract(row);
+  if(!String(selected.url||'').trim()) return null;
+  if(selected.kind==='golden') return {label:'Golden Source', className:'is-info'};
+  if(selected.kind==='playlist') return {label:'Playlist', className:'is-info'};
+  if(selected.kind==='direct') return {label:'Direct Source', className:'is-info'};
+  return null;
+}
+function _themeModalPrimaryAction(row={}){
+  const hasLocal=_themeModalHasVerifiedLocal(row);
+  if(hasLocal) return {label:'Trim Local Theme', handler:'themeModalEditTrim', className:'btn btn-amber'};
+  const actions=_themeModalWorkflowActions(row);
+  const primary=actions.find(action=>String(action.className||'').includes('is-primary'))||actions[0];
+  if(!primary) return {label:'Find Source', handler:'themeModalOpenManualSearch', className:'btn btn-amber'};
+  return {label:primary.label, handler:primary.handler, className:primary.className?.replace('is-primary','').trim()||'btn btn-amber'};
+}
+function _themeModalApplyHeaderActions(row={}){
+  const helper=document.getElementById('theme-modal-status-helper');
+  const actionBtn=document.getElementById('theme-modal-next-action');
+  const supportingEl=document.getElementById('theme-modal-supporting-badge');
+  const supporting=_themeModalSupportingBadge(row);
+  const primary=_themeModalPrimaryAction(row);
+  if(actionBtn){
+    actionBtn.textContent=primary.label;
+    actionBtn.className=`${primary.className} btn-sm`.trim();
+    actionBtn.onclick=()=>{ if(primary.handler && typeof window[primary.handler]==='function') window[primary.handler](); };
+  }
+  if(supportingEl){
+    if(supporting){
+      supportingEl.textContent=supporting.label;
+      supportingEl.className=`ui-pill muted-chip ${supporting.className}`;
+      _setHidden(supportingEl, false, 'inline-flex');
+    }else{
+      _setHidden(supportingEl, true);
+      supportingEl.textContent='';
+    }
+  }
+  if(helper) helper.classList.toggle('is-compact', !String(helper.textContent||'').trim());
 }
 function _themeModalUpdateLocalCard(row={}){
   const hasLocal=_themeModalHasVerifiedLocal(row);
@@ -2176,14 +2222,18 @@ function _themeModalUpdateWorkflowCard(row={}){
   const originEl=document.getElementById('theme-workflow-origin');
   const addedEl=document.getElementById('theme-workflow-added');
   const actionsEl=document.getElementById('theme-workflow-actions');
+  const statusText=document.getElementById('theme-workflow-subtitle');
   const actions=_themeModalWorkflowActions(row);
   if(subtitle) subtitle.textContent=hasSelected
     ? (_effectiveRowStatus(row)==='APPROVED'
-        ? 'Selected source is approved. Review the preview, clip window, and next step.'
+        ? 'Selected Source · Approved'
         : _effectiveRowStatus(row)==='STAGED'
-          ? 'Selected source is staged. Review it, trim if needed, or approve it.'
-          : 'Review the selected source, confirm the clip window, and choose the next action.')
+          ? 'Selected Source · Saved'
+          : 'Selected Source · Needs Review')
     : 'No selected source yet. Find a source to continue.';
+  if(statusText && hasSelected && _themeModalSourceAudio.statusEl && String(_themeModalSourceAudio.statusEl.textContent||'').toLowerCase().includes('unavailable')){
+    statusText.textContent='Selected Source · Preview Unavailable';
+  }
   _setHidden(emptyEl, hasSelected, hasSelected?'':'block');
   _setHidden(metaListEl, !hasSelected, hasSelected?'block':'');
   _setHidden(player, !hasSelected, hasSelected?'block':'');
@@ -2340,6 +2390,7 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
     statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
   }
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
+  _themeModalApplyHeaderActions(row);
   _themeModalBindCardToggles();
   _themeModalApplyCardState(row);
   _themeModalUpdateLocalCard(row);

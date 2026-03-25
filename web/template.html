@@ -1241,7 +1241,7 @@
   <div class="modal modal-shell">
 
     <!-- Movie header -->
-    <div class="modal-header">
+    <div class="modal-header theme-modal-summary-header">
       <img class="modal-poster" id="theme-modal-poster" src="" onerror="this.style.display='none'">
       <div class="modal-movie-info">
         <div class="modal-movie-title-row">
@@ -1251,9 +1251,15 @@
               <span id="theme-modal-year"></span>
               <span class="text-green" id="theme-modal-dur-meta"></span>
               <span class="badge s-MISSING" id="theme-modal-status-badge"><span class="si"></span>Missing</span>
+              <span class="ui-pill muted-chip hidden" id="theme-modal-supporting-badge"></span>
             </div>
           </div>
           <div class="modal-movie-links" id="theme-modal-links"></div>
+        </div>
+        <div class="theme-summary-copy" id="theme-modal-status-helper">No selected source saved and no local theme file found yet.</div>
+        <div class="theme-summary-next-action" id="theme-modal-next-action-wrap">
+          <div class="theme-summary-next-label">Next best action</div>
+          <button class="btn btn-amber btn-sm" id="theme-modal-next-action" type="button">Find Source</button>
         </div>
         <div class="modal-inline-bio hidden" id="theme-modal-bio-wrap">
           <div class="modal-bio modal-bio-inline is-clamped" id="theme-modal-bio"></div>
@@ -1262,17 +1268,6 @@
       </div>
     </div>
     <div class="modal-section-divider theme-modal-divider"></div>
-
-    <div class="modal-section modal-section--dense">
-      <div class="modal-section-header review-panel-head">
-        <div class="modal-section-heading review-panel-heading">
-          <div class="review-panel-title hidden" id="theme-modal-summary">Manage Theme</div>
-          <div class="theme-status-flow-wrap">
-            <div class="theme-status-helper" id="theme-modal-status-helper">No selected source saved and no local theme file found yet.</div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-local-card">
       <summary class="review-card-header theme-section-header theme-card-toggle" id="theme-local-toggle" aria-controls="theme-local-body">
@@ -1299,20 +1294,20 @@
           <div class="modal-status-txt modal-status-inline" id="theme-modal-status">Ready</div>
           <audio class="hidden" id="theme-modal-audio"></audio>
         </div>
-        <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-local-meta">
-          <div class="ui-meta-row review-meta-item">
+        <div class="ui-meta-list review-meta-list theme-section-meta theme-detail-grid hidden" id="theme-local-meta">
+          <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
             <div class="review-meta-label">Local State</div>
             <div class="review-meta-value" id="theme-modal-local-state">—</div>
           </div>
-          <div class="ui-meta-row review-meta-item">
+          <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
             <div class="review-meta-label">File Path</div>
             <div class="review-meta-value theme-detail-value is-path" id="theme-modal-file">—</div>
           </div>
-          <div class="ui-meta-row review-meta-item">
+          <div class="ui-meta-row review-meta-item theme-detail-item">
             <div class="review-meta-label">Source Type/Method</div>
             <div class="review-meta-value" id="theme-local-origin">—</div>
           </div>
-          <div class="ui-meta-row review-meta-item">
+          <div class="ui-meta-row review-meta-item theme-detail-item">
             <div class="review-meta-label">Source URL</div>
             <div class="review-meta-value">
               <div class="theme-link-row">
@@ -1324,11 +1319,11 @@
               </div>
             </div>
           </div>
-          <div class="ui-meta-row review-meta-item">
+          <div class="ui-meta-row review-meta-item theme-detail-item">
             <div class="review-meta-label">When Obtained</div>
             <div class="review-meta-value" id="theme-local-added">—</div>
           </div>
-          <div class="ui-meta-row review-meta-item" id="theme-local-offset-row">
+          <div class="ui-meta-row review-meta-item theme-detail-item" id="theme-local-offset-row">
             <div class="review-meta-label">Local Offset</div>
             <div class="review-meta-value" id="theme-local-offset">—</div>
           </div>
@@ -1341,7 +1336,7 @@
         </div>
         <div class="modal-actions-row modal-section-actions theme-section-actions hidden" id="theme-local-actions">
           <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim Local Theme</button>
-          <button class="btn btn-ghost btn-sm" id="theme-modal-local-rematch-btn" onclick="themeModalOpenManualSearch()">Rematch</button>
+          <button class="btn btn-ghost btn-sm btn-utility" id="theme-modal-local-rematch-btn" onclick="themeModalOpenManualSearch()">Rematch</button>
           <button class="btn btn-danger-ghost btn-sm" id="theme-modal-local-delete-btn" onclick="themeModalDeleteLocalTheme()">Delete</button>
         </div>
       </div>
@@ -1375,16 +1370,16 @@
           </div>
           <audio class="hidden" id="theme-workflow-audio"></audio>
         </div>
-        <div class="ui-meta-list review-meta-list theme-section-meta hidden" id="theme-workflow-meta-list">
-          <div class="ui-meta-row review-meta-item">
+        <div class="ui-meta-list review-meta-list theme-section-meta theme-detail-grid hidden" id="theme-workflow-meta-list">
+          <div class="ui-meta-row review-meta-item theme-detail-item">
             <div class="review-meta-label">Workflow State</div>
             <div class="review-meta-value" id="theme-workflow-state">—</div>
           </div>
-          <div class="ui-meta-row review-meta-item">
+          <div class="ui-meta-row review-meta-item theme-detail-item">
             <div class="review-meta-label">Source Type</div>
             <div class="review-meta-value" id="theme-workflow-origin">—</div>
           </div>
-          <div class="ui-meta-row review-meta-item">
+          <div class="ui-meta-row review-meta-item theme-detail-item">
             <div class="review-meta-label">Source URL</div>
             <div class="review-meta-value">
               <div class="theme-link-row">
@@ -1396,7 +1391,7 @@
               </div>
             </div>
           </div>
-          <div class="ui-meta-row review-meta-item">
+          <div class="ui-meta-row review-meta-item theme-detail-item">
             <div class="review-meta-label">When Added</div>
             <div class="review-meta-value" id="theme-workflow-added">—</div>
           </div>
