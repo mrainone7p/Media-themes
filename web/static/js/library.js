@@ -24,6 +24,13 @@ async function openTmdb(title, year, evt){
   return false;
 }
 function _tmdbPill(title,year){ return `<a class="modal-link-pill tmdb-pill" href="${_tmdbLink(title,year)}" target="_blank" rel="noopener">🎬 TMDB</a>`; }
+function _plexPill(row={}){
+  const ratingKey=String(row?.rating_key||'').trim();
+  if(!ratingKey) return '';
+  const keyPath=encodeURIComponent(`/library/metadata/${ratingKey}`);
+  const plexHref=`https://app.plex.tv/desktop/#!/details?key=${keyPath}`;
+  return `<a class="modal-link-pill plex-pill" href="${plexHref}" target="_blank" rel="noopener">🟨 Plex</a>`;
+}
 function _ytLink(url){ return url?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:''; }
 function _escapeHtml(value){
   return String(value ?? '')
@@ -2142,8 +2149,8 @@ function _themeModalUpdateLocalCard(row={}){
   const actions=document.getElementById('theme-local-actions');
   const statusEl=document.getElementById('theme-modal-local-status');
   const stateEl=document.getElementById('theme-modal-local-state');
+  const headerChips=document.getElementById('theme-local-header-chips');
   const fileEl=document.getElementById('theme-modal-file');
-  const originEl=document.getElementById('theme-local-origin');
   const addedEl=document.getElementById('theme-local-added');
   const offsetEl=document.getElementById('theme-local-offset');
   const localSourceUrl=hasLocal ? _themeModalLocalSourceUrl(row) : '';
@@ -2157,8 +2164,10 @@ function _themeModalUpdateLocalCard(row={}){
   if(stateEl) stateEl.innerHTML=hasLocal
     ? _renderSourceStatePill('On Disk', _themeModalSourceOriginClass(row), 'Local theme file detected on disk')
     : '—';
+  if(headerChips) headerChips.innerHTML=hasLocal
+    ? _themeModalLocalSourceOriginMarkup(row)
+    : _renderSourceStatePill('Missing', 'is-unknown', 'No local theme file on disk');
   if(fileEl) fileEl.textContent=folder ? `${folder}/${themeFilename}` : 'Unknown folder';
-  if(originEl) originEl.innerHTML=hasLocal ? _themeModalLocalSourceOriginMarkup(row) : '—';
   if(addedEl) addedEl.textContent=hasLocal ? _themeModalLocalSourceAdded(row) : '—';
   if(offsetEl) offsetEl.textContent=hasLocal ? `${localOffset} · ${localLength}` : '—';
   _themeModalSetLinkRow({
@@ -2179,10 +2188,8 @@ function _themeModalUpdateLocalCard(row={}){
 }
 const _THEME_MODAL_CARD_STORAGE_KEY='mt-theme-modal-card-state';
 function _themeModalCardDefaultOpen(cardId, row={}){
-  const hasLocal=_themeHasLocal(row);
-  const hasSelected=!!String(_selectedSourceContract(row).url||'').trim();
   if(cardId==='theme-local-details') return false;
-  if(cardId==='theme-workflow-details') return hasSelected && !hasLocal;
+  if(cardId==='theme-workflow-details') return false;
   return true;
 }
 function _themeModalCardState(){
@@ -2220,8 +2227,7 @@ function _themeModalUpdateWorkflowCard(row={}){
   const metaListEl=document.getElementById('theme-workflow-meta-list');
   const detailsWrap=document.getElementById('theme-workflow-details-wrap');
   const player=document.getElementById('theme-workflow-player');
-  const stateEl=document.getElementById('theme-workflow-state');
-  const originEl=document.getElementById('theme-workflow-origin');
+  const headerChips=document.getElementById('theme-workflow-header-chips');
   const addedEl=document.getElementById('theme-workflow-added');
   const actionsEl=document.getElementById('theme-workflow-actions');
   const statusText=document.getElementById('theme-workflow-subtitle');
@@ -2241,10 +2247,13 @@ function _themeModalUpdateWorkflowCard(row={}){
   _setHidden(metaListEl, !hasSelected, hasSelected?'block':'');
   _setHidden(player, !hasSelected, hasSelected?'block':'');
   if(!hasSelected) _themeModalSetSourcePreviewStatus('', false);
-  if(stateEl) stateEl.innerHTML=hasSelected
-    ? _renderSourceStatePill(_themeModalSourceState(row), _themeModalSourceOriginClass(row), _themeModalSourceState(row))
-    : '—';
-  if(originEl) originEl.innerHTML=hasSelected ? _themeModalSourceOriginMarkup(row) : '—';
+  if(headerChips){
+    const stateChip=hasSelected
+      ? _renderSourceStatePill(_themeModalSourceState(row), _themeModalSourceOriginClass(row), _themeModalSourceState(row))
+      : _renderSourceStatePill('Missing', 'is-unknown', 'No selected source saved');
+    const typeChip=hasSelected ? _themeModalSourceOriginMarkup(row) : '';
+    headerChips.innerHTML=`${stateChip}${typeChip}`;
+  }
   if(addedEl) addedEl.textContent=hasSelected ? _themeModalSourceAdded(row) : '—';
   _themeModalSetLinkRow({
     urlId:'theme-workflow-url',
@@ -2404,7 +2413,7 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
   const tmdbUrl='https://www.themoviedb.org/search/movie?query='+encodeURIComponent(title+' '+year);
   const tmdbLink=row?.tmdb_id?`https://www.themoviedb.org/movie/${encodeURIComponent(row.tmdb_id)}`:tmdbUrl;
   document.getElementById('theme-modal-links').innerHTML=
-    `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">🎬 TMDB</a>`;
+    `<a class="modal-link-pill tmdb-pill" href="${tmdbLink}" target="_blank" rel="noopener">🎬 TMDB</a>${_plexPill(row)}`;
   setBio('theme-modal-bio', rk, resolvedLibrary);
 
   _themeModalAudio.cleanup({clearSrc:false});
