@@ -19,7 +19,6 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         local_card_split = self.template_source.split('id="theme-local-card"', 1)[1].split('id="theme-workflow-card"', 1)[0]
         for snippet in (
             'id="theme-local-toggle"',
-            'aria-controls="theme-local-body"',
             'id="theme-local-player"',
             'id="theme-modal-audio"',
             'id="theme-modal-status"',
@@ -34,7 +33,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'id="theme-local-offset"',
             'id="theme-local-offset-row"',
             'id="theme-local-clip"',
-            'class="ui-meta-row review-meta-item clip-summary-row hidden"',
+            'class="ui-meta-row review-meta-item theme-detail-item clip-summary-row hidden"',
             'id="theme-local-actions"',
             'id="theme-modal-trim-btn"',
             'id="theme-modal-local-rematch-btn"',
@@ -60,7 +59,6 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
         source_card_split = self.template_source.split('id="theme-workflow-card"', 1)[1].split('<div class="modal-footer">', 1)[0]
         for snippet in (
             'id="theme-workflow-toggle"',
-            'aria-controls="theme-workflow-body"',
             'id="theme-workflow-player"',
             'id="theme-workflow-audio"',
             'id="theme-workflow-status"',
@@ -72,7 +70,7 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'id="theme-workflow-url"',
             'id="theme-workflow-added"',
             'id="theme-workflow-clip"',
-            'class="ui-meta-row review-meta-item clip-summary-row hidden"',
+            'class="ui-meta-row review-meta-item theme-detail-item clip-summary-row hidden"',
             'id="theme-workflow-actions"',
             'id="theme-workflow-copy"',
             'id="theme-workflow-open"',
@@ -96,10 +94,12 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
 
     def test_theme_modal_cards_use_collapsible_details_markup(self):
         for snippet in (
-            '<details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-local-card">',
-            '<details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-workflow-card">',
+            '<section class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-local-card">',
+            '<section class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-workflow-card">',
             'id="theme-local-toggle"',
             'id="theme-workflow-toggle"',
+            'id="theme-local-details"',
+            'id="theme-workflow-details"',
         ):
             self.assertIn(snippet, self.template_source)
 
@@ -154,14 +154,14 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "if(addedEl) addedEl.textContent=hasLocal ? _themeModalLocalSourceAdded(row) : '—';",
         ):
             self.assertIn(snippet, self.library_source)
-        self.assertNotIn('theme-workflow-detail', self.template_source)
+        self.assertNotIn('class="theme-workflow-detail"', self.template_source)
 
     def test_theme_modal_cards_persist_collapsed_state_with_sensible_defaults(self):
         for snippet in (
             "const _THEME_MODAL_CARD_STORAGE_KEY='mt-theme-modal-card-state';",
             "function _themeModalCardDefaultOpen(cardId, row={}){",
-            "if(cardId==='theme-local-card') return hasLocal;",
-            "if(cardId==='theme-workflow-card') return hasSelected || !hasLocal;",
+            "if(cardId==='theme-local-details') return false;",
+            "if(cardId==='theme-workflow-details') return hasSelected && !hasLocal;",
             "function _themeModalPersistCardState(cardId, isOpen){",
             "card.addEventListener('toggle', ()=>_themeModalPersistCardState(cardId, card.open));",
             "_themeModalBindCardToggles();",

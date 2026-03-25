@@ -1269,14 +1269,13 @@
     </div>
     <div class="modal-section-divider theme-modal-divider"></div>
 
-    <details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-local-card">
-      <summary class="review-card-header theme-section-header theme-card-toggle" id="theme-local-toggle" aria-controls="theme-local-body">
+    <section class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-local-card">
+      <div class="review-card-header theme-section-header" id="theme-local-toggle">
         <div class="review-card-heading theme-section-heading modal-section-heading">
           <div class="modal-section-label">Local Theme</div>
           <div class="modal-section-subtext" id="theme-modal-local-status">Missing</div>
         </div>
-        <span class="settings-chev" aria-hidden="true">˅</span>
-      </summary>
+      </div>
       <div class="theme-section-body modal-section-body" id="theme-local-body">
         <div class="review-empty hidden" id="theme-local-empty">No local theme file is on disk yet.</div>
         <div class="hidden theme-section-player" id="theme-local-player">
@@ -1294,45 +1293,53 @@
           <div class="modal-status-txt modal-status-inline" id="theme-modal-status">Ready</div>
           <audio class="hidden" id="theme-modal-audio"></audio>
         </div>
-        <div class="ui-meta-list review-meta-list theme-section-meta theme-detail-grid hidden" id="theme-local-meta">
-          <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
-            <div class="review-meta-label">Local State</div>
-            <div class="review-meta-value" id="theme-modal-local-state">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
-            <div class="review-meta-label">File Path</div>
-            <div class="review-meta-value theme-detail-value is-path" id="theme-modal-file">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item theme-detail-item">
-            <div class="review-meta-label">Source Type/Method</div>
-            <div class="review-meta-value" id="theme-local-origin">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item theme-detail-item">
-            <div class="review-meta-label">Source URL</div>
-            <div class="review-meta-value">
-              <div class="theme-link-row">
-                <a class="theme-link-value" href="#" target="_blank" rel="noopener" id="theme-local-url">—</a>
-                <div class="modal-actions-row theme-link-actions" id="theme-local-controls">
-                  <button class="btn btn-ghost btn-sm" type="button" id="theme-local-copy">Copy</button>
-                  <button class="btn btn-ghost btn-sm" type="button" id="theme-local-open">Open</button>
+        <div class="theme-section-details-wrap hidden" id="theme-local-details-wrap">
+          <details class="theme-section-details" id="theme-local-details">
+            <summary class="theme-section-details-toggle">
+              <span>Additional details</span>
+              <span class="settings-chev" aria-hidden="true">˅</span>
+            </summary>
+            <div class="ui-meta-list review-meta-list theme-section-meta theme-detail-grid hidden" id="theme-local-meta">
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">Local State</div>
+                <div class="review-meta-value" id="theme-modal-local-state">—</div>
+              </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">File Path</div>
+                <div class="review-meta-value theme-detail-value is-path" id="theme-modal-file">—</div>
+              </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">Source Type/Method</div>
+                <div class="review-meta-value" id="theme-local-origin">—</div>
+              </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">Source URL</div>
+                <div class="review-meta-value">
+                  <div class="theme-link-row">
+                    <a class="theme-link-value" href="#" target="_blank" rel="noopener" id="theme-local-url">—</a>
+                    <div class="modal-actions-row theme-link-actions" id="theme-local-controls">
+                      <button class="btn btn-ghost btn-sm" type="button" id="theme-local-copy">Copy</button>
+                      <button class="btn btn-ghost btn-sm" type="button" id="theme-local-open">Open</button>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">Date Added (Downloaded)</div>
+                <div class="review-meta-value" id="theme-local-added">—</div>
+              </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide" id="theme-local-offset-row">
+                <div class="review-meta-label">Offset</div>
+                <div class="review-meta-value" id="theme-local-offset">—</div>
+              </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item clip-summary-row hidden" id="theme-local-clip">
+                <div class="clip-summary-label">Theme Length</div>
+                <div class="clip-summary-main" id="theme-local-clip-main">Offset 0:00 · Theme Length —</div>
+                <div class="clip-summary-sub hidden" id="theme-local-clip-sub">Load a local theme to confirm the saved start time and theme length.</div>
+                <div class="clip-summary-warning" id="theme-local-clip-warning"></div>
+              </div>
             </div>
-          </div>
-          <div class="ui-meta-row review-meta-item theme-detail-item">
-            <div class="review-meta-label">When Obtained</div>
-            <div class="review-meta-value" id="theme-local-added">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item theme-detail-item" id="theme-local-offset-row">
-            <div class="review-meta-label">Local Offset</div>
-            <div class="review-meta-value" id="theme-local-offset">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item clip-summary-row hidden" id="theme-local-clip">
-            <div class="clip-summary-label">Offset &amp; Length</div>
-            <div class="clip-summary-main" id="theme-local-clip-main">Offset 0:00 · Theme Length —</div>
-            <div class="clip-summary-sub" id="theme-local-clip-sub">Load a local theme to confirm the saved start time and theme length.</div>
-            <div class="clip-summary-warning" id="theme-local-clip-warning"></div>
-          </div>
+          </details>
         </div>
         <div class="modal-actions-row modal-section-actions theme-section-actions hidden" id="theme-local-actions">
           <button class="btn btn-amber btn-sm" id="theme-modal-trim-btn" onclick="themeModalEditTrim()">Trim Local Theme</button>
@@ -1340,16 +1347,15 @@
           <button class="btn btn-danger-ghost btn-sm" id="theme-modal-local-delete-btn" onclick="themeModalDeleteLocalTheme()">Delete</button>
         </div>
       </div>
-    </details>
+    </section>
 
-    <details class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-workflow-card">
-      <summary class="review-card-header theme-section-header theme-card-toggle" id="theme-workflow-toggle" aria-controls="theme-workflow-body">
+    <section class="review-card theme-section-card theme-source-details theme-modal-card-details" id="theme-workflow-card">
+      <div class="review-card-header theme-section-header" id="theme-workflow-toggle">
         <div class="review-card-heading theme-section-heading modal-section-heading">
           <div class="modal-section-label">Selected Source</div>
           <div class="modal-section-subtext" id="theme-workflow-subtitle">Review the saved source, confirm the clip window, and choose the next action.</div>
         </div>
-        <span class="settings-chev" aria-hidden="true">˅</span>
-      </summary>
+      </div>
       <div class="theme-section-body modal-section-body" id="theme-workflow-body">
         <div class="review-empty hidden" id="theme-workflow-empty">No selected source yet. Find a source to continue.</div>
         <div class="hidden theme-section-player" id="theme-workflow-player">
@@ -1370,41 +1376,49 @@
           </div>
           <audio class="hidden" id="theme-workflow-audio"></audio>
         </div>
-        <div class="ui-meta-list review-meta-list theme-section-meta theme-detail-grid hidden" id="theme-workflow-meta-list">
-          <div class="ui-meta-row review-meta-item theme-detail-item">
-            <div class="review-meta-label">Workflow State</div>
-            <div class="review-meta-value" id="theme-workflow-state">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item theme-detail-item">
-            <div class="review-meta-label">Source Type</div>
-            <div class="review-meta-value" id="theme-workflow-origin">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item theme-detail-item">
-            <div class="review-meta-label">Source URL</div>
-            <div class="review-meta-value">
-              <div class="theme-link-row">
-                <a class="theme-link-value" href="#" target="_blank" rel="noopener" id="theme-workflow-url">—</a>
-                <div class="modal-actions-row theme-link-actions" id="theme-workflow-controls">
-                  <button class="btn btn-ghost btn-sm" type="button" id="theme-workflow-copy">Copy</button>
-                  <button class="btn btn-ghost btn-sm" type="button" id="theme-workflow-open">Open</button>
+        <div class="theme-section-details-wrap hidden" id="theme-workflow-details-wrap">
+          <details class="theme-section-details" id="theme-workflow-details">
+            <summary class="theme-section-details-toggle">
+              <span>Additional details</span>
+              <span class="settings-chev" aria-hidden="true">˅</span>
+            </summary>
+            <div class="ui-meta-list review-meta-list theme-section-meta theme-detail-grid hidden" id="theme-workflow-meta-list">
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">Workflow State</div>
+                <div class="review-meta-value" id="theme-workflow-state">—</div>
+              </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">Source Type</div>
+                <div class="review-meta-value" id="theme-workflow-origin">—</div>
+              </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">Source URL</div>
+                <div class="review-meta-value">
+                  <div class="theme-link-row">
+                    <a class="theme-link-value" href="#" target="_blank" rel="noopener" id="theme-workflow-url">—</a>
+                    <div class="modal-actions-row theme-link-actions" id="theme-workflow-controls">
+                      <button class="btn btn-ghost btn-sm" type="button" id="theme-workflow-copy">Copy</button>
+                      <button class="btn btn-ghost btn-sm" type="button" id="theme-workflow-open">Open</button>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item theme-detail-item-wide">
+                <div class="review-meta-label">When Added</div>
+                <div class="review-meta-value" id="theme-workflow-added">—</div>
+              </div>
+              <div class="ui-meta-row review-meta-item theme-detail-item clip-summary-row hidden" id="theme-workflow-clip">
+                <div class="clip-summary-label">Offset &amp; Length</div>
+                <div class="clip-summary-main" id="theme-workflow-clip-main">Offset 0:00 · Theme Length —</div>
+                <div class="clip-summary-sub hidden" id="theme-workflow-clip-sub">Choose or review a source to see its saved offset.</div>
+                <div class="clip-summary-warning" id="theme-workflow-clip-warning"></div>
+              </div>
             </div>
-          </div>
-          <div class="ui-meta-row review-meta-item theme-detail-item">
-            <div class="review-meta-label">When Added</div>
-            <div class="review-meta-value" id="theme-workflow-added">—</div>
-          </div>
-          <div class="ui-meta-row review-meta-item clip-summary-row hidden" id="theme-workflow-clip">
-            <div class="clip-summary-label">Offset &amp; Length</div>
-            <div class="clip-summary-main" id="theme-workflow-clip-main">Offset 0:00 · Theme Length —</div>
-            <div class="clip-summary-sub" id="theme-workflow-clip-sub">Choose or review a source to see its saved offset.</div>
-            <div class="clip-summary-warning" id="theme-workflow-clip-warning"></div>
-          </div>
+          </details>
         </div>
         <div class="modal-actions-row modal-section-actions theme-workflow-actions" id="theme-workflow-actions"></div>
       </div>
-    </details>
+    </section>
 
     <!-- Footer -->
     <div class="modal-footer spread">

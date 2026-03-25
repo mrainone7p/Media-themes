@@ -1636,7 +1636,7 @@ function _themeModalSourceOffset(row={}){
 }
 function _themeModalLocalSourceOffset(row={}){
   const local=_localSourceContract(row);
-  if(!local.url) return '—';
+  if(!_themeModalHasVerifiedLocal(row)) return '—';
   return _themeModalOffsetLabel({...row, local_source_url:local.url}, _themeHasLocal(row), 'local_theme');
 }
 function _themeModalSourceAdded(row={}){
@@ -1665,8 +1665,7 @@ function _themeModalLocalSourceOriginMarkup(row={}){
   return _renderSourceStatePill(typeMethodLabel, _sourceStateClass(local.kind, local.method), local.url);
 }
 function _themeModalLocalSourceLengthText(row={}, duration=0){
-  const local=_localSourceContract(row);
-  if(!local.url) return '—';
+  if(!_themeModalHasVerifiedLocal(row)) return '—';
   const safeDuration=Number(duration||row?.theme_duration||0)||0;
   if(safeDuration<=0) return 'Theme Length —';
   const offset=parseTrim(_themeModalOffsetValue(row,'local_theme')||'0');
@@ -2139,6 +2138,7 @@ function _themeModalUpdateLocalCard(row={}){
   const empty=document.getElementById('theme-local-empty');
   const player=document.getElementById('theme-local-player');
   const meta=document.getElementById('theme-local-meta');
+  const detailsWrap=document.getElementById('theme-local-details-wrap');
   const actions=document.getElementById('theme-local-actions');
   const statusEl=document.getElementById('theme-modal-local-status');
   const stateEl=document.getElementById('theme-modal-local-state');
@@ -2172,6 +2172,7 @@ function _themeModalUpdateLocalCard(row={}){
   });
   _setHidden(empty, hasLocal, hasLocal?'':'block');
   _setHidden(player, !hasLocal, hasLocal?'block':'');
+  _setHidden(detailsWrap, !hasLocal, hasLocal?'block':'');
   _setHidden(meta, !hasLocal, hasLocal?'block':'');
   _setHidden(actions, !hasLocal, hasLocal?'flex':'');
   _themeModalUpdateLocalClipSummary(row, hasLocal ? parseFloat(row?.theme_duration||0)||0 : 0);
@@ -2180,8 +2181,8 @@ const _THEME_MODAL_CARD_STORAGE_KEY='mt-theme-modal-card-state';
 function _themeModalCardDefaultOpen(cardId, row={}){
   const hasLocal=_themeHasLocal(row);
   const hasSelected=!!String(_selectedSourceContract(row).url||'').trim();
-  if(cardId==='theme-local-card') return hasLocal;
-  if(cardId==='theme-workflow-card') return hasSelected || !hasLocal;
+  if(cardId==='theme-local-details') return false;
+  if(cardId==='theme-workflow-details') return hasSelected && !hasLocal;
   return true;
 }
 function _themeModalCardState(){
@@ -2195,7 +2196,7 @@ function _themeModalPersistCardState(cardId, isOpen){
   }catch(e){}
 }
 function _themeModalApplyCardState(row={}){
-  ['theme-local-card','theme-workflow-card'].forEach(cardId=>{
+  ['theme-local-details','theme-workflow-details'].forEach(cardId=>{
     const card=document.getElementById(cardId);
     if(!card) return;
     const state=_themeModalCardState();
@@ -2204,7 +2205,7 @@ function _themeModalApplyCardState(row={}){
   });
 }
 function _themeModalBindCardToggles(){
-  ['theme-local-card','theme-workflow-card'].forEach(cardId=>{
+  ['theme-local-details','theme-workflow-details'].forEach(cardId=>{
     const card=document.getElementById(cardId);
     if(!card || card.dataset.toggleBound==='1') return;
     card.dataset.toggleBound='1';
@@ -2217,6 +2218,7 @@ function _themeModalUpdateWorkflowCard(row={}){
   const subtitle=document.getElementById('theme-workflow-subtitle');
   const emptyEl=document.getElementById('theme-workflow-empty');
   const metaListEl=document.getElementById('theme-workflow-meta-list');
+  const detailsWrap=document.getElementById('theme-workflow-details-wrap');
   const player=document.getElementById('theme-workflow-player');
   const stateEl=document.getElementById('theme-workflow-state');
   const originEl=document.getElementById('theme-workflow-origin');
@@ -2235,6 +2237,7 @@ function _themeModalUpdateWorkflowCard(row={}){
     statusText.textContent='Selected Source · Preview Unavailable';
   }
   _setHidden(emptyEl, hasSelected, hasSelected?'':'block');
+  _setHidden(detailsWrap, !hasSelected, hasSelected?'block':'');
   _setHidden(metaListEl, !hasSelected, hasSelected?'block':'');
   _setHidden(player, !hasSelected, hasSelected?'block':'');
   if(!hasSelected) _themeModalSetSourcePreviewStatus('', false);
