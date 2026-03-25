@@ -927,11 +927,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-source-details[open] > summary{margin-bottom:8px}
 .theme-source-details[open] .settings-chev{transform:rotate(180deg)}
 .theme-modal-card-details{margin-top:0}
-.theme-modal-card-details > summary{margin-bottom:0;text-transform:none;letter-spacing:normal;color:inherit}
-.theme-modal-card-details > summary .settings-chev{flex-shrink:0}
-.theme-modal-card-details:not([open]) > summary{margin-bottom:0}
-.theme-modal-card-details:not([open]) .theme-section-body{display:none}
-.theme-modal-card-details[open]{box-shadow:0 10px 24px rgba(0,0,0,.08)}
+.theme-modal-card-details{box-shadow:none}
 .theme-card-toggle{user-select:none}
 .theme-card-toggle:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22);border-radius:10px}
 .theme-local-source-details{margin-top:10px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--border) 88%, transparent);background:color-mix(in srgb,var(--surface) 55%, transparent)}
@@ -978,8 +974,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 #theme-modal .modal-poster{width:58px;height:88px}
 #theme-modal .review-panel-head{padding:0 var(--modal-pad-x) 6px}
 #theme-modal .review-card{margin:0 var(--modal-pad-x) 12px;padding:12px;border-radius:14px}
-#theme-local-card{border-left:2px solid color-mix(in srgb,var(--amber) 72%, transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--amber-soft) 18%, var(--surface2)) 0%,var(--surface2) 100%)}
-#theme-workflow-card{border-left:2px solid color-mix(in srgb,var(--purple) 72%, transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--purple-soft) 18%, var(--surface2)) 0%,var(--surface2) 100%)}
+#theme-local-card,#theme-workflow-card{border-left:2px solid color-mix(in srgb,var(--border) 78%, transparent);background:var(--surface2)}
 #theme-modal .theme-section-heading .modal-section-label{font-size:13px;letter-spacing:.02em;color:var(--text);text-transform:none}
 #theme-modal .review-card-header{margin-bottom:8px}
 #theme-modal .review-meta-item{padding:6px 8px;gap:4px}
@@ -1000,22 +995,26 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-section-card{display:flex;flex-direction:column;gap:10px}
 .theme-section-header{align-items:flex-start}
 .theme-section-body{display:flex;flex-direction:column;gap:10px}
-.theme-section-heading .modal-section-subtext{font-size:11px;color:var(--text2);line-height:1.45}
+.theme-section-heading .modal-section-subtext{font-size:14px;color:var(--text);line-height:1.4;font-weight:650}
 .theme-section-meta .clip-summary-row{margin-top:0;border:none;border-top:1px solid var(--border);border-radius:0;background:transparent;box-shadow:none;padding:8px 10px}
 .theme-section-heading{gap:4px}
-.theme-section-heading .modal-section-label{display:inline-flex;align-items:center;align-self:flex-start;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.04em}
-#theme-local-card .theme-section-heading .modal-section-label{background:var(--amber-soft);color:var(--amber);border:1px solid rgba(245,166,35,.3)}
-#theme-workflow-card .theme-section-heading .modal-section-label{background:var(--purple-soft);color:var(--purple);border:1px solid rgba(187,134,255,.32)}
+.theme-section-heading .modal-section-label{display:block;padding:0;border-radius:0;font-size:16px;font-weight:800;letter-spacing:.01em;color:var(--text)}
 .theme-section-player{margin-top:2px}
 .theme-section-player .modal-player-row{margin-bottom:0}
+.theme-section-details{border:1px solid color-mix(in srgb,var(--border) 90%, transparent);border-radius:10px;background:color-mix(in srgb,var(--surface) 40%, transparent)}
+.theme-section-details-toggle{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer}
+.theme-section-details-toggle::-webkit-details-marker{display:none}
+.theme-section-details[open] .theme-section-details-toggle .settings-chev{transform:rotate(180deg)}
+.theme-section-details .settings-chev{transition:transform .15s}
 
 .modal-player-row.is-not-ready .skip-btn,.modal-player-row.is-not-ready .modal-slider{opacity:.45}
 .modal-player-row .skip-btn:disabled,.modal-player-row .modal-slider:disabled{cursor:not-allowed;opacity:.45}
 .theme-preview-feedback{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .theme-preview-feedback .modal-status-txt{padding-left:0;padding-top:5px;padding-bottom:0}
 .theme-section-meta{gap:0}
-.theme-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:8px;row-gap:8px}
-.theme-detail-item{border:1px solid color-mix(in srgb,var(--border) 85%, transparent);border-radius:10px;background:color-mix(in srgb,var(--surface) 65%, transparent)}
+.theme-detail-grid{display:grid;grid-template-columns:1fr;column-gap:0;row-gap:0}
+.theme-detail-item{border:none;border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent);border-radius:0;background:transparent;padding:8px 10px}
+.theme-detail-grid .theme-detail-item:first-child{border-top:1px solid color-mix(in srgb,var(--border) 86%, transparent)}
 .theme-detail-item .review-meta-label{font-size:10px;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--text3)}
 .theme-detail-item .review-meta-value{font-size:12px;font-weight:600;color:var(--text)}
 .theme-detail-item-wide{grid-column:1 / -1}
@@ -1031,7 +1030,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .theme-workflow-value{font-size:12px;font-weight:600;color:var(--text);min-width:0;word-break:break-word}
 .theme-workflow-detail{margin-top:4px;font-size:11px;font-weight:500;color:var(--text3)}
 .theme-workflow-value .ui-pill,.theme-workflow-value .badge{max-width:100%}
-.theme-section-actions .btn,.theme-workflow-actions .btn{flex:0 0 auto;min-height:32px;min-width:0;padding:7px 12px;font-size:12px}
+.theme-section-actions .btn,.theme-workflow-actions .btn{flex:0 0 auto;min-height:30px;min-width:0;padding:6px 10px;font-size:11px}
 .theme-workflow-actions .btn.is-primary,.theme-section-actions .btn.is-primary{box-shadow:0 0 0 1px rgba(255,255,255,.04) inset}
 @media (max-width: 640px){
   .review-card-header,.review-panel-head{flex-direction:column;align-items:flex-start}
