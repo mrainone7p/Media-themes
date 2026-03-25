@@ -28,7 +28,10 @@ function _plexPill(row={}){
   const ratingKey=String(row?.rating_key||'').trim();
   if(!ratingKey) return '';
   const keyPath=encodeURIComponent(`/library/metadata/${ratingKey}`);
-  const plexHref=`https://app.plex.tv/desktop/#!/details?key=${keyPath}`;
+  const configuredPlexUrl=String(document.getElementById('cfg-plex_url')?.value||'').trim().replace(/\/+$/,'');
+  const plexHref=configuredPlexUrl
+    ? `${configuredPlexUrl}/web/index.html#!/details?key=${keyPath}`
+    : `https://app.plex.tv/desktop#!/details?key=${keyPath}`;
   return `<a class="modal-link-pill plex-pill" href="${plexHref}" target="_blank" rel="noopener">🟨 Plex</a>`;
 }
 function _ytLink(url){ return url?`<a class="modal-link-pill yt-pill" href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">▶ YouTube ↗</a>`:''; }
@@ -1666,7 +1669,11 @@ function _themeModalLocalSourceAdded(row={}){
 }
 function _themeModalLocalSourceOriginMarkup(row={}){
   const local=_localSourceContract(row);
-  if(!local.url) return _renderSourceStatePill('Not Recorded','is-unknown','No local source recorded');
+  if(!local.url){
+    return _themeModalHasVerifiedLocal(row)
+      ? _renderSourceStatePill('Available','is-success','Local theme file detected on disk')
+      : _renderSourceStatePill('Missing','is-unknown','No local source recorded');
+  }
   const methodLabel=_sourceMethodLabel(local.method);
   const typeMethodLabel=`${_sourceKindLabel(local.kind)} / ${methodLabel}`;
   return _renderSourceStatePill(typeMethodLabel, _sourceStateClass(local.kind, local.method), local.url);
@@ -2155,7 +2162,6 @@ function _themeModalUpdateLocalCard(row={}){
   const offsetEl=document.getElementById('theme-local-offset');
   const localSourceUrl=hasLocal ? _themeModalLocalSourceUrl(row) : '';
   const localOffset=hasLocal ? _themeModalLocalSourceOffset(row) : '—';
-  const localLength=hasLocal ? _themeModalLocalSourceLengthText(row, parseFloat(row?.theme_duration||0)||0) : '—';
   const themeFilename=(document.getElementById('cfg-theme_filename')?.value||'theme.mp3').trim()||'theme.mp3';
   const folder=String(_themeModalContext?.folder||'').trim();
   if(local) local.classList.toggle('compact', !hasLocal);
@@ -2169,7 +2175,7 @@ function _themeModalUpdateLocalCard(row={}){
     : _renderSourceStatePill('Missing', 'is-unknown', 'No local theme file on disk');
   if(fileEl) fileEl.textContent=folder ? `${folder}/${themeFilename}` : 'Unknown folder';
   if(addedEl) addedEl.textContent=hasLocal ? _themeModalLocalSourceAdded(row) : '—';
-  if(offsetEl) offsetEl.textContent=hasLocal ? `${localOffset} · ${localLength}` : '—';
+  if(offsetEl) offsetEl.textContent=hasLocal ? localOffset : '—';
   _themeModalSetLinkRow({
     urlId:'theme-local-url',
     controlsId:'theme-local-controls',
@@ -2186,38 +2192,21 @@ function _themeModalUpdateLocalCard(row={}){
   _setHidden(actions, !hasLocal, hasLocal?'flex':'');
   _themeModalUpdateLocalClipSummary(row, hasLocal ? parseFloat(row?.theme_duration||0)||0 : 0);
 }
-const _THEME_MODAL_CARD_STORAGE_KEY='mt-theme-modal-card-state';
 function _themeModalCardDefaultOpen(cardId, row={}){
   if(cardId==='theme-local-details') return false;
   if(cardId==='theme-workflow-details') return false;
-  return true;
-}
-function _themeModalCardState(){
-  try{return JSON.parse(localStorage.getItem(_THEME_MODAL_CARD_STORAGE_KEY)||'{}')||{};}catch(e){return {};}
-}
-function _themeModalPersistCardState(cardId, isOpen){
-  try{
-    const next=_themeModalCardState();
-    next[cardId]=!!isOpen;
-    localStorage.setItem(_THEME_MODAL_CARD_STORAGE_KEY, JSON.stringify(next));
-  }catch(e){}
+  return false;
 }
 function _themeModalApplyCardState(row={}){
   ['theme-local-details','theme-workflow-details'].forEach(cardId=>{
     const card=document.getElementById(cardId);
     if(!card) return;
-    const state=_themeModalCardState();
-    const open=Object.prototype.hasOwnProperty.call(state, cardId) ? !!state[cardId] : _themeModalCardDefaultOpen(cardId, row);
+    const open=_themeModalCardDefaultOpen(cardId, row);
     card.open=open;
   });
 }
 function _themeModalBindCardToggles(){
-  ['theme-local-details','theme-workflow-details'].forEach(cardId=>{
-    const card=document.getElementById(cardId);
-    if(!card || card.dataset.toggleBound==='1') return;
-    card.dataset.toggleBound='1';
-    card.addEventListener('toggle', ()=>_themeModalPersistCardState(cardId, card.open));
-  });
+  // Keep details collapsed by default on every modal open.
 }
 function _themeModalUpdateWorkflowCard(row={}){
   const selected=_selectedSourceContract(row);
@@ -2393,14 +2382,10 @@ async function openThemeModal(rk,title,year,folder,row={},library=''){
 
   document.getElementById('theme-modal-title').textContent=title;
   document.getElementById('theme-modal-year').textContent=year;
-  document.getElementById('theme-modal-dur-meta').textContent=hasLocalTheme
-    ? 'Theme on disk'
-    : (hasStoredSource ? 'Selected source saved' : 'Theme missing');
+  const durMeta=document.getElementById('theme-modal-dur-meta');
+  if(durMeta) durMeta.textContent='';
   const statusBadge=document.getElementById('theme-modal-status-badge');
-  if(statusBadge){
-    statusBadge.className=`badge s-${status}`;
-    statusBadge.innerHTML=`<span class="si"></span>${displayStatus(status)}`;
-  }
+  if(statusBadge) statusBadge.innerHTML='';
   _themeModalUpdateStatusFlow(status, {hasTheme:hasLocalTheme, hasStoredSource, isDownloadable});
   _themeModalApplyHeaderActions(row);
   _themeModalBindCardToggles();
