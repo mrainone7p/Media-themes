@@ -1118,7 +1118,7 @@ function renderTable({preserveScroll=false}={}){
     const goldenState=_goldenSourceState(row);
     const customState=_customSourceState(row);
     return `<tr>
-      <td><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
+      <td class="col-select"><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
       <td class="db-cell-title" title="${titleAttr}">
         <a class="media-title-link" href="${tmdbHref}" onclick="return _openTmdbRow('${rk}',event)" target="_blank" rel="noopener">${rawTitle}</a>
       </td>
