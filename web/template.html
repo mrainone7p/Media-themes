@@ -1130,7 +1130,7 @@
                 <div class="sm-card-actions">
                   <div class="sm-card-first">Edit the query, then search when ready.</div>
                   <div class="sm-card-controls">
-                    <input id="sm-custom-input" class="search-method-input sm-card-input" placeholder="Type a custom query..." onfocus="pickSearchMethod('custom', event)" oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')searchModalPrimary()">
+                    <input id="sm-custom-input" class="search-method-input sm-card-input" placeholder="Enter custom search terms here." onfocus="pickSearchMethod('custom', event)" oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')searchModalPrimary()">
                   </div>
                 </div>
               </label>
@@ -1164,7 +1164,7 @@
     <div id="search-step-2" class="search-step-body">
       <div class="modal-section modal-section--dense search-step-section-head">
         <div class="modal-section-header">
-          <div class="modal-section-heading">
+          <div class="modal-section-heading search-results-heading-row">
             <div class="section-label">Results · Pick the best source match</div>
             <div class="search-method-chosen">Chosen method: <span id="sm-results-method" class="ui-pill review-source-pill is-unknown">—</span></div>
           </div>
