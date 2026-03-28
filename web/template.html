@@ -618,16 +618,27 @@
     </div>
     <div class="tbl-wrap">
       <table class="db-table">
+        <colgroup>
+          <col class="col-select">
+          <col class="col-title">
+          <col class="col-year">
+          <col class="col-status">
+          <col class="col-action">
+          <col class="col-golden-source">
+          <col class="col-selected-source">
+          <col class="col-updated">
+          <col class="col-notes">
+        </colgroup>
         <thead><tr>
           <th class="col-select"><input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered"></th>
-          <th style="width:16%" onclick="sortTable('title')">Title ↕</th>
-          <th style="width:5%" onclick="sortTable('year')">Year ↕</th>
-          <th style="width:10%" onclick="sortTable('status')">Status ↕</th>
-          <th style="width:12%">Action</th>
-          <th style="width:13%" onclick="sortTable('golden_state')">Golden Source ↕</th>
-          <th style="width:17%" onclick="sortTable('custom_state')">Selected Source ↕</th>
-          <th style="width:9%" onclick="sortTable('last_updated')">Updated ↕</th>
-          <th style="width:12%" onclick="sortTable('notes')">Notes ↕</th>
+          <th class="col-title" onclick="sortTable('title')">Title ↕</th>
+          <th class="col-year" onclick="sortTable('year')">Year ↕</th>
+          <th class="col-status" onclick="sortTable('status')">Status ↕</th>
+          <th class="col-action">Action</th>
+          <th class="col-golden-source" onclick="sortTable('golden_state')">Golden Source ↕</th>
+          <th class="col-selected-source" onclick="sortTable('custom_state')">Selected Source ↕</th>
+          <th class="col-updated" onclick="sortTable('last_updated')">Updated ↕</th>
+          <th class="col-notes" onclick="sortTable('notes')">Notes ↕</th>
         </tr></thead>
         <tbody id="db-tbody"></tbody>
       </table>
