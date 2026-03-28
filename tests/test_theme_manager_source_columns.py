@@ -16,11 +16,10 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         cls.library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
 
     def test_table_headers_use_golden_and_selected_columns(self):
-        self.assertIn("sortTable('golden_state')", self.template_source)
-        self.assertIn("sortTable('custom_state')", self.template_source)
-        self.assertNotIn("sortTable('local_state')", self.template_source)
-        self.assertIn("Golden Source ↕", self.template_source)
-        self.assertIn("Selected Source ↕", self.template_source)
+        self.assertIn("{id:'golden_state',label:'Golden Source'", self.library_source)
+        self.assertIn("{id:'custom_state',label:'Selected Source'", self.library_source)
+        self.assertIn("onclick=\"sortTable('${col.id}')\"", self.library_source)
+        self.assertNotIn("{id:'local_state'", self.library_source)
         self.assertNotIn("Golden Source URL ↕", self.template_source)
         self.assertNotIn("Source URL ↕", self.template_source)
         self.assertNotIn("Start Offset (mm:ss) ↕", self.template_source)
