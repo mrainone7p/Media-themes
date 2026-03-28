@@ -227,6 +227,84 @@ _themeModalContext={{row, folder:'/media/example'}};
             payload["statuses"],
         )
 
+    def test_clear_sources_selected_refreshes_ledger_and_preserves_failed_unmonitored_statuses(self):
+        start = self.library_source.index("async function clearSourcesSelected(){")
+        end = self.library_source.index("function _currentLib(){", start)
+        clear_sources_block = self.library_source[start:end]
+        node_script = f"""
+const toasts=[];
+const loadDatabaseCalls=[];
+const postJsonCalls=[];
+const _selectedKeys=new Set(['failed-rk','unmon-rk']);
+let _activeLib='Movies';
+let _rows=[
+  {{rating_key:'failed-rk', status:'FAILED', url:'https://example.com/failed.mp3'}},
+  {{rating_key:'unmon-rk', status:'UNMONITORED', url:'https://example.com/unmon.mp3'}},
+];
+let _rowMap={{
+  'failed-rk': _rows[0],
+  'unmon-rk': _rows[1],
+}};
+function requireLibraryContext(library){{ return library||'Movies'; }}
+async function openConfirmModal(){{ return true; }}
+function apiUrl(url){{ return url; }}
+async function postJson(url, body){{
+  postJsonCalls.push({{url, body}});
+  return {{
+    ok:true,
+    data:{{
+      summary:{{
+        cleared:2,
+        preserved_available:0,
+        reset_missing:0,
+        skipped_without_url:0,
+      }},
+    }},
+  }};
+}}
+async function loadDatabase(force){{
+  loadDatabaseCalls.push(force);
+  _rows=[
+    {{rating_key:'failed-rk', status:'FAILED', url:''}},
+    {{rating_key:'unmon-rk', status:'UNMONITORED', url:''}},
+  ];
+  _rowMap={{'failed-rk':_rows[0],'unmon-rk':_rows[1]}};
+}}
+function displayStatus(status){{ return status; }}
+function toast(message, level){{ toasts.push({{message, level}}); }}
+function clearSelection(){{ _selectedKeys.clear(); }}
+{clear_sources_block}
+(async()=>{{
+  await clearSourcesSelected();
+  process.stdout.write(JSON.stringify({{
+    rows:_rows,
+    selectedCount:_selectedKeys.size,
+    loadDatabaseCalls,
+    postJsonCalls,
+    toasts,
+  }}));
+}})().catch((error)=>{{ console.error(error); process.exit(1); }});
+"""
+        result = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual([False], payload["loadDatabaseCalls"])
+        self.assertEqual("FAILED", payload["rows"][0]["status"])
+        self.assertEqual("UNMONITORED", payload["rows"][1]["status"])
+        self.assertEqual("", payload["rows"][0]["url"])
+        self.assertEqual("", payload["rows"][1]["url"])
+        self.assertEqual(0, payload["selectedCount"])
+        self.assertEqual(1, len(payload["postJsonCalls"]))
+        self.assertIn(
+            {"message": "2 URLs cleared", "level": "ok"},
+            payload["toasts"],
+        )
+
 
     def test_theme_modal_workflow_metadata_separates_state_from_type_without_duplicate_detail(self):
         for snippet in (
