@@ -58,6 +58,11 @@ schedule:
         auto_approve:
           title: Auto-Approve Staged Items
           description: Automatically move Staged items to Approved before downloading for a fully hands-off pipeline.
+theme:
+  modal:
+    metadata:
+      date_added: Date Added
+
 statuses:
   UNMONITORED:
     label: Unmonitored
