@@ -2463,7 +2463,8 @@ async function themeModalDownloadApproved(){
     toast(data.error||'Download failed','err');
     return;
   }
-  toast('Download started','ok');
+  await loadDatabase(false);
+  toast('Download complete','ok');
   closeThemeModal();
 }
 

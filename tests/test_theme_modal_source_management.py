@@ -609,6 +609,50 @@ function _themeModalRememberRow(current={{}}){{
         self.assertTrue(payload["closed"])
         self.assertTrue(payload["reloaded"])
 
+    def test_download_approved_reloads_database_before_closing_modal(self):
+        start = self.library_source.index("async function themeModalDownloadApproved(){")
+        end = self.library_source.index("\n\nfunction _themeModalWorkflowSourceUrl(row={}){", start)
+        download_block = self.library_source[start:end]
+        node_script = f"""
+const events=[];
+let loadArgs=null;
+const row={{
+  rating_key:'1',
+  title:'Example',
+  tmdb_id:'101',
+  folder:'/media/example',
+  url:'https://example.test/theme.mp3',
+  selected_source_kind:'custom',
+  selected_source_method:'playlist',
+}};
+let _activeLib='Movies';
+let _themeModalContext={{rk:'1',title:'Example',library:'Movies',folder:'/media/example',row}};
+function requireLibraryContext(){{ return 'Movies'; }}
+function _selectedSourceContract(current={{}}){{ return {{url:String(current?.url||'').trim()}}; }}
+async function postJson(url, body){{ events.push('postJson'); return {{ok:true,data:{{}},url,body}}; }}
+async function loadDatabase(syncPeer=true){{ loadArgs=syncPeer; events.push('loadDatabase'); }}
+function closeThemeModal(){{ events.push('closeThemeModal'); }}
+function toast(message, kind){{ events.push(`toast:${{kind}}:${{message}}`); }}
+{download_block}
+(async()=>{{
+  await themeModalDownloadApproved();
+  process.stdout.write(JSON.stringify({{
+    events,
+    loadArgs
+  }}));
+}})().catch((error)=>{{ console.error(error); process.exit(1); }});
+"""
+        result = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual(False, payload["loadArgs"])
+        self.assertEqual(["postJson", "loadDatabase", "toast:ok:Download complete", "closeThemeModal"], payload["events"])
+
     def test_verified_local_probe_promotes_effective_status_to_available_for_badge_helper_and_actions(self):
         start = self.library_source.index("function _themeHasLocal(row){")
         end = self.library_source.index("async function openThemeModal(", start)
