@@ -50,6 +50,23 @@ let _selectedKeys=new Set();
 let _lastDbCheckIndex=null;
 let _visibleRowCount=0;
 const DB_CHUNK_SIZE=80;
+const DB_STICKY_FIRST_COL_THRESHOLD=120;
+/**
+ * Theme Manager table columns are fully config-driven.
+ * To adjust label/width/sort behavior (for example the Action column width),
+ * update the relevant entry in TABLE_COLUMNS instead of adding one-off CSS.
+ */
+const TABLE_COLUMNS=[
+  {id:'select',label:'Select',width:'48px',minWidth:'48px',align:'center',sortable:false,sticky:'first',renderHeader:()=>'<input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered">',renderCell:(row)=>SelectCell(row)},
+  {id:'title',label:'Title',width:'18%',minWidth:'220px',align:'left',sortable:true,renderCell:(row)=>TitleCell(row)},
+  {id:'year',label:'Year',width:'7%',minWidth:'72px',align:'left',sortable:true,renderCell:(row)=>`<span class="db-cell-subtle">${_escapeHtml(row.year||'')}</span>`},
+  {id:'status',label:'Status',width:'12%',minWidth:'140px',align:'left',sortable:true,renderCell:(row)=>StatusBadgeCell(row)},
+  {id:'action',label:'Action',width:'164px',minWidth:'164px',align:'left',sortable:false,renderCell:(row)=>ActionCell(row)},
+  {id:'golden_state',label:'Golden Source',width:'14%',minWidth:'170px',align:'left',sortable:true,renderCell:(row)=>SourceBadgeCell(row,'golden')},
+  {id:'custom_state',label:'Selected Source',width:'18%',minWidth:'220px',align:'left',sortable:true,renderCell:(row)=>SourceBadgeCell(row,'selected')},
+  {id:'last_updated',label:'Updated',width:'11%',minWidth:'130px',align:'left',sortable:true,renderCell:(row)=>UpdatedCell(row)},
+  {id:'notes',label:'Notes',width:'14%',minWidth:'180px',align:'left',sortable:true,renderCell:(row)=>NotesCell(row)},
+];
 // === STATE / STATUS MAPPING ===
 const SC={'UNMONITORED':'#94a3b8','MISSING':'#f26d78','STAGED':'#b06aff','APPROVED':'#f5a623','AVAILABLE':'#2dd4a0','FAILED':'#f05252'};
 function statusDesc(status){
@@ -810,6 +827,50 @@ function renderRowActionCell(row){
   </div>`;
 }
 
+function SelectCell(row){
+  const rk=_escapeAttr(row.rating_key||'');
+  const checked=_selectedKeys.has(row.rating_key)?'checked':'';
+  return `<td class="col-select"><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>`;
+}
+
+function TitleCell(row){
+  const rk=_escapeAttr(row.rating_key||'');
+  const rawTitle=(row.title||row.plex_title||'');
+  const safeTitle=_escapeHtml(rawTitle);
+  const titleAttr=_escapeAttr(rawTitle);
+  const tmdbHref=_tmdbLink(row.title||row.plex_title,row.year);
+  return `<td class="db-cell-title db-truncate-cell"><a class="media-title-link db-truncate-reveal" href="${tmdbHref}" onclick="return _openTmdbRow('${rk}',event)" target="_blank" rel="noopener" title="${titleAttr}" data-fulltext="${titleAttr}">${safeTitle}</a></td>`;
+}
+
+function StatusBadgeCell(row){
+  return `<td>${renderStatusCell(row)}</td>`;
+}
+
+function ActionCell(row){
+  return `<td>${renderRowActionCell(row)}</td>`;
+}
+
+function SourceBadgeCell(row, type='selected'){
+  if(type==='golden'){
+    const goldenState=_goldenSourceState(row);
+    return `<td>${_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)}</td>`;
+  }
+  const customState=_customSourceState(row);
+  return `<td>${_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.pillLabel), '', customState.chips)}</td>`;
+}
+
+function UpdatedCell(row){
+  return `<td class="db-cell-mono">${_escapeHtml((row.last_updated||'').slice(5,16))}</td>`;
+}
+
+function NotesCell(row){
+  const rawNotes=String(row.notes||'').trim();
+  const notesText=rawNotes||'—';
+  const safeNotesText=_escapeHtml(notesText);
+  const safeNotesAttr=_escapeAttr(notesText);
+  return `<td class="db-cell-notes db-truncate-cell"><span class="db-truncate-reveal" tabindex="0" title="${safeNotesAttr}" data-fulltext="${safeNotesAttr}">${safeNotesText}</span></td>`;
+}
+
 function _closeAllRowMenus(){
   document.querySelectorAll('.row-action-menu.open').forEach(m=>{
     m.classList.remove('open');
@@ -1086,9 +1147,59 @@ function _bindTableInfiniteScroll(){
   }, {passive:true});
 }
 
+function _columnHeaderMarkup(col){
+  const sortable=!!col.sortable;
+  const isSorted=_sortCol===col.id;
+  const sortIndicator=sortable ? (isSorted ? (_sortDir===1?'↑':'↓') : '↕') : '';
+  const classes=[
+    `col-${col.id}`,
+    sortable?'is-sortable':'',
+    isSorted?'is-sorted':'',
+    col.sticky==='first'?'is-sticky-col':'',
+    col.align==='center'?'align-center':'',
+    col.align==='right'?'align-right':'',
+  ].filter(Boolean).join(' ');
+  const attrs=[
+    `class="${classes}"`,
+    `style="width:${col.width};min-width:${col.minWidth}"`,
+    sortable?`onclick="sortTable('${col.id}')"`:'',
+    sortable?'role="button"':'',
+    sortable?`aria-sort="${_sortDir===1?'ascending':'descending'}"`:'',
+    sortable?`title="Sort by ${_escapeAttr(col.label)}"`:'',
+  ].filter(Boolean).join(' ');
+  const content=col.renderHeader ? col.renderHeader(col) : `${_escapeHtml(col.label)}${sortIndicator?` ${sortIndicator}`:''}`;
+  return `<th ${attrs}>${content}</th>`;
+}
+
+function _renderTableHeader(){
+  const headRow=document.getElementById('db-head-row');
+  if(!headRow) return;
+  headRow.innerHTML=TABLE_COLUMNS.map(col=>_columnHeaderMarkup(col)).join('');
+}
+
+function _rowStateClasses(row){
+  const classes=[];
+  if(_selectedKeys.has(row.rating_key)) classes.push('is-selected');
+  if(String(row?.disabled||'')==='1') classes.push('is-disabled');
+  return classes.join(' ');
+}
+
+function _renderRowFromColumns(row){
+  const rowCells=TABLE_COLUMNS.map(col=>{
+    const html=col.renderCell ? col.renderCell(row) : `<td>—</td>`;
+    if(col.sticky==='first'){
+      if(/<td\s+class="/.test(html)) return html.replace('<td class="', '<td class="is-sticky-col ');
+      return html.replace('<td', '<td class="is-sticky-col"');
+    }
+    return html;
+  }).join('');
+  return `<tr class="${_rowStateClasses(row)}">${rowCells}</tr>`;
+}
+
 // === TABLE / ROW RENDERING ===
 // ── Table render ─────────────────────────────────────────────────────────────
 function renderTable({preserveScroll=false}={}){
+  _renderTableHeader();
   const wrap=document.querySelector('.tbl-wrap');
   const lastScrollTop=preserveScroll && wrap ? wrap.scrollTop : 0;
   const visibleCount=Math.min(_filtered.length, Math.max(DB_CHUNK_SIZE, _visibleRowCount||0));
@@ -1109,37 +1220,9 @@ function renderTable({preserveScroll=false}={}){
     return;
   }
   empty.style.display='none';
-  tbody.innerHTML=slice.map(row=>{
-    const rk=row.rating_key;
-    const checked=_selectedKeys.has(rk)?'checked':'';
-    const rawTitle=(row.title||row.plex_title||'');
-    const safeTitle=_escapeHtml(rawTitle);
-    const titleAttr=_escapeAttr(rawTitle);
-    const tmdbHref=_tmdbLink(row.title||row.plex_title,row.year);
-    const goldenState=_goldenSourceState(row);
-    const customState=_customSourceState(row);
-    const rawNotes=String(row.notes||'').trim();
-    const notesText=rawNotes||'—';
-    const safeNotesText=_escapeHtml(notesText);
-    const safeNotesAttr=_escapeAttr(notesText);
-    return `<tr>
-      <td class="col-select"><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
-      <td class="db-cell-title db-truncate-cell">
-        <a class="media-title-link db-truncate-reveal" href="${tmdbHref}" onclick="return _openTmdbRow('${rk}',event)" target="_blank" rel="noopener" title="${titleAttr}" data-fulltext="${titleAttr}">${safeTitle}</a>
-      </td>
-      <td class="db-cell-subtle">${row.year||''}</td>
-      <td>
-        ${renderStatusCell(row)}
-      </td>
-      <td>${renderRowActionCell(row)}</td>
-      <td>${_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)}</td>
-      <td>${_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.pillLabel), '', customState.chips)}</td>
-      <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
-      <td class="db-cell-notes db-truncate-cell">
-        <span class="db-truncate-reveal" tabindex="0" title="${safeNotesAttr}" data-fulltext="${safeNotesAttr}">${safeNotesText}</span>
-      </td>
-    </tr>`;
-  }).join('');
+  const enableStickyFirst=_filtered.length>=DB_STICKY_FIRST_COL_THRESHOLD;
+  if(wrap) wrap.classList.toggle('has-sticky-first-col', enableStickyFirst);
+  tbody.innerHTML=slice.map(row=>_renderRowFromColumns(row)).join('');
 
   const remaining=Math.max(0, _filtered.length - _visibleRowCount);
   const progressLabel=`Showing ${_visibleRowCount.toLocaleString()} of ${_filtered.length.toLocaleString()} movies`;

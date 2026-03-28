@@ -629,17 +629,7 @@
           <col class="col-updated">
           <col class="col-notes">
         </colgroup>
-        <thead><tr>
-          <th class="col-select"><input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered"></th>
-          <th class="col-title" onclick="sortTable('title')">Title ↕</th>
-          <th class="col-year" onclick="sortTable('year')">Year ↕</th>
-          <th class="col-status" onclick="sortTable('status')">Status ↕</th>
-          <th class="col-action">Action</th>
-          <th class="col-golden-source" onclick="sortTable('golden_state')">Golden Source ↕</th>
-          <th class="col-selected-source" onclick="sortTable('custom_state')">Selected Source ↕</th>
-          <th class="col-updated" onclick="sortTable('last_updated')">Updated ↕</th>
-          <th class="col-notes" onclick="sortTable('notes')">Notes ↕</th>
-        </tr></thead>
+        <thead><tr id="db-head-row"></tr></thead>
         <tbody id="db-tbody"></tbody>
       </table>
     </div>
