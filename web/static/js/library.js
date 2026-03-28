@@ -2892,7 +2892,7 @@ function buildSearchQuery(method,title,year){
 
 function _updateQueryDisplay(){
   const inp = document.getElementById('sm-custom-input');
-  if(inp) inp.value=_searchCustomQuery||buildSearchQuery('custom',_searchTitle,_searchYear);
+  if(inp) inp.value=_searchCustomQuery||'';
 }
 
 function _searchMethodMeta(method){
@@ -3090,7 +3090,7 @@ async function openSearchModal(rk,title,year,lib){
   const defaultMethod=(cfg.search_mode||'playlist')==='playlist'?'playlist':'direct';
   _searchDefaultMethod=defaultMethod;
   if(!sameItem) _searchMethod=hasGolden?'golden_source':(_lastSearchMethod||defaultMethod);
-  if(!_searchCustomQuery) _searchCustomQuery=buildSearchQuery('direct',title,year);
+  if(!sameItem) _searchCustomQuery='';
   // Header
   document.getElementById('search-modal-title').textContent=title||'Find Theme Source';
   document.getElementById('search-modal-year-meta').textContent=year||'';
@@ -3287,7 +3287,7 @@ function _renderResults(results){
       <div class="search-result-actions">
         <span class="search-result-duration">${r.duration||'—'}</span>
         <button class="btn btn-ghost btn-xs" onclick="previewSearchResult('${safeUrl}',this)">▶ Preview</button>
-        <button class="btn btn-amber btn-xs" onclick="goToStep3('${safeUrl}',{skipPreview:false,sourceTitle:'${safeTitleJs}'})">${i===0?'Pick Default':'Pick'}</button>
+        <button class="btn btn-amber btn-xs" onclick="goToStep3('${safeUrl}',{skipPreview:false,sourceTitle:'${safeTitleJs}'})">Pick</button>
       </div>
     </div>`;
   }).join('');
@@ -3298,7 +3298,7 @@ function _renderResults(results){
 
 
 function _renderMethodQuickPick(method, result, opts={}){
-  if(!result) return '<span class="sm-quickpick-title">No quick match available</span>';
+  if(!result) return '';
   const safeMethod=String(method||'').replace(/'/g,"\\'");
   const safeUrl=String(result.url||'').replace(/'/g,"\\'");
   const safeHref=String(result.url||'').replace(/"/g,'&quot;');
@@ -3332,6 +3332,12 @@ function _setMethodQuickPick(method, result){
     ? {label:'Quick pick', title:'Golden Source URL', displayTitle:(result&&result.url)||'Golden Source URL', linkTitle:true, selectLabel:'Pick', scrollTitle:true}
     : {label:'Quick pick', scrollTitle:true};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
+  el.querySelectorAll('.auto-scroll-text').forEach(node=>{
+    const span=node.querySelector('span');
+    const scrollDistance=Math.max(0, (span?.scrollWidth||0) - (node.clientWidth||0));
+    node.style.setProperty('--scroll-distance', `${scrollDistance}px`);
+    node.classList.toggle('auto-scroll-active', scrollDistance > 12);
+  });
 }
 
 
