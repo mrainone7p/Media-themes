@@ -125,6 +125,8 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             "function _themeModalApplyVerifiedLocalAvailability(row={}, exists=false, metadata={}){",
             "const currentRow=_themeModalContext?.row||nextRow;",
             "_themeModalApplyVerifiedLocalAvailability(currentRow, true, {duration:audio.duration||0});",
+            "_themeModalApplyVerifiedLocalAvailability(currentRow, false);",
+            "_themeModalAudio.audio.removeAttribute('src');",
             "if(hasStoredSource) await _themeModalLoadSelectedSourcePreview(row);",
             "const _themeModalAudio=bindModalAudio({audioId:'theme-modal-audio',playBtnId:'theme-modal-play',sliderId:'theme-modal-slider',curId:'theme-modal-cur',durId:'theme-modal-dur',statusId:'theme-modal-status'});",
             "const _themeModalSourceAudio=bindModalAudio({audioId:'theme-workflow-audio',playBtnId:'theme-workflow-play',sliderId:'theme-workflow-slider',curId:'theme-workflow-cur',durId:'theme-workflow-dur',statusId:'theme-workflow-status'});",
@@ -133,6 +135,97 @@ class ThemeModalSourceManagementTests(unittest.TestCase):
             'async function themeModalSourceRetry(){',
         ):
             self.assertIn(snippet, self.library_source)
+
+    def test_local_preview_error_marks_row_missing_and_clears_audio_source(self):
+        start = self.library_source.index("async function _themeModalLoadLocalPreview(row={}){")
+        end = self.library_source.index("async function _themeModalLoadSelectedSourcePreview(row={}){", start)
+        local_preview_block = self.library_source[start:end]
+        node_script = f"""
+const updateLocalCardCalls=[];
+const clipSummaryDurations=[];
+const statuses=[];
+const rememberCalls=[];
+const appliedAvailability=[];
+const cleanupCalls=[];
+const loadCalls=[];
+let removedSrc=false;
+const document={{ getElementById(){{ return {{}}; }} }};
+function apiUrl(url){{ return url; }}
+function _setHidden(){{}}
+let _themeModalContext=null;
+function _themeModalSetLocalPreviewStatus(message=''){{ _themeModalAudio.setStatus(message); }}
+function _themeModalHasVerifiedLocal(row={{}}){{ return !!row._verifiedThemeExists; }}
+function _themeModalApplyVerifiedLocalAvailability(row={{}}, exists=false, metadata={{}}){{
+  row._verifiedThemeExists=!!exists;
+  row.theme_exists=exists ? 1 : 0;
+  row.theme_duration=exists ? Number(metadata?.duration||0) : 0;
+  appliedAvailability.push({{exists:!!exists, duration:row.theme_duration}});
+  return row;
+}}
+function _themeModalRememberRow(row={{}}){{
+  rememberCalls.push({{theme_exists:row.theme_exists, verified:row._verifiedThemeExists}});
+  return row;
+}}
+function _themeModalUpdateLocalCard(row={{}}){{
+  updateLocalCardCalls.push({{theme_exists:row.theme_exists, verified:row._verifiedThemeExists}});
+}}
+function _themeModalUpdateLocalClipSummary(_row={{}}, duration=0){{
+  clipSummaryDurations.push(Number(duration||0));
+}}
+const _themeModalAudio={{
+  handlers:{{}},
+  audio:{{
+    src:'',
+    load(){{ loadCalls.push(this.src||''); }},
+    removeAttribute(name){{ if(name==='src'){{ this.src=''; removedSrc=true; }} }},
+  }},
+  cleanup(opts={{}}){{ cleanupCalls.push(opts); }},
+  setHandlers(handlers={{}}){{ this.handlers=handlers; }},
+  setStatus(message=''){{ statuses.push(message); }},
+}};
+{local_preview_block}
+const row={{folder:'/media/example', _verifiedThemeExists:true, theme_exists:1, theme_duration:11.2}};
+_themeModalContext={{row, folder:'/media/example'}};
+(async()=>{{
+  const loaded=await _themeModalLoadLocalPreview(row);
+  _themeModalAudio.handlers.onerror();
+  process.stdout.write(JSON.stringify({{
+    loaded,
+    row,
+    statuses,
+    rememberCalls,
+    appliedAvailability,
+    updateLocalCardCalls,
+    clipSummaryDurations,
+    cleanupCalls,
+    removedSrc,
+    loadCalls,
+  }}));
+}})().catch((error)=>{{ console.error(error); process.exit(1); }});
+"""
+        result = subprocess.run(
+            ["node", "-e", node_script],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["loaded"])
+        self.assertEqual(0, payload["row"]["theme_exists"])
+        self.assertFalse(payload["row"]["_verifiedThemeExists"])
+        self.assertEqual(0, payload["row"]["theme_duration"])
+        self.assertIn({"exists": False, "duration": 0}, payload["appliedAvailability"])
+        self.assertIn({"theme_exists": 0, "verified": False}, payload["rememberCalls"])
+        self.assertIn({"theme_exists": 0, "verified": False}, payload["updateLocalCardCalls"])
+        self.assertIn(0, payload["clipSummaryDurations"])
+        self.assertTrue(payload["removedSrc"])
+        self.assertIn("", payload["loadCalls"])
+        self.assertIn({"clearSrc": False}, payload["cleanupCalls"])
+        self.assertIn(
+            "Preview unavailable — local file is missing or unreadable. Run Refresh Themes to resync.",
+            payload["statuses"],
+        )
 
 
     def test_theme_modal_workflow_metadata_separates_state_from_type_without_duplicate_detail(self):
