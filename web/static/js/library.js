@@ -1113,14 +1113,19 @@ function renderTable({preserveScroll=false}={}){
     const rk=row.rating_key;
     const checked=_selectedKeys.has(rk)?'checked':'';
     const rawTitle=(row.title||row.plex_title||'');
-    const titleAttr=rawTitle.replace(/"/g,'&quot;');
+    const safeTitle=_escapeHtml(rawTitle);
+    const titleAttr=_escapeAttr(rawTitle);
     const tmdbHref=_tmdbLink(row.title||row.plex_title,row.year);
     const goldenState=_goldenSourceState(row);
     const customState=_customSourceState(row);
+    const rawNotes=String(row.notes||'').trim();
+    const notesText=rawNotes||'—';
+    const safeNotesText=_escapeHtml(notesText);
+    const safeNotesAttr=_escapeAttr(notesText);
     return `<tr>
       <td class="col-select"><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect('${rk}',this,event)"></td>
-      <td class="db-cell-title" title="${titleAttr}">
-        <a class="media-title-link" href="${tmdbHref}" onclick="return _openTmdbRow('${rk}',event)" target="_blank" rel="noopener">${rawTitle}</a>
+      <td class="db-cell-title db-truncate-cell">
+        <a class="media-title-link db-truncate-reveal" href="${tmdbHref}" onclick="return _openTmdbRow('${rk}',event)" target="_blank" rel="noopener" title="${titleAttr}" data-fulltext="${titleAttr}">${safeTitle}</a>
       </td>
       <td class="db-cell-subtle">${row.year||''}</td>
       <td>
@@ -1130,7 +1135,9 @@ function renderTable({preserveScroll=false}={}){
       <td>${_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)}</td>
       <td>${_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.pillLabel), '', customState.chips)}</td>
       <td class="db-cell-mono">${(row.last_updated||'').slice(5,16)}</td>
-      <td class="db-cell-notes" title="${(row.notes||'').replace(/"/g,'&quot;')}">${row.notes||'—'}</td>
+      <td class="db-cell-notes db-truncate-cell">
+        <span class="db-truncate-reveal" tabindex="0" title="${safeNotesAttr}" data-fulltext="${safeNotesAttr}">${safeNotesText}</span>
+      </td>
     </tr>`;
   }).join('');
 

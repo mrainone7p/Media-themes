@@ -609,6 +609,31 @@ tbody tr:hover{background:var(--table-row-hover-bg);outline:1px solid var(--tabl
 .db-cell-subtle{color:var(--text3)}
 .db-cell-mono{font-size:10px;font-family:var(--mono);color:var(--text3);white-space:nowrap}
 .db-cell-notes{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3);font-size:10px;font-family:var(--mono)}
+.db-truncate-cell{position:relative}
+.db-truncate-reveal{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-truncate-reveal::after{
+  content:attr(data-fulltext);
+  position:absolute;
+  left:var(--db-cell-pad-x);
+  top:calc(100% + 6px);
+  z-index:75;
+  display:none;
+  max-width:min(460px, 70vw);
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid color-mix(in srgb, var(--amber) 48%, #fff);
+  background:#050509;
+  color:#f6f6fb;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);
+  font-size:11px;
+  line-height:1.45;
+  font-family:var(--ui);
+  white-space:normal;
+  word-break:break-word;
+  pointer-events:none;
+}
+.db-truncate-reveal:hover::after,.db-truncate-reveal:focus-visible::after{display:block}
+.db-cell-notes .db-truncate-reveal:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(245,166,35,.22);border-radius:4px}
 .db-source-state{display:flex;flex-direction:column;gap:4px;min-width:0}
 .db-source-title{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text3)}
 .db-source-pill{align-self:flex-start;font-size:10px;padding:4px 9px;--pill-fg:var(--badge-source-fg);--pill-bg:var(--badge-source-bg);--pill-border:var(--badge-source-border)}
@@ -640,7 +665,7 @@ tbody tr:hover{background:var(--table-row-hover-bg);outline:1px solid var(--tabl
 .media-card-year{font-size:12px;color:var(--text3);font-family:var(--mono)}
 .media-card-dur{font-size:11px;color:var(--text2);font-family:var(--mono)}
 .media-title-link{color:var(--text);text-decoration:none}
-.media-title-link:hover{color:var(--amber);text-decoration:underline}
+.media-title-link:hover{text-decoration:underline}
 .media-player-area{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .media-trim{display:flex;gap:10px;align-items:center;flex-shrink:0;flex-wrap:wrap}
 .media-trim label{font-size:11px;color:var(--text2);font-weight:600}
