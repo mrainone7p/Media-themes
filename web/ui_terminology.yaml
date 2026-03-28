@@ -88,3 +88,6 @@ actions:
   toasts:
     manual_saved_auto_approved: Saved — auto-approved
     manual_saved_staged: Saved — moved to Staged for approval
+theme_modal:
+  workflow:
+    date_added: Date Added
