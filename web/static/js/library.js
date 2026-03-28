@@ -1337,14 +1337,7 @@ async function clearSourcesSelected(){
     await loadDatabase(false);
     return;
   }
-  rows.forEach(row=>{
-    row.url='';
-    if(String(row.status||'').toUpperCase()!=='AVAILABLE') row.status='MISSING';
-    if(_rowMap[row.rating_key]){
-      _rowMap[row.rating_key].url='';
-      if(String(_rowMap[row.rating_key].status||'').toUpperCase()!=='AVAILABLE') _rowMap[row.rating_key].status='MISSING';
-    }
-  });
+  await loadDatabase(false);
   const s=d.summary||{};
   const parts=[`${s.cleared||0} URLs cleared`];
   if(s.preserved_available) parts.push(`${s.preserved_available} kept ${displayStatus('AVAILABLE')}`);
@@ -1352,8 +1345,6 @@ async function clearSourcesSelected(){
   if(s.skipped_without_url) parts.push(`${s.skipped_without_url} already empty`);
   toast(parts.join(' · '),'ok');
   clearSelection();
-  renderChips();
-  filterTable();
 }
 
 
