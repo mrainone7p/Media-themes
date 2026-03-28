@@ -445,9 +445,9 @@ body.nav-collapsed main{margin-left:48px}
 
 
 /* ─── Table ─── */
-.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:12px}
-.db-table{table-layout:fixed;width:100%}
+.db-table{table-layout:fixed;width:max(100%,1100px);min-width:1100px}
 .db-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
 thead{background:var(--surface-elev);position:sticky;top:0;z-index:2}
 th{padding:11px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;transition:color .15s}
@@ -691,13 +691,9 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .action-icon{padding:4px 8px;font-size:11px;min-width:28px;justify-content:center}
 .action-icon span{display:none}
 .action-icon .icon-only{display:inline-block}
-.row-action-wrap{position:relative;display:flex;align-items:center;gap:6px;justify-content:center}
+.row-action-wrap{position:relative;display:flex;align-items:center;gap:6px;justify-content:flex-start}
 .row-action-wrap .btn{min-height:34px;padding:7px 12px;border-radius:10px}
 .row-primary-action{min-width:84px}
-.row-action-more{min-width:34px;padding:7px 10px}
-.row-action-menu{position:absolute;min-width:170px;background:var(--surface-elev);border:1px solid var(--border);border-radius:8px;padding:6px;display:none;flex-direction:column;gap:5px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.28)}
-.row-action-menu.open{display:flex}
-.row-action-item{width:100%;justify-content:flex-start;text-align:left}
 
 .task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .task-grid.task-grid-2x2{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1361,6 +1357,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   .search-result-actions{width:100%;justify-content:flex-start;align-items:center;flex-wrap:wrap}
   #search-modal-footer{padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px))}
   #toast{right:12px;left:12px;bottom:82px;max-width:none}
+  .db-table{min-width:980px}
+  .db-cell-title{max-width:180px}
+  .db-cell-notes{max-width:120px}
+  .row-primary-action{min-width:74px;padding:6px 10px}
+  .pag{flex-wrap:wrap;row-gap:6px}
 }
 
 /* ── Utility classes ──────────────────────────────────────────────────────── */

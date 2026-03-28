@@ -44,11 +44,12 @@ function _escapeAttr(value){
   return _escapeHtml(value);
 }
 
-let _rows=[],_filtered=[],_sortCol='title',_sortDir=1,_page=0,_activeLib=null;
+let _rows=[],_filtered=[],_sortCol='title',_sortDir=1,_activeLib=null;
 let _rowMap={}; // rating_key → full row object, avoids onclick escaping bugs
 let _selectedKeys=new Set();
 let _lastDbCheckIndex=null;
-const PAGE=80;
+let _visibleRowCount=0;
+const DB_CHUNK_SIZE=80;
 // === STATE / STATUS MAPPING ===
 const SC={'UNMONITORED':'#94a3b8','MISSING':'#f26d78','STAGED':'#b06aff','APPROVED':'#f5a623','AVAILABLE':'#2dd4a0','FAILED':'#f05252'};
 function statusDesc(status){
@@ -558,6 +559,7 @@ async function switchLib(name){
 async function loadLibRows(name){
   const {data}=await requestJson('/api/ledger?library='+encodeURIComponent(name));
   _rows=Array.isArray(data)?data:[];
+  _bindTableInfiniteScroll();
   // Build map for safe data lookup from action buttons (avoids onclick escaping)
   _rowMap={};
   _rows.forEach(row=>{ if(row.rating_key) _rowMap[row.rating_key]=row; });
@@ -697,7 +699,10 @@ function filterTable(){
     const av=_sortVal(a,_sortCol), bv=_sortVal(b,_sortCol);
     return av<bv?-_sortDir:av>bv?_sortDir:0;
   });
-  _page=0; renderTable();
+  _visibleRowCount=Math.min(DB_CHUNK_SIZE, _filtered.length);
+  renderTable();
+  const wrap=document.querySelector('.tbl-wrap');
+  if(wrap) wrap.scrollTop=0;
 }
 
 let _dbFilterTimer=null;
@@ -800,14 +805,8 @@ function renderRowActionCell(row){
   const title=_htmlAttr(row.title||row.plex_title||'');
   const year=_htmlAttr(row.year||'');
   const primary=_recommendedAction(row);
-  const secondaries=_rowSecondaryActions(row)
-    .filter(a=>a.fn!==primary.fn)
-    .map(a=>`<button class="btn btn-ghost btn-xs row-action-item" data-rk="${rk}" data-url="${url}" data-folder="${folder}" data-title="${title}" data-year="${year}" onclick="_rowActionInvoke('${a.fn}',this)">${a.label}</button>`)
-    .join('');
   return `<div class="row-action-wrap">
     <button class="${primary.cls}" data-rk="${rk}" data-url="${url}" data-folder="${folder}" data-title="${title}" data-year="${year}" onclick="${primary.fn}(this)">${primary.label}</button>
-    <button class="btn btn-ghost btn-xs row-action-more" onclick="toggleRowMenu(this,event)" title="More actions">⋯</button>
-    <div class="row-action-menu">${secondaries||'<span class="bulk-hint" style="padding:6px">No secondary actions</span>'}</div>
   </div>`;
 }
 
@@ -1062,12 +1061,39 @@ async function previewUrl(key, encodedUrl){
 document.addEventListener('click',(e)=>{
   if(!e.target.closest('.row-action-wrap')) _closeAllRowMenus();
 });
-document.querySelector('.tbl-wrap')?.addEventListener('scroll',()=>_closeAllRowMenus());
+function _nextVisibleCount(){
+  return Math.min(_filtered.length, (_visibleRowCount||DB_CHUNK_SIZE) + DB_CHUNK_SIZE);
+}
+
+function _loadMoreRows({render=true}={}){
+  const nextCount=_nextVisibleCount();
+  if(nextCount===_visibleRowCount) return false;
+  _visibleRowCount=nextCount;
+  if(render) renderTable({preserveScroll:true});
+  return true;
+}
+
+function _bindTableInfiniteScroll(){
+  if(window._dbInfiniteScrollBound) return;
+  const wrap=document.querySelector('.tbl-wrap');
+  if(!wrap) return;
+  window._dbInfiniteScrollBound=true;
+  wrap.addEventListener('scroll', ()=>{
+    _closeAllRowMenus();
+    if(!_filtered.length || _visibleRowCount>=_filtered.length) return;
+    const nearBottom=wrap.scrollTop + wrap.clientHeight >= wrap.scrollHeight - 120;
+    if(nearBottom) _loadMoreRows();
+  }, {passive:true});
+}
 
 // === TABLE / ROW RENDERING ===
 // ── Table render ─────────────────────────────────────────────────────────────
-function renderTable(){
-  const start=_page*PAGE, slice=_filtered.slice(start,start+PAGE);
+function renderTable({preserveScroll=false}={}){
+  const wrap=document.querySelector('.tbl-wrap');
+  const lastScrollTop=preserveScroll && wrap ? wrap.scrollTop : 0;
+  const visibleCount=Math.min(_filtered.length, Math.max(DB_CHUNK_SIZE, _visibleRowCount||0));
+  _visibleRowCount=visibleCount;
+  const slice=_filtered.slice(0, visibleCount);
   const tbody=document.getElementById('db-tbody');
   const empty=document.getElementById('db-empty');
   if(!_filtered.length){
@@ -1108,15 +1134,18 @@ function renderTable(){
     </tr>`;
   }).join('');
 
-  const tot=Math.ceil(_filtered.length/PAGE);
-  document.getElementById('db-pag').innerHTML=tot<=1
-    ?`<span>${_filtered.length} movies</span>`
-    :`<button class="pag-btn" onclick="goPage(${_page-1})" ${_page===0?'disabled':''}>← Prev</button>
-      <span>Page ${_page+1} of ${tot} · ${_filtered.length} movies</span>
-      <button class="pag-btn" onclick="goPage(${_page+1})" ${_page>=tot-1?'disabled':''}>Next →</button>`;
+  const remaining=Math.max(0, _filtered.length - _visibleRowCount);
+  const progressLabel=`Showing ${_visibleRowCount.toLocaleString()} of ${_filtered.length.toLocaleString()} movies`;
+  document.getElementById('db-pag').innerHTML=remaining>0
+    ?`<span>${progressLabel}</span>
+      <button class="pag-btn" onclick="loadMoreRowsFromFooter()">
+        Load ${Math.min(DB_CHUNK_SIZE, remaining)} more
+      </button>`
+    :`<span>${progressLabel}</span>`;
+  if(wrap && preserveScroll) wrap.scrollTop=lastScrollTop;
 }
 
-function goPage(p){ _page=p; renderTable(); window.scrollTo(0,0); }
+function loadMoreRowsFromFooter(){ _loadMoreRows(); }
 
 function requireLibraryContext(lib, actionLabel='perform this action'){
   const library=String(lib||'').trim();
@@ -1259,7 +1288,7 @@ function toggleAllSelect(masterCb){
 }
 
 function selectAllVisible(){
-  const start=_page*PAGE, slice=_filtered.slice(start,start+PAGE);
+  const slice=_filtered.slice(0,_visibleRowCount||DB_CHUNK_SIZE);
   slice.forEach(row=>_selectedKeys.add(row.rating_key));
   updateBulkBar(); renderTable();
 }
