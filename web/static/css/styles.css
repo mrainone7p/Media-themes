@@ -512,9 +512,9 @@ tbody tr.is-disabled td{background:var(--table-row-disabled-bg);color:var(--tabl
 .align-center{text-align:center}
 .align-right{text-align:right}
 .col-select{
-  width:48px;
-  min-width:48px;
-  max-width:48px;
+  width:56px;
+  min-width:56px;
+  max-width:56px;
   padding-left:0;
   padding-right:0;
   display:flex;
@@ -790,8 +790,8 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .col-action{min-width:140px}
 .col-title{min-width:280px}
 .row-action-wrap{position:relative;display:flex;align-items:center;gap:6px;justify-content:flex-start;width:100%}
-.row-action-wrap .btn{min-height:28px;padding:4px 10px;border-radius:9px;font-size:11px;font-weight:700}
-.row-primary-action{width:100%;max-width:132px}
+.row-action-wrap .btn{min-height:24px;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700}
+.row-primary-action{width:100%;max-width:108px}
 
 .task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .task-grid.task-grid-2x2{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1459,7 +1459,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   .db-table{min-width:1020px}
   .db-cell-title{max-width:none}
   .db-cell-notes{max-width:140px}
-  .row-primary-action{width:100%;max-width:128px;padding:4px 9px}
+  .row-primary-action{width:100%;max-width:108px;padding:2px 8px}
   .pag{flex-wrap:wrap;row-gap:6px}
 }
 
