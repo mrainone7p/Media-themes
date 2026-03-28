@@ -2887,7 +2887,8 @@ function buildSearchQuery(method,title,year){
   if(method==='direct') return (base+' theme song').trim();
   if(method==='golden_source') return '';
   if(method==='paste') return '';
-  return _searchCustomQuery || base;
+  if(method==='custom') return String(_searchCustomQuery||'').trim();
+  return base;
 }
 
 function _updateQueryDisplay(){
@@ -3139,7 +3140,7 @@ async function openSearchModal(rk,title,year,lib){
   if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
   if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
   if(goldenCard) goldenCard.setAttribute('aria-disabled', hasGolden ? 'false' : 'true');
-  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item.':'No curated source available yet.';
+  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item.':'';
   if(goldenOffset){
     goldenOffset.textContent=hasGolden?`Offset ${goldenOffsetValue}`:'';
     goldenOffset.classList.toggle('hidden', !hasGolden);
@@ -3279,7 +3280,7 @@ function _renderResults(results){
       <div class="result-idx">${i+1}.</div>
       <div class="search-result-main">
         <div class="search-result-main-meta">
-          ${i===0?`<span class="search-result-inline-badge">${_searchMethod==='playlist'?'Default':'Top'}</span>`:''}
+          ${i===0?`<span class="search-result-inline-badge">Pick</span>`:''}
           <a href="${safeHref}" target="_blank" rel="noopener" class="search-result-title" title="${safeTitleAttr}"><span class="search-result-title-text">${safeTitle}</span><span class="search-result-link-icon">↗</span></a>
         </div>
         ${safePlaylistTitle?`<div class="search-result-playlist" title="${safePlaylistTitle}">Playlist: ${safePlaylistTitle}</div>`:''}
@@ -3332,11 +3333,21 @@ function _setMethodQuickPick(method, result){
     ? {label:'Quick pick', title:'Golden Source URL', displayTitle:(result&&result.url)||'Golden Source URL', linkTitle:true, selectLabel:'Pick', scrollTitle:true}
     : {label:'Quick pick', scrollTitle:true};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
-  el.querySelectorAll('.auto-scroll-text').forEach(node=>{
+  _refreshQuickPickAutoScroll(el);
+}
+
+function _refreshQuickPickAutoScroll(root){
+  if(!root) return;
+  root.querySelectorAll('.auto-scroll-text').forEach(node=>{
     const span=node.querySelector('span');
-    const scrollDistance=Math.max(0, (span?.scrollWidth||0) - (node.clientWidth||0));
-    node.style.setProperty('--scroll-distance', `${scrollDistance}px`);
-    node.classList.toggle('auto-scroll-active', scrollDistance > 12);
+    const setScrollDistance=()=>{
+      const scrollDistance=Math.max(0, (span?.scrollWidth||0) - (node.clientWidth||0));
+      node.style.setProperty('--scroll-distance', `${scrollDistance}px`);
+      node.classList.toggle('auto-scroll-active', scrollDistance > 12);
+    };
+    setScrollDistance();
+    requestAnimationFrame(setScrollDistance);
+    setTimeout(setScrollDistance, 60);
   });
 }
 
