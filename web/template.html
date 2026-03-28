@@ -89,7 +89,7 @@
                   <div class="dash-pipeline-step-num text-purple">Step 2</div>
                   <div class="dash-pipeline-step-copy">
                     <div class="dash-pipeline-step-title">Find Sources</div>
-                    <div class="dash-pipeline-step-desc">Searches for sources for <strong>Missing</strong> items via TMDB, YouTube, or Golden Source. Matches move to <strong>Staged</strong> for manual review and <strong>Approval</strong>.</div>
+                    <div class="dash-pipeline-step-desc">Searches for sources for <strong>Missing</strong> items via TMDB, YouTube, or Curated Source. Matches move to <strong>Staged</strong> for manual review and <strong>Approval</strong>.</div>
                   </div>
                 </div>
                 <div class="dash-pipeline-step">
@@ -382,41 +382,41 @@
       <div class="card-body">
         <div class="section-intro">A curated list of trusted theme matches. It can speed up matching and improve result quality for supported titles, though some gaps may remain depending on your library.</div>
         <div class="field-grid field-grid-2">
-          <div class="settings-subcard settings-panel golden-panel">
-            <div class="subcard-title">Golden Source</div>
+          <div class="settings-subcard settings-panel curated-panel">
+            <div class="subcard-title">Curated Source</div>
             <div class="subcard-intro">Point to a trusted source CSV, then test it before using it for source matching.</div>
             <div class="field">
-              <label>Golden Source URL</label>
-              <input id="cfg-golden_source_url" placeholder="https://example.com/golden_source.csv">
+              <label>Curated Source URL</label>
+              <input id="cfg-curated_source_url" placeholder="https://example.com/curated_source.csv">
               <div class="field-help compact"><strong>Required:</strong> <code>tmdb_id</code>, <code>source_url</code>. <strong>Optional:</strong> <code>title</code>, <code>year</code>, <code>start_offset</code>, <code>updated_at</code>, <code>notes</code>.</div>
             </div>
             <div class="settings-test-row">
-              <button class="btn btn-ghost btn-sm" id="golden-test-btn" onclick="testGoldenSource()">⚡ Test Golden Source</button>
-              <span id="golden-test-result"></span>
+              <button class="btn btn-ghost btn-sm" id="curated-test-btn" onclick="testCuratedSource()">⚡ Test Curated Source</button>
+              <span id="curated-test-result"></span>
             </div>
           </div>
-          <div class="settings-subcard settings-panel golden-emphasis golden-panel">
-            <div class="subcard-title">Golden Source mode</div>
+          <div class="settings-subcard settings-panel curated-emphasis curated-panel">
+            <div class="subcard-title">Curated Source mode</div>
             <div class="subcard-intro">Use only the curated list when you want quality themes with faster, more controlled matching however coverage may be limited.</div>
-            <div class="settings-toggle-list settings-toggle-list-golden">
-              <div class="settings-toggle-row golden-row">
+            <div class="settings-toggle-list settings-toggle-list-curated">
+              <div class="settings-toggle-row curated-row">
               <label class="toggle mt-2">
-                <input type="checkbox" id="cfg-search_only_golden">
+                <input type="checkbox" id="cfg-search_only_curated">
                 <span class="toggle-track"></span>
               </label>
               <div class="settings-toggle-content">
-                <label class="toggle-title golden cursor-pointer" onclick="document.getElementById('cfg-search_only_golden').click()">Only use Golden Source</label>
-                <div class="toggle-note golden">Disables YouTube source discovery and only matches against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
+                <label class="toggle-title curated cursor-pointer" onclick="document.getElementById('cfg-search_only_curated').click()">Only use Curated Source</label>
+                <div class="toggle-note curated">Disables YouTube source discovery and only matches against the curated source list. This can be faster, but titles not covered by your list will remain unmatched.</div>
               </div>
               </div>
-              <div class="settings-toggle-row golden-row">
+              <div class="settings-toggle-row curated-row">
               <label class="toggle mt-2">
-                <input type="checkbox" id="cfg-refresh_golden_source_each_run">
+                <input type="checkbox" id="cfg-refresh_curated_source_each_run">
                 <span class="toggle-track"></span>
               </label>
               <div class="settings-toggle-content">
-                <label class="toggle-title golden cursor-pointer" onclick="document.getElementById('cfg-refresh_golden_source_each_run').click()">Refresh Golden Source before every run</label>
-                <div class="toggle-note golden">Refreshes the Golden Source list before each source-matching run.</div>
+                <label class="toggle-title curated cursor-pointer" onclick="document.getElementById('cfg-refresh_curated_source_each_run').click()">Refresh Curated Source before every run</label>
+                <div class="toggle-note curated">Refreshes the Curated Source list before each source-matching run.</div>
               </div>
               </div>
             </div>
@@ -565,7 +565,7 @@
       <div class="db-main-actions">
         <button class="btn btn-blue btn-sm" id="db-btn-scan" onclick="dbRunPass(1)">⟳ Scan Library</button>
         <button class="btn btn-purple btn-sm" id="db-btn-resolve" onclick="dbRunPass(2)">⚡ Find Sources</button>
-        <button class="btn btn-ghost btn-sm golden-btn" id="db-btn-golden" onclick="importGoldenSource()">★ Import Golden Source</button>
+        <button class="btn btn-ghost btn-sm curated-btn" id="db-btn-curated" onclick="importCuratedSource()">★ Import Curated Source</button>
         <button class="btn btn-green btn-sm" id="db-btn-download" onclick="dbDownloadApproved()" data-ui="actions.download_all_approved">↓ Download Approved Items</button>
         <button class="btn btn-ghost btn-sm" id="db-approve-all" onclick="bulkApprove()" data-ui="actions.approve_all_staged">✓ Approve Staged</button>
         <span class="run-pill" id="db-run-pill"><span class="run-dot"></span><span>Idle</span></span>
@@ -580,8 +580,8 @@
           <span class="filter-label">Source</span>
           <select class="filter-sel" onchange="filterBySourceState(this.value)" id="db-source-filter">
             <option value="">All source states</option>
-            <option value="GOLDEN">With Golden Source</option>
-            <option value="NO_GOLDEN">Without Golden Source</option>
+            <option value="CURATED">With Curated Source</option>
+            <option value="NO_CURATED">Without Curated Source</option>
             <option value="PLAYLIST">Playlist-selected</option>
             <option value="DIRECT">Direct-selected</option>
             <option value="PASTE">Pasted URL-selected</option>
@@ -624,7 +624,7 @@
           <col class="col-year">
           <col class="col-status">
           <col class="col-action">
-          <col class="col-golden-source">
+          <col class="col-curated-source">
           <col class="col-selected-source">
           <col class="col-updated">
           <col class="col-notes">
@@ -732,16 +732,16 @@
               <span class="pipeline-step-index find">Step 2</span>
               <span class="pipeline-step-title">Find Theme Sources</span>
             </div>
-            <div class="status-copy body-copy mb-8 text-red text-purple" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <strong>Missing</strong> item using the configured search logic. When a source is found, the item moves to <strong>Staged</strong> for manual review and <strong class="text-yellow">Approval</strong>. Items marked <strong class="text-muted2">Unmonitored</strong> or <strong class="text-red">Failed</strong> are ignored. Uses TMDB, YouTube, or Golden Source when configured.</div>
+            <div class="status-copy body-copy mb-8 text-red text-purple" data-ui="schedule.cards.pipeline_steps.step2.description">Searches for theme sources for each <strong>Missing</strong> item using the configured search logic. When a source is found, the item moves to <strong>Staged</strong> for manual review and <strong class="text-yellow">Approval</strong>. Items marked <strong class="text-muted2">Unmonitored</strong> or <strong class="text-red">Failed</strong> are ignored. Uses TMDB, YouTube, or Curated Source when configured.</div>
             <div class="schedule-step2-options">
-              <div class="pipeline-step-option golden">
+              <div class="pipeline-step-option curated">
                 <label class="toggle" style="transform:scale(.85)">
-                  <input type="checkbox" id="sched-only-golden" onchange="saveRunSchedule()">
+                  <input type="checkbox" id="sched-only-curated" onchange="saveRunSchedule()">
                   <span class="toggle-track"></span>
                 </label>
                 <div>
-                  <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step2.only_golden.title">Only use Golden Source</span>
-                  <div class="body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.only_golden.description">Use a curated Golden Source for tighter, faster, and more reliable source discovery.</div>
+                  <span class="pipeline-step-option-title" data-ui="schedule.cards.pipeline_steps.step2.only_curated.title">Only use Curated Source</span>
+                  <div class="body-copy compact" data-ui="schedule.cards.pipeline_steps.step2.only_curated.description">Use a curated Curated Source for tighter, faster, and more reliable source discovery.</div>
                 </div>
               </div>
               <div class="pipeline-step-option">
@@ -830,7 +830,7 @@
     <div class="card">
       <div class="task-section-head">
         <div class="card-title">Help Build the Curated Catalog</div>
-        <div class="task-section-subtitle">Export a submission-ready CSV of community-found themes for review. This export only includes items not already in the official Golden Source list and only contains TMDB ID, source URL, and start offset.</div>
+        <div class="task-section-subtitle">Export a submission-ready CSV of community-found themes for review. This export only includes items not already in the official Curated Source list and only contains TMDB ID, source URL, and start offset.</div>
       </div>
       <div class="task-grid task-wide" id="task-grid-export"></div>
     </div>
@@ -938,19 +938,19 @@
   </div>
 </div>
 
-<!-- ══════════════ GOLDEN SOURCE IMPORT MODAL ══════════════ -->
+<!-- ══════════════ CURATED SOURCE IMPORT MODAL ══════════════ -->
 <div class="modal-overlay" id="gs-modal">
   <div class="modal" style="max-width:520px;position:relative;padding:0">
     <div class="modal-header compact">
       <div class="icon-badge">★</div>
       <div class="modal-movie-info">
-        <div class="modal-movie-title" style="font-size:16px">Import Golden Source</div>
+        <div class="modal-movie-title" style="font-size:16px">Import Curated Source</div>
         <div class="modal-movie-meta text-muted" id="gs-modal-lib-label">—</div>
       </div>
     </div>
     <div class="modal-section-divider"></div>
     <div class="modal-section" style="padding-top:16px;padding-bottom:0">
-      <div class="modal-copy mb-16">Match your library against the curated Golden Source CSV using TMDB IDs. Only rows with a <code>tmdb_id</code> and <code>source_url</code> will be imported.</div>
+      <div class="modal-copy mb-16">Match your library against the curated Curated Source CSV using TMDB IDs. Only rows with a <code>tmdb_id</code> and <code>source_url</code> will be imported.</div>
 
       <div class="modal-info-card mb-16">
         <div class="toggle-card clickable" onclick="document.getElementById('gs-overwrite').click()">
@@ -978,8 +978,8 @@
       <div id="gs-result" class="surface-panel compact" style="margin-bottom:12px;background:var(--green-soft);color:var(--green);border-color:var(--green)"></div>
     </div>
     <div class="modal-footer" style="justify-content:space-between">
-      <button class="btn btn-ghost" onclick="closeGoldenSourceModal()">Cancel</button>
-      <button class="btn btn-amber" id="gs-confirm-btn" onclick="confirmGoldenSourceImport()">★ Import Now</button>
+      <button class="btn btn-ghost" onclick="closeCuratedSourceModal()">Cancel</button>
+      <button class="btn btn-amber" id="gs-confirm-btn" onclick="confirmCuratedSourceImport()">★ Import Now</button>
     </div>
   </div>
 </div>
@@ -995,7 +995,7 @@
     </div>
     <div class="modal-section-divider"></div>
     <div class="modal-section" style="padding-top:16px;padding-bottom:0">
-      <div class="modal-copy mb-16">Share your exported candidate CSV with the community for possible inclusion in the official Golden Source catalog. Submissions are reviewed manually before being approved.</div>
+      <div class="modal-copy mb-16">Share your exported candidate CSV with the community for possible inclusion in the official Curated Source catalog. Submissions are reviewed manually before being approved.</div>
       <div class="submission-steps mb-16">
         <div class="submission-step"><span class="submission-step-num">1</span> Export your candidate CSV from this page</div>
         <div class="submission-step"><span class="submission-step-num">2</span> Open the community submission page</div>
@@ -1062,22 +1062,22 @@
         <div class="search-method-grid" role="radiogroup" aria-labelledby="search-method-heading" aria-describedby="search-method-picker-help">
           <div class="sr-only" id="search-method-picker-help">Use arrow keys to move between search methods, then press Enter or Space to select one.</div>
           <div class="manual-methods" id="sm-primary-methods">
-            <label class="search-method-card golden-source" id="sm-card-golden" for="sm-radio-golden_source" aria-disabled="false">
-              <input type="radio" class="sr-only search-method-radio" id="sm-radio-golden_source" name="search-method-picker" value="golden_source" onkeydown="searchMethodKeydown(event, 'golden_source')" onchange="selectSearchMethod('golden_source', event)">
+            <label class="search-method-card curated-source" id="sm-card-curated" for="sm-radio-curated_source" aria-disabled="false">
+              <input type="radio" class="sr-only search-method-radio" id="sm-radio-curated_source" name="search-method-picker" value="curated_source" onkeydown="searchMethodKeydown(event, 'curated_source')" onchange="selectSearchMethod('curated_source', event)">
               <div class="sm-card-main">
                 <div class="sm-card-icon">★</div>
                 <div class="sm-card-copy">
                   <div class="sm-card-topline">
-                    <div class="sm-card-title">Golden Source</div>
+                    <div class="sm-card-title">Curated Source</div>
                     <div class="sm-card-state">Selected Method</div>
-                    <div class="sm-card-badge recommended" id="sm-golden-recommended">Recommended</div>
+                    <div class="sm-card-badge recommended" id="sm-curated-recommended">Recommended</div>
                   </div>
-                  <div class="sm-card-desc" id="sm-golden-desc">Use the curated source already linked to this item.</div>
-                  <div class="sm-card-submeta"><span class="ui-pill sm-card-chip" id="sm-golden-offset">Offset —</span><span id="sm-golden-meta">Curated match • starts at 0:00</span></div>
+                  <div class="sm-card-desc" id="sm-curated-desc">Use the curated source already linked to this item.</div>
+                  <div class="sm-card-submeta"><span class="ui-pill sm-card-chip" id="sm-curated-offset">Offset —</span><span id="sm-curated-meta">Curated match • starts at 0:00</span></div>
                 </div>
               </div>
               <div class="sm-card-actions">
-                <div class="sm-card-first" id="sm-first-golden_source"></div>
+                <div class="sm-card-first" id="sm-first-curated_source"></div>
               </div>
             </label>
             <label class="search-method-card active" id="sm-card-playlist" for="sm-radio-playlist">
@@ -1499,7 +1499,7 @@
       <div style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
         <div style="font-size:11px;font-weight:700;color:var(--purple);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Step 2</div>
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">⚡ Find Sources</div>
-        <div style="font-size:12px;color:var(--text2)">Searches for theme sources for Missing items using TMDB, YouTube, or Golden Source. Matches move to Staged.</div>
+        <div style="font-size:12px;color:var(--text2)">Searches for theme sources for Missing items using TMDB, YouTube, or Curated Source. Matches move to Staged.</div>
       </div>
       <div style="padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
         <div style="font-size:11px;font-weight:700;color:var(--green);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Step 3</div>

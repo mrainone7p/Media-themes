@@ -199,9 +199,9 @@ def test_tmdb():
     return jsonify(services.test_tmdb_payload(request.get_json(silent=True) or {}))
 
 
-@app.route("/api/test/golden-source", methods=["POST"])
-def test_golden_source():
-    return jsonify(services.test_golden_source_payload(request.get_json(silent=True) or {}))
+@app.route("/api/test/curated-source", methods=["POST"])
+def test_curated_source():
+    return jsonify(services.test_curated_source_payload(request.get_json(silent=True) or {}))
 
 
 @app.route("/api/cookies")
@@ -288,9 +288,9 @@ def clear_selected_sources():
     return jsonify(payload), status
 
 
-@app.route("/api/golden-source/import", methods=["POST"])
-def import_golden_source():
-    payload, status = ledger_mod.golden_source_import_summary(request.get_json(silent=True) or {})
+@app.route("/api/curated-source/import", methods=["POST"])
+def import_curated_source():
+    payload, status = ledger_mod.curated_source_import_summary(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 
@@ -422,9 +422,9 @@ def tasks_history():
     return jsonify(payload)
 
 
-@app.route("/api/tasks/export-golden-source", methods=["POST"])
-def export_golden_source_csv():
-    payload, status = tasks.export_golden_source_csv_payload(request.get_json(silent=True) or {})
+@app.route("/api/tasks/export-curated-source", methods=["POST"])
+def export_curated_source_csv():
+    payload, status = tasks.export_curated_source_csv_payload(request.get_json(silent=True) or {})
     return jsonify(payload), status
 
 

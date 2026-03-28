@@ -108,34 +108,34 @@ class SaveLedgerRowUpdatesTests(unittest.TestCase):
         self.assertEqual('APPROVED', error['attempted_status'])
         self.assertEqual('AVAILABLE', row['status'])
 
-    def test_url_matching_golden_source_keeps_golden_origin(self):
+    def test_url_matching_curated_source_keeps_curated_origin(self):
         row = {
             'rating_key': '1',
             'title': 'Example',
             'status': 'STAGED',
             'url': '',
-            'golden_source_url': 'https://example.com/golden',
+            'curated_source_url': 'https://example.com/curated',
             'source_origin': 'unknown',
             'theme_exists': '0',
             'notes': '',
         }
 
         saved_row, error = logic.save_ledger_row_updates(row, {
-            'url': 'https://example.com/golden',
+            'url': 'https://example.com/curated',
             'status': 'APPROVED',
         })
 
         self.assertIs(saved_row, row)
         self.assertIsNone(error)
-        self.assertEqual('golden_source', row['source_origin'])
+        self.assertEqual('curated_source', row['source_origin'])
 
-    def test_non_golden_manual_url_stays_manual_origin(self):
+    def test_non_curated_manual_url_stays_manual_origin(self):
         row = {
             'rating_key': '1',
             'title': 'Example',
             'status': 'STAGED',
             'url': '',
-            'golden_source_url': 'https://example.com/golden',
+            'curated_source_url': 'https://example.com/curated',
             'source_origin': 'unknown',
             'theme_exists': '0',
             'notes': '',

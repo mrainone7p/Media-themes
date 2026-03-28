@@ -29,22 +29,22 @@ const TASK_CARD_CONFIG={
   ],
   exportData:[
     {
-      title:'★ Export Golden Source CSV',
-      description:'Exports rows with source URLs only in Golden Source format. Tooltips explain each field.',
+      title:'★ Export Curated Source CSV',
+      description:'Exports rows with source URLs only in Curated Source format. Tooltips explain each field.',
       controlType:'selectAndButton',
       selectId:'task-lib-export',
       selectClass:'filter-sel',
       selectTitle:'Library scope for this export',
       buttonLabel:'Export',
       buttonClass:'btn btn-amber btn-sm',
-      buttonTitle:'Download a curated Golden Source-format CSV',
-      handler:'taskExportGoldenSource()',
-      cardClass:'golden-emphasis task-wide',
+      buttonTitle:'Download a curated Curated Source-format CSV',
+      handler:'taskExportCuratedSource()',
+      cardClass:'curated-emphasis task-wide',
       extraHtml:'<div class="field-help compact" title="tmdb_id,title,year,source_url,start_offset,updated_at,notes">Fields: tmdb_id · title · year · source_url · start_offset · updated_at · notes</div>'
     },
     {
       title:'Community Candidate Export',
-      description:'Export themes not yet in the official Golden Source list for community submission.',
+      description:'Export themes not yet in the official Curated Source list for community submission.',
       controlType:'selectAndTwoButtons',
       selectId:'task-lib-candidate',
       selectClass:'filter-sel',
@@ -245,11 +245,11 @@ async function runTaskAction({
   if(reloadTasksPage) await loadTasksPage();
   return {ok:true,data,response};
 }
-async function taskExportGoldenSource(){
+async function taskExportCuratedSource(){
   const lib=taskLibValue('task-lib-export');
   if(!lib) return toast('Select a library first','err');
   await runTaskAction({
-    url:'/api/tasks/export-golden-source',
+    url:'/api/tasks/export-curated-source',
     body:{library:lib==='__all__'?'':lib},
     successMessage:(d)=>`Exported ${d.rows_exported} rows`,
     failureFallback:'Export failed',

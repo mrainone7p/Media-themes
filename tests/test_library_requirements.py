@@ -83,7 +83,7 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
     def test_search_method_picker_uses_radiogroup_markup(self):
         self.assertIn('class="search-method-grid" role="radiogroup"', self.template_source)
         for snippet in (
-            'type="radio" class="sr-only search-method-radio" id="sm-radio-golden_source"',
+            'type="radio" class="sr-only search-method-radio" id="sm-radio-curated_source"',
             'type="radio" class="sr-only search-method-radio" id="sm-radio-playlist"',
             'type="radio" class="sr-only search-method-radio" id="sm-radio-direct"',
             'type="radio" class="sr-only search-method-radio" id="sm-radio-custom"',
@@ -95,9 +95,9 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
         library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
         self.assertIn("el.style.display=active?'flex':'none';", library_source)
 
-    def test_golden_source_card_stays_first_and_uses_minimal_unavailable_copy(self):
+    def test_curated_source_card_stays_first_and_uses_minimal_unavailable_copy(self):
         library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
-        self.assertIn("wrap.prepend(goldenCard);", library_source)
+        self.assertIn("wrap.prepend(curatedCard);", library_source)
         self.assertIn("'No curated source available yet.'", library_source)
         self.assertNotIn("choose another method to search alternatives", library_source)
 

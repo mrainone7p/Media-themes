@@ -387,7 +387,7 @@ async function loadRunPage(){
   document.getElementById('sched-step2').checked = cfg.schedule_step2 !== false;
   document.getElementById('sched-step3').checked = cfg.schedule_step3 !== false;
   document.getElementById('sched-autoapprove').checked = !!cfg.auto_approve;
-  document.getElementById('sched-only-golden').checked = !!cfg.search_only_golden;
+  document.getElementById('sched-only-curated').checked = !!cfg.search_only_curated;
   applyScheduleEnabledState();
   refreshSchedulerNextRunModule(buildDashboardScheduleHealth(cfg, _selectedRunLibraries()));
   _refreshScopedRunLabels();
@@ -434,7 +434,7 @@ async function saveRunSchedule(){
     cfg.schedule_step3=document.getElementById('sched-step3').checked;
     cfg.schedule_test_limit=parseInt(document.getElementById('run-schedule-limit').value||'0',10)||0;
     cfg.auto_approve=document.getElementById('sched-autoapprove').checked;
-    cfg.search_only_golden=document.getElementById('sched-only-golden').checked;
+    cfg.search_only_curated=document.getElementById('sched-only-curated').checked;
     const {ok,data}=await postJson('/api/config',cfg);
     if(ok){
       rememberConfigPatch(cfg);

@@ -6,19 +6,19 @@ import re
 import time
 from pathlib import Path
 
-from shared.golden_source_csv import parse_golden_source_csv_rows
+from shared.curated_source_csv import parse_curated_source_csv_rows
 from shared.storage import (
     LEDGER_HEADERS,
-    clear_golden_source_import_record,
+    clear_curated_source_import_record,
     clear_selected_source_record,
     ffprobe_duration,
     infer_selected_source_contract,
     ledger_path_for,
     load_ledger_rows as load_ledger,
     now_str,
-    read_golden_source_text,
+    read_curated_source_text,
     save_ledger_rows as save_ledger,
-    stamp_golden_source_import_record,
+    stamp_curated_source_import_record,
     stamp_selected_source_record,
     set_selected_source_contract,
     status_after_clearing_source,
@@ -28,10 +28,10 @@ import web.integrations as integrations
 from web.services import load_config
 
 LOGS_DIR = Path("/app/logs")
-GOLDEN_CACHE_DIR = LOGS_DIR / "golden_source_cache"
+CURATED_CACHE_DIR = LOGS_DIR / "curated_source_cache"
 EDITABLE_LEDGER_FIELDS = set(LEDGER_HEADERS) - {"folder", "rating_key"}
 
-for path in (GOLDEN_CACHE_DIR,):
+for path in (CURATED_CACHE_DIR,):
     path.mkdir(parents=True, exist_ok=True)
 
 
@@ -119,10 +119,10 @@ def save_ledger_row_updates(row: dict, updates: dict, *, default_notes: str | No
 
     if "url" in updates:
         updated_url = str(updates.get("url") or "").strip()
-        golden_url = str(row.get("golden_source_url", "") or "").strip()
+        curated_url = str(row.get("curated_source_url", "") or "").strip()
         selected_method = str(updates.get("selected_source_method", "") or "").strip().lower()
-        if updated_url and golden_url and updated_url == golden_url:
-            row["source_origin"] = "golden_source"
+        if updated_url and curated_url and updated_url == curated_url:
+            row["source_origin"] = "curated_source"
         elif updated_url and selected_method in {"playlist", "direct"}:
             row["source_origin"] = f"youtube_{selected_method}"
         else:
@@ -258,20 +258,20 @@ def theme_file_path(row: dict, cfg: dict, *, library_type: str = "") -> Path:
     return Path(theme_target_folder(row, library_type=library_type)) / cfg.get("theme_filename", "theme.mp3")
 
 
-def parse_golden_source_csv(text: str) -> list[dict]:
-    return parse_golden_source_csv_rows(text)
+def parse_curated_source_csv(text: str) -> list[dict]:
+    return parse_curated_source_csv_rows(text)
 
 
-def fetch_golden_source_catalog(url: str, *, force_refresh: bool = False, cache_ttl_sec: int = 1800):
-    normalized, text, fetch_ms, fetch_mode = read_golden_source_text(
+def fetch_curated_source_catalog(url: str, *, force_refresh: bool = False, cache_ttl_sec: int = 1800):
+    normalized, text, fetch_ms, fetch_mode = read_curated_source_text(
         url,
-        cache_dir=GOLDEN_CACHE_DIR,
+        cache_dir=CURATED_CACHE_DIR,
         force_refresh=force_refresh,
         cache_ttl_sec=cache_ttl_sec,
         allow_local_file=True,
         cache_prefix="catalog_",
     )
-    return normalized, parse_golden_source_csv(text), fetch_ms, fetch_mode
+    return normalized, parse_curated_source_csv(text), fetch_ms, fetch_mode
 
 
 def resolve_row_tmdb_id(row: dict, cfg: dict) -> str:
@@ -287,31 +287,31 @@ def resolve_row_tmdb_id(row: dict, cfg: dict) -> str:
     return str(data.get("id", "") or "").strip()
 
 
-def golden_source_import_summary(data: dict):
+def curated_source_import_summary(data: dict):
     library = data.get("library", "")
     if not library:
         return {"ok": False, "error": "Missing library"}, 400
     cfg = load_config()
-    source_url = data.get("url") or cfg.get("golden_source_url", "")
+    source_url = data.get("url") or cfg.get("curated_source_url", "")
     overwrite = _parse_bool(data.get("overwrite_existing", False))
     auto_approve = _parse_bool(data.get("auto_approve", False))
-    force_refresh = _parse_bool(data.get("force_refresh", cfg.get("refresh_golden_source_each_run", True)))
-    cache_ttl_sec = int(cfg.get("golden_source_cache_ttl_sec", 1800) or 1800)
-    resolve_missing_tmdb = _parse_bool(data.get("resolve_missing_tmdb", cfg.get("golden_source_resolve_tmdb", False)))
+    force_refresh = _parse_bool(data.get("force_refresh", cfg.get("refresh_curated_source_each_run", True)))
+    cache_ttl_sec = int(cfg.get("curated_source_cache_ttl_sec", 1800) or 1800)
+    resolve_missing_tmdb = _parse_bool(data.get("resolve_missing_tmdb", cfg.get("curated_source_resolve_tmdb", False)))
     started = time.perf_counter()
 
     try:
-        normalized_url, catalog_rows, fetch_ms, fetch_mode = fetch_golden_source_catalog(
+        normalized_url, catalog_rows, fetch_ms, fetch_mode = fetch_curated_source_catalog(
             source_url,
             force_refresh=force_refresh,
             cache_ttl_sec=cache_ttl_sec,
         )
     except Exception as exc:
-        return {"ok": False, "error": f"Golden Source fetch failed: {str(exc)[:180]}"}, 400
+        return {"ok": False, "error": f"Curated Source fetch failed: {str(exc)[:180]}"}, 400
 
     catalog = {str(row.get("tmdb_id", "")).strip(): row for row in catalog_rows if str(row.get("tmdb_id", "")).strip()}
     if not catalog:
-        return {"ok": False, "error": "Golden Source CSV had no usable rows"}, 400
+        return {"ok": False, "error": "Curated Source CSV had no usable rows"}, 400
 
     def norm_title(value):
         value = re.sub(r"[^a-z0-9]+", " ", str(value or "").lower())
@@ -363,13 +363,13 @@ def golden_source_import_summary(data: dict):
         incoming_url = str(match.get("source_url", "") or "").strip()
         incoming_offset = str(match.get("start_offset", "0") or "0")
         row["tmdb_id"] = tmdb_id or str(match.get("tmdb_id", "") or "").strip()
-        row["golden_source_url"] = incoming_url
-        row["golden_source_offset"] = incoming_offset
+        row["curated_source_url"] = incoming_url
+        row["curated_source_offset"] = incoming_offset
         row["end_offset"] = match.get("end_offset", "0") or "0"
         if incoming_url:
-            stamp_golden_source_import_record(row, imported_at=now)
+            stamp_curated_source_import_record(row, imported_at=now)
         else:
-            clear_golden_source_import_record(row)
+            clear_curated_source_import_record(row)
         if existing_url and not overwrite:
             skipped_existing += 1
             continue
@@ -377,8 +377,8 @@ def golden_source_import_summary(data: dict):
         if overwrite or not existing_url:
             row["url"] = incoming_url
             row["start_offset"] = incoming_offset
-            row["source_origin"] = "golden_source" if incoming_url else "unknown"
-            set_selected_source_contract(row, kind="golden" if incoming_url else "", method="golden_source" if incoming_url else "")
+            row["source_origin"] = "curated_source" if incoming_url else "unknown"
+            set_selected_source_contract(row, kind="curated" if incoming_url else "", method="curated_source" if incoming_url else "")
             if incoming_url:
                 stamp_selected_source_record(row, recorded_at=now)
             else:
@@ -391,8 +391,8 @@ def golden_source_import_summary(data: dict):
             row["status"] = "APPROVED" if auto_approve else "STAGED"
         row["last_updated"] = now
         row["notes"] = (
-            f"Imported from Golden Source ({Path(normalized_url).name})"
-            if incoming_url else f"Golden Source cleared source URL ({Path(normalized_url).name})"
+            f"Imported from Curated Source ({Path(normalized_url).name})"
+            if incoming_url else f"Curated Source cleared source URL ({Path(normalized_url).name})"
         )
         imported += 1
 

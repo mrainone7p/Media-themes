@@ -18,7 +18,7 @@ import yaml
 from shared.logging_utils import get_project_logger
 from shared.storage import CONFIG_PATH, get_db_path, ledger_path_for, load_ledger_rows as load_ledger, now_str, save_ledger_rows as save_ledger
 import web.integrations as integrations
-from web.ledger import clear_source_urls_for_rows, fetch_golden_source_catalog, get_media_roots
+from web.ledger import clear_source_urls_for_rows, fetch_curated_source_catalog, get_media_roots
 from web.services import (
     CONFIG_DEFAULTS,
     RUNS_DIR,
@@ -337,7 +337,7 @@ def api_health_payload(mode: str = "lite") -> dict:
             "plex_url": (cfg.get("plex_url") or "").strip(),
             "plex_token": bool((cfg.get("plex_token") or "").strip()),
             "tmdb_key": bool((cfg.get("tmdb_api_key") or "").strip()),
-            "golden_source_url": (cfg.get("golden_source_url") or "").strip(),
+            "curated_source_url": (cfg.get("curated_source_url") or "").strip(),
             "media_roots": list(get_media_roots(cfg)),
             "libraries": [{"name": lib.get("name"), "type": lib.get("type"), "enabled": lib.get("enabled", True)} for lib in (cfg.get("libraries") or [])],
             "schedule_enabled": bool(cfg.get("schedule_enabled", False)),
@@ -381,17 +381,17 @@ def api_health_payload(mode: str = "lite") -> dict:
         except Exception as exc:
             result["tmdb"] = {"state": "error", "label": "API error", "detail": str(exc)[:100]}
 
-    golden_source_url = (cfg.get("golden_source_url") or "").strip()
-    if not golden_source_url:
-        result["golden_source"] = {"state": "off", "label": "Not configured"}
+    curated_source_url = (cfg.get("curated_source_url") or "").strip()
+    if not curated_source_url:
+        result["curated_source"] = {"state": "off", "label": "Not configured"}
     elif resolved_mode != "full":
-        result["golden_source"] = _health_validation_state("Ready to validate", "Click Validate to check the Golden Source feed.")
+        result["curated_source"] = _health_validation_state("Ready to validate", "Click Validate to check the Curated Source feed.")
     else:
         try:
-            _, rows, _, _ = fetch_golden_source_catalog(golden_source_url)
-            result["golden_source"] = {"state": "ok", "label": f"Loaded: {len(rows):,} rows"} if rows else {"state": "warning", "label": "Loaded: 0 rows", "detail": "No usable rows found"}
+            _, rows, _, _ = fetch_curated_source_catalog(curated_source_url)
+            result["curated_source"] = {"state": "ok", "label": f"Loaded: {len(rows):,} rows"} if rows else {"state": "warning", "label": "Loaded: 0 rows", "detail": "No usable rows found"}
         except Exception as exc:
-            result["golden_source"] = {"state": "error", "label": "Load failed", "detail": str(exc)[:100]}
+            result["curated_source"] = {"state": "error", "label": "Load failed", "detail": str(exc)[:100]}
 
     result["toolchain"] = (
         integrations.toolchain_status()
@@ -491,12 +491,12 @@ def _export_ledger_csv(data, *, prefix, task_label, fieldnames, row_filter, row_
     return {"ok": True, "rows_exported": len(output_rows), "file": filename, "download_url": f"/api/tasks/download/{filename}"}, 200
 
 
-def export_golden_source_csv_payload(data: dict):
+def export_curated_source_csv_payload(data: dict):
     current_time = now_str()
     return _export_ledger_csv(
         data,
-        prefix="golden_source_export",
-        task_label="Export Golden Source CSV",
+        prefix="curated_source_export",
+        task_label="Export Curated Source CSV",
         fieldnames=["tmdb_id", "title", "year", "source_url", "start_offset", "updated_at", "notes"],
         row_filter=lambda r: bool(str(r.get("url", "") or "").strip()),
         row_mapper=lambda r: {
@@ -520,7 +520,7 @@ def export_candidate_csv_payload(data: dict):
         row_filter=lambda r: bool(
             str(r.get("url", "") or "").strip()
             and str(r.get("tmdb_id", "") or "").strip()
-            and not str(r.get("golden_source_url", "") or "").strip()
+            and not str(r.get("curated_source_url", "") or "").strip()
         ),
         row_mapper=lambda r: {
             "tmdb_id": str(r.get("tmdb_id", "") or "").strip(),

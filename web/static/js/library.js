@@ -62,7 +62,7 @@ const TABLE_COLUMNS=[
   {id:'year',label:'Year',width:'7%',minWidth:'72px',align:'left',sortable:true,renderCell:(row)=>`<td><span class="db-cell-subtle">${_escapeHtml(row.year||'')}</span></td>`},
   {id:'status',label:'Status',width:'12%',minWidth:'140px',align:'left',sortable:true,renderCell:(row)=>StatusBadgeCell(row)},
   {id:'action',label:'Action',width:'136px',minWidth:'136px',align:'left',sortable:false,renderCell:(row)=>ActionCell(row)},
-  {id:'golden_state',label:'Golden Source',width:'14%',minWidth:'170px',align:'left',sortable:true,renderCell:(row)=>SourceBadgeCell(row,'golden')},
+  {id:'curated_state',label:'Curated Source',width:'14%',minWidth:'170px',align:'left',sortable:true,renderCell:(row)=>SourceBadgeCell(row,'curated')},
   {id:'custom_state',label:'Selected Source',width:'18%',minWidth:'220px',align:'left',sortable:true,renderCell:(row)=>SourceBadgeCell(row,'selected')},
   {id:'last_updated',label:'Updated',width:'11%',minWidth:'130px',align:'left',sortable:true,renderCell:(row)=>UpdatedCell(row)},
   {id:'notes',label:'Notes',width:'14%',minWidth:'180px',align:'left',sortable:true,renderCell:(row)=>NotesCell(row)},
@@ -92,19 +92,19 @@ function _hasSourceUrl(row){
   return !!String(row?.url||'').trim();
 }
 
-function _rowHasGoldenSource(row){
-  return !!String(row?.golden_source_url||'').trim();
+function _rowHasCuratedSource(row){
+  return !!String(row?.curated_source_url||'').trim();
 }
 
-function _rowUsesGoldenSource(row){
+function _rowUsesCuratedSource(row){
   const sourceUrl=String(row?.url||'').trim();
-  const goldenUrl=String(row?.golden_source_url||'').trim();
-  return !!sourceUrl && !!goldenUrl && sourceUrl===goldenUrl;
+  const curatedUrl=String(row?.curated_source_url||'').trim();
+  return !!sourceUrl && !!curatedUrl && sourceUrl===curatedUrl;
 }
 
 function _normalizeSourceKind(value){
   const normalized=String(value||'').trim().toLowerCase();
-  return normalized==='golden' || normalized==='custom' ? normalized : '';
+  return normalized==='curated' || normalized==='custom' ? normalized : '';
 }
 
 function _normalizeSourceMethod(value){
@@ -114,7 +114,7 @@ function _normalizeSourceMethod(value){
 function _legacySourceMethodFromOrigin(origin=''){
   const normalized=String(origin||'').trim().toLowerCase();
   if(!normalized) return '';
-  if(normalized.startsWith('golden_source')) return 'golden_source';
+  if(normalized.startsWith('curated_source')) return 'curated_source';
   if(normalized.includes('playlist')) return 'playlist';
   if(normalized.includes('direct')) return 'direct';
   if(normalized==='manual' || normalized==='custom') return 'manual';
@@ -122,12 +122,12 @@ function _legacySourceMethodFromOrigin(origin=''){
 }
 
 function _sourceKindLabel(kind=''){
-  return kind==='golden' ? 'Golden' : kind==='custom' ? 'Custom' : 'Unknown';
+  return kind==='curated' ? 'Curated' : kind==='custom' ? 'Custom' : 'Unknown';
 }
 
 function _sourceMethodLabel(method=''){
   const map={
-    golden_source:'Golden Source',
+    curated_source:'Curated Source',
     playlist:'Playlist',
     direct:'Direct',
     custom:'Custom',
@@ -140,7 +140,7 @@ function _sourceMethodLabel(method=''){
 
 function _sourceStateClass(kind='', method=''){
   const normalized=_normalizeSourceMethod(method);
-  if(normalized==='golden_source') return 'is-golden';
+  if(normalized==='curated_source') return 'is-curated';
   if(normalized==='playlist') return 'is-playlist';
   if(normalized==='direct') return 'is-direct';
   if(normalized==='custom' || normalized==='paste' || normalized==='manual') return 'is-manual';
@@ -153,7 +153,7 @@ function _sourceStatePillLabel(typeLabel='', statusLabel=''){
 }
 
 function _sourceKindClass(kind=''){
-  if(kind==='golden') return 'is-golden';
+  if(kind==='curated') return 'is-curated';
   if(kind==='custom') return 'is-custom';
   return 'is-unknown';
 }
@@ -165,10 +165,10 @@ function _selectedSourceContract(row={}){
   let method=_normalizeSourceMethod(row?.selected_source_method);
   if(!method) method=_legacySourceMethodFromOrigin(row?.source_origin);
   if(!kind){
-    if(method==='golden_source' || _rowUsesGoldenSource(row)) kind='golden';
+    if(method==='curated_source' || _rowUsesCuratedSource(row)) kind='curated';
     else kind='custom';
   }
-  if(!method) method=kind==='golden' ? 'golden_source' : 'manual';
+  if(!method) method=kind==='curated' ? 'curated_source' : 'manual';
   return {kind, method, url};
 }
 
@@ -183,21 +183,21 @@ function _localSourceContract(row={}){
   }
   if(!kind){
     const selected=_selectedSourceContract(row);
-    kind=selected.kind || (method==='golden_source' ? 'golden' : 'custom');
+    kind=selected.kind || (method==='curated_source' ? 'curated' : 'custom');
   }
   return {kind, method, url};
 }
 
-function _goldenSourceState(row={}){
-  const hasGolden=_rowHasGoldenSource(row);
-  if(!hasGolden) return {key:'not_available', label:'Not Available', className:'is-unknown', detail:'No golden source saved', chips:[]};
-  return {key:'available', label:'Identified', className:'is-golden', detail:'Golden source identified', chips:[]};
+function _curatedSourceState(row={}){
+  const hasCurated=_rowHasCuratedSource(row);
+  if(!hasCurated) return {key:'not_available', label:'Not Available', className:'is-unknown', detail:'No curated source saved', chips:[]};
+  return {key:'available', label:'Identified', className:'is-curated', detail:'Curated source identified', chips:[]};
 }
 
 function _selectedSourceFilterKey(row={}){
   const selected=_selectedSourceContract(row);
   if(!selected.url) return 'none';
-  if(selected.kind==='golden' || selected.method==='golden_source') return 'golden';
+  if(selected.kind==='curated' || selected.method==='curated_source') return 'curated';
   if(selected.method==='playlist') return 'playlist';
   if(selected.method==='direct') return 'direct';
   if(selected.method==='paste') return 'paste';
@@ -210,7 +210,7 @@ function _selectedSourceLabel(row={}){
   const filterKey=_selectedSourceFilterKey(row);
   if(!selected.url) return '—';
   const labelMap={
-    golden:'Golden Source',
+    curated:'Curated Source',
     playlist:'Playlist',
     direct:'Direct',
     paste:'Custom',
@@ -438,9 +438,9 @@ const _sharedTrimEditorVariants={
     previewHelper:'Preview the selected source and confirm the saved offset before saving.',
     controlsHelper:'Set the saved offset start time or jump to the current playback time.',
     summaryHelper:'Review the saved offset and resulting theme length before saving.',
-    extraPreviewHtml:`<div class="surface-panel compact hidden" id="se-golden-error" style="margin-top:10px">
+    extraPreviewHtml:`<div class="surface-panel compact hidden" id="se-curated-error" style="margin-top:10px">
           <div class="section-label" style="margin-bottom:6px">Curated source needs attention</div>
-          <div class="body-copy compact" id="se-golden-error-msg" style="margin-bottom:10px"></div>
+          <div class="body-copy compact" id="se-curated-error-msg" style="margin-bottom:10px"></div>
           <div class="modal-actions-row" style="gap:8px;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" type="button" onclick="seLoadPreview()">↺ Retry Preview</button>
             <button class="btn btn-ghost btn-sm" type="button" onclick="_focusSourceEditorUrl()">✎ Paste / Edit URL</button>
@@ -661,18 +661,18 @@ function _sortVal(row,col){
   if(col==='year') return Number(row.year||0);
   if(col==='start_offset') return parseTrim(row.start_offset||'0');
   if(col==='last_updated') return Date.parse((row.last_updated||'').replace(' ','T'))||0;
-  if(col==='golden_source_url'){
-    const url=String(row.golden_source_url||'').trim().toLowerCase();
+  if(col==='curated_source_url'){
+    const url=String(row.curated_source_url||'').trim().toLowerCase();
     return [url?1:0,url];
   }
-  if(col==='golden_state'){
-    const state=_goldenSourceState(row);
+  if(col==='curated_state'){
+    const state=_curatedSourceState(row);
     const rank={not_available:0,available:1,downloaded:2};
     return [rank[state.key] ?? 0, state.label.toLowerCase()];
   }
   if(col==='custom_state'){
     const state=_customSourceState(row);
-    const rank={none:0,manual:1,paste:2,direct:3,playlist:4,golden:5};
+    const rank={none:0,manual:1,paste:2,direct:3,playlist:4,curated:5};
     return [rank[state.key] ?? 0, `${state.typeLabel} ${state.statusLabel}`.toLowerCase()];
   }
   if(col==='source_origin') return (row.source_origin||'').toString().toLowerCase();
@@ -690,11 +690,11 @@ function filterTable(){
   renderChips();
   _filtered=_rows.filter(r=>{
     if(st&&r.status!==st) return false;
-    const hasGolden=!!String(r.golden_source_url||'').trim();
+    const hasCurated=!!String(r.curated_source_url||'').trim();
     const selectedFilterKey=_selectedSourceFilterKey(r);
     const hasLocal=_hasLocalTheme(r);
-    if(sourceFilter==='GOLDEN' && !hasGolden) return false;
-    if(sourceFilter==='NO_GOLDEN' && hasGolden) return false;
+    if(sourceFilter==='CURATED' && !hasCurated) return false;
+    if(sourceFilter==='NO_CURATED' && hasCurated) return false;
     if(sourceFilter==='PLAYLIST' && selectedFilterKey!=='playlist') return false;
     if(sourceFilter==='DIRECT' && selectedFilterKey!=='direct') return false;
     if(sourceFilter==='PASTE' && selectedFilterKey!=='paste') return false;
@@ -702,12 +702,12 @@ function filterTable(){
     if(sourceFilter==='LOCAL' && !hasLocal) return false;
     if(sourceFilter==='NO_LOCAL' && hasLocal) return false;
     if(actionFilter && rowActionType(r)!==actionFilter) return false;
-    const haystack=[r.title||'',r.plex_title||'',r.year||'',r.url||'',r.golden_source_url||'',r.notes||'',r.status||''].join(' ').toLowerCase();
+    const haystack=[r.title||'',r.plex_title||'',r.year||'',r.url||'',r.curated_source_url||'',r.notes||'',r.status||''].join(' ').toLowerCase();
     if(q&&!haystack.includes(q)) return false;
     return true;
   });
   _filtered.sort((a,b)=>{
-    if(_sortCol==='golden_source_url' || _sortCol==='golden_state' || _sortCol==='custom_state'){
+    if(_sortCol==='curated_source_url' || _sortCol==='curated_state' || _sortCol==='custom_state'){
       const [ap,au]=_sortVal(a,_sortCol);
       const [bp,bu]=_sortVal(b,_sortCol);
       if(ap!==bp) return (ap-bp)*_sortDir;
@@ -851,9 +851,9 @@ function ActionCell(row){
 }
 
 function SourceBadgeCell(row, type='selected'){
-  if(type==='golden'){
-    const goldenState=_goldenSourceState(row);
-    return `<td>${_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)}</td>`;
+  if(type==='curated'){
+    const curatedState=_curatedSourceState(row);
+    return `<td>${_renderSourceStateCell('', _renderSourceStatePill(curatedState.label, curatedState.className, curatedState.detail), '', curatedState.chips)}</td>`;
   }
   const customState=_customSourceState(row);
   return `<td>${_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.pillLabel), '', customState.chips)}</td>`;
@@ -1316,9 +1316,9 @@ async function dbDownloadApproved(){
 }
 
 
-async function importGoldenSource(){
+async function importCuratedSource(){
   if(!_activeLib){ toast('Select a library first','info'); return; }
-  openGoldenSourceModal(_activeLib);
+  openCuratedSourceModal(_activeLib);
 }
 
 async function downloadNow(rk, title, lib){
@@ -1581,8 +1581,8 @@ async function confirmDelete(){
 
 
 // === MODAL HANDLING ===
-// ── Golden Source Modal ───────────────────────────────────────────────────────
-function openGoldenSourceModal(lib){
+// ── Curated Source Modal ───────────────────────────────────────────────────────
+function openCuratedSourceModal(lib){
   document.getElementById('gs-modal-lib-label').textContent = `Library: ${lib}`;
   document.getElementById('gs-overwrite').checked = false;
   document.getElementById('gs-approve').checked = false;
@@ -1592,19 +1592,19 @@ function openGoldenSourceModal(lib){
   document.getElementById('gs-confirm-btn').textContent = '★ Import Now';
   openModal('gs-modal');
 }
-function closeGoldenSourceModal(){
+function closeCuratedSourceModal(){
   closeModal('gs-modal');
 }
-async function confirmGoldenSourceImport(){
+async function confirmCuratedSourceImport(){
   if(!_activeLib) return;
   const overwrite = document.getElementById('gs-overwrite').checked;
   const autoApprove = document.getElementById('gs-approve').checked;
   const btn = document.getElementById('gs-confirm-btn');
-  const dbBtn = document.getElementById('db-btn-golden');
+  const dbBtn = document.getElementById('db-btn-curated');
   btn.disabled = true; btn.textContent = 'Importing…';
   if(dbBtn){ dbBtn.disabled = true; dbBtn.textContent = 'Importing…'; }
   try{
-    const r = await fetch('/api/golden-source/import',{
+    const r = await fetch('/api/curated-source/import',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({library:_activeLib, overwrite_existing:overwrite, auto_approve:autoApprove})
     });
@@ -1619,11 +1619,11 @@ async function confirmGoldenSourceImport(){
     res.style.cssText = 'display:block;padding:10px 12px;border-radius:8px;font-size:12px;font-family:var(--mono);margin-bottom:12px;background:var(--green-soft);color:var(--green);border:1px solid var(--green)';
     res.textContent = `✓ Imported ${data.imported} · Kept ${data.skipped_existing} existing · ${data.no_match} unmatched · ${data.fetch_ms||0}ms fetch`;
     btn.textContent = '✓ Done'; btn.disabled = true;
-    toast(`Golden Source: ${data.imported} imported · ${data.skipped_existing} kept · ${data.no_match} unmatched`,'ok');
+    toast(`Curated Source: ${data.imported} imported · ${data.skipped_existing} kept · ${data.no_match} unmatched`,'ok');
     loadDatabase();
-    setTimeout(()=>closeGoldenSourceModal(), 1800);
+    setTimeout(()=>closeCuratedSourceModal(), 1800);
   } finally {
-    if(dbBtn){ dbBtn.disabled = false; dbBtn.textContent = '★ Import Golden Source'; }
+    if(dbBtn){ dbBtn.disabled = false; dbBtn.textContent = '★ Import Curated Source'; }
   }
 }
 
@@ -1717,7 +1717,7 @@ function _themeModalPrimarySourceUrl(row={}){
   return String(_selectedSourceContract(row).url||'').trim();
 }
 function _themeModalImportedAt(row={}){
-  const raw=String(row?.golden_source_imported_at||'').trim() || String(row?.last_updated||'').trim();
+  const raw=String(row?.curated_source_imported_at||'').trim() || String(row?.last_updated||'').trim();
   if(!raw) return 'Not imported yet';
   const iso=raw.replace(' ','T')+'Z';
   const dt=new Date(iso);
@@ -1749,7 +1749,7 @@ function _themeModalLocalSourceUrl(row={}){
 function _themeModalSourceOffset(row={}){
   const selected=_selectedSourceContract(row);
   if(!selected.url) return '—';
-  return _themeModalOffsetLabel({...row, url:selected.url}, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source');
+  return _themeModalOffsetLabel({...row, url:selected.url}, _themeHasLocal(row), selected.kind==='curated' ? 'curated_source' : 'selected_source');
 }
 function _themeModalLocalSourceOffset(row={}){
   const local=_localSourceContract(row);
@@ -1826,7 +1826,7 @@ function _themeModalUpdateSelectedSourceClipSummary(row={}, duration=0){
     if(warning) warning.textContent='';
     return;
   }
-  const layer=selected.kind==='golden' ? 'golden_source' : 'selected_source';
+  const layer=selected.kind==='curated' ? 'curated_source' : 'selected_source';
   _setClipSummary(summaryId,'theme-workflow-clip-main','theme-workflow-clip-sub','theme-workflow-clip-warning',duration,_themeModalOffsetValue(row, layer),Math.max(0, Number(_maxDur)||0),'source preview');
   const sub=document.getElementById('theme-workflow-clip-sub');
   const warning=document.getElementById('theme-workflow-clip-warning');
@@ -1939,7 +1939,7 @@ async function _themeModalLoadSelectedSourcePreview(row={}){
       if(data?.ok) _previewCache[url]={audio_url:data.audio_url};
     }
     if(!data?.ok) throw new Error(data?.error||'Preview failed');
-    const layer=selected.kind==='golden' ? 'golden_source' : 'selected_source';
+    const layer=selected.kind==='curated' ? 'curated_source' : 'selected_source';
     _themeModalSourceAudio.cleanup({clearSrc:false});
     _themeModalSourceAudio.audio.src=apiUrl(data.audio_url);
     _themeModalSourceAudio.setHandlers({
@@ -2003,7 +2003,7 @@ function _selectedSourceStateSummary(row={}, opts={}){
     className:selected.url ? _sourceStateClass(selected.kind, selected.method) : 'is-unknown',
     chips:[],
     url:selected.url,
-    offset:selected.url ? _themeModalOffsetLabel(previewRow, _themeHasLocal(row), selected.kind==='golden' ? 'golden_source' : 'selected_source') : '—',
+    offset:selected.url ? _themeModalOffsetLabel(previewRow, _themeHasLocal(row), selected.kind==='curated' ? 'curated_source' : 'selected_source') : '—',
     timestamp:selected.url ? _themeModalSourceAdded(row) : '—',
     note:selected.url ? 'Selected for approval or download' : 'No selected source saved',
   };
@@ -2040,17 +2040,17 @@ function _renderSourceStateStack(targetId,row={},opts={}){
   const el=document.getElementById(targetId);
   if(!el) return;
   const local=_localSourceContract(row);
-  const goldenState=_goldenSourceState(row);
+  const curatedState=_curatedSourceState(row);
   const summaries=[
     {
-      label:'Golden Source',
-      stateLabel:_sourceStatePillLabel('Golden', goldenState.label),
-      className:goldenState.className,
-      chips:goldenState.chips,
-      url:String(row?.golden_source_url||'').trim(),
-      offset:_rowHasGoldenSource(row) ? _themeModalOffsetLabel(row, _themeHasLocal(row), 'golden_source') : '—',
+      label:'Curated Source',
+      stateLabel:_sourceStatePillLabel('Curated', curatedState.label),
+      className:curatedState.className,
+      chips:curatedState.chips,
+      url:String(row?.curated_source_url||'').trim(),
+      offset:_rowHasCuratedSource(row) ? _themeModalOffsetLabel(row, _themeHasLocal(row), 'curated_source') : '—',
       timestamp:_themeModalImportedAt(row),
-      note:goldenState.detail,
+      note:curatedState.detail,
     },
     _selectedSourceStateSummary(row, opts),
     {
@@ -2175,7 +2175,7 @@ function _renderTrimWindowUi({windowId, leftShadeId, rightShadeId, startMarkerId
   return meta;
 }
 function _themeModalOffsetValue(row={}, layer='selected_source'){
-  if(layer==='golden_source') return row?.golden_source_offset||0;
+  if(layer==='curated_source') return row?.curated_source_offset||0;
   if(layer==='local_theme') return row?.local_source_offset ?? row?.start_offset ?? 0;
   return row?.start_offset||0;
 }
@@ -2224,7 +2224,7 @@ function _themeModalSupportingBadge(row={}){
   if(_themeModalHasVerifiedLocal(row)) return {label:'On Disk', className:'is-success'};
   const selected=_selectedSourceContract(row);
   if(!String(selected.url||'').trim()) return null;
-  if(selected.kind==='golden') return {label:'Golden Source', className:'is-info'};
+  if(selected.kind==='curated') return {label:'Curated Source', className:'is-info'};
   if(selected.kind==='playlist') return {label:'Playlist', className:'is-info'};
   if(selected.kind==='direct') return {label:'Direct Source', className:'is-info'};
   return null;
@@ -2284,7 +2284,7 @@ function _themeModalUpdateLocalCard(row={}){
   if(stateEl){
     const localMethodRaw=String(row?.local_source_method||row?.selected_source_method||'').trim();
     const normalizedMethod=_normalizeSourceMethod(localMethodRaw);
-    const methodLabelMap={golden_source:'Golden Source',playlist:'Playlist',direct:'Direct',custom:'Custom',paste:'Custom',manual:'Custom',existing:'Existing'};
+    const methodLabelMap={curated_source:'Curated Source',playlist:'Playlist',direct:'Direct',custom:'Custom',paste:'Custom',manual:'Custom',existing:'Existing'};
     stateEl.textContent=hasLocal && normalizedMethod ? (methodLabelMap[normalizedMethod]||localMethodRaw) : '—';
   }
   if(headerChips) headerChips.innerHTML=hasLocal
@@ -2401,11 +2401,11 @@ function _themeModalApplyVerifiedLocalAvailability(row={}, exists=false, metadat
     if(!String(row?.local_source_url||'').trim() && String(row?.url||'').trim()) row.local_source_url=String(row.url||'').trim();
     if((row?.local_source_offset ?? '')==='' || row?.local_source_offset==null || String(row.local_source_offset)==='0') row.local_source_offset=row?.start_offset ?? '0';
     if(!String(row?.local_source_origin||'').trim()) row.local_source_origin=String(row?.source_origin||'').trim() || 'unknown';
-    if(!String(row?.local_source_kind||'').trim()) row.local_source_kind=_normalizeSourceKind(row?.selected_source_kind) || (_rowUsesGoldenSource(row) ? 'golden' : 'custom');
+    if(!String(row?.local_source_kind||'').trim()) row.local_source_kind=_normalizeSourceKind(row?.selected_source_kind) || (_rowUsesCuratedSource(row) ? 'curated' : 'custom');
     if(!String(row?.local_source_method||'').trim()){
       row.local_source_method=_normalizeSourceMethod(row?.selected_source_method)
         || _legacySourceMethodFromOrigin(row?.source_origin)
-        || (row.local_source_kind==='golden' ? 'golden_source' : 'manual');
+        || (row.local_source_kind==='curated' ? 'curated_source' : 'manual');
     }
     if(!String(row?.local_source_recorded_at||'').trim()){
       row.local_source_recorded_at=String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim();
@@ -2833,9 +2833,9 @@ function _searchPreviewReset(){
   if(dur) dur.textContent='—';
 }
 
-function _hideGoldenValidationError(){
-  const panel=document.getElementById('se-golden-error');
-  const msg=document.getElementById('se-golden-error-msg');
+function _hideCuratedValidationError(){
+  const panel=document.getElementById('se-curated-error');
+  const msg=document.getElementById('se-curated-error-msg');
   if(panel) panel.classList.add('hidden');
   if(msg) msg.textContent='';
 }
@@ -2848,15 +2848,15 @@ function _focusSourceEditorUrl(){
 }
 
 function _returnToSearchMethodChoice(){
-  _hideGoldenValidationError();
+  _hideCuratedValidationError();
   goToSearchStep(1);
 }
 
-function _renderGoldenValidationError(errorMessage){
-  const notice=errorMessage||'Golden Source preview could not be loaded.';
+function _renderCuratedValidationError(errorMessage){
+  const notice=errorMessage||'Curated Source preview could not be loaded.';
   const infoEl=document.getElementById('se-info');
-  const panel=document.getElementById('se-golden-error');
-  const msg=document.getElementById('se-golden-error-msg');
+  const panel=document.getElementById('se-curated-error');
+  const msg=document.getElementById('se-curated-error-msg');
   const countEl=document.getElementById('sm-results-count');
   _setOwnedSearchResults(null, []);
   _renderSearchResultsState('Curated source preview failed.', 'error');
@@ -2879,7 +2879,7 @@ function _resetSourceEditorDraft(){
   if(loadBtn){ loadBtn.textContent='↺ Refresh'; loadBtn.disabled=false; }
   _sourceEditorAudio.cleanup();
   _step3EntryMode='';
-  _hideGoldenValidationError();
+  _hideCuratedValidationError();
   const trimWindow=document.getElementById('se-trim-window');
   const startLabel=document.getElementById('se-trim-start-label');
   const endLabel=document.getElementById('se-trim-end-label');
@@ -2906,23 +2906,23 @@ function _normalizedOffsetValue(val){
   return fmt(parseTrim(val||'0'));
 }
 
-function _goldenSourceMeta(row){
+function _curatedSourceMeta(row){
   const sourceRow=row||_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey))||{};
   return {
-    url:String(sourceRow?.golden_source_url||'').trim(),
-    offset:_normalizedOffsetValue(sourceRow?.golden_source_offset||'0')
+    url:String(sourceRow?.curated_source_url||'').trim(),
+    offset:_normalizedOffsetValue(sourceRow?.curated_source_offset||'0')
   };
 }
 
 function _searchMethodCardId(method){
-  return method==='golden_source' ? 'sm-card-golden' : 'sm-card-'+method;
+  return method==='curated_source' ? 'sm-card-curated' : 'sm-card-'+method;
 }
 
 function _setSearchMethodOrder(){
   const wrap=document.getElementById('sm-primary-methods');
-  const goldenCard=document.getElementById('sm-card-golden');
-  if(!wrap || !goldenCard) return;
-  wrap.prepend(goldenCard);
+  const curatedCard=document.getElementById('sm-card-curated');
+  if(!wrap || !curatedCard) return;
+  wrap.prepend(curatedCard);
 }
 
 function _applyAudioOffset(audio, offsetValue){
@@ -3004,7 +3004,7 @@ function buildSearchQuery(method,title,year){
   const base=((title||'')+' '+(year||'')).trim();
   if(method==='playlist') return (base+' soundtrack playlist').trim();
   if(method==='direct') return (base+' theme song').trim();
-  if(method==='golden_source') return '';
+  if(method==='curated_source') return '';
   if(method==='paste') return '';
   if(method==='custom') return String(_searchCustomQuery||'').trim();
   return base;
@@ -3018,7 +3018,7 @@ function _updateQueryDisplay(){
 function _searchMethodMeta(method){
   const normalized=String(method||'').trim()||'unknown';
   const map={
-    golden_source:{label:'Golden Source', className:'is-golden'},
+    curated_source:{label:'Curated Source', className:'is-curated'},
     playlist:{label:'Playlist', className:'is-playlist'},
     direct:{label:'Direct', className:'is-direct'},
     custom:{label:'Custom', className:'is-custom'},
@@ -3052,21 +3052,21 @@ function _focusSearchStepControl(step){
 }
 
 function selectSearchMethod(method, event){
-  const goldenCard=document.getElementById('sm-card-golden');
+  const curatedCard=document.getElementById('sm-card-curated');
   const shouldFocusRadio=!!event && event.target?.classList?.contains('search-method-radio');
-  if(method==='golden_source' && goldenCard?.classList.contains('disabled')){
+  if(method==='curated_source' && curatedCard?.classList.contains('disabled')){
     if(event) event.preventDefault();
     document.getElementById(_searchMethodRadioId(_searchMethod||'playlist'))?.focus();
     return;
   }
   _searchMethod=method;
-  if(method==='golden_source'){
+  if(method==='curated_source'){
     _setOwnedSearchResults(null, []);
-    _renderSearchResultsState('Golden Source uses the curated match and skips search results.');
+    _renderSearchResultsState('Curated Source uses the curated match and skips search results.');
     const countEl=document.getElementById('sm-results-count');
     if(countEl) countEl.textContent='';
   }
-  ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
+  ['playlist','direct','custom','paste','curated_source'].forEach(m=>{
     const card=document.getElementById(_searchMethodCardId(m));
     const radio=document.getElementById(_searchMethodRadioId(m));
     const isActive=m===method;
@@ -3203,13 +3203,13 @@ async function openSearchModal(rk,title,year,lib){
   _seKey=rk; _seLib=_searchLib||_activeLib||'';
   _searchModalStateKey=_searchStateKey(rk);
   const existingRow=_rowMap[rk]||_rows.find(r=>String(r.rating_key)===String(rk));
-  const goldenUrl=String(existingRow?.golden_source_url||'').trim();
-  const hasGolden=!!goldenUrl;
+  const curatedUrl=String(existingRow?.curated_source_url||'').trim();
+  const hasCurated=!!curatedUrl;
   const cfg=await(await fetch('/api/config')).json();
   _autoApproveManual = !!cfg.auto_approve_manual;
   const defaultMethod=(cfg.search_mode||'playlist')==='playlist'?'playlist':'direct';
   _searchDefaultMethod=defaultMethod;
-  if(!sameItem) _searchMethod=hasGolden?'golden_source':(_lastSearchMethod||defaultMethod);
+  if(!sameItem) _searchMethod=hasCurated?'curated_source':(_lastSearchMethod||defaultMethod);
   if(!sameItem) _searchCustomQuery='';
   // Header
   document.getElementById('search-modal-title').textContent=title||'Find Theme Source';
@@ -3223,7 +3223,7 @@ async function openSearchModal(rk,title,year,lib){
   document.getElementById('search-modal-links').innerHTML=`<a class="modal-link-pill tmdb-pill" href="${tmdbUrl}" target="_blank" rel="noopener">🎬 TMDB</a>`;
   setBio('search-modal-bio',rk,_searchLib);
   // Restore or reset method cards
-  ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
+  ['playlist','direct','custom','paste','curated_source'].forEach(m=>{
     const card=document.getElementById(_searchMethodCardId(m));
     const radio=document.getElementById(_searchMethodRadioId(m));
     const isActive=m===_searchMethod;
@@ -3251,28 +3251,28 @@ async function openSearchModal(rk,title,year,lib){
     _step3PreparedUrl=(urlEl?.value||'').trim()||_step3PreparedUrl||existingUrl||'';
     if((urlEl?.value||'').trim()) seUrlChanged();
   }
-  const goldenCard=document.getElementById('sm-card-golden');
-  const goldenDesc=document.getElementById('sm-golden-desc');
-  const goldenOffset=document.getElementById('sm-golden-offset');
-  const goldenMeta=document.getElementById('sm-golden-meta');
-  const goldenOffsetValue=_normalizedOffsetValue(existingRow?.golden_source_offset||'0');
-  if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
-  if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
-  if(goldenCard) goldenCard.setAttribute('aria-disabled', hasGolden ? 'false' : 'true');
-  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item.':'Not available';
-  if(goldenOffset){
-    goldenOffset.textContent=hasGolden?`Offset ${goldenOffsetValue}`:'';
-    goldenOffset.classList.toggle('hidden', !hasGolden);
+  const curatedCard=document.getElementById('sm-card-curated');
+  const curatedDesc=document.getElementById('sm-curated-desc');
+  const curatedOffset=document.getElementById('sm-curated-offset');
+  const curatedMeta=document.getElementById('sm-curated-meta');
+  const curatedOffsetValue=_normalizedOffsetValue(existingRow?.curated_source_offset||'0');
+  if(curatedCard) curatedCard.classList.toggle('disabled',!hasCurated);
+  if(curatedCard) curatedCard.classList.toggle('recommended',hasCurated);
+  if(curatedCard) curatedCard.setAttribute('aria-disabled', hasCurated ? 'false' : 'true');
+  if(curatedDesc) curatedDesc.textContent=hasCurated?'Use the curated source already linked to this item.':'Not available';
+  if(curatedOffset){
+    curatedOffset.textContent=hasCurated?`Offset ${curatedOffsetValue}`:'';
+    curatedOffset.classList.toggle('hidden', !hasCurated);
   }
-  if(goldenMeta){
-    goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'Not available';
-    goldenMeta.classList.toggle('hidden', false);
+  if(curatedMeta){
+    curatedMeta.textContent=hasCurated?`Curated match • starts at ${curatedOffsetValue}`:'Not available';
+    curatedMeta.classList.toggle('hidden', false);
   }
   _setSearchMethodOrder();
   _initMethodQuickPicks(existingRow);
-  if(_searchMethod==='golden_source' && !hasGolden){
+  if(_searchMethod==='curated_source' && !hasCurated){
     _searchMethod='playlist';
-    ['playlist','direct','custom','paste','golden_source'].forEach(m=>{
+    ['playlist','direct','custom','paste','curated_source'].forEach(m=>{
       const card=document.getElementById(_searchMethodCardId(m));
       const radio=document.getElementById(_searchMethodRadioId(m));
       const isActive=m===_searchMethod;
@@ -3281,13 +3281,13 @@ async function openSearchModal(rk,title,year,lib){
     });
     _renderSearchMethodChosen(_searchMethod);
   }
-  const canRestoreSearchResults=_searchMethod!=='golden_source';
+  const canRestoreSearchResults=_searchMethod!=='curated_source';
   const hasOwnedResults=canRestoreSearchResults && _lastSearchResults.length && _lastSearchResultsKey===_searchStateKey(rk);
   const shouldRestoreStep3=sameItem && _searchCurrentStep===3 && hasSameItemDraft;
   if(hasOwnedResults) _renderResults(_lastSearchResults);
-  else if(_searchMethod==='golden_source'){
+  else if(_searchMethod==='curated_source'){
     _setOwnedSearchResults(null, []);
-    _renderSearchResultsState('Golden Source uses the curated match and skips search results.');
+    _renderSearchResultsState('Curated Source uses the curated match and skips search results.');
   }
   // Decide starting step
   if(shouldRestoreStep3){
@@ -3308,7 +3308,7 @@ function closeSearchModal(){
 
 function searchModalBack(){
   if(_searchCurrentStep===3){
-    if(_searchMethod==='golden_source') goToSearchStep(1);
+    if(_searchMethod==='curated_source') goToSearchStep(1);
     else goToSearchStep(2);
   }
   else if(_searchCurrentStep===2) goToSearchStep(1);
@@ -3349,13 +3349,13 @@ async function _searchByMethod(method, showStep=true){
 async function doSearch(){
   _searchMethod=_searchMethod||'playlist';
   if(_searchMethod==='paste') return goToStep3FromPaste();
-  if(_searchMethod==='golden_source'){
-    const golden=_goldenSourceMeta();
-    const url=golden.url;
-    if(!url) return toast('Golden Source URL not currently available for this item','info');
+  if(_searchMethod==='curated_source'){
+    const curated=_curatedSourceMeta();
+    const url=curated.url;
+    if(!url) return toast('Curated Source URL not currently available for this item','info');
     _setOwnedSearchResults(null, []);
-    _renderSearchResultsState('Golden Source uses the curated match and skips search results.');
-    return goToStep3(url,{skipPreview:false,sourceTitle:'Golden Source URL',startOffset:golden.offset,entryMode:'golden_fast_path'});
+    _renderSearchResultsState('Curated Source uses the curated match and skips search results.');
+    return goToStep3(url,{skipPreview:false,sourceTitle:'Curated Source URL',startOffset:curated.offset,entryMode:'curated_fast_path'});
   }
   await _searchByMethod(_searchMethod, true);
 }
@@ -3369,9 +3369,9 @@ function _renderSearchResultsState(message, tone='info'){
   el.innerHTML=`<div class="search-results-state ${tone==='error'?'error':''}">${message}</div>`;
 }
 
-async function _fallbackFromGoldenValidation(errorMessage){
+async function _fallbackFromCuratedValidation(errorMessage){
   _sourceEditorAudio.cleanup();
-  _renderGoldenValidationError(errorMessage||'Golden Source preview could not be loaded.');
+  _renderCuratedValidationError(errorMessage||'Curated Source preview could not be loaded.');
 }
 
 function _renderResults(results){
@@ -3448,8 +3448,8 @@ function _setMethodQuickPick(method, result){
   const el=document.getElementById('sm-first-'+method);
   if(!el) return;
   if(result===null){ el.innerHTML='<span class="sm-quickpick-loading">Loading quick pick…</span>'; return; }
-  const quickPickOpts=method==='golden_source'
-    ? {label:'Quick pick', title:'Golden Source URL', displayTitle:(result&&result.url)||'Golden Source URL', linkTitle:true, selectLabel:'Pick', scrollTitle:true}
+  const quickPickOpts=method==='curated_source'
+    ? {label:'Quick pick', title:'Curated Source URL', displayTitle:(result&&result.url)||'Curated Source URL', linkTitle:true, selectLabel:'Pick', scrollTitle:true}
     : {label:'Quick pick', scrollTitle:true};
   el.innerHTML=_renderMethodQuickPick(method, result, quickPickOpts);
   _refreshQuickPickAutoScroll(el);
@@ -3480,7 +3480,7 @@ async function previewQuickPick(method,url,btn){
   }
   _searchMethod=method||_searchMethod;
   _lastSearchMethod=_searchMethod;
-  const startOffset=method==='golden_source' ? _goldenSourceMeta().offset : '0:00';
+  const startOffset=method==='curated_source' ? _curatedSourceMeta().offset : '0:00';
   btn.disabled=true; btn.textContent='Loading…';
   try{
     const cached=_previewCache[url];
@@ -3509,13 +3509,13 @@ async function previewQuickPick(method,url,btn){
 async function quickPickSelect(method,url,title='',startOffset='0:00'){
   if(!url) return;
   _searchMethod=method||_searchMethod;
-  if(_searchMethod!=='golden_source') await _searchByMethod(_searchMethod,false);
+  if(_searchMethod!=='curated_source') await _searchByMethod(_searchMethod,false);
   else {
     _setOwnedSearchResults(null, []);
-    _renderSearchResultsState('Golden Source uses the curated match and skips search results.');
+    _renderSearchResultsState('Curated Source uses the curated match and skips search results.');
   }
-  if(_searchMethod!=='golden_source' && _lastSearchResults.length) _renderResults(_lastSearchResults);
-  goToStep3(url,{skipPreview:false,sourceTitle:title,startOffset,entryMode:method==='golden_source'?'golden_manual_select':'search_result'});
+  if(_searchMethod!=='curated_source' && _lastSearchResults.length) _renderResults(_lastSearchResults);
+  goToStep3(url,{skipPreview:false,sourceTitle:title,startOffset,entryMode:method==='curated_source'?'curated_manual_select':'search_result'});
 }
 
 async function _prefetchMethodFirstResult(method){
@@ -3533,8 +3533,8 @@ function _initMethodQuickPicks(existingRow){
   _setMethodQuickPick('playlist',null);
   _setMethodQuickPick('direct',null);
   const row=existingRow||_rowMap[_searchKey]||_rows.find(r=>String(r.rating_key)===String(_searchKey));
-  const golden=_goldenSourceMeta(row);
-  _setMethodQuickPick('golden_source', golden.url ? {title:'Golden Source URL', url:golden.url, start_offset:golden.offset} : false);
+  const curated=_curatedSourceMeta(row);
+  _setMethodQuickPick('curated_source', curated.url ? {title:'Curated Source URL', url:curated.url, start_offset:curated.offset} : false);
   _prefetchMethodFirstResult('playlist');
   _prefetchMethodFirstResult('direct');
 }
@@ -3602,8 +3602,8 @@ async function searchModalDownloadNow(){
 function goToStep3(url, opts={}){
   _step3EntryMode=opts.entryMode||'';
   stopAllAudio();
-  _hideGoldenValidationError();
-  if(_searchMethod!=='golden_source' && _lastSearchResults.length) _renderResults(_lastSearchResults);
+  _hideCuratedValidationError();
+  if(_searchMethod!=='curated_source' && _lastSearchResults.length) _renderResults(_lastSearchResults);
   document.getElementById('se-url').value=url||'';
   document.getElementById('se-offset').value=_normalizedOffsetValue(opts.startOffset||'0');
   document.getElementById('se-cur').textContent='0:00';
@@ -3647,7 +3647,7 @@ function backToSearch(){
 
 let _seAutoLoadTimer=null;
 function seUrlChanged(){
-  _hideGoldenValidationError();
+  _hideCuratedValidationError();
   const u=(document.getElementById('se-url').value||'').trim();
   if(u) _selectedSourceTitle=_sourceTitleFromUrl(u);
   _renderSelectedSourceSummary(u, u?_selectedSourceTitle:(_selectedSourceTitle||'—'));
@@ -3696,13 +3696,13 @@ async function seLoadPreview(){
     if(!data.ok){
       const previewError=data.error||'Failed';
       document.getElementById('se-info').textContent='Error: '+previewError;
-      if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
-        await _fallbackFromGoldenValidation(previewError);
+      if(_step3EntryMode==='curated_fast_path' || _step3EntryMode==='curated_manual_select'){
+        await _fallbackFromCuratedValidation(previewError);
         return;
       }
       return;
     }
-    _hideGoldenValidationError();
+    _hideCuratedValidationError();
     const audio=_sourceEditorAudio.audio;
     stopAllAudio('se-audio');
     audio.src=apiUrl(data.audio_url);
@@ -3724,8 +3724,8 @@ async function seLoadPreview(){
         const playbackError='Playback error — review another source below';
         document.getElementById('se-info').textContent=playbackError;
         _sourceEditorAudio.cleanup();
-        if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
-          void _fallbackFromGoldenValidation('Golden Source preview failed');
+        if(_step3EntryMode==='curated_fast_path' || _step3EntryMode==='curated_manual_select'){
+          void _fallbackFromCuratedValidation('Curated Source preview failed');
           return;
         }
       }
@@ -3733,9 +3733,9 @@ async function seLoadPreview(){
     audio.load();
   }catch(e){
     const previewError=String(e&&e.message?e.message:e||'Preview failed');
-    if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select'){
+    if(_step3EntryMode==='curated_fast_path' || _step3EntryMode==='curated_manual_select'){
       document.getElementById('se-info').textContent='Error: '+previewError;
-      await _fallbackFromGoldenValidation(previewError);
+      await _fallbackFromCuratedValidation(previewError);
       return;
     }
     toast('Error: '+previewError,'err');
@@ -3788,9 +3788,9 @@ function _draftSelectedSourceContract(url=''){
   const cleanUrl=String(url||'').trim();
   if(!cleanUrl) return {kind:'', method:''};
   const row=_rowMap[_seKey||_searchKey]||_rows.find(r=>String(r.rating_key)===String(_seKey||_searchKey))||{};
-  const goldenUrl=String(row?.golden_source_url||'').trim();
-  if(cleanUrl && goldenUrl && cleanUrl===goldenUrl) return {kind:'golden', method:'golden_source'};
-  if(_step3EntryMode==='golden_fast_path' || _step3EntryMode==='golden_manual_select') return {kind:'golden', method:'golden_source'};
+  const curatedUrl=String(row?.curated_source_url||'').trim();
+  if(cleanUrl && curatedUrl && cleanUrl===curatedUrl) return {kind:'curated', method:'curated_source'};
+  if(_step3EntryMode==='curated_fast_path' || _step3EntryMode==='curated_manual_select') return {kind:'curated', method:'curated_source'};
   if(_step3EntryMode==='search_result'){
     if(_searchMethod==='playlist' || _searchMethod==='direct') return {kind:'custom', method:_searchMethod};
     if(_searchMethod==='custom') return {kind:'custom', method:'custom'};

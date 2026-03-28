@@ -530,11 +530,11 @@ function _themeModalBindCardToggles(){{}}
 function _themeModalApplyCardState(){{}}
 function _themeModalUpdateStatusFlow(){{}}
 const localStorage={{ getItem(){{ return null; }}, setItem(){{}} }};
-function _normalizeSourceKind(value){{ const normalized=String(value||'').trim().toLowerCase(); return normalized==='golden' || normalized==='custom' ? normalized : ''; }}
+function _normalizeSourceKind(value){{ const normalized=String(value||'').trim().toLowerCase(); return normalized==='curated' || normalized==='custom' ? normalized : ''; }}
 function _normalizeSourceMethod(value){{ return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''); }}
-function _legacySourceMethodFromOrigin(origin=''){{ const normalized=String(origin||'').trim().toLowerCase(); if(normalized.startsWith('golden_source')) return 'golden_source'; if(normalized.includes('playlist')) return 'playlist'; if(normalized.includes('direct')) return 'direct'; if(normalized==='manual' || normalized==='custom') return 'manual'; return ''; }}
-function _rowUsesGoldenSource(row){{ const sourceUrl=String(row?.url||'').trim(); const goldenUrl=String(row?.golden_source_url||'').trim(); return !!sourceUrl && !!goldenUrl && sourceUrl===goldenUrl; }}
-function _selectedSourceContract(row={{}}){{ const url=String(row?.url||'').trim(); if(!url) return {{kind:'', method:'', url:''}}; let kind=_normalizeSourceKind(row?.selected_source_kind); let method=_normalizeSourceMethod(row?.selected_source_method); if(!kind) kind=method==='golden_source' || _rowUsesGoldenSource(row) ? 'golden' : 'custom'; if(!method) method=kind==='golden' ? 'golden_source' : 'manual'; return {{kind, method, url}}; }}
+function _legacySourceMethodFromOrigin(origin=''){{ const normalized=String(origin||'').trim().toLowerCase(); if(normalized.startsWith('curated_source')) return 'curated_source'; if(normalized.includes('playlist')) return 'playlist'; if(normalized.includes('direct')) return 'direct'; if(normalized==='manual' || normalized==='custom') return 'manual'; return ''; }}
+function _rowUsesCuratedSource(row){{ const sourceUrl=String(row?.url||'').trim(); const curatedUrl=String(row?.curated_source_url||'').trim(); return !!sourceUrl && !!curatedUrl && sourceUrl===curatedUrl; }}
+function _selectedSourceContract(row={{}}){{ const url=String(row?.url||'').trim(); if(!url) return {{kind:'', method:'', url:''}}; let kind=_normalizeSourceKind(row?.selected_source_kind); let method=_normalizeSourceMethod(row?.selected_source_method); if(!kind) kind=method==='curated_source' || _rowUsesCuratedSource(row) ? 'curated' : 'custom'; if(!method) method=kind==='curated' ? 'curated_source' : 'manual'; return {{kind, method, url}}; }}
 function _themeHasLocal(row){{ return String(row?.theme_exists||'')==='1'; }}
 function _themeHasVerifiedLocal(row={{}}){{ if(Object.prototype.hasOwnProperty.call(row,'_verifiedThemeExists')) return !!row._verifiedThemeExists; return _themeHasLocal(row); }}
 function _effectiveRowStatus(row={{}}){{ const status=String(row?.status||'MISSING').toUpperCase(); const hasTheme=_themeHasLocal(row); const hasStoredSource=!!String(_selectedSourceContract(row).url||'').trim(); if(status==='AVAILABLE' && !hasTheme) return hasStoredSource ? 'STAGED' : 'MISSING'; return status; }}
@@ -755,11 +755,11 @@ const document={{
   }}
 }};
 function displayStatus(status){{ return status; }}
-function _normalizeSourceKind(value){{ const normalized=String(value||'').trim().toLowerCase(); return normalized==='golden' || normalized==='custom' ? normalized : ''; }}
+function _normalizeSourceKind(value){{ const normalized=String(value||'').trim().toLowerCase(); return normalized==='curated' || normalized==='custom' ? normalized : ''; }}
 function _normalizeSourceMethod(value){{ return String(value||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''); }}
-function _legacySourceMethodFromOrigin(origin=''){{ const normalized=String(origin||'').trim().toLowerCase(); if(normalized.startsWith('golden_source')) return 'golden_source'; if(normalized.includes('playlist')) return 'playlist'; if(normalized.includes('direct')) return 'direct'; if(normalized==='manual' || normalized==='custom') return 'manual'; return ''; }}
-function _rowUsesGoldenSource(row){{ const sourceUrl=String(row?.url||'').trim(); const goldenUrl=String(row?.golden_source_url||'').trim(); return !!sourceUrl && !!goldenUrl && sourceUrl===goldenUrl; }}
-function _selectedSourceContract(row={{}}){{ const url=String(row?.url||'').trim(); if(!url) return {{kind:'', method:'', url:''}}; let kind=_normalizeSourceKind(row?.selected_source_kind); let method=_normalizeSourceMethod(row?.selected_source_method); if(!kind) kind=method==='golden_source' || _rowUsesGoldenSource(row) ? 'golden' : 'custom'; if(!method) method=kind==='golden' ? 'golden_source' : 'manual'; return {{kind, method, url}}; }}
+function _legacySourceMethodFromOrigin(origin=''){{ const normalized=String(origin||'').trim().toLowerCase(); if(normalized.startsWith('curated_source')) return 'curated_source'; if(normalized.includes('playlist')) return 'playlist'; if(normalized.includes('direct')) return 'direct'; if(normalized==='manual' || normalized==='custom') return 'manual'; return ''; }}
+function _rowUsesCuratedSource(row){{ const sourceUrl=String(row?.url||'').trim(); const curatedUrl=String(row?.curated_source_url||'').trim(); return !!sourceUrl && !!curatedUrl && sourceUrl===curatedUrl; }}
+function _selectedSourceContract(row={{}}){{ const url=String(row?.url||'').trim(); if(!url) return {{kind:'', method:'', url:''}}; let kind=_normalizeSourceKind(row?.selected_source_kind); let method=_normalizeSourceMethod(row?.selected_source_method); if(!kind) kind=method==='curated_source' || _rowUsesCuratedSource(row) ? 'curated' : 'custom'; if(!method) method=kind==='curated' ? 'curated_source' : 'manual'; return {{kind, method, url}}; }}
 let _rowMap={{}};
 let _rows=[];
 let _filtered=[];
