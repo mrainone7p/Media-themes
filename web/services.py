@@ -753,7 +753,12 @@ def dashboard_summary_payload() -> dict:
 
 def _normalize_caller_surface(value: object, *, default: str) -> str:
     normalized = str(value or "").strip().lower()
-    return normalized if normalized in {"dashboard", "scheduler", "tasks"} else default
+    aliases = {
+        "db": "database",
+        "database": "database",
+    }
+    normalized = aliases.get(normalized, normalized)
+    return normalized if normalized in {"dashboard", "scheduler", "tasks", "database"} else default
 
 
 def parse_run_stats(lines: Iterable[str]) -> dict:
