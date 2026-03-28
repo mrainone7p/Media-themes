@@ -285,13 +285,13 @@ function _dbStartPoll(){
 
 function _runCallerSurface(scope, options={}){
   const explicit=String(options.callerSurface||'').trim().toLowerCase();
-  if(['dashboard','scheduler','tasks'].includes(explicit)) return explicit;
+  if(['dashboard','scheduler','tasks','database'].includes(explicit)) return explicit;
   if(typeof _activePageName==='function'){
     const active=String(_activePageName()||'').trim().toLowerCase();
     if(active==='dashboard') return 'dashboard';
     if(active==='scheduler') return 'scheduler';
   }
-  return scope==='tasks' ? 'tasks' : 'tasks';
+  return ({db:'database',tasks:'tasks',run:'scheduler'})[scope] || 'tasks';
 }
 
 async function startPipelineRun(passNum,scope='db',options={}){

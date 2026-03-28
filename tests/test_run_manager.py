@@ -115,6 +115,32 @@ class RunManagerTests(unittest.TestCase):
             manager.status(),
         )
 
+    def test_trigger_pass_payload_accepts_database_caller_surface(self):
+        with mock.patch.object(services.RUN_MANAGER, "start", return_value=True) as mock_start:
+            payload, status = services.trigger_pass_payload(1, {"caller_surface": "database", "library": "Movies"})
+
+        self.assertEqual(200, status)
+        self.assertEqual({"ok": True}, payload)
+        mock_start.assert_called_once_with(
+            force_pass=1,
+            explicit_libraries=["Movies"],
+            scope_label="",
+            caller_surface="database",
+        )
+
+    def test_trigger_pass_payload_normalizes_db_caller_surface_alias(self):
+        with mock.patch.object(services.RUN_MANAGER, "start", return_value=True) as mock_start:
+            payload, status = services.trigger_pass_payload(2, {"caller_surface": "db", "libraries": ["Shows"]})
+
+        self.assertEqual(200, status)
+        self.assertEqual({"ok": True}, payload)
+        mock_start.assert_called_once_with(
+            force_pass=2,
+            explicit_libraries=["Shows"],
+            scope_label="",
+            caller_surface="database",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
