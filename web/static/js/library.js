@@ -1787,8 +1787,15 @@ async function _themeModalLoadLocalPreview(row={}){
       _themeModalSetLocalPreviewStatus('Ready');
     },
     onerror:()=>{
+      const currentRow=_themeModalContext?.row||nextRow;
+      _themeModalApplyVerifiedLocalAvailability(currentRow, false);
+      _themeModalRememberRow(currentRow);
+      _themeModalAudio.cleanup({clearSrc:false});
+      _themeModalAudio.audio.removeAttribute('src');
+      _themeModalAudio.audio.load();
+      _themeModalUpdateLocalCard(currentRow);
+      _themeModalUpdateLocalClipSummary(currentRow, 0);
       _themeModalSetLocalPreviewStatus('Preview unavailable — local file is missing or unreadable. Run Refresh Themes to resync.');
-      _themeModalUpdateLocalClipSummary(_themeModalContext?.row||nextRow, 0);
     }
   });
   _themeModalAudio.audio.src=apiUrl('/api/theme?folder='+encodeURIComponent(folder));
