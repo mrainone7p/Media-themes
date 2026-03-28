@@ -1125,11 +1125,10 @@
                       <div class="sm-card-title">Custom</div>
                       <div class="sm-card-state">Selected Method</div>
                     </div>
-                    <div class="sm-card-desc">Edit the query text before running the search.</div>
+                    <div class="sm-card-desc">Custom query.</div>
                   </div>
                 </div>
                 <div class="sm-card-actions">
-                  <div class="sm-card-first">Edit the query, then search when ready.</div>
                   <div class="sm-card-controls">
                     <input id="sm-custom-input" class="search-method-input sm-card-input" placeholder="Enter custom search terms here." title="Enter custom search terms here." value="" onfocus="pickSearchMethod('custom', event)" oninput="_searchCustomQuery=this.value;_updateQueryDisplay()" onkeydown="if(event.key==='Enter')searchModalPrimary()">
                   </div>
@@ -1145,11 +1144,9 @@
                       <div class="sm-card-state">Selected Method</div>
                     </div>
                     <div class="sm-card-desc">Jump straight to a known source URL.</div>
-                    <div class="sm-card-submeta">Direct link entry · skips search results</div>
                   </div>
                 </div>
                 <div class="sm-card-actions">
-                  <div class="sm-card-first">Paste a URL, then move straight to preview.</div>
                   <div class="sm-card-controls">
                     <input id="search-paste-url" class="search-method-input sm-card-input" placeholder="https://www.youtube.com/watch?v=..." onfocus="pickSearchMethod('paste', event)" onkeydown="if(event.key==='Enter')searchModalPrimary()">
                   </div>

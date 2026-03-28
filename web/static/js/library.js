@@ -3259,14 +3259,14 @@ async function openSearchModal(rk,title,year,lib){
   if(goldenCard) goldenCard.classList.toggle('disabled',!hasGolden);
   if(goldenCard) goldenCard.classList.toggle('recommended',hasGolden);
   if(goldenCard) goldenCard.setAttribute('aria-disabled', hasGolden ? 'false' : 'true');
-  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item.':'';
+  if(goldenDesc) goldenDesc.textContent=hasGolden?'Use the curated source already linked to this item.':'Not available';
   if(goldenOffset){
     goldenOffset.textContent=hasGolden?`Offset ${goldenOffsetValue}`:'';
     goldenOffset.classList.toggle('hidden', !hasGolden);
   }
   if(goldenMeta){
-    goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'';
-    goldenMeta.classList.toggle('hidden', !hasGolden);
+    goldenMeta.textContent=hasGolden?`Curated match • starts at ${goldenOffsetValue}`:'Not available';
+    goldenMeta.classList.toggle('hidden', false);
   }
   _setSearchMethodOrder();
   _initMethodQuickPicks(existingRow);
