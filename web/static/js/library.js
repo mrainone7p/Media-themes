@@ -59,7 +59,7 @@ const DB_STICKY_FIRST_COL_THRESHOLD=120;
 const TABLE_COLUMNS=[
   {id:'select',label:'Select',width:'48px',minWidth:'48px',align:'center',sortable:false,sticky:'first',renderHeader:()=>'<input type="checkbox" class="row-cb" id="db-select-all" onchange="toggleAllSelect(this)" title="Select all filtered">',renderCell:(row)=>SelectCell(row)},
   {id:'title',label:'Title',width:'18%',minWidth:'220px',align:'left',sortable:true,renderCell:(row)=>TitleCell(row)},
-  {id:'year',label:'Year',width:'7%',minWidth:'72px',align:'left',sortable:true,renderCell:(row)=>`<span class="db-cell-subtle">${_escapeHtml(row.year||'')}</span>`},
+  {id:'year',label:'Year',width:'7%',minWidth:'72px',align:'left',sortable:true,renderCell:(row)=>`<td><span class="db-cell-subtle">${_escapeHtml(row.year||'')}</span></td>`},
   {id:'status',label:'Status',width:'12%',minWidth:'140px',align:'left',sortable:true,renderCell:(row)=>StatusBadgeCell(row)},
   {id:'action',label:'Action',width:'164px',minWidth:'164px',align:'left',sortable:false,renderCell:(row)=>ActionCell(row)},
   {id:'golden_state',label:'Golden Source',width:'14%',minWidth:'170px',align:'left',sortable:true,renderCell:(row)=>SourceBadgeCell(row,'golden')},
