@@ -498,9 +498,9 @@ table{width:100%;border-collapse:collapse;font-size:12px}
 }
 .db-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
 thead{background:var(--table-header-bg);position:sticky;top:0;z-index:5}
-th{padding:var(--db-cell-pad-y) var(--db-cell-pad-x);text-align:left;font-size:var(--table-header-font-size);font-weight:700;letter-spacing:var(--table-header-letter-spacing);text-transform:uppercase;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);user-select:none;transition:color .15s}
+th{padding:var(--db-cell-pad-y) var(--db-cell-pad-x);text-align:center;font-size:var(--table-header-font-size);font-weight:700;letter-spacing:var(--table-header-letter-spacing);text-transform:uppercase;color:var(--text3);white-space:nowrap;border-bottom:1px solid var(--border);user-select:none;transition:color .15s}
 th.is-sortable{cursor:pointer}
-th.is-sortable:hover{color:var(--text)}
+th.is-sortable:hover{color:var(--text3)}
 td{padding:var(--db-cell-pad-y) var(--db-cell-pad-x);border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text);font-size:var(--table-body-font-size);background:var(--table-row-bg)}
 tr:last-child td{border-bottom:none}
 tbody tr{transition:background .15s ease,outline-color .15s ease}
@@ -517,9 +517,7 @@ tbody tr.is-disabled td{background:var(--table-row-disabled-bg);color:var(--tabl
   max-width:56px;
   padding-left:0;
   padding-right:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  text-align:center;
 }
 .tbl-wrap.has-sticky-first-col .is-sticky-col{position:sticky;left:0;z-index:3;background:var(--table-row-bg)}
 .tbl-wrap.has-sticky-first-col thead .is-sticky-col{z-index:6;background:var(--table-header-bg)}
@@ -847,7 +845,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .filter-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3)}
 
 /* ─── Row checkbox ─── */
-.row-cb{display:block;width:18px;height:18px;margin:0;cursor:pointer;accent-color:var(--amber)}
+.row-cb{display:block;width:18px;height:18px;margin:0 auto;cursor:pointer;accent-color:var(--amber)}
 
 /* ─── Source editor modal ─── */
 .se-player{display:flex;align-items:center;gap:10px;margin-bottom:12px}
