@@ -570,8 +570,8 @@ tr:hover td{background:rgba(255,255,255,.025)}
 .db-inline-url.wide{min-width:100px;max-width:160px}
 .empty-inline{padding:12px 8px}
 .search-results-state{color:var(--text3);padding:16px 0;font-size:13px;text-align:center}
-.search-method-chosen{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);white-space:nowrap}
-.search-results-heading-row{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.search-method-chosen{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3);white-space:nowrap;justify-content:flex-start}
+.search-results-heading-row{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;flex-wrap:wrap;text-align:left}
 .search-results-state.error{color:var(--red);text-align:left}
 .search-step-results{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:0 22px}
 .search-step-results-list{display:flex;flex-direction:column;gap:8px;flex:1;min-height:240px;height:auto;overflow-y:auto;padding:0 0 12px}
@@ -949,10 +949,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .source-summary-url,.theme-source-url-text{position:relative}
 .source-state-stack-modal{margin-bottom:10px}
 .auto-scroll-text{display:block;min-width:0;max-width:100%;overflow:hidden;white-space:nowrap}
-.auto-scroll-text.auto-scroll-active > span{display:inline-block;padding-right:28px;animation:auto-scroll-text 14s linear infinite}
+.auto-scroll-text.auto-scroll-active > span{display:inline-block;padding-right:28px;animation:auto-scroll-text 10s ease-in-out infinite}
 @keyframes auto-scroll-text{
-  0%,12%{transform:translateX(0)}
-  88%,100%{transform:translateX(calc(-1 * var(--scroll-distance, 0px)))}
+  0%,20%{transform:translateX(0)}
+  80%{transform:translateX(calc(-1 * var(--scroll-distance, 0px)))}
+  81%,100%{transform:translateX(0)}
 }
 .review-card.compact{padding:12px}
 .review-card.compact .review-card-header{margin-bottom:8px}
@@ -1259,11 +1260,11 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .sm-card-first{display:flex;flex-direction:column;gap:4px;min-height:0;font-size:10px;color:var(--text2);font-family:var(--mono);width:100%;text-align:left;min-width:0;overflow:hidden;white-space:nowrap;scrollbar-width:thin}
 .sm-card-first>*{min-width:0}
 .sm-card-first .muted-chip{align-self:flex-start}
-.sm-card-first .sm-quickpick-title,.sm-card-first .sm-quickpick-link{display:block;max-width:min(100%,280px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--text2);font-family:var(--mono)}
-.sm-card-first .sm-quickpick-link{display:inline-flex;align-items:center;gap:4px;max-width:100%}
-.sm-card-first .auto-scroll-text{display:block;max-width:100%;overflow:hidden;white-space:nowrap}
+.sm-card-first .sm-quickpick-title,.sm-card-first .sm-quickpick-link{display:block;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--text2);font-family:var(--mono)}
+.sm-card-first .sm-quickpick-link{display:inline-flex;align-items:center;gap:4px;max-width:100%;min-width:0}
+.sm-card-first .auto-scroll-text{display:block;max-width:100%;width:100%;overflow:hidden;white-space:nowrap}
 .sm-card-first .auto-scroll-text > span{display:inline-block;padding-right:24px}
-.sm-card-first .auto-scroll-text.auto-scroll-active > span{animation:auto-scroll-text 14s linear infinite}
+.sm-card-first .auto-scroll-text.auto-scroll-active > span{animation:auto-scroll-text 10s ease-in-out infinite}
 .sm-card-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%}
 .sm-card-input{flex:1;min-width:180px}
 .sm-card-select-btn{margin-left:auto}
@@ -1309,7 +1310,7 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .settings-section .field input[id="cfg-test_limit"],
 .settings-section .field input[id="cfg-max_retries"],
 .settings-section .field input[id="cfg-download_delay_seconds"]{font-family:var(--mono)}
-@media (max-width: 980px){
+@media (max-width: 760px){
   .settings-overview{padding:18px}
   .settings-overview-title{font-size:19px}
   .settings-grid-2,.settings-grid-3,.dual-inline,.performance-grid,.settings-row-grid.settings-row-grid-2,.settings-inline-row{grid-template-columns:1fr}
