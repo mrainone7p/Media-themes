@@ -15,12 +15,12 @@ class ThemeManagerSourceColumnsTests(unittest.TestCase):
         cls.template_source = (ROOT / "web" / "template.html").read_text(encoding="utf-8")
         cls.library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
 
-    def test_table_headers_use_golden_and_selected_columns(self):
-        self.assertIn("{id:'golden_state',label:'Golden Source'", self.library_source)
+    def test_table_headers_use_curated_and_selected_columns(self):
+        self.assertIn("{id:'curated_state',label:'Curated Source'", self.library_source)
         self.assertIn("{id:'custom_state',label:'Selected Source'", self.library_source)
         self.assertIn("onclick=\"sortTable('${col.id}')\"", self.library_source)
         self.assertNotIn("{id:'local_state'", self.library_source)
-        self.assertNotIn("Golden Source URL ↕", self.template_source)
+        self.assertNotIn("Curated Source URL ↕", self.template_source)
         self.assertNotIn("Source URL ↕", self.template_source)
         self.assertNotIn("Start Offset (mm:ss) ↕", self.template_source)
 
@@ -51,7 +51,7 @@ function _effectiveRowStatus(row={{}}) {{
 }}
 const playlistRow = {{
   url:'https://example.test/playlist',
-  golden_source_url:'https://example.test/golden',
+  curated_source_url:'https://example.test/curated',
   status:'STAGED',
   source_origin:'manual',
   selected_source_kind:'custom',
@@ -62,12 +62,12 @@ const manualFallbackRow = {{
   status:'APPROVED',
   source_origin:'manual',
 }};
-const goldenRow = {{
-  url:'https://example.test/golden',
-  golden_source_url:'https://example.test/golden',
+const curatedRow = {{
+  url:'https://example.test/curated',
+  curated_source_url:'https://example.test/curated',
   status:'MISSING',
-  selected_source_kind:'golden',
-  selected_source_method:'golden_source',
+  selected_source_kind:'curated',
+  selected_source_method:'curated_source',
 }};
 process.stdout.write(JSON.stringify({{
   playlistLabel:_selectedSourceLabel(playlistRow),
@@ -76,9 +76,9 @@ process.stdout.write(JSON.stringify({{
   manualFallbackLabel:_selectedSourceLabel(manualFallbackRow),
   manualFallbackFilterKey:_selectedSourceFilterKey(manualFallbackRow),
   manualFallbackState:_customSourceState(manualFallbackRow),
-  goldenLabel:_selectedSourceLabel(goldenRow),
-  goldenState:_customSourceState(goldenRow),
-  goldenSourceState:_goldenSourceState(goldenRow),
+  curatedLabel:_selectedSourceLabel(curatedRow),
+  curatedState:_customSourceState(curatedRow),
+  curatedSourceState:_curatedSourceState(curatedRow),
 }}));
 """
         result = subprocess.run(
@@ -96,25 +96,25 @@ process.stdout.write(JSON.stringify({{
         self.assertEqual("Custom", payload["manualFallbackLabel"])
         self.assertEqual("manual", payload["manualFallbackFilterKey"])
         self.assertEqual("Custom - Approved", payload["manualFallbackState"]["pillLabel"])
-        self.assertEqual("Golden Source", payload["goldenLabel"])
-        self.assertEqual("Golden Source - Saved", payload["goldenState"]["pillLabel"])
-        self.assertEqual("Identified", payload["goldenSourceState"]["label"])
-        self.assertEqual("Golden source identified", payload["goldenSourceState"]["detail"])
+        self.assertEqual("Curated Source", payload["curatedLabel"])
+        self.assertEqual("Curated Source - Saved", payload["curatedState"]["pillLabel"])
+        self.assertEqual("Identified", payload["curatedSourceState"]["label"])
+        self.assertEqual("Curated source identified", payload["curatedSourceState"]["detail"])
 
     def test_library_js_renders_new_source_state_cells(self):
         for snippet in (
-            "function _goldenSourceState(row={})",
+            "function _curatedSourceState(row={})",
             "function _customSourceState(row={})",
             "function _localSourceState(row={})",
             "function _selectedSourceStateSummary(row={}, opts={})",
             "function _renderConfirmSelectedSourceState(targetId,row={},opts={})",
             "function _renderSourceStateStack(targetId,row={},opts={})",
-            "String(row?.golden_source_imported_at||'').trim() || String(row?.last_updated||'').trim()",
+            "String(row?.curated_source_imported_at||'').trim() || String(row?.last_updated||'').trim()",
             "String(row?.selected_source_recorded_at||'').trim() || String(row?.last_updated||'').trim()",
-            "const goldenState=_goldenSourceState(row);",
-            "stateLabel:_sourceStatePillLabel('Golden', goldenState.label)",
-            "note:goldenState.detail",
-            "_renderSourceStateCell('', _renderSourceStatePill(goldenState.label, goldenState.className, goldenState.detail), '', goldenState.chips)",
+            "const curatedState=_curatedSourceState(row);",
+            "stateLabel:_sourceStatePillLabel('Curated', curatedState.label)",
+            "note:curatedState.detail",
+            "_renderSourceStateCell('', _renderSourceStatePill(curatedState.label, curatedState.className, curatedState.detail), '', curatedState.chips)",
             "_renderSourceStateCell('', _renderSourceStatePill(customState.pillLabel, customState.className, customState.detail || customState.pillLabel), '', customState.chips)",
             "pillLabel:_sourceStatePillLabel(typeLabel, statusLabel)",
             "_sourceStatePillLabel(_selectedSourceLabel(previewRow), _selectedSourceStateText(previewRow))",
@@ -122,21 +122,21 @@ process.stdout.write(JSON.stringify({{
         ):
             self.assertIn(snippet, self.library_source)
 
-    def test_library_js_uses_distinct_offsets_for_golden_selected_and_local_layers(self):
+    def test_library_js_uses_distinct_offsets_for_curated_selected_and_local_layers(self):
         for snippet in (
-            "offset:_normalizedOffsetValue(sourceRow?.golden_source_offset||'0')",
-            "const goldenOffsetValue=_normalizedOffsetValue(existingRow?.golden_source_offset||'0');",
-            "if(layer==='golden_source') return row?.golden_source_offset||0;",
+            "offset:_normalizedOffsetValue(sourceRow?.curated_source_offset||'0')",
+            "const curatedOffsetValue=_normalizedOffsetValue(existingRow?.curated_source_offset||'0');",
+            "if(layer==='curated_source') return row?.curated_source_offset||0;",
             "if(layer==='local_theme') return row?.local_source_offset ?? row?.start_offset ?? 0;",
             "return row?.start_offset||0;",
             "_themeModalOffsetLabel(row, true, 'local_theme')",
-            "_setMethodQuickPick('golden_source', golden.url ? {title:'Golden Source URL', url:golden.url, start_offset:golden.offset} : false);",
+            "_setMethodQuickPick('curated_source', curated.url ? {title:'Curated Source URL', url:curated.url, start_offset:curated.offset} : false);",
         ):
             self.assertIn(snippet, self.library_source)
 
-    def test_library_js_does_not_reuse_selected_source_offset_for_golden_source_ui(self):
+    def test_library_js_does_not_reuse_selected_source_offset_for_curated_source_ui(self):
         self.assertNotIn("offset:_normalizedOffsetValue(sourceRow?.start_offset||'0')", self.library_source)
-        self.assertNotIn("const goldenOffsetValue=_normalizedOffsetValue(existingRow?.start_offset||'0');", self.library_source)
+        self.assertNotIn("const curatedOffsetValue=_normalizedOffsetValue(existingRow?.start_offset||'0');", self.library_source)
 
     def test_library_js_no_longer_sorts_or_renders_local_table_column(self):
         self.assertNotIn("if(col==='local_state')", self.library_source)
@@ -151,12 +151,12 @@ process.stdout.write(JSON.stringify({{
         self.assertNotIn('select class="st-sel"', self.library_source)
         self.assertNotIn("onchange=\"updateRow('${rk}','status',this.value)\"", self.library_source)
 
-    def test_library_js_reserves_ready_for_download_readiness_not_golden_source_presence(self):
+    def test_library_js_reserves_ready_for_download_readiness_not_curated_source_presence(self):
         self.assertIn("label:'Identified'", self.library_source)
-        self.assertIn("detail:'Golden source identified'", self.library_source)
-        self.assertIn("stateLabel:_sourceStatePillLabel('Golden', goldenState.label)", self.library_source)
-        self.assertNotIn("_sourceStatePillLabel('Golden', _rowHasGoldenSource(row) ? 'Ready' : 'Not Available')", self.library_source)
-        self.assertNotIn("label:'Ready', className:'is-golden'", self.library_source)
+        self.assertIn("detail:'Curated source identified'", self.library_source)
+        self.assertIn("stateLabel:_sourceStatePillLabel('Curated', curatedState.label)", self.library_source)
+        self.assertNotIn("_sourceStatePillLabel('Curated', _rowHasCuratedSource(row) ? 'Ready' : 'Not Available')", self.library_source)
+        self.assertNotIn("label:'Ready', className:'is-curated'", self.library_source)
 
     def test_confirm_step_selected_source_summary_uses_single_source_renderer(self):
         start = self.library_source.index("function _renderSelectedSourceSummary(url, title)")

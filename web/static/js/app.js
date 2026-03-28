@@ -606,11 +606,11 @@ function dashboardOpenTarget(target={}){
   if(target.page==='theme-manager' || target.page==='database') return openThemeManagerFiltered(target.filter||'');
   return showPage('dashboard');
 }
-async function dashboardImportGoldenSource(){
+async function dashboardImportCuratedSource(){
   showPage('theme-manager');
   setTimeout(async()=>{
     if(!_activeLib) await loadDatabase();
-    importGoldenSource();
+    importCuratedSource();
   }, 350);
 }
 async function dashboardRunQuick(passNum){
@@ -644,7 +644,7 @@ function renderDashboardSystemHealth(health){
   const rows=[
     {label:'Plex', key:'plex'},
     {label:'TMDB API', key:'tmdb'},
-    {label:'Golden Source', key:'golden_source'},
+    {label:'Curated Source', key:'curated_source'},
     {label:'Download Toolchain', key:'toolchain'},
     {label:'Storage', key:'storage'},
     {label:'Database', key:'database'},
@@ -1529,7 +1529,7 @@ function emphasizeStatusCopy(){
 async function loadConfiguration(force=false){
   const cfg=await loadConfig(force);
   ['plex_url','plex_token','tmdb_api_key',
-   'search_mode','search_query_playlist','search_query_direct','golden_source_url',
+   'search_mode','search_query_playlist','search_query_direct','curated_source_url',
    'audio_format','quality_profile','theme_filename','max_retries','download_delay_seconds','test_limit']
     .forEach(k=>{ const el=document.getElementById('cfg-'+k); if(el) el.value=cfg[k]??''; });
 
@@ -1537,10 +1537,10 @@ async function loadConfiguration(force=false){
   if(fbEl) fbEl.checked = cfg.search_fallback !== false;
   const matchingModeEl = document.getElementById('cfg-search_matching_mode');
   if(matchingModeEl) matchingModeEl.value = cfg.search_fuzzy ? 'fuzzy' : 'strict';
-  const goldenOnlyEl = document.getElementById('cfg-search_only_golden');
-  if(goldenOnlyEl) goldenOnlyEl.checked = !!cfg.search_only_golden;
-  const goldenRefreshEl = document.getElementById('cfg-refresh_golden_source_each_run');
-  if(goldenRefreshEl) goldenRefreshEl.checked = cfg.refresh_golden_source_each_run !== false;
+  const curatedOnlyEl = document.getElementById('cfg-search_only_curated');
+  if(curatedOnlyEl) curatedOnlyEl.checked = !!cfg.search_only_curated;
+  const curatedRefreshEl = document.getElementById('cfg-refresh_curated_source_each_run');
+  if(curatedRefreshEl) curatedRefreshEl.checked = cfg.refresh_curated_source_each_run !== false;
   syncMatchingModeSelect();
   const manAuto=document.getElementById('cfg-auto_approve_manual');
   if(manAuto) manAuto.checked = !!cfg.auto_approve_manual;
@@ -1694,26 +1694,26 @@ async function testTmdb(){
   testBadge('tmdb-test-result', !!data.ok, data.ok ? 'API key valid' : data.error);
 }
 
-async function testGoldenSource(){
-  const url=(document.getElementById('cfg-golden_source_url').value||'').trim();
-  const badge=document.getElementById('golden-test-result');
-  const btn=document.getElementById('golden-test-btn');
-  if(!url){ testBadge('golden-test-result', false, 'Enter a Golden Source URL first'); return; }
+async function testCuratedSource(){
+  const url=(document.getElementById('cfg-curated_source_url').value||'').trim();
+  const badge=document.getElementById('curated-test-result');
+  const btn=document.getElementById('curated-test-btn');
+  if(!url){ testBadge('curated-test-result', false, 'Enter a Curated Source URL first'); return; }
   if(btn){ btn.disabled=true; btn.textContent='Testing…'; }
   if(badge) badge.innerHTML='<span class="test-result test-pending">Testing…</span>';
   try{
-    const {ok,data}=await postJson('/api/test/golden-source',{url});
-    testBadge('golden-test-result', ok, ok ? `Ready · ${data.rows} rows · ${data.fetch_ms} ms` : (data.error||'Test failed'));
+    const {ok,data}=await postJson('/api/test/curated-source',{url});
+    testBadge('curated-test-result', ok, ok ? `Ready · ${data.rows} rows · ${data.fetch_ms} ms` : (data.error||'Test failed'));
   }catch(e){
-    testBadge('golden-test-result', false, 'Test failed');
+    testBadge('curated-test-result', false, 'Test failed');
   }finally{
-    if(btn){ btn.disabled=false; btn.textContent='⚡ Test Golden Source'; }
+    if(btn){ btn.disabled=false; btn.textContent='⚡ Test Curated Source'; }
   }
 }
 
 async function saveConfiguration(){
   const strFields=['plex_url','plex_token','tmdb_api_key',
-    'search_mode','search_query_playlist','search_query_direct','golden_source_url',
+    'search_mode','search_query_playlist','search_query_direct','curated_source_url',
     'cookies_file','audio_format','quality_profile','theme_filename'];
   const numFields=['max_retries','download_delay_seconds','test_limit'];
   const cfg={};
@@ -1723,8 +1723,8 @@ async function saveConfiguration(){
   cfg.max_theme_duration = _maxDur;
   cfg.search_fallback = document.getElementById('cfg-search_fallback').checked;
   cfg.search_fuzzy = (document.getElementById('cfg-search_matching_mode')?.value || 'strict') === 'fuzzy';
-  cfg.search_only_golden = document.getElementById('cfg-search_only_golden').checked;
-  cfg.refresh_golden_source_each_run = document.getElementById('cfg-refresh_golden_source_each_run').checked;
+  cfg.search_only_curated = document.getElementById('cfg-search_only_curated').checked;
+  cfg.refresh_curated_source_each_run = document.getElementById('cfg-refresh_curated_source_each_run').checked;
   if(cfg.search_fuzzy) cfg.search_fallback = false;
   cfg.auto_approve_manual = document.getElementById('cfg-auto_approve_manual').checked;
   const {ok,data}=await postJson('/api/config',cfg);
@@ -1794,7 +1794,7 @@ try{
 
 registerModalLifecycle('confirm-modal',{requestClose:closeConfirmModal});
 registerModalLifecycle('delete-modal',{requestClose:closeDeleteModal});
-registerModalLifecycle('gs-modal',{requestClose:closeGoldenSourceModal});
+registerModalLifecycle('gs-modal',{requestClose:closeCuratedSourceModal});
 registerModalLifecycle('search-modal',{requestClose:closeSearchModal});
 registerModalLifecycle('trim-modal',{requestClose:closeTrimModal});
 registerModalLifecycle('yt-modal',{requestClose:closeYtModal});

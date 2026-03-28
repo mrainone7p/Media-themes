@@ -24,7 +24,7 @@ from typing import Iterable
 
 import yaml
 
-from shared.golden_source_csv import GOLDEN_SOURCE_OPTIONAL_COLUMNS, GOLDEN_SOURCE_REQUIRED_COLUMNS
+from shared.curated_source_csv import CURATED_SOURCE_OPTIONAL_COLUMNS, CURATED_SOURCE_REQUIRED_COLUMNS
 from shared.logging_utils import get_project_logger, summarize_libraries
 from shared.storage import (
     CONFIG_PATH,
@@ -32,7 +32,7 @@ from shared.storage import (
     STATUS_ORDER,
     ledger_path_for,
     load_ledger_rows as load_ledger,
-    normalize_golden_source_url,
+    normalize_curated_source_url,
     now_str,
     save_ledger_rows as save_ledger,
 )
@@ -55,9 +55,9 @@ CONFIG_DEFAULTS = {
     "theme_filename": "theme.mp3",
     "max_theme_duration": 45,
     "mode": "manual",
-    "golden_source_url": "",
-    "golden_source_cache_ttl_sec": 1800,
-    "golden_source_resolve_tmdb": False,
+    "curated_source_url": "",
+    "curated_source_cache_ttl_sec": 1800,
+    "curated_source_resolve_tmdb": False,
     "cron_schedule": "0 3 * * *",
     "schedule_enabled": False,
     "schedule_libraries": [],
@@ -72,8 +72,8 @@ CONFIG_DEFAULTS = {
     "search_query_direct": "{title} {year} theme song",
     "search_fallback": True,
     "search_fuzzy": False,
-    "search_only_golden": False,
-    "refresh_golden_source_each_run": True,
+    "search_only_curated": False,
+    "refresh_curated_source_each_run": True,
     "cookies_file": "",
     "max_retries": 3,
     "download_delay_seconds": 5,
@@ -90,9 +90,9 @@ CONFIG_BOOL_FIELDS = {
     "auto_approve_manual",
     "search_fallback",
     "search_fuzzy",
-    "search_only_golden",
-    "refresh_golden_source_each_run",
-    "golden_source_resolve_tmdb",
+    "search_only_curated",
+    "refresh_curated_source_each_run",
+    "curated_source_resolve_tmdb",
 }
 
 CONFIG_ENUM_FIELDS = {
@@ -104,7 +104,7 @@ CONFIG_ENUM_FIELDS = {
 
 CONFIG_NUMERIC_FIELDS = {
     "max_theme_duration": {"type": "int", "min": 0, "max": 3600},
-    "golden_source_cache_ttl_sec": {"type": "int", "min": 0, "max": 604800},
+    "curated_source_cache_ttl_sec": {"type": "int", "min": 0, "max": 604800},
     "max_retries": {"type": "int", "min": 0, "max": 20},
     "download_delay_seconds": {"type": "float", "min": 0, "max": 3600},
     "test_limit": {"type": "int", "min": 0, "max": 100000},
@@ -312,7 +312,7 @@ def normalize_config(raw_cfg, *, for_save=False):
     for field in {"plex_url", "plex_token", "tmdb_api_key", "ui_token", "cookies_file", "search_query_playlist", "search_query_direct"}:
         if field in raw_cfg:
             normalized[field] = str(raw_cfg.get(field, "") or "").strip()
-    normalized["golden_source_url"] = normalize_golden_source_url(raw_cfg.get("golden_source_url", normalized["golden_source_url"]))
+    normalized["curated_source_url"] = normalize_curated_source_url(raw_cfg.get("curated_source_url", normalized["curated_source_url"]))
     normalized["theme_filename"] = _normalize_theme_filename(raw_cfg.get("theme_filename", normalized["theme_filename"]), errors)
     normalized["schedule_libraries"] = _normalize_schedule_libraries(raw_cfg.get("schedule_libraries"), normalized, errors)
     normalized["cron_schedule"] = _normalize_cron_schedule(raw_cfg.get("cron_schedule", normalized["cron_schedule"]), errors)
@@ -1075,7 +1075,7 @@ def post_config_payload(incoming):
         "schedule_step3",
         "schedule_test_limit",
         "auto_approve",
-        "search_only_golden",
+        "search_only_curated",
     }
     scheduler_result = None
     if tasks.scheduler_managed_via_cron() and any(existing.get(field) != normalized.get(field) for field in scheduler_fields):
@@ -1125,11 +1125,11 @@ def test_tmdb_payload(data):
         return {"ok": False, "error": str(exc)[:120]}
 
 
-def test_golden_source_payload(data):
+def test_curated_source_payload(data):
     import web.ledger as ledger
     try:
-        url = data.get("url") or load_config().get("golden_source_url", "")
-        normalized_url, rows, fetch_ms, fetch_mode = ledger.fetch_golden_source_catalog(url)
+        url = data.get("url") or load_config().get("curated_source_url", "")
+        normalized_url, rows, fetch_ms, fetch_mode = ledger.fetch_curated_source_catalog(url)
         if not rows:
             return {"ok": False, "error": "CSV loaded but no usable rows found (need tmdb_id column)"}
         return {
@@ -1138,8 +1138,8 @@ def test_golden_source_payload(data):
             "rows": len(rows),
             "fetch_ms": fetch_ms,
             "fetch_mode": fetch_mode,
-            "required_columns": list(GOLDEN_SOURCE_REQUIRED_COLUMNS),
-            "optional_columns": list(GOLDEN_SOURCE_OPTIONAL_COLUMNS),
+            "required_columns": list(CURATED_SOURCE_REQUIRED_COLUMNS),
+            "optional_columns": list(CURATED_SOURCE_OPTIONAL_COLUMNS),
         }
     except Exception as exc:
         return {"ok": False, "error": str(exc)[:180]}

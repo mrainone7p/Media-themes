@@ -49,9 +49,9 @@ class StorageLocalProvenanceTests(unittest.TestCase):
                     selected_source_kind TEXT,
                     selected_source_method TEXT,
                     selected_source_recorded_at TEXT,
-                    golden_source_url TEXT,
-                    golden_source_offset TEXT DEFAULT '0',
-                    golden_source_imported_at TEXT,
+                    curated_source_url TEXT,
+                    curated_source_offset TEXT DEFAULT '0',
+                    curated_source_imported_at TEXT,
                     end_offset TEXT,
                     plex_title TEXT,
                     folder TEXT,
@@ -82,9 +82,9 @@ class StorageLocalProvenanceTests(unittest.TestCase):
                 "selected_source_kind": "custom",
                 "selected_source_method": "playlist",
                 "selected_source_recorded_at": "2026-03-23 09:00:00",
-                "golden_source_url": "https://example.test/golden",
-                "golden_source_offset": "8",
-                "golden_source_imported_at": "2026-03-23 08:00:00",
+                "curated_source_url": "https://example.test/curated",
+                "curated_source_offset": "8",
+                "curated_source_imported_at": "2026-03-23 08:00:00",
                 "local_source_url": "https://example.test/local",
                 "local_source_offset": "12",
                 "local_source_origin": "manual",
@@ -115,14 +115,14 @@ class StorageLocalProvenanceTests(unittest.TestCase):
             self.assertEqual("custom", loaded[0]["selected_source_kind"])
             self.assertEqual("playlist", loaded[0]["selected_source_method"])
             self.assertEqual("2026-03-23 09:00:00", loaded[0]["selected_source_recorded_at"])
-            self.assertEqual("2026-03-23 08:00:00", loaded[0]["golden_source_imported_at"])
+            self.assertEqual("2026-03-23 08:00:00", loaded[0]["curated_source_imported_at"])
             self.assertEqual("custom", loaded[0]["local_source_kind"])
             self.assertEqual("playlist", loaded[0]["local_source_method"])
             self.assertEqual("2026-03-23 10:00:00", loaded[0]["local_source_recorded_at"])
 
 
 class SourceFlowLayeringTests(unittest.TestCase):
-    def test_golden_import_updates_curated_fields_without_overwriting_selected_source(self):
+    def test_curated_import_updates_curated_fields_without_overwriting_selected_source(self):
         row = {
             "rating_key": "1",
             "title": "Example",
@@ -133,9 +133,9 @@ class SourceFlowLayeringTests(unittest.TestCase):
             "selected_source_kind": "custom",
             "selected_source_method": "manual",
             "selected_source_recorded_at": "2026-03-21 07:00:00",
-            "golden_source_url": "",
-            "golden_source_offset": "0",
-            "golden_source_imported_at": "",
+            "curated_source_url": "",
+            "curated_source_offset": "0",
+            "curated_source_imported_at": "",
             "local_source_url": "https://example.test/local-theme",
             "local_source_offset": "15",
             "local_source_origin": "manual",
@@ -156,14 +156,14 @@ class SourceFlowLayeringTests(unittest.TestCase):
         with (
             patch("web.ledger.load_config", return_value={}),
             patch(
-                "web.ledger.fetch_golden_source_catalog",
+                "web.ledger.fetch_curated_source_catalog",
                 return_value=(
-                    "https://example.test/golden.csv",
+                    "https://example.test/curated.csv",
                     [{
                         "tmdb_id": "123",
                         "title": "Example",
                         "year": "1999",
-                        "source_url": "https://example.test/golden-selected",
+                        "source_url": "https://example.test/curated-selected",
                         "start_offset": "4",
                         "end_offset": "9",
                     }],
@@ -175,7 +175,7 @@ class SourceFlowLayeringTests(unittest.TestCase):
             patch("web.ledger.save_ledger"),
             patch("web.ledger.now_str", return_value="2026-03-23 14:00:00"),
         ):
-            payload, status = ledger.golden_source_import_summary({
+            payload, status = ledger.curated_source_import_summary({
                 "library": "Movies",
                 "overwrite_existing": False,
             })
@@ -187,10 +187,10 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertEqual("manual", row["source_origin"])
         self.assertEqual("custom", row["selected_source_kind"])
         self.assertEqual("manual", row["selected_source_method"])
-        self.assertEqual("https://example.test/golden-selected", row["golden_source_url"])
-        self.assertEqual("4", row["golden_source_offset"])
+        self.assertEqual("https://example.test/curated-selected", row["curated_source_url"])
+        self.assertEqual("4", row["curated_source_offset"])
         self.assertEqual("2026-03-21 07:00:00", row["selected_source_recorded_at"])
-        self.assertEqual("2026-03-23 14:00:00", row["golden_source_imported_at"])
+        self.assertEqual("2026-03-23 14:00:00", row["curated_source_imported_at"])
         self.assertEqual("https://example.test/local-theme", row["local_source_url"])
         self.assertEqual("manual", row["local_source_method"])
 
@@ -204,18 +204,18 @@ class SourceFlowLayeringTests(unittest.TestCase):
             "selected_source_kind": "custom",
             "selected_source_method": "direct",
             "selected_source_recorded_at": "2026-03-21 08:30:00",
-            "golden_source_url": "https://example.test/golden",
-            "golden_source_offset": "1",
-            "golden_source_imported_at": "2026-03-20 08:00:00",
+            "curated_source_url": "https://example.test/curated",
+            "curated_source_offset": "1",
+            "curated_source_imported_at": "2026-03-20 08:00:00",
             "local_source_url": "https://example.test/local-theme",
             "local_source_offset": "3",
-            "local_source_origin": "golden_source",
-            "local_source_kind": "golden",
-            "local_source_method": "golden_source",
+            "local_source_origin": "curated_source",
+            "local_source_kind": "curated",
+            "local_source_method": "curated_source",
             "local_source_recorded_at": "2026-03-22 09:00:00",
             "end_offset": "0",
             "notes": "",
-            "source_origin": "golden_source",
+            "source_origin": "curated_source",
             "theme_exists": "0",
         }
 
@@ -244,10 +244,10 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertEqual("custom", row["selected_source_kind"])
         self.assertEqual("playlist", row["selected_source_method"])
         self.assertEqual("2026-03-23 15:00:00", row["selected_source_recorded_at"])
-        self.assertEqual("https://example.test/golden", row["golden_source_url"])
-        self.assertEqual("2026-03-20 08:00:00", row["golden_source_imported_at"])
+        self.assertEqual("https://example.test/curated", row["curated_source_url"])
+        self.assertEqual("2026-03-20 08:00:00", row["curated_source_imported_at"])
         self.assertEqual("https://example.test/local-theme", row["local_source_url"])
-        self.assertEqual("golden_source", row["local_source_method"])
+        self.assertEqual("curated_source", row["local_source_method"])
 
 
     def test_stale_available_manual_source_save_and_approve_path_restages_then_approves(self):
@@ -303,9 +303,9 @@ class SourceFlowLayeringTests(unittest.TestCase):
             "selected_source_kind": "custom",
             "selected_source_method": "playlist",
             "selected_source_recorded_at": "2026-03-21 08:30:00",
-            "golden_source_url": "https://example.test/golden",
-            "golden_source_offset": "1",
-            "golden_source_imported_at": "2026-03-20 08:00:00",
+            "curated_source_url": "https://example.test/curated",
+            "curated_source_offset": "1",
+            "curated_source_imported_at": "2026-03-20 08:00:00",
             "local_source_url": "https://example.test/local-theme",
             "local_source_offset": "3",
             "local_source_origin": "manual",
@@ -323,7 +323,7 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual("2026-03-24 12:00:00", row["last_updated"])
         self.assertEqual("2026-03-21 08:30:00", row["selected_source_recorded_at"])
-        self.assertEqual("2026-03-20 08:00:00", row["golden_source_imported_at"])
+        self.assertEqual("2026-03-20 08:00:00", row["curated_source_imported_at"])
 
     def test_manual_download_stamps_local_provenance_from_selected_source(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -375,9 +375,9 @@ class SourceFlowLayeringTests(unittest.TestCase):
             "status": media_tracks.ST_APPROVED,
             "url": "https://example.test/selected",
             "start_offset": "5",
-            "selected_source_kind": "golden",
-            "selected_source_method": "golden_source",
-            "source_origin": "golden_source",
+            "selected_source_kind": "curated",
+            "selected_source_method": "curated_source",
+            "source_origin": "curated_source",
             "folder": "/tmp/example",
             "theme_exists": 0,
         }
@@ -401,9 +401,9 @@ class SourceFlowLayeringTests(unittest.TestCase):
         self.assertEqual(1, stats["downloaded"])
         self.assertEqual("https://example.test/selected", row["local_source_url"])
         self.assertEqual("5", row["local_source_offset"])
-        self.assertEqual("golden_source", row["local_source_origin"])
-        self.assertEqual("golden", row["local_source_kind"])
-        self.assertEqual("golden_source", row["local_source_method"])
+        self.assertEqual("curated_source", row["local_source_origin"])
+        self.assertEqual("curated", row["local_source_kind"])
+        self.assertEqual("curated_source", row["local_source_method"])
         self.assertEqual("2026-03-23 12:00:00", row["local_source_recorded_at"])
 
 

@@ -62,12 +62,12 @@ import yaml
 
 from shared.file_utils import atomic_replace_file, sibling_temp_path, validate_audio_file
 from shared.logging_utils import get_project_logger, summarize_libraries
-from shared.golden_source_csv import parse_golden_source_csv_map
+from shared.curated_source_csv import parse_curated_source_csv_map
 from shared.storage import (
     CONFIG_PATH,
     LEDGER_HEADERS,
     TMDB_GUID_RE,
-    clear_golden_source_import_record,
+    clear_curated_source_import_record,
     clear_local_source_provenance,
     clear_selected_source_record,
     ffprobe_duration,
@@ -75,10 +75,10 @@ from shared.storage import (
     ledger_path_for,
     load_ledger_map as load_ledger,
     now_str,
-    read_golden_source_text,
+    read_curated_source_text,
     save_ledger_map as save_ledger,
     set_selected_source_contract,
-    stamp_golden_source_import_record,
+    stamp_curated_source_import_record,
     stamp_local_source_provenance,
     stamp_selected_source_record,
     sync_theme_cache,
@@ -111,8 +111,8 @@ def emit_progress(pass_num: int, current: int, total: int, title: str, action: s
 # ─── Config ───────────────────────────────────────────────────────────────────
 
 LOCK_PATH   = os.environ.get("LOCK_PATH",   "/app/logs/media_tracks.lock")
-GOLDEN_CACHE_DIR = Path(os.environ.get("GOLDEN_CACHE_DIR", str(Path(LOCK_PATH).resolve().parent / "golden_source_cache")))
-GOLDEN_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+CURATED_CACHE_DIR = Path(os.environ.get("CURATED_CACHE_DIR", str(Path(LOCK_PATH).resolve().parent / "curated_source_cache")))
+CURATED_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_config() -> dict:
@@ -176,8 +176,8 @@ def _is_retryable_resolve_reason(reason: str) -> bool:
 def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
                   year: str, folder: str, status: str, url: str = "",
                   start_offset=0, end_offset=0, notes: str = "", tmdb_id: str = "",
-                  source_origin: str | None = None, golden_source_url: str = "",
-                  golden_source_offset=0, selected_source_kind: str = "",
+                  source_origin: str | None = None, curated_source_url: str = "",
+                  curated_source_offset=0, selected_source_kind: str = "",
                   selected_source_method: str = ""):
     """Insert or update a row. Never overwrites a user-supplied URL."""
     existing = ledger.get(rating_key, {})
@@ -192,9 +192,9 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         "selected_source_kind": existing.get("selected_source_kind", ""),
         "selected_source_method": existing.get("selected_source_method", ""),
         "selected_source_recorded_at": existing.get("selected_source_recorded_at", ""),
-        "golden_source_url": golden_source_url if golden_source_url else existing.get("golden_source_url", ""),
-        "golden_source_offset": str(golden_source_offset) if golden_source_offset else existing.get("golden_source_offset", "0"),
-        "golden_source_imported_at": existing.get("golden_source_imported_at", ""),
+        "curated_source_url": curated_source_url if curated_source_url else existing.get("curated_source_url", ""),
+        "curated_source_offset": str(curated_source_offset) if curated_source_offset else existing.get("curated_source_offset", "0"),
+        "curated_source_imported_at": existing.get("curated_source_imported_at", ""),
         "end_offset":     str(end_offset) if end_offset else existing.get("end_offset", "0"),
         "plex_title":     plex_title,
         "folder":         folder,
@@ -238,15 +238,15 @@ def ledger_upsert(ledger: dict, rating_key: str, plex_title: str, title: str,
         ledger[rating_key]["selected_source_method"] = ""
         clear_selected_source_record(ledger[rating_key])
 
-    if golden_source_url:
+    if curated_source_url:
         if (
-            str(golden_source_url).strip() != str(existing.get("golden_source_url", "") or "").strip()
-            or str(golden_source_offset).strip() != str(existing.get("golden_source_offset", "0") or "0")
-            or not str(existing.get("golden_source_imported_at", "") or "").strip()
+            str(curated_source_url).strip() != str(existing.get("curated_source_url", "") or "").strip()
+            or str(curated_source_offset).strip() != str(existing.get("curated_source_offset", "0") or "0")
+            or not str(existing.get("curated_source_imported_at", "") or "").strip()
         ):
-            stamp_golden_source_import_record(ledger[rating_key], imported_at=ledger[rating_key]["last_updated"])
-    elif not ledger[rating_key]["golden_source_url"]:
-        clear_golden_source_import_record(ledger[rating_key])
+            stamp_curated_source_import_record(ledger[rating_key], imported_at=ledger[rating_key]["last_updated"])
+    elif not ledger[rating_key]["curated_source_url"]:
+        clear_curated_source_import_record(ledger[rating_key])
 
 
 # ─── Plex API ─────────────────────────────────────────────────────────────────
@@ -545,21 +545,21 @@ def _pick_youtube_source(query: str, search_title: str, year: str, mode: str,
     return selected.get("url", ""), selected.get("title", "")
 
 
-# ─── Golden Source ────────────────────────────────────────────────────────────
+# ─── Curated Source ────────────────────────────────────────────────────────────
 
-def _parse_golden_source_text(text: str) -> dict:
-    return parse_golden_source_csv_map(text, require_source_url=True)
+def _parse_curated_source_text(text: str) -> dict:
+    return parse_curated_source_csv_map(text, require_source_url=True)
 
 
-def _fetch_golden_source_catalog(url: str, force_refresh: bool = True, cache_ttl_sec: int = 1800) -> tuple:
-    """Fetch Golden Source CSV. Returns (normalized_url, {tmdb_id: row_dict})."""
-    normalized, text, _, _ = read_golden_source_text(
+def _fetch_curated_source_catalog(url: str, force_refresh: bool = True, cache_ttl_sec: int = 1800) -> tuple:
+    """Fetch Curated Source CSV. Returns (normalized_url, {tmdb_id: row_dict})."""
+    normalized, text, _, _ = read_curated_source_text(
         url,
-        cache_dir=GOLDEN_CACHE_DIR,
+        cache_dir=CURATED_CACHE_DIR,
         force_refresh=force_refresh,
         cache_ttl_sec=cache_ttl_sec,
     )
-    return normalized, _parse_golden_source_text(text)
+    return normalized, _parse_curated_source_text(text)
 
 
 # ─── Audio helpers ────────────────────────────────────────────────────────────
@@ -749,10 +749,10 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
     query_direct  = cfg.get("search_query_direct",   "{title} {year} theme song")
     fallback      = bool(cfg.get("search_fallback", True))
     fuzzy         = bool(cfg.get("search_fuzzy", False))
-    golden_only   = bool(cfg.get("search_only_golden", False))
-    source_url    = cfg.get("golden_source_url", "")
-    refresh_golden_each_run = bool(cfg.get("refresh_golden_source_each_run", True))
-    golden_cache_ttl_sec = int(cfg.get("golden_source_cache_ttl_sec", 1800) or 1800)
+    curated_only   = bool(cfg.get("search_only_curated", False))
+    source_url    = cfg.get("curated_source_url", "")
+    refresh_curated_each_run = bool(cfg.get("refresh_curated_source_each_run", True))
+    curated_cache_ttl_sec = int(cfg.get("curated_source_cache_ttl_sec", 1800) or 1800)
 
     if fuzzy:
         fallback = False
@@ -761,26 +761,26 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
     if "search_query" in cfg and "search_query_playlist" not in cfg:
         query_playlist = cfg["search_query"]
 
-    stats = {"staged": 0, "missing": 0, "failed": 0, "golden_matched": 0}
+    stats = {"staged": 0, "missing": 0, "failed": 0, "curated_matched": 0}
 
-    # ── Golden Source only mode ───────────────────────────────────────────────
-    golden_catalog: dict = {}
-    if golden_only:
+    # ── Curated Source only mode ───────────────────────────────────────────────
+    curated_catalog: dict = {}
+    if curated_only:
         try:
-            _, golden_catalog = _fetch_golden_source_catalog(
+            _, curated_catalog = _fetch_curated_source_catalog(
                 source_url,
-                force_refresh=refresh_golden_each_run,
-                cache_ttl_sec=golden_cache_ttl_sec,
+                force_refresh=refresh_curated_each_run,
+                cache_ttl_sec=curated_cache_ttl_sec,
             )
-            mode = 'fresh' if refresh_golden_each_run else f'cache≤{golden_cache_ttl_sec}s'
-            log.info(f"Golden Source only mode enabled — loaded {len(golden_catalog)} rows ({mode})")
+            mode = 'fresh' if refresh_curated_each_run else f'cache≤{curated_cache_ttl_sec}s'
+            log.info(f"Curated Source only mode enabled — loaded {len(curated_catalog)} rows ({mode})")
         except Exception as e:
-            log.error(f"Golden Source fetch failed: {e}")
+            log.error(f"Curated Source fetch failed: {e}")
             for movie in missing_movies:
                 ledger_upsert(
                     ledger, movie["rating_key"], movie["plex_title"], movie["plex_title"],
                     movie["plex_year"], movie["folder"], ST_FAILED,
-                    notes=f"Golden Source fetch failed: {str(e)[:120]}",
+                    notes=f"Curated Source fetch failed: {str(e)[:120]}",
                     tmdb_id=movie.get("tmdb_id") or "",
                 )
                 stats["failed"] += 1
@@ -810,30 +810,30 @@ def pass2_resolve(ledger: dict, missing_movies: list, cfg: dict) -> dict:
         if title != plex_title:
             log.info(f"  TMDB: '{plex_title}' → '{title}'")
 
-        # Golden Source only path
-        if golden_only:
-            match = golden_catalog.get(tmdb_id)
+        # Curated Source only path
+        if curated_only:
+            match = curated_catalog.get(tmdb_id)
             if not match:
-                log.info("  Golden Source: no TMDB match — marking FAILED")
+                log.info("  Curated Source: no TMDB match — marking FAILED")
                 ledger_upsert(
                     ledger, key, plex_title, title, year, folder, ST_FAILED,
-                    notes="Golden Source only mode — no TMDB match found", tmdb_id=tmdb_id,
+                    notes="Curated Source only mode — no TMDB match found", tmdb_id=tmdb_id,
                 )
                 stats["failed"] += 1
                 continue
             ledger_upsert(
                 ledger, key, plex_title, title, year, folder, ST_STAGED,
                 url=match.get("source_url", ""),
-                golden_source_url=match.get("source_url", ""),
-                golden_source_offset=match.get("start_offset", 0),
+                curated_source_url=match.get("source_url", ""),
+                curated_source_offset=match.get("start_offset", 0),
                 end_offset=match.get("end_offset", 0),
-                notes="Matched from Golden Source", tmdb_id=tmdb_id,
-                source_origin="golden_source",
-                selected_source_kind="golden",
-                selected_source_method="golden_source",
+                notes="Matched from Curated Source", tmdb_id=tmdb_id,
+                source_origin="curated_source",
+                selected_source_kind="curated",
+                selected_source_method="curated_source",
             )
             stats["staged"]         += 1
-            stats["golden_matched"] += 1
+            stats["curated_matched"] += 1
             continue
 
         # Strict template validation

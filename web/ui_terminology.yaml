@@ -32,7 +32,7 @@ schedule:
     step2:
       label: AUTO SCHEDULE · Step 2
       title: ⚡ Find Theme Sources
-      description: Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.
+      description: Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Curated Source when configured.
     step3:
       label: PIPELINE STEPS · Step 3
       title: ↓ Download Themes
@@ -46,10 +46,10 @@ schedule:
       step1:
         description: Connects to Plex, indexes media, and checks whether each folder already has a local theme file. Items without a theme are marked Missing. Items with a theme are marked Available. Uses Plex only. Fast.
       step2:
-        description: Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Golden Source when configured.
-        only_golden:
-          title: Only use Golden Source
-          description: Use a curated Golden Source for tighter, faster, and more reliable source discovery.
+        description: Searches for theme sources for each Missing item using the configured search logic. When a source is found, the item moves to Staged. Items marked Unmonitored or Failed are ignored. Uses TMDB, YouTube, or Curated Source when configured.
+        only_curated:
+          title: Only use Curated Source
+          description: Use a curated Curated Source for tighter, faster, and more reliable source discovery.
         limit:
           title: Missing Titles Per Run
           description: Limits how many Missing items are processed per run. 0 = unlimited.

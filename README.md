@@ -41,10 +41,10 @@ theme_filename: theme.mp3
 max_theme_duration: 60
 mode: manual
 
-golden_source_url: 
-# Optional Golden Source performance tuning
-# golden_source_cache_ttl_sec: 1800
-# golden_source_resolve_tmdb: false
+curated_source_url: 
+# Optional Curated Source performance tuning
+# curated_source_cache_ttl_sec: 1800
+# curated_source_resolve_tmdb: false
 cron_schedule: 0 3 * * *
 schedule_enabled: false
 ```
@@ -137,29 +137,29 @@ The web UI now uses a single responsive layout tuned for phones and tablets (no 
 | `libraries` | List of Plex library names to manage |
 | `theme_filename` | Output filename — default `theme.mp3` |
 | `max_theme_duration` | Trim downloads to this many seconds (0 = no limit) |
-| `golden_source_url` | URL (or local file path inside container) to a curated CSV of known-good theme sources |
-| `golden_source_cache_ttl_sec` | Seconds to reuse cached Golden Source CSV before re-fetching (default `1800`) |
-| `golden_source_resolve_tmdb` | When `true`, import may call TMDB for rows missing `tmdb_id` (slower but can increase matches) |
+| `curated_source_url` | URL (or local file path inside container) to a curated CSV of known-good theme sources |
+| `curated_source_cache_ttl_sec` | Seconds to reuse cached Curated Source CSV before re-fetching (default `1800`) |
+| `curated_source_resolve_tmdb` | When `true`, import may call TMDB for rows missing `tmdb_id` (slower but can increase matches) |
 | `cron_schedule` | When automated runs fire — standard cron syntax |
 | `schedule_enabled` | `true` to enable automated runs |
 
-## Golden Source CSV format
+## Curated Source CSV format
 
 The curated source CSV must have these columns:
 
 | Column | Required | Description |
 |--------|----------|-------------|
 | `tmdb_id` | ✓ | TMDB movie ID |
-| `source_url` | ✓ | Direct audio source URL (maps to DB `golden_source_url`) |
+| `source_url` | ✓ | Direct audio source URL (maps to DB `curated_source_url`) |
 | `title` | | Movie title (used for fallback matching) |
 | `year` | | Release year |
-| `start_offset` | | Trim start in seconds (maps to DB `golden_source_offset`) |
+| `start_offset` | | Trim start in seconds (maps to DB `curated_source_offset`) |
 | `updated_at` | | Last update date |
 | `notes` | | Any notes |
 
 Notes:
-- Golden Source CSV fields are imported into Golden Source DB fields (`golden_source_url`, `golden_source_offset`).
-- User-selected `url` and `start_offset` values are not imported from the Golden Source CSV.
+- Curated Source CSV fields are imported into Curated Source DB fields (`curated_source_url`, `curated_source_offset`).
+- User-selected `url` and `start_offset` values are not imported from the Curated Source CSV.
 
 ## Building locally
 
@@ -191,7 +191,7 @@ python -m script.media_tracks
 ├── shared/
 │   ├── __init__.py        # shared package marker
 │   ├── file_utils.py      # filesystem helpers for atomic writes/replaces
-│   ├── golden_source_csv.py # Golden Source CSV parsing/validation helpers
+│   ├── curated_source_csv.py # Curated Source CSV parsing/validation helpers
 │   ├── storage.py         # SQLite/database access, ledger persistence, status rules
 │   └── yt_dlp_utils.py    # yt-dlp command helpers shared by worker/web code
 ├── web/
@@ -199,7 +199,7 @@ python -m script.media_tracks
 │   ├── app.py             # Flask app and canonical API route definitions
 │   ├── services.py        # service layer for config, run orchestration, and API payloads
 │   ├── tasks.py           # scheduler, maintenance, exports, health, and UI helper services
-│   ├── ledger.py          # library ledger/theme state operations and Golden Source helpers
+│   ├── ledger.py          # library ledger/theme state operations and Curated Source helpers
 │   ├── integrations.py    # Plex, TMDB, and external integration helpers
 │   ├── themes.py          # theme file operations such as trim/delete/download-now helpers
 │   ├── logic.py           # legacy compatibility wrapper around consolidated services

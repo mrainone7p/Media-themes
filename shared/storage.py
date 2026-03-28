@@ -40,9 +40,9 @@ LEDGER_HEADERS = [
     "selected_source_kind",
     "selected_source_method",
     "selected_source_recorded_at",
-    "golden_source_url",
-    "golden_source_offset",
-    "golden_source_imported_at",
+    "curated_source_url",
+    "curated_source_offset",
+    "curated_source_imported_at",
     "local_source_url",
     "local_source_offset",
     "local_source_origin",
@@ -85,7 +85,7 @@ MANUAL_STATUS_TRANSITIONS = {
     "FAILED": frozenset({"MISSING", "STAGED"}),
 }
 
-SOURCE_KINDS = frozenset({"golden", "custom"})
+SOURCE_KINDS = frozenset({"curated", "custom"})
 
 
 def normalize_status(status: str | None, default: str = "MISSING") -> str:
@@ -229,16 +229,16 @@ def infer_selected_source_contract(row: dict) -> tuple[str, str]:
     explicit_kind = normalize_source_kind(row.get("selected_source_kind", ""))
     explicit_method = normalize_source_method(row.get("selected_source_method", ""))
     if explicit_kind or explicit_method:
-        kind = explicit_kind or ("golden" if explicit_method == "golden_source" else "custom")
-        method = explicit_method or ("golden_source" if kind == "golden" else "manual")
+        kind = explicit_kind or ("curated" if explicit_method == "curated_source" else "custom")
+        method = explicit_method or ("curated_source" if kind == "curated" else "manual")
         return kind, method
 
     source_origin = str(row.get("source_origin", "") or "").strip().lower()
-    golden_url = str(row.get("golden_source_url", "") or "").strip()
-    if golden_url and url == golden_url:
-        return "golden", "golden_source"
-    if source_origin.startswith("golden_source"):
-        return "golden", "golden_source"
+    curated_url = str(row.get("curated_source_url", "") or "").strip()
+    if curated_url and url == curated_url:
+        return "curated", "curated_source"
+    if source_origin.startswith("curated_source"):
+        return "curated", "curated_source"
     if "playlist" in source_origin:
         return "custom", "playlist"
     if "direct" in source_origin:
@@ -257,8 +257,8 @@ def infer_local_source_contract(row: dict) -> tuple[str, str]:
     if explicit_method in {"manual_download", "pass3_download"}:
         explicit_method = ""
     if explicit_kind or explicit_method:
-        kind = explicit_kind or ("golden" if explicit_method == "golden_source" else "custom")
-        method = explicit_method or ("golden_source" if kind == "golden" else infer_selected_source_contract(row)[1] or "manual")
+        kind = explicit_kind or ("curated" if explicit_method == "curated_source" else "custom")
+        method = explicit_method or ("curated_source" if kind == "curated" else infer_selected_source_contract(row)[1] or "manual")
         return kind, method
 
     selected_kind, selected_method = infer_selected_source_contract(row)
@@ -266,8 +266,8 @@ def infer_local_source_contract(row: dict) -> tuple[str, str]:
         return selected_kind, selected_method
 
     local_origin = str(row.get("local_source_origin", "") or "").strip().lower()
-    if local_origin.startswith("golden_source"):
-        return "golden", "golden_source"
+    if local_origin.startswith("curated_source"):
+        return "curated", "curated_source"
     if "playlist" in local_origin:
         return "custom", "playlist"
     if "direct" in local_origin:
@@ -282,9 +282,9 @@ def set_selected_source_contract(row: dict, *, kind: str = "", method: str = "")
         row["selected_source_method"] = ""
         return row
     normalized_method = normalize_source_method(method)
-    normalized_kind = normalize_source_kind(kind, default="golden" if normalized_method == "golden_source" else "custom")
+    normalized_kind = normalize_source_kind(kind, default="curated" if normalized_method == "curated_source" else "custom")
     row["selected_source_kind"] = normalized_kind
-    row["selected_source_method"] = normalized_method or ("golden_source" if normalized_kind == "golden" else "manual")
+    row["selected_source_method"] = normalized_method or ("curated_source" if normalized_kind == "curated" else "manual")
     return row
 
 
@@ -295,9 +295,9 @@ def set_local_source_contract(row: dict, *, kind: str = "", method: str = "") ->
         row["local_source_method"] = ""
         return row
     normalized_method = normalize_source_method(method)
-    normalized_kind = normalize_source_kind(kind, default="golden" if normalized_method == "golden_source" else "custom")
+    normalized_kind = normalize_source_kind(kind, default="curated" if normalized_method == "curated_source" else "custom")
     row["local_source_kind"] = normalized_kind
-    row["local_source_method"] = normalized_method or ("golden_source" if normalized_kind == "golden" else "manual")
+    row["local_source_method"] = normalized_method or ("curated_source" if normalized_kind == "curated" else "manual")
     return row
 
 
@@ -319,7 +319,7 @@ def ledger_path_for(name: str, logs_dir: str | Path = LOGS_DIR) -> str:
     return str(Path(logs_dir) / f"tracks_{safe}.csv")
 
 
-def normalize_golden_source_url(url: str) -> str:
+def normalize_curated_source_url(url: str) -> str:
     url = (url or "").strip()
     if not url:
         return ""
@@ -330,7 +330,7 @@ def normalize_golden_source_url(url: str) -> str:
     return url
 
 
-def read_golden_source_text(
+def read_curated_source_text(
     url: str,
     *,
     cache_dir: str | Path,
@@ -340,9 +340,9 @@ def read_golden_source_text(
     cache_prefix: str = "",
 ) -> tuple[str, str, float, str]:
     """Return (normalized_url, csv_text, fetch_ms, fetch_mode)."""
-    normalized = normalize_golden_source_url(url)
+    normalized = normalize_curated_source_url(url)
     if not normalized:
-        raise ValueError("Golden Source URL is not configured")
+        raise ValueError("Curated Source URL is not configured")
 
     cache_root = Path(cache_dir)
     cache_root.mkdir(parents=True, exist_ok=True)
@@ -410,14 +410,14 @@ def _normalize_row(row: dict) -> dict:
 
     out["end_offset"]   = str(out.get("end_offset", "0") or "0")
     out["start_offset"] = str(out.get("start_offset", "0") or "0")
-    out["golden_source_offset"] = str(out.get("golden_source_offset", "0") or "0")
+    out["curated_source_offset"] = str(out.get("curated_source_offset", "0") or "0")
     out["local_source_offset"] = str(out.get("local_source_offset", "0") or "0")
     out["tmdb_id"]      = str(out.get("tmdb_id", "") or "").strip()
     out["source_origin"] = str(out.get("source_origin", "") or "unknown").strip() or "unknown"
     out["url"] = str(out.get("url", "") or "").strip()
     out["selected_source_recorded_at"] = str(out.get("selected_source_recorded_at", "") or "").strip()
-    out["golden_source_url"] = str(out.get("golden_source_url", "") or "").strip()
-    out["golden_source_imported_at"] = str(out.get("golden_source_imported_at", "") or "").strip()
+    out["curated_source_url"] = str(out.get("curated_source_url", "") or "").strip()
+    out["curated_source_imported_at"] = str(out.get("curated_source_imported_at", "") or "").strip()
     out["local_source_url"] = str(out.get("local_source_url", "") or "").strip()
     out["local_source_origin"] = str(out.get("local_source_origin", "") or "").strip()
     out["local_source_recorded_at"] = str(out.get("local_source_recorded_at", "") or "").strip()
@@ -505,9 +505,9 @@ def _init_db(conn: sqlite3.Connection):
             selected_source_kind TEXT,
             selected_source_method TEXT,
             selected_source_recorded_at TEXT,
-            golden_source_url TEXT,
-            golden_source_offset TEXT DEFAULT '0',
-            golden_source_imported_at TEXT,
+            curated_source_url TEXT,
+            curated_source_offset TEXT DEFAULT '0',
+            curated_source_imported_at TEXT,
             local_source_url TEXT,
             local_source_offset TEXT DEFAULT '0',
             local_source_origin TEXT,
@@ -543,9 +543,9 @@ def _init_db(conn: sqlite3.Connection):
         "selected_source_kind": "TEXT",
         "selected_source_method": "TEXT",
         "selected_source_recorded_at": "TEXT",
-        "golden_source_url": "TEXT",
-        "golden_source_offset": "TEXT DEFAULT '0'",
-        "golden_source_imported_at": "TEXT",
+        "curated_source_url": "TEXT",
+        "curated_source_offset": "TEXT DEFAULT '0'",
+        "curated_source_imported_at": "TEXT",
         "local_source_url": "TEXT",
         "local_source_offset": "TEXT DEFAULT '0'",
         "local_source_origin": "TEXT",
@@ -601,8 +601,8 @@ def _import_csv_if_needed(conn: sqlite3.Connection, path: str, slug: str):
         conn.execute(
             """
             INSERT OR REPLACE INTO items(
-                library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,golden_source_url,golden_source_offset,
-                golden_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
+                library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,curated_source_url,curated_source_offset,
+                curated_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
                 plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                 theme_size,theme_mtime,created_at,updated_at
             ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -610,7 +610,7 @@ def _import_csv_if_needed(conn: sqlite3.Connection, path: str, slug: str):
             (
                 slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
                 row["start_offset"], row["selected_source_kind"], row["selected_source_method"], row["selected_source_recorded_at"],
-                row["golden_source_url"], row["golden_source_offset"], row["golden_source_imported_at"],
+                row["curated_source_url"], row["curated_source_offset"], row["curated_source_imported_at"],
                 row["local_source_url"], row["local_source_offset"], row["local_source_origin"], row["local_source_kind"],
                 row["local_source_method"], row["local_source_recorded_at"],
                 row["end_offset"], row["plex_title"], row["folder"],
@@ -631,8 +631,8 @@ def _sqlite_load_rows(path: str) -> list[dict]:
             _import_csv_if_needed(conn, path, slug)
             cur = conn.execute(
                 """
-                SELECT title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,golden_source_url,golden_source_offset,
-                       golden_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,plex_title,folder,
+                SELECT title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,curated_source_url,curated_source_offset,
+                       curated_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,plex_title,folder,
                        rating_key,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                        theme_size,theme_mtime
                 FROM items
@@ -680,8 +680,8 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                 conn.execute(
                     """
                     INSERT INTO items(
-                        library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,golden_source_url,golden_source_offset,
-                        golden_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
+                        library_slug,rating_key,title,year,status,url,start_offset,selected_source_kind,selected_source_method,selected_source_recorded_at,curated_source_url,curated_source_offset,
+                        curated_source_imported_at,local_source_url,local_source_offset,local_source_origin,local_source_kind,local_source_method,local_source_recorded_at,end_offset,
                         plex_title,folder,tmdb_id,last_updated,notes,source_origin,theme_exists,theme_duration,
                         theme_size,theme_mtime,created_at,updated_at
                     ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -694,9 +694,9 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                         selected_source_kind=excluded.selected_source_kind,
                         selected_source_method=excluded.selected_source_method,
                         selected_source_recorded_at=excluded.selected_source_recorded_at,
-                        golden_source_url=excluded.golden_source_url,
-                        golden_source_offset=excluded.golden_source_offset,
-                        golden_source_imported_at=excluded.golden_source_imported_at,
+                        curated_source_url=excluded.curated_source_url,
+                        curated_source_offset=excluded.curated_source_offset,
+                        curated_source_imported_at=excluded.curated_source_imported_at,
                         local_source_url=excluded.local_source_url,
                         local_source_offset=excluded.local_source_offset,
                         local_source_origin=excluded.local_source_origin,
@@ -719,7 +719,7 @@ def _sqlite_save_rows(path: str, rows: Iterable[dict]):
                     (
                         slug, row["rating_key"], row["title"], row["year"], row["status"], row["url"],
                         row["start_offset"], row["selected_source_kind"], row["selected_source_method"], row["selected_source_recorded_at"],
-                        row["golden_source_url"], row["golden_source_offset"], row["golden_source_imported_at"],
+                        row["curated_source_url"], row["curated_source_offset"], row["curated_source_imported_at"],
                         row["local_source_url"], row["local_source_offset"], row["local_source_origin"], row["local_source_kind"],
                         row["local_source_method"], row["local_source_recorded_at"], row["end_offset"], row["plex_title"], row["folder"],
                         row["tmdb_id"], row["last_updated"], row["notes"], row.get("source_origin", "unknown"),
@@ -780,17 +780,17 @@ def stamp_selected_source_record(
     return row
 
 
-def clear_golden_source_import_record(row: dict) -> dict:
-    row["golden_source_imported_at"] = ""
+def clear_curated_source_import_record(row: dict) -> dict:
+    row["curated_source_imported_at"] = ""
     return row
 
 
-def stamp_golden_source_import_record(
+def stamp_curated_source_import_record(
     row: dict,
     *,
     imported_at: str | None = None,
 ) -> dict:
-    row["golden_source_imported_at"] = str(imported_at or _now_str()).strip()
+    row["curated_source_imported_at"] = str(imported_at or _now_str()).strip()
     return row
 
 

@@ -108,7 +108,7 @@ class TaskActivitySummaryTests(unittest.TestCase):
             "plex_url": "",
             "plex_token": "",
             "tmdb_api_key": "",
-            "golden_source_url": "",
+            "curated_source_url": "",
             "media_roots": [str(self.logs_dir)],
             "libraries": [],
             "schedule_enabled": False,
