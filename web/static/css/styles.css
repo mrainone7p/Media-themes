@@ -328,7 +328,7 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid-compact .dashboard-stat-label{font-size:10px}
 .dashboard-stat-grid-compact .dashboard-stat-sub{font-size:9px}
 .dashboard-stat-grid-jump{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
-.dashboard-stat-grid-jump .dashboard-stat{padding:10px 28px 10px 10px;gap:1px;min-height:56px;border-left:3px solid color-mix(in srgb,var(--border) 65%,transparent)}
+.dashboard-stat-grid-jump .dashboard-stat{padding:10px 28px 10px 10px;gap:4px;min-height:56px;border-left:3px solid color-mix(in srgb,var(--border) 65%,transparent)}
 .dashboard-stat-grid-jump .dashboard-stat[data-status="MISSING"]{border-left-color:var(--red)}
 .dashboard-stat-grid-jump .dashboard-stat[data-status="STAGED"]{border-left-color:var(--purple)}
 .dashboard-stat-grid-jump .dashboard-stat[data-status="APPROVED"]{border-left-color:var(--yellow)}
@@ -337,8 +337,8 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid-jump .dashboard-stat:hover{transform:translateY(-2px)}
 .dashboard-stat-grid-jump .dashboard-stat-count{font-size:16px;margin-bottom:0;line-height:1;white-space:nowrap}
 .dashboard-stat-grid-jump .dashboard-stat-label{font-size:12px;font-weight:700;line-height:1.1;white-space:nowrap}
-.dashboard-stat-grid-jump .dashboard-stat-sub{display:block}
-.dashboard-stat-grid-jump .dashboard-stat-dot{display:inline-flex}
+.dashboard-stat-grid-jump .dashboard-stat-sub{display:none}
+.dashboard-stat-grid-jump .dashboard-stat-dot{display:none}
 .dashboard-stat-grid-jump .dashboard-stat.is-active{border-left-color:var(--amber)}
 .dash-action-jump-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
 .dash-action-jump-total{font-size:12px;color:var(--text2);font-weight:600}
@@ -419,7 +419,8 @@ body.nav-collapsed main{margin-left:48px}
 .schedule-status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;line-height:1.2;letter-spacing:.01em}
 .schedule-status-pill.active{background:color-mix(in srgb,var(--green-soft) 82%,var(--surface));color:var(--text);border:1px solid color-mix(in srgb,var(--green) 46%,var(--border))}
 .schedule-status-pill.inactive{background:color-mix(in srgb,var(--red-soft) 82%,var(--surface));color:var(--text);border:1px solid color-mix(in srgb,var(--red) 46%,var(--border))}
-.schedule-status-headline{font-size:17px;font-weight:800;color:var(--text);line-height:1.2;margin-top:6px}
+.schedule-status-headline{font-size:14px;font-weight:700;color:var(--text);line-height:1.25;margin-top:6px}
+.schedule-status-libraries{font-size:12px;font-weight:600;color:var(--text2)}
 .schedule-status-next-step{font-size:14px;color:var(--text2);line-height:1.55;margin-top:4px}
 .schedule-status-value{font-size:15px;font-weight:700;color:var(--amber);line-height:1.1}
 .schedule-status-value.is-muted{color:var(--text)}
