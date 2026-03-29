@@ -162,7 +162,7 @@ def index():
 
 @app.route("/favicon.ico")
 def favicon():
-    return send_file("web/static/img/favicon.png", mimetype="image/png", conditional=True)
+    return send_file("web/static/img/favicon.ico", mimetype="image/x-icon", conditional=True)
 
 
 @app.route("/api/config", methods=["GET"])
