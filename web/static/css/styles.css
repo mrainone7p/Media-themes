@@ -323,10 +323,11 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid-compact .dashboard-stat-count{font-size:20px;margin-bottom:2px}
 .dashboard-stat-grid-compact .dashboard-stat-label{font-size:10px}
 .dashboard-stat-grid-compact .dashboard-stat-sub{font-size:9px}
-.dashboard-stat-grid-jump{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
-.dashboard-stat-grid-jump .dashboard-stat{padding:8px 10px;gap:2px;min-height:56px}
-.dashboard-stat-grid-jump .dashboard-stat-count{font-size:18px;margin-bottom:0}
-.dashboard-stat-grid-jump .dashboard-stat-label{font-size:11px}
+.dashboard-stat-grid-jump{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.dashboard-stat-grid-jump .dashboard-stat{padding:8px 10px;gap:8px;min-height:44px;flex-direction:row;align-items:center}
+.dashboard-stat-grid-jump .dashboard-stat-count{font-size:16px;margin-bottom:0;line-height:1;white-space:nowrap}
+.dashboard-stat-grid-jump .dashboard-stat-label{font-size:16px;font-weight:600;line-height:1;white-space:nowrap}
+.dashboard-stat-grid-jump .dashboard-stat-dot{display:none}
 .dashboard-stat-grid-jump .dashboard-stat-sub{display:none}
 /* Quick actions */
 .dashboard-actions{display:flex;flex-direction:column;gap:8px}
@@ -388,9 +389,12 @@ body.nav-collapsed main{margin-left:48px}
 .dash-status-key-row .badge{min-width:116px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:4px 10px}
 .dash-status-key-def{font-size:11px;color:var(--text2);line-height:1.4}
 /* Action Station */
+.dash-action-section{display:grid;gap:6px;margin-top:10px}
+.dash-action-section-title{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text2)}
 .dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
 .dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
-.dash-action-buttons .btn-action-themes{justify-self:center}
+.dash-action-buttons .btn{font-size:16px;line-height:1.1;white-space:nowrap}
+.dash-action-buttons-manage .btn{flex:0 1 220px}
 .dash-action-jump{display:grid;gap:8px;margin-top:10px}
 .dash-action-jump-title{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text2)}
 .schedule-status-slot{flex:1;min-width:min(320px,100%)}

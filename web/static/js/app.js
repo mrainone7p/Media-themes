@@ -377,7 +377,11 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
   const stateLabel=scheduleActive?'Active':'Inactive';
   const stateClass=scheduleActive?'active':'inactive';
   const metaParts=[];
-  if(s.detail && !String(s.detail||'').startsWith('Active schedule comes from ')) metaParts.push(`<div class="schedule-status-meta-item">${s.detail}</div>`);
+  const detailText=String(s.detail||'');
+  const isAutomationActiveDetail=/^automation is active\.?$/i.test(detailText.trim());
+  if(detailText && !detailText.startsWith('Active schedule comes from ') && !isAutomationActiveDetail){
+    metaParts.push(`<div class="schedule-status-meta-item">${detailText}</div>`);
+  }
   if(!scheduleActive && s.cron) metaParts.push(`<div class="schedule-status-meta-item">Cron: <code>${s.cron}</code></div>`);
   const metaHtml=metaParts.length ? `<div class="schedule-status-meta">${metaParts.join('')}</div>` : '';
   if(scheduleActive && nextRun){
@@ -718,17 +722,23 @@ function renderDashboardActionStation(health){
   const el=document.getElementById('dashboard-action-station');
   if(!el) return;
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
-  const scheduleActive=scheduleHasActiveRun(s);
   _startCountdowns(null);
   const nextRunHtml=buildScheduleStatusModuleHtml(s,{inactiveCta:'Enable Schedule',showCountdown:false});
-  const scheduleBtnLabel=scheduleActive?'Edit Schedule':'Enable Schedule';
+  const scheduleBtnLabel='Edit Schedule';
   const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">${scheduleBtnLabel}</button>`;
   const runOrStopBtn=_dashRunActive
     ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
-    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
-  const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
+    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule Now</button>`;
+  const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage All</button>`;
   el.innerHTML=nextRunHtml
-    +`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`
+    +`<div class="dash-action-section">
+      <div class="dash-action-section-title">Automation Status</div>
+      <div class="dash-action-buttons">${setupBtn}${runOrStopBtn}</div>
+    </div>`
+    +`<div class="dash-action-section">
+      <div class="dash-action-section-title">Manage Themes</div>
+      <div class="dash-action-buttons dash-action-buttons-manage">${themesBtn}</div>
+    </div>`
     +`<div class="dash-action-jump">
       <div class="dash-action-jump-title">Jump to</div>
       <div class="dashboard-stat-grid dashboard-stat-grid-compact dashboard-stat-grid-jump" id="dashboard-pipeline-overview"></div>
@@ -746,7 +756,7 @@ function _updateDashRunButton(){
     btn.style.cssText='';
     btn.onclick=function(){stopRun('run');};
   } else {
-    btn.textContent='Run Schedule';
+    btn.textContent='Run Schedule Now';
     btn.className='btn btn-ghost btn-sm btn-action-run';
     btn.style.cssText='';
     btn.onclick=function(){startScheduledRun('dashboard');};
