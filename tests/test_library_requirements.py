@@ -102,5 +102,13 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
         self.assertNotIn("choose another method to search alternatives", library_source)
 
 
+    def test_favicon_route_and_head_links_use_root_favicon_endpoint(self):
+        self.assertIn('@app.route("/favicon.ico")', self.app_source)
+        self.assertIn('def favicon():\n    return send_file("web/static/img/favicon.png", mimetype="image/png", conditional=True)', self.app_source)
+        self.assertIn('<link rel="icon" type="image/x-icon" href="/favicon.ico">', self.template_source)
+        self.assertIn('<link rel="shortcut icon" href="/favicon.ico">', self.template_source)
+        self.assertIn('<link rel="apple-touch-icon" href="/static/img/favicon.png">', self.template_source)
+
+
 if __name__ == "__main__":
     unittest.main()
