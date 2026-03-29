@@ -325,8 +325,8 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid-compact .dashboard-stat-sub{font-size:9px}
 .dashboard-stat-grid-jump{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
 .dashboard-stat-grid-jump .dashboard-stat{padding:8px 10px;gap:8px;min-height:44px;flex-direction:row;align-items:center}
-.dashboard-stat-grid-jump .dashboard-stat-count{font-size:16px;margin-bottom:0;line-height:1;white-space:nowrap}
-.dashboard-stat-grid-jump .dashboard-stat-label{font-size:16px;font-weight:600;line-height:1;white-space:nowrap}
+.dashboard-stat-grid-jump .dashboard-stat-count{font-size:14px;margin-bottom:0;line-height:1;white-space:nowrap}
+.dashboard-stat-grid-jump .dashboard-stat-label{font-size:13px;font-weight:600;line-height:1;white-space:nowrap}
 .dashboard-stat-grid-jump .dashboard-stat-dot{display:none}
 .dashboard-stat-grid-jump .dashboard-stat-sub{display:none}
 /* Quick actions */
@@ -392,11 +392,11 @@ body.nav-collapsed main{margin-left:48px}
 .dash-action-section{display:grid;gap:6px;margin-top:10px}
 .dash-action-section-title{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text2)}
 .dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
-.dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
-.dash-action-buttons .btn{font-size:16px;line-height:1.1;white-space:nowrap}
-.dash-action-buttons-manage .btn{flex:0 1 220px}
+.dash-action-buttons .btn{flex:1;min-width:120px;justify-content:center;white-space:nowrap}
+.dash-action-buttons-actions .btn{font-size:12px;line-height:1.2}
 .dash-action-jump{display:grid;gap:8px;margin-top:10px}
 .dash-action-jump-title{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text2)}
+.dash-action-status .schedule-status-module{margin-bottom:0}
 .schedule-status-slot{flex:1;min-width:min(320px,100%)}
 .schedule-status-module{padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .schedule-status-module.is-empty{border-style:dashed}
