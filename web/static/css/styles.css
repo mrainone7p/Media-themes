@@ -788,7 +788,15 @@ th.resizable .col-resize.dragging{background:var(--amber)}
 .col-action{min-width:140px}
 .col-title{min-width:280px}
 .row-action-wrap{position:relative;display:flex;align-items:center;gap:6px;justify-content:flex-start;width:100%}
-.row-action-wrap .btn{min-height:24px;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700}
+.row-action-wrap .btn{
+  min-height:30px;
+  padding:4px 12px;
+  border-radius:999px;
+  font-size:11px;
+  line-height:1.15;
+  font-weight:700;
+  font-family:var(--ui);
+}
 .row-primary-action{width:100%;max-width:108px}
 
 .task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
