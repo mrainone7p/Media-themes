@@ -80,6 +80,7 @@ nav{width:192px;min-height:100vh;background:var(--surface);border-right:1px soli
 nav.collapsed{width:48px}
 nav.collapsed .logo-title,nav.collapsed .logo-sub,nav.collapsed .nav-item span,nav.collapsed .nav-footer span{display:none}
 nav.collapsed .logo{padding:0 8px}
+nav.collapsed .logo-image{display:none}
 nav.collapsed .nav-item{padding:10px 0;justify-content:center}
 nav.collapsed .nav-item svg{margin:0}
 nav.collapsed .nav-footer{padding:8px;justify-content:center}
@@ -87,6 +88,7 @@ nav.collapsed .nav-footer{padding:8px;justify-content:center}
 .collapse-btn:hover{border-color:var(--amber);color:var(--amber)}
 nav.collapsed .collapse-btn{transform:rotate(180deg);padding:4px}
 .logo{padding:0 16px;min-height:74px;height:74px;border-bottom:1px solid var(--border);display:flex;align-items:center}
+.logo-image{max-width:124px;width:100%;height:auto;display:block}
 .logo-title{font-size:15px;font-weight:700;color:var(--amber);letter-spacing:.02em;line-height:1.25}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
 .nav-section{padding:12px 0 10px;flex:1}
