@@ -374,7 +374,7 @@ function scheduleHasActiveRun(schedule={}){
   if(['ok','warning','active','enabled'].includes(state)) return true;
   return !!formatNextRunFull(schedule?.next_run);
 }
-function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedule',inactiveGuidance='Set a schedule to automate this pipeline',activeGuidance='Review timing or edit your schedule as needed',showCountdown=true}={}){
+function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedule',inactiveGuidance='Set a schedule to automate this pipeline',activeGuidance='',showCountdown=true,activeLibraries=[]}={}){
   const s=(schedule && typeof schedule==='object') ? schedule : {};
   const nextRun=formatNextRunFull(s.next_run);
   const scheduleActive=scheduleHasActiveRun(s);
@@ -382,19 +382,22 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
   const stateClass=scheduleActive?'active':'inactive';
   const headline=scheduleActive ? 'Schedule is active' : 'No active schedule';
   const nextBestAction=scheduleActive ? activeGuidance : inactiveGuidance;
+  const libs=Array.isArray(activeLibraries) ? activeLibraries.filter(Boolean).map(name=>String(name).trim()).filter(Boolean) : [];
+  const libsLabel=libs.length ? ` · ${libs.join(', ')}` : '';
   const metaParts=[];
   const detailText=String(s.detail||'');
   const isAutomationActiveDetail=/^automation is active\.?$/i.test(detailText.trim());
-  if(detailText && !detailText.startsWith('Active schedule comes from ') && !isAutomationActiveDetail){
+  const isEnableAutomationDetail=/^enable automation in scheduler to run this pipeline automatically\.?$/i.test(detailText.trim());
+  const isScheduledLibrariesDetail=/^scheduled for \d+ librar(y|ies)\.?$/i.test(detailText.trim());
+  if(detailText && !detailText.startsWith('Active schedule comes from ') && !isAutomationActiveDetail && !isEnableAutomationDetail && !isScheduledLibrariesDetail){
     metaParts.push(`<div class="schedule-status-meta-item">${detailText}</div>`);
   }
-  if(!scheduleActive && s.cron) metaParts.push(`<div class="schedule-status-meta-item">Cron: <code>${s.cron}</code></div>`);
   const metaHtml=metaParts.length ? `<div class="schedule-status-meta">${metaParts.join('')}</div>` : '';
   if(scheduleActive && nextRun){
     return `<div class="schedule-status-module">
       <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation status</div><span class="schedule-status-pill ${stateClass}" role="status" aria-label="Automation status: ${stateLabel}">${stateLabel}</span></div>
-      <div class="schedule-status-headline">${headline}</div>
-      <div class="schedule-status-next-step">${nextBestAction}</div>
+      <div class="schedule-status-headline">${headline}<span class="schedule-status-libraries">${libsLabel}</span></div>
+      ${nextBestAction ? `<div class="schedule-status-next-step">${nextBestAction}</div>` : ''}
       ${showCountdown
     ? `<div class="schedule-status-value" data-schedule-countdown>${nextRun.rel}</div>
       <div class="schedule-status-detail" data-schedule-absolute>Next Run ${nextRun.abs}</div>`
@@ -405,8 +408,7 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
   return `<div class="schedule-status-module is-empty">
     <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation status</div><span class="schedule-status-pill ${stateClass}" role="status" aria-label="Automation status: ${stateLabel}">${stateLabel}</span></div>
     <div class="schedule-status-headline">No active schedule</div>
-    <div class="schedule-status-next-step">${nextBestAction}</div>
-    <div class="schedule-status-cta">${inactiveCta}</div>
+    ${nextBestAction ? `<div class="schedule-status-next-step">${nextBestAction}</div>` : ''}
     ${metaHtml}
   </div>`;
 }
@@ -642,11 +644,11 @@ function renderDashboardPipelineOverview(counts){
   const activeFilter=((document.getElementById('db-filter')||{}).value||'').toUpperCase();
   const totalCount=(counts.MISSING||0)+(counts.STAGED||0)+(counts.APPROVED||0)+(counts.AVAILABLE||0)+(counts.FAILED||0);
   const items=[
-    {label:'Missing', sub:'Open items', status:'MISSING', value:counts.MISSING||0, color:'var(--red)', icon:'○'},
-    {label:'Staged', sub:'Needs review', status:'STAGED', value:counts.STAGED||0, color:'var(--purple)', icon:'◔'},
-    {label:'Approved', sub:'Ready to run', status:'APPROVED', value:counts.APPROVED||0, color:'var(--yellow)', icon:'✓'},
-    {label:'Available', sub:'Completed', status:'AVAILABLE', value:counts.AVAILABLE||0, color:'var(--green)', icon:'●'},
-    {label:'Failed', sub:'Needs attention', status:'FAILED', value:counts.FAILED||0, color:'var(--orange)', icon:'!'},
+    {label:'Missing', status:'MISSING', value:counts.MISSING||0, color:'var(--red)'},
+    {label:'Staged', status:'STAGED', value:counts.STAGED||0, color:'var(--purple)'},
+    {label:'Approved', status:'APPROVED', value:counts.APPROVED||0, color:'var(--yellow)'},
+    {label:'Available', status:'AVAILABLE', value:counts.AVAILABLE||0, color:'var(--green)'},
+    {label:'Failed', status:'FAILED', value:counts.FAILED||0, color:'var(--orange)'},
   ];
   const el=document.getElementById('dashboard-pipeline-overview');
   if(!el) return;
@@ -655,8 +657,7 @@ function renderDashboardPipelineOverview(counts){
   el.innerHTML=items.map(item=>`
     <button class="dashboard-stat ${activeFilter===item.status?'is-active':''}" data-status="${item.status}" aria-pressed="${activeFilter===item.status ? 'true' : 'false'}" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
-      <span class="dashboard-stat-label"><span class="dashboard-stat-dot" style="background:${item.color}"></span><span class="dashboard-stat-icon" aria-hidden="true">${item.icon}</span>${displayStatus(item.status)}</span>
-      <span class="dashboard-stat-sub">${item.sub}</span>
+      <span class="dashboard-stat-label dashboard-stat-label-single">${displayStatus(item.status)}</span>
       <span class="dashboard-stat-chevron" aria-hidden="true">›</span>
     </button>`).join('');
 }
@@ -738,14 +739,15 @@ function renderDashboardActionStation(health){
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   const scheduleActive=scheduleHasActiveRun(s);
   _startCountdowns(null);
-  const nextRunHtml=buildScheduleStatusModuleHtml(s,{inactiveCta:'Enable Schedule',showCountdown:false});
+  const activeLibraries=(_dashboardLibraries&&Array.isArray(_dashboardLibraries.scheduled)) ? _dashboardLibraries.scheduled : [];
+  const nextRunHtml=buildScheduleStatusModuleHtml(s,{inactiveCta:'Enable Schedule',inactiveGuidance:'Set a schedule to automate this pipeline',showCountdown:false,activeLibraries});
   const setupBtnLabel=scheduleActive ? 'Edit Schedule' : 'Enable Schedule';
   const setupBtn=`<button class="btn btn-amber btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">${setupBtnLabel}</button>`;
   const runOrStopBtn=_dashRunActive
     ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
-    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
-  const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
-  const configureBtn=`<button class="btn btn-ghost btn-sm btn-action-configure" onclick="navigateTo('configuration')">Configure</button>`;
+    :`<button class="btn btn-green btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
+  const themesBtn=`<button class="btn btn-green btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
+  const configureBtn=`<button class="btn btn-amber btn-sm btn-action-configure" onclick="navigateTo('configuration')">Configure</button>`;
   el.innerHTML=`<div class="dash-action-status">${nextRunHtml}</div>`
     +`<div class="dash-action-section">
       <div class="dash-action-section-title">Actions</div>
@@ -772,7 +774,7 @@ function _updateDashRunButton(){
     btn.onclick=function(){stopRun('run');};
   } else {
     btn.textContent='Run Schedule';
-    btn.className='btn btn-ghost btn-sm btn-action-run';
+    btn.className='btn btn-green btn-sm btn-action-run';
     btn.style.cssText='';
     btn.onclick=function(){startScheduledRun('dashboard');};
   }
@@ -930,9 +932,7 @@ function buildDashboardScheduleHealth(cfg={}, scheduledLibs=[]){
     cron: (cfg.cron_schedule||'0 3 * * *').trim(),
     configured_cron: (cfg.cron_schedule||'0 3 * * *').trim(),
     libraries: libs.length,
-    detail: enabled
-      ? `Scheduled for ${libs.length} librar${libs.length===1?'y':'ies'}.`
-      : 'Enable automation in Scheduler to run this pipeline automatically.',
+    detail: '',
   };
 }
 function syncDashboardScheduleHealthCache(cfg={}, scheduledLibs=[]){
