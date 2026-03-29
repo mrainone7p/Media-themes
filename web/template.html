@@ -78,36 +78,42 @@
   </div>
   <div class="page-body"><div class="content">
 
-    <!-- How it Works? (collapsed by default, at top) -->
+    <!-- How it Works? (expanded by default, at top) -->
     <div class="mb-20">
       <div class="card dashboard-card mb-0" id="dash-pipeline-help">
-        <button type="button" id="dash-how-toggle" class="dash-how-toggle-btn" onclick="toggleHowItWorks()" aria-expanded="false" aria-controls="dash-how-content">
+        <button type="button" id="dash-how-toggle" class="dash-how-toggle-btn" onclick="toggleHowItWorks()" aria-expanded="true" aria-controls="dash-how-content">
           <div class="card-title mb-0">How it Works?</div>
-          <span class="settings-chev" id="dash-pipeline-help-chev" style="transform:rotate(180deg)">&#8743;</span>
+          <span class="settings-chev" id="dash-pipeline-help-chev">&#8743;</span>
         </button>
-        <div id="dash-how-content" style="display:none;margin-top:14px">
+        <div id="dash-how-content" style="margin-top:14px">
           <div class="dashboard-grid dash-how-grid">
             <div class="span-6">
               <div class="card-title mb-10">Pipeline Steps</div>
               <div class="dash-pipeline-steps">
                 <div class="dash-pipeline-step">
-                  <div class="dash-pipeline-step-num text-blue">Step 1</div>
                   <div class="dash-pipeline-step-copy">
-                    <div class="dash-pipeline-step-title">Scan Libraries</div>
+                    <div class="dash-pipeline-step-head">
+                      <div class="dash-pipeline-step-title">Scan Libraries</div>
+                      <div class="dash-pipeline-step-num text-blue">Step 1</div>
+                    </div>
                     <div class="dash-pipeline-step-desc">Connects to Plex, checks each folder for a local theme file, and marks items <strong>Missing</strong> or <strong>Available</strong>.</div>
                   </div>
                 </div>
                 <div class="dash-pipeline-step">
-                  <div class="dash-pipeline-step-num text-purple">Step 2</div>
                   <div class="dash-pipeline-step-copy">
-                    <div class="dash-pipeline-step-title">Find Sources</div>
+                    <div class="dash-pipeline-step-head">
+                      <div class="dash-pipeline-step-title">Find Sources</div>
+                      <div class="dash-pipeline-step-num text-purple">Step 2</div>
+                    </div>
                     <div class="dash-pipeline-step-desc">Searches for sources for <strong>Missing</strong> items via TMDB, YouTube, or Curated Source. Matches move to <strong>Staged</strong> for manual review and <strong>Approval</strong>.</div>
                   </div>
                 </div>
                 <div class="dash-pipeline-step">
-                  <div class="dash-pipeline-step-num text-green">Step 3</div>
                   <div class="dash-pipeline-step-copy">
-                    <div class="dash-pipeline-step-title">Download Approved</div>
+                    <div class="dash-pipeline-step-head">
+                      <div class="dash-pipeline-step-title">Download Approved</div>
+                      <div class="dash-pipeline-step-num text-green">Step 3</div>
+                    </div>
                     <div class="dash-pipeline-step-desc">Downloads theme files for <strong>Approved</strong> items using yt-dlp and ffmpeg, then marks them <strong>Available</strong>.</div>
                   </div>
                 </div>

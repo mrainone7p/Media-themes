@@ -917,8 +917,8 @@ function dashboardCountsForLibrary(name){
   return {...emptyDashboardCounts(), ...(_dashSummaryByLib[name]||{})};
 }
 
-// How it Works? panel — always starts collapsed, ephemeral state
-let _howItWorksOpen=false;
+// How it Works? panel — starts expanded, ephemeral state
+let _howItWorksOpen=true;
 function toggleHowItWorks(){
   _howItWorksOpen=!_howItWorksOpen;
   _applyHowItWorksState();
@@ -950,7 +950,7 @@ function _howItWorksEscape(e){
   if(e.key==='Escape') closeHowItWorks();
 }
 function _resetHowItWorks(){
-  _howItWorksOpen=false;
+  _howItWorksOpen=true;
   _applyHowItWorksState();
   document.removeEventListener('click',_howItWorksOutsideClick,true);
   document.removeEventListener('keydown',_howItWorksEscape);
