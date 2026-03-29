@@ -153,6 +153,15 @@ def _log_request(response: Response):
     return response
 
 
+
+
+@app.route("/favicon.ico")
+def favicon():
+    favicon_path = app.static_folder and os.path.join(app.static_folder, "img", "favicon.png")
+    if not favicon_path or not os.path.exists(favicon_path):
+        abort(404)
+    return send_file(favicon_path, mimetype="image/png", max_age=0)
+
 @app.route("/")
 def index():
     return tasks.load_template()

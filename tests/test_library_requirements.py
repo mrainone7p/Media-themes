@@ -95,6 +95,12 @@ class LibraryRequirementAppSourceTests(unittest.TestCase):
         library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
         self.assertIn("el.style.display=active?'flex':'none';", library_source)
 
+
+    def test_favicon_route_serves_root_favicon_path(self):
+        self.assertIn('@app.route("/favicon.ico")', self.app_source)
+        self.assertIn('return send_file(favicon_path, mimetype="image/png", max_age=0)', self.app_source)
+        self.assertIn('<link rel="icon" type="image/x-icon" href="/favicon.ico">', self.template_source)
+
     def test_curated_source_card_stays_first_and_uses_minimal_unavailable_copy(self):
         library_source = (ROOT / "web" / "static" / "js" / "library.js").read_text(encoding="utf-8")
         self.assertIn("wrap.prepend(curatedCard);", library_source)
