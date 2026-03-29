@@ -389,25 +389,28 @@ body.nav-collapsed main{margin-left:48px}
 .dash-status-key-row .badge{min-width:116px;justify-content:flex-start;flex-shrink:0;font-size:10px;padding:4px 10px}
 .dash-status-key-def{font-size:11px;color:var(--text2);line-height:1.4}
 /* Action Station */
-.dash-action-section{display:grid;gap:6px;margin-top:10px}
-.dash-action-section-title{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text2)}
-.dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
+#dashboard-action-station{display:grid;gap:16px}
+.dash-action-section{display:grid;gap:6px}
+.dash-action-section-title{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3)}
+.dash-action-buttons{display:flex;flex-direction:row;gap:6px;flex-wrap:wrap}
 .dash-action-buttons .btn{flex:1;min-width:120px;justify-content:center;white-space:nowrap}
 .dash-action-buttons-actions .btn{font-size:12px;line-height:1.2}
-.dash-action-jump{display:grid;gap:8px;margin-top:10px}
-.dash-action-jump-title{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text2)}
+.dash-action-jump{display:grid;gap:6px}
+.dash-action-jump-title{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3)}
 .dash-action-status .schedule-status-module{margin-bottom:0}
 .schedule-status-slot{flex:1;min-width:min(320px,100%)}
 .schedule-status-module{padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .schedule-status-module.is-empty{border-style:dashed}
 .schedule-status-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.schedule-status-eyebrow{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.schedule-status-eyebrow{font-size:8px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:3px;opacity:.85}
 .schedule-status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
 .schedule-status-pill.active{background:var(--green-soft);color:var(--green)}
 .schedule-status-pill.inactive{background:var(--red-soft);color:var(--red)}
+.schedule-status-headline{font-size:17px;font-weight:800;color:var(--text);line-height:1.2;margin-top:6px}
+.schedule-status-next-step{font-size:11px;color:var(--text2);line-height:1.45;margin-top:2px}
 .schedule-status-value{font-size:15px;font-weight:700;color:var(--amber);line-height:1.1}
 .schedule-status-value.is-muted{color:var(--text)}
-.schedule-status-detail{font-size:10px;color:var(--text2);font-family:var(--mono);margin-top:2px}
+.schedule-status-detail{font-size:10px;color:var(--text2);font-family:var(--mono);margin-top:4px}
 .schedule-status-run-at{font-weight:700;color:var(--amber)}
 .schedule-status-meta{display:grid;gap:4px;margin-top:8px}
 .schedule-status-meta-item{font-size:11px;color:var(--text2);line-height:1.45}
