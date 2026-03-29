@@ -368,6 +368,9 @@ function formatNextRunFull(isoStr){
   return {rel,abs,dt};
 }
 function scheduleHasActiveRun(schedule={}){
+  const state=String(schedule?.state||'').trim().toLowerCase();
+  if(['off','disabled','inactive','error'].includes(state)) return false;
+  if(['ok','warning','active','enabled'].includes(state)) return true;
   return !!formatNextRunFull(schedule?.next_run);
 }
 function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedule',showCountdown=true}={}){
