@@ -1118,18 +1118,20 @@ function renderBarChart(){
   const padL=40, padR=10, padT=10, padB=30;
   const plotW=chartW-padL-padR;
   const plotH=chartH-padT-padB;
+  const bucketCount=Math.max(keys.length,1);
+  const slotW=plotW/bucketCount;
   const smallSeries=keys.length<=6;
-  const barW=Math.max(8,Math.min(smallSeries?80:40,Math.floor(plotW/Math.max(keys.length,1))-(smallSeries?10:4)));
-  const gap=smallSeries?Math.min(24, Math.max(8, Math.floor(plotW/(Math.max(keys.length,1)*3)))):Math.max(2,(plotW-barW*keys.length)/(keys.length||1));
-  const usedW=keys.length*barW+Math.max(0,keys.length-1)*gap;
-  const startX=padL+Math.max(0,(plotW-usedW)/2);
+  const widthRatio=smallSeries?0.64:0.78;
+  const maxBarW=smallSeries?80:40;
+  const barW=Math.max(4, Math.min(maxBarW, Math.floor(slotW*widthRatio)));
+  const startX=padL+(slotW-barW)/2;
   // Y-axis scale
   const yScale=plotH/maxTotal;
   // Build bars
   let bars='';
   let labels='';
   keys.forEach((key,i)=>{
-    const x=startX+i*(barW+gap);
+    const x=startX+i*slotW;
     let y=padT+plotH;
     BAR_STATUSES.forEach(st=>{
       const val=buckets[key][st]||0;
