@@ -373,12 +373,14 @@ function scheduleHasActiveRun(schedule={}){
   if(['ok','warning','active','enabled'].includes(state)) return true;
   return !!formatNextRunFull(schedule?.next_run);
 }
-function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedule',showCountdown=true}={}){
+function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedule',inactiveGuidance='Set a schedule to automate this pipeline',activeGuidance='Review timing or edit your schedule as needed',showCountdown=true}={}){
   const s=(schedule && typeof schedule==='object') ? schedule : {};
   const nextRun=formatNextRunFull(s.next_run);
   const scheduleActive=scheduleHasActiveRun(s);
   const stateLabel=scheduleActive?'Active':'Inactive';
   const stateClass=scheduleActive?'active':'inactive';
+  const headline=scheduleActive ? 'Schedule is active' : 'No active schedule';
+  const nextBestAction=scheduleActive ? activeGuidance : inactiveGuidance;
   const metaParts=[];
   const detailText=String(s.detail||'');
   const isAutomationActiveDetail=/^automation is active\.?$/i.test(detailText.trim());
@@ -390,6 +392,8 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
   if(scheduleActive && nextRun){
     return `<div class="schedule-status-module">
       <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation Status</div><span class="schedule-status-pill ${stateClass}">${stateLabel}</span></div>
+      <div class="schedule-status-headline">${headline}</div>
+      <div class="schedule-status-next-step">${nextBestAction}</div>
       ${showCountdown
     ? `<div class="schedule-status-value" data-schedule-countdown>${nextRun.rel}</div>
       <div class="schedule-status-detail" data-schedule-absolute>Next Run ${nextRun.abs}</div>`
@@ -399,7 +403,8 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
   }
   return `<div class="schedule-status-module is-empty">
     <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation Status</div><span class="schedule-status-pill ${stateClass}">${stateLabel}</span></div>
-    <div class="schedule-status-value is-muted">No active schedule</div>
+    <div class="schedule-status-headline">No active schedule</div>
+    <div class="schedule-status-next-step">${nextBestAction}</div>
     <div class="schedule-status-cta">${inactiveCta}</div>
     ${metaHtml}
   </div>`;
@@ -725,9 +730,11 @@ function renderDashboardActionStation(health){
   const el=document.getElementById('dashboard-action-station');
   if(!el) return;
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
+  const scheduleActive=scheduleHasActiveRun(s);
   _startCountdowns(null);
   const nextRunHtml=buildScheduleStatusModuleHtml(s,{inactiveCta:'Enable Schedule',showCountdown:false});
-  const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Edit Schedule</button>`;
+  const setupBtnLabel=scheduleActive ? 'Edit Schedule' : 'Enable Schedule';
+  const setupBtn=`<button class="btn btn-amber btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">${setupBtnLabel}</button>`;
   const runOrStopBtn=_dashRunActive
     ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
     :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
