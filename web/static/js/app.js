@@ -638,20 +638,25 @@ function dashboardShowPipelineHelp(){
   document.getElementById('pipeline-help-modal').classList.add('open');
 }
 function renderDashboardPipelineOverview(counts){
+  const activeFilter=((document.getElementById('db-filter')||{}).value||'').toUpperCase();
+  const totalCount=(counts.MISSING||0)+(counts.STAGED||0)+(counts.APPROVED||0)+(counts.AVAILABLE||0)+(counts.FAILED||0);
   const items=[
-    {label:'Missing', sub:'Needs source', status:'MISSING', value:counts.MISSING||0, color:'var(--red)'},
-    {label:'Staged', sub:'Review queue', status:'STAGED', value:counts.STAGED||0, color:'var(--purple)'},
-    {label:'Approved', sub:'Ready to download', status:'APPROVED', value:counts.APPROVED||0, color:'var(--yellow)'},
-    {label:'Available', sub:'Already local', status:'AVAILABLE', value:counts.AVAILABLE||0, color:'var(--green)'},
-    {label:'Failed', sub:'Needs review', status:'FAILED', value:counts.FAILED||0, color:'var(--red)'},
+    {label:'Missing', sub:'Open items', status:'MISSING', value:counts.MISSING||0, color:'var(--red)', icon:'○'},
+    {label:'Staged', sub:'Needs review', status:'STAGED', value:counts.STAGED||0, color:'var(--purple)', icon:'◔'},
+    {label:'Approved', sub:'Ready to run', status:'APPROVED', value:counts.APPROVED||0, color:'var(--yellow)', icon:'✓'},
+    {label:'Available', sub:'Completed', status:'AVAILABLE', value:counts.AVAILABLE||0, color:'var(--green)', icon:'●'},
+    {label:'Failed', sub:'Needs attention', status:'FAILED', value:counts.FAILED||0, color:'var(--orange)', icon:'!'},
   ];
   const el=document.getElementById('dashboard-pipeline-overview');
   if(!el) return;
+  const totalEl=document.getElementById('dashboard-pipeline-total');
+  if(totalEl) totalEl.textContent=`Total: ${totalCount}`;
   el.innerHTML=items.map(item=>`
-    <button class="dashboard-stat" onclick="openThemeManagerFiltered('${item.status}')">
+    <button class="dashboard-stat ${activeFilter===item.status?'is-active':''}" data-status="${item.status}" aria-pressed="${activeFilter===item.status ? 'true' : 'false'}" onclick="openThemeManagerFiltered('${item.status}')">
       <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
-      <span class="dashboard-stat-label"><span class="dashboard-stat-dot" style="background:${item.color}"></span>${displayStatus(item.status)}</span>
+      <span class="dashboard-stat-label"><span class="dashboard-stat-dot" style="background:${item.color}"></span><span class="dashboard-stat-icon" aria-hidden="true">${item.icon}</span>${displayStatus(item.status)}</span>
       <span class="dashboard-stat-sub">${item.sub}</span>
+      <span class="dashboard-stat-chevron" aria-hidden="true">›</span>
     </button>`).join('');
 }
 function renderDashboardSystemHealth(health){
@@ -746,7 +751,10 @@ function renderDashboardActionStation(health){
       <div class="dash-action-buttons dash-action-buttons-actions">${setupBtn}${runOrStopBtn}${themesBtn}${configureBtn}</div>
     </div>`
     +`<div class="dash-action-jump">
-      <div class="dash-action-jump-title">Jump to</div>
+      <div class="dash-action-jump-head">
+        <div class="dash-action-jump-title">Jump to</div>
+        <div class="dash-action-jump-total" id="dashboard-pipeline-total" aria-live="polite">Total: 0</div>
+      </div>
       <div class="dashboard-stat-grid dashboard-stat-grid-compact dashboard-stat-grid-jump" id="dashboard-pipeline-overview"></div>
     </div>`;
 }
