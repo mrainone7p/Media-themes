@@ -370,7 +370,7 @@ function formatNextRunFull(isoStr){
 function scheduleHasActiveRun(schedule={}){
   return !!formatNextRunFull(schedule?.next_run);
 }
-function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedule'}={}){
+function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedule',showCountdown=true}={}){
   const s=(schedule && typeof schedule==='object') ? schedule : {};
   const nextRun=formatNextRunFull(s.next_run);
   const scheduleActive=scheduleHasActiveRun(s);
@@ -381,8 +381,10 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
   if(scheduleActive && nextRun){
     return `<div class="schedule-status-module">
       <div class="schedule-status-eyebrow">Next Scheduled Run</div>
-      <div class="schedule-status-value" data-schedule-countdown>${nextRun.rel}</div>
-      <div class="schedule-status-detail" data-schedule-absolute>Runs ${nextRun.abs}</div>
+      ${showCountdown
+    ? `<div class="schedule-status-value" data-schedule-countdown>${nextRun.rel}</div>
+      <div class="schedule-status-detail" data-schedule-absolute>Runs ${nextRun.abs}</div>`
+    : `<div class="schedule-status-detail">Runs <span class="schedule-status-run-at">${nextRun.abs}</span></div>`}
       ${metaHtml}
     </div>`;
   }
@@ -681,6 +683,7 @@ function renderDashboardSchedule(health){
   renderDashboardActionStation(health);
 }
 function renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs){
+  renderDashboardActionStationFromConfig(cfg, scheduledLibs);
   renderDashboardPipelineOverview({MISSING:0,STAGED:0,APPROVED:0,AVAILABLE:0,FAILED:0});
   renderDashboardRecentActivity([]);
   renderDashboardLibraryOverview(cfg, enabledLibs, scheduledLibs);
@@ -714,15 +717,20 @@ function renderDashboardActionStation(health){
   if(!el) return;
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   const scheduleActive=scheduleHasActiveRun(s);
-  _startCountdowns(scheduleActive ? s.next_run : null);
-  const nextRunHtml=buildScheduleStatusModuleHtml(s,{inactiveCta:'Enable Schedule'});
+  _startCountdowns(null);
+  const nextRunHtml=buildScheduleStatusModuleHtml(s,{inactiveCta:'Enable Schedule',showCountdown:false});
   const scheduleBtnLabel=scheduleActive?'Edit Schedule':'Enable Schedule';
   const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">${scheduleBtnLabel}</button>`;
   const runOrStopBtn=_dashRunActive
-    ?`<button class="btn btn-red btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
-    :`<button class="btn btn-green btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
+    ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
+    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
   const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
-  el.innerHTML=nextRunHtml+`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`;
+  el.innerHTML=nextRunHtml
+    +`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`
+    +`<div class="dash-action-jump">
+      <div class="dash-action-jump-title">Jump to</div>
+      <div class="dashboard-stat-grid dashboard-stat-grid-compact" id="dashboard-pipeline-overview"></div>
+    </div>`;
 }
 function renderDashboardActionStationFromConfig(cfg, scheduledLibs){
   renderDashboardActionStation({schedule:buildDashboardScheduleHealth(cfg, scheduledLibs)});
@@ -732,12 +740,12 @@ function _updateDashRunButton(){
   if(!btn) return;
   if(_dashRunActive){
     btn.textContent='Stop';
-    btn.className='btn btn-red btn-sm btn-action-stop';
+    btn.className='btn btn-ghost btn-sm btn-action-stop';
     btn.style.cssText='';
     btn.onclick=function(){stopRun('run');};
   } else {
     btn.textContent='Run Schedule';
-    btn.className='btn btn-green btn-sm btn-action-run';
+    btn.className='btn btn-ghost btn-sm btn-action-run';
     btn.style.cssText='';
     btn.onclick=function(){startScheduledRun('dashboard');};
   }
@@ -1320,7 +1328,6 @@ async function loadDashboard(force=false){
   if(_dashSelectedLib!=='all' && !_dashSummaryByLib[_dashSelectedLib]) _dashSelectedLib='all';
   _resetHowItWorks();
   renderDashboardDeferredPlaceholders(cfg, enabledLibs, scheduledLibs);
-  if(!readDashboardHealthCache()) renderDashboardActionStationFromConfig(cfg, scheduledLibs);
   loadDashboardDeferredData(seq, cfg, enabledLibs).catch(err=>console.warn('Dashboard deferred load failed', err));
 }
 function setPendingTestBadge(elId, label='Working…'){

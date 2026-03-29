@@ -318,6 +318,11 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-label{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.02em;display:flex;align-items:center;gap:6px}
 .dashboard-stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .dashboard-stat-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.dashboard-stat-grid-compact{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.dashboard-stat-grid-compact .dashboard-stat{padding:10px 12px;gap:1px}
+.dashboard-stat-grid-compact .dashboard-stat-count{font-size:20px;margin-bottom:2px}
+.dashboard-stat-grid-compact .dashboard-stat-label{font-size:10px}
+.dashboard-stat-grid-compact .dashboard-stat-sub{font-size:9px}
 /* Quick actions */
 .dashboard-actions{display:flex;flex-direction:column;gap:8px}
 .dashboard-actions-group{display:flex;flex-wrap:wrap;gap:8px}
@@ -381,6 +386,8 @@ body.nav-collapsed main{margin-left:48px}
 .dash-action-buttons{display:flex;flex-direction:row;gap:8px;flex-wrap:wrap}
 .dash-action-buttons .btn{flex:1;min-width:100px;justify-content:center}
 .dash-action-buttons .btn-action-themes{justify-self:center}
+.dash-action-jump{display:grid;gap:8px;margin-top:10px}
+.dash-action-jump-title{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--text2)}
 .schedule-status-slot{flex:1;min-width:min(320px,100%)}
 .schedule-status-module{padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
 .schedule-status-module.is-empty{border-style:dashed}
@@ -388,6 +395,7 @@ body.nav-collapsed main{margin-left:48px}
 .schedule-status-value{font-size:15px;font-weight:700;color:var(--amber);line-height:1.1}
 .schedule-status-value.is-muted{color:var(--text)}
 .schedule-status-detail{font-size:10px;color:var(--text2);font-family:var(--mono);margin-top:2px}
+.schedule-status-run-at{font-weight:700;color:var(--amber)}
 .schedule-status-meta{display:grid;gap:4px;margin-top:8px}
 .schedule-status-meta-item{font-size:11px;color:var(--text2);line-height:1.45}
 .schedule-status-meta-item code{font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text)}
@@ -407,14 +415,6 @@ body.nav-collapsed main{margin-left:48px}
 .field-secret-toggle svg{width:16px;height:16px}
 
 /* ─── Colorful Action Station buttons ─── */
-.dash-action-buttons .btn-action-setup{background:var(--blue-soft);color:var(--blue);border-color:color-mix(in srgb,var(--blue) 35%,var(--border))}
-.dash-action-buttons .btn-action-setup:hover{background:color-mix(in srgb,var(--blue) 22%,transparent);border-color:var(--blue);color:var(--blue)}
-.dash-action-buttons .btn-action-run{background:var(--green-soft);color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,var(--border))}
-.dash-action-buttons .btn-action-run:hover{background:color-mix(in srgb,var(--green) 22%,transparent);border-color:var(--green);color:var(--green)}
-.dash-action-buttons .btn-action-themes{background:var(--purple-soft);color:var(--purple);border-color:color-mix(in srgb,var(--purple) 35%,var(--border))}
-.dash-action-buttons .btn-action-themes:hover{background:color-mix(in srgb,var(--purple) 22%,transparent);border-color:var(--purple);color:var(--purple)}
-.dash-action-buttons .btn-action-stop{background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,var(--border))}
-.dash-action-buttons .btn-action-stop:hover{background:color-mix(in srgb,var(--red) 22%,transparent);border-color:var(--red);color:var(--red)}
 
 /* ─── How it Works overlay ─── */
 .dash-how-overlay{display:none;position:fixed;inset:0;z-index:200}
