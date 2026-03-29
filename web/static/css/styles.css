@@ -205,6 +205,7 @@ body.nav-collapsed main{margin-left:48px}
 }
 @media (max-width: 760px){
   .dashboard-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dashboard-stat-grid-jump{grid-template-columns:repeat(2,minmax(0,1fr))}
   .dash-status-key-row{grid-template-columns:1fr}
   .dash-status-key-row .badge{min-width:0;width:100%;justify-content:center}
 }
@@ -215,6 +216,8 @@ body.nav-collapsed main{margin-left:48px}
   .dash-lib-tab{white-space:normal;text-align:center;justify-content:center}
   .dash-bar-period-wrap{justify-content:flex-start}
   .dash-health-row{gap:8px}
+  .dash-health-copy-inline{flex-direction:column;align-items:flex-start;gap:2px}
+  .dash-health-detail-inline{white-space:normal}
   .dash-activity-row{grid-template-columns:1fr;gap:6px}
   .dash-activity-label{order:2}
 }
@@ -327,8 +330,8 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid-compact .dashboard-stat-count{font-size:20px;margin-bottom:2px}
 .dashboard-stat-grid-compact .dashboard-stat-label{font-size:10px}
 .dashboard-stat-grid-compact .dashboard-stat-sub{font-size:9px}
-.dashboard-stat-grid-jump{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
-.dashboard-stat-grid-jump .dashboard-stat{padding:10px 28px 10px 10px;gap:4px;min-height:56px;border-left:3px solid color-mix(in srgb,var(--border) 65%,transparent)}
+.dashboard-stat-grid-jump{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.dashboard-stat-grid-jump .dashboard-stat{padding:10px 28px 10px 10px;gap:6px;min-height:40px;border-left:3px solid color-mix(in srgb,var(--border) 65%,transparent)}
 .dashboard-stat-grid-jump .dashboard-stat[data-status="MISSING"]{border-left-color:var(--red)}
 .dashboard-stat-grid-jump .dashboard-stat[data-status="STAGED"]{border-left-color:var(--purple)}
 .dashboard-stat-grid-jump .dashboard-stat[data-status="APPROVED"]{border-left-color:var(--yellow)}
@@ -340,6 +343,8 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-stat-grid-jump .dashboard-stat-sub{display:none}
 .dashboard-stat-grid-jump .dashboard-stat-dot{display:none}
 .dashboard-stat-grid-jump .dashboard-stat.is-active{border-left-color:var(--amber)}
+.dashboard-stat-inline{display:flex;flex-direction:row;align-items:center}
+.dashboard-stat-count-inline{font-size:14px;margin-bottom:0;margin-left:auto}
 .dash-action-jump-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px}
 .dash-action-jump-total{font-size:12px;color:var(--text2);font-weight:600}
 /* Quick actions */
@@ -360,10 +365,12 @@ body.nav-collapsed main{margin-left:48px}
 .dashboard-badge.unknown{background:var(--gray-soft);color:var(--text);border-color:var(--border)}
 .dashboard-empty{padding:14px 16px;border:1px dashed var(--border);border-radius:10px;color:var(--text3);font-size:12px;background:var(--surface2)}
 /* Health row — compact single-line style */
-.dash-health-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);min-height:42px}
+.dash-health-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);min-height:42px}
 .dash-health-copy-wrap{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
 .dash-health-label{font-size:12px;font-weight:600;color:var(--text);min-width:0}
 .dash-health-detail{font-size:11px;color:var(--text3);min-width:0;line-height:1.45;word-break:break-word}
+.dash-health-copy-inline{display:flex;flex-direction:row;align-items:baseline;gap:8px}
+.dash-health-detail-inline{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* Activity compact rows */
 .dash-activity-row{display:grid;grid-template-columns:80px 1fr auto auto;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);font-size:12px;min-height:42px}
 .dash-activity-label{font-weight:600;color:var(--text)}
@@ -405,8 +412,8 @@ body.nav-collapsed main{margin-left:48px}
 #dashboard-action-station{display:grid;gap:16px}
 .dash-action-section{display:grid;gap:6px}
 .dash-action-section-title{font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--text2)}
-.dash-action-buttons{display:flex;flex-direction:row;gap:6px;flex-wrap:wrap}
-.dash-action-buttons .btn{flex:1;min-width:120px;justify-content:center;white-space:nowrap}
+.dash-action-buttons{display:flex;flex-direction:row;gap:6px;flex-wrap:nowrap}
+.dash-action-buttons .btn{flex:1;min-width:0;justify-content:center;white-space:nowrap}
 .dash-action-buttons-actions .btn{font-size:12px;line-height:1.2}
 .dash-action-jump{display:grid;gap:6px}
 .dash-action-jump-title{font-size:12px;font-weight:600;letter-spacing:.01em;color:var(--text2)}

@@ -655,9 +655,9 @@ function renderDashboardPipelineOverview(counts){
   const totalEl=document.getElementById('dashboard-pipeline-total');
   if(totalEl) totalEl.textContent=`Total: ${totalCount}`;
   el.innerHTML=items.map(item=>`
-    <button class="dashboard-stat ${activeFilter===item.status?'is-active':''}" data-status="${item.status}" aria-pressed="${activeFilter===item.status ? 'true' : 'false'}" onclick="openThemeManagerFiltered('${item.status}')">
-      <span class="dashboard-stat-count" style="color:${item.color}">${item.value}</span>
-      <span class="dashboard-stat-label dashboard-stat-label-single">${displayStatus(item.status)}</span>
+    <button class="dashboard-stat dashboard-stat-inline ${activeFilter===item.status?'is-active':''}" data-status="${item.status}" aria-pressed="${activeFilter===item.status ? 'true' : 'false'}" onclick="openThemeManagerFiltered('${item.status}')">
+      <span class="dashboard-stat-label dashboard-stat-label-single" style="color:${item.color}">${displayStatus(item.status)}</span>
+      <span class="dashboard-stat-count dashboard-stat-count-inline" style="color:${item.color}">${item.value}</span>
       <span class="dashboard-stat-chevron" aria-hidden="true">›</span>
     </button>`).join('');
 }
@@ -679,9 +679,9 @@ function renderDashboardSystemHealth(health){
     const detail=h.detail||'';
     const safeDetail=detail ? detail.replace(/"/g,'&quot;') : '';
     return `<div class="dash-health-row">
-      <div class="dash-health-copy-wrap">
+      <div class="dash-health-copy-wrap dash-health-copy-inline">
         <span class="dash-health-label">${row.label}</span>
-        ${detail ? `<span class="dash-health-detail" title="${safeDetail}">${detail}</span>` : ''}
+        ${detail ? `<span class="dash-health-detail dash-health-detail-inline" title="${safeDetail}">${detail}</span>` : ''}
       </div>
       ${badge}
     </div>`;
@@ -751,7 +751,7 @@ function renderDashboardActionStation(health){
   el.innerHTML=`<div class="dash-action-status">${nextRunHtml}</div>`
     +`<div class="dash-action-section">
       <div class="dash-action-section-title">Actions</div>
-      <div class="dash-action-buttons dash-action-buttons-actions">${setupBtn}${runOrStopBtn}${themesBtn}${configureBtn}</div>
+      <div class="dash-action-buttons dash-action-buttons-actions">${themesBtn}${runOrStopBtn}${setupBtn}${configureBtn}</div>
     </div>`
     +`<div class="dash-action-jump">
       <div class="dash-action-jump-head">
