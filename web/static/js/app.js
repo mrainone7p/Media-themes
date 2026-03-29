@@ -333,7 +333,8 @@ function dashboardBadgeClass(state){
   return {ok:'ok',warning:'warn',warn:'warn',off:'off',error:'fail',fail:'fail',unknown:'unknown'}[state] || 'off';
 }
 function dashboardStatusBadge(label,state='off'){
-  return `<span class="dashboard-badge ${dashboardBadgeClass(state)}"><span class="status-label">${formatStatusLabel(label)}</span></span>`;
+  const badgeLabel=formatStatusLabel(label);
+  return `<span class="dashboard-badge ${dashboardBadgeClass(state)}" role="status" aria-label="Status: ${badgeLabel}"><span class="status-label">${badgeLabel}</span></span>`;
 }
 function formatDashboardTime(value){
   if(!value) return null;
@@ -391,7 +392,7 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
   const metaHtml=metaParts.length ? `<div class="schedule-status-meta">${metaParts.join('')}</div>` : '';
   if(scheduleActive && nextRun){
     return `<div class="schedule-status-module">
-      <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation Status</div><span class="schedule-status-pill ${stateClass}">${stateLabel}</span></div>
+      <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation status</div><span class="schedule-status-pill ${stateClass}" role="status" aria-label="Automation status: ${stateLabel}">${stateLabel}</span></div>
       <div class="schedule-status-headline">${headline}</div>
       <div class="schedule-status-next-step">${nextBestAction}</div>
       ${showCountdown
@@ -402,7 +403,7 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
     </div>`;
   }
   return `<div class="schedule-status-module is-empty">
-    <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation Status</div><span class="schedule-status-pill ${stateClass}">${stateLabel}</span></div>
+    <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation status</div><span class="schedule-status-pill ${stateClass}" role="status" aria-label="Automation status: ${stateLabel}">${stateLabel}</span></div>
     <div class="schedule-status-headline">No active schedule</div>
     <div class="schedule-status-next-step">${nextBestAction}</div>
     <div class="schedule-status-cta">${inactiveCta}</div>
