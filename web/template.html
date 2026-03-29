@@ -42,9 +42,21 @@
   </div>
   <div class="nav-footer inline-wrap spread">
     <span>v3.0</span>
-    <button onclick="toggleTheme()" class="collapse-btn" title="Toggle light/dark" id="theme-toggle-btn">☀</button>
+    <button onclick="toggleTheme()" class="collapse-btn" title="Toggle light/dark" id="theme-toggle-btn" data-theme-toggle-btn>☀</button>
   </div>
 </nav>
+
+<button
+  type="button"
+  class="mobile-theme-toggle"
+  id="theme-toggle-btn-mobile"
+  data-theme-toggle-btn
+  onclick="toggleTheme()"
+  aria-label="Toggle light and dark theme"
+  title="Toggle light/dark theme"
+>
+  ☀
+</button>
 
 <main>
   <div class="global-run hidden" id="global-run">
