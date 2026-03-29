@@ -98,6 +98,7 @@ body.nav-collapsed main{margin-left:48px}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
 .nav-item.active svg{opacity:1}
 .nav-footer{padding:10px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;justify-content:space-between;gap:4px;flex-shrink:0;overflow:hidden}
+.mobile-theme-toggle{display:none}
 
 /* ─── Main ─── */
 .page{display:none;flex-direction:column;flex:1}
@@ -1424,6 +1425,33 @@ th.resizable .col-resize.dragging{background:var(--amber)}
   body{display:block}
   nav,nav.collapsed{width:100%;min-height:0;height:68px;top:auto;left:0;right:0;bottom:0;border-right:none;border-top:1px solid var(--border);flex-direction:row;background:color-mix(in srgb, var(--surface) 92%, transparent);backdrop-filter:blur(10px)}
   .logo,.nav-footer,.collapse-btn{display:none!important}
+  .mobile-theme-toggle{
+    position:fixed;
+    right:12px;
+    bottom:84px;
+    z-index:130;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:48px;
+    height:48px;
+    min-width:44px;
+    min-height:44px;
+    border:1px solid color-mix(in srgb,var(--amber) 30%,var(--border));
+    border-radius:999px;
+    background:color-mix(in srgb,var(--surface) 94%,transparent);
+    color:var(--text);
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+    touch-action:manipulation;
+  }
+  .mobile-theme-toggle:hover{border-color:var(--amber);color:var(--amber)}
+  .mobile-theme-toggle:focus-visible{
+    outline:2px solid var(--amber);
+    outline-offset:3px;
+  }
   .nav-section{display:flex;align-items:stretch;gap:0;width:100%;padding:0}
   .nav-item,.nav.collapsed .nav-item{flex:1;min-width:0;justify-content:center;align-items:center;flex-direction:column;gap:3px;padding:8px 4px;border-left:none;border-top:2px solid transparent;font-size:10px;text-align:center}
   .nav-item span,nav.collapsed .nav-item span{display:flex;align-items:center;justify-content:center;width:100%;min-height:24px;line-height:1.15;text-align:center}
