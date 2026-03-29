@@ -374,22 +374,24 @@ function buildScheduleStatusModuleHtml(schedule={}, {inactiveCta='Enable Schedul
   const s=(schedule && typeof schedule==='object') ? schedule : {};
   const nextRun=formatNextRunFull(s.next_run);
   const scheduleActive=scheduleHasActiveRun(s);
+  const stateLabel=scheduleActive?'Active':'Inactive';
+  const stateClass=scheduleActive?'active':'inactive';
   const metaParts=[];
   if(s.detail && !String(s.detail||'').startsWith('Active schedule comes from ')) metaParts.push(`<div class="schedule-status-meta-item">${s.detail}</div>`);
   if(!scheduleActive && s.cron) metaParts.push(`<div class="schedule-status-meta-item">Cron: <code>${s.cron}</code></div>`);
   const metaHtml=metaParts.length ? `<div class="schedule-status-meta">${metaParts.join('')}</div>` : '';
   if(scheduleActive && nextRun){
     return `<div class="schedule-status-module">
-      <div class="schedule-status-eyebrow">Next Scheduled Run</div>
+      <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation Status</div><span class="schedule-status-pill ${stateClass}">${stateLabel}</span></div>
       ${showCountdown
     ? `<div class="schedule-status-value" data-schedule-countdown>${nextRun.rel}</div>
-      <div class="schedule-status-detail" data-schedule-absolute>Runs ${nextRun.abs}</div>`
-    : `<div class="schedule-status-detail">Runs <span class="schedule-status-run-at">${nextRun.abs}</span></div>`}
+      <div class="schedule-status-detail" data-schedule-absolute>Next Run ${nextRun.abs}</div>`
+    : `<div class="schedule-status-detail">Next Run <span class="schedule-status-run-at">${nextRun.abs}</span></div>`}
       ${metaHtml}
     </div>`;
   }
   return `<div class="schedule-status-module is-empty">
-    <div class="schedule-status-eyebrow">Schedule Status</div>
+    <div class="schedule-status-top"><div class="schedule-status-eyebrow">Automation Status</div><span class="schedule-status-pill ${stateClass}">${stateLabel}</span></div>
     <div class="schedule-status-value is-muted">No active schedule</div>
     <div class="schedule-status-cta">${inactiveCta}</div>
     ${metaHtml}
@@ -451,7 +453,7 @@ function _tickCountdowns(){
   const label=ms>0?_fmtCountdown(ms):'Now';
   const absStr=_countdownTargetDt.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'});
   document.querySelectorAll('[data-schedule-countdown]').forEach(el=>{ el.textContent=label; });
-  document.querySelectorAll('[data-schedule-absolute]').forEach(el=>{ el.textContent=`Runs ${absStr}`; });
+  document.querySelectorAll('[data-schedule-absolute]').forEach(el=>{ el.textContent=`Next Run ${absStr}`; });
 }
 function _stopCountdownDisplay(){
   if(_countdownInterval){clearInterval(_countdownInterval);_countdownInterval=null;}
@@ -729,7 +731,7 @@ function renderDashboardActionStation(health){
     +`<div class="dash-action-buttons">${setupBtn}${runOrStopBtn}${themesBtn}</div>`
     +`<div class="dash-action-jump">
       <div class="dash-action-jump-title">Jump to</div>
-      <div class="dashboard-stat-grid dashboard-stat-grid-compact" id="dashboard-pipeline-overview"></div>
+      <div class="dashboard-stat-grid dashboard-stat-grid-compact dashboard-stat-grid-jump" id="dashboard-pipeline-overview"></div>
     </div>`;
 }
 function renderDashboardActionStationFromConfig(cfg, scheduledLibs){
@@ -1074,6 +1076,18 @@ function _aggregateTimeline(timeline, group, statusFilter){
       buckets[key][st]=(buckets[key][st]||0)+count;
     }
   }
+  if(group==='day'){
+    const keys=Object.keys(buckets).sort();
+    if(keys.length){
+      let cursor=new Date(`${keys[0]}T00:00:00`);
+      const end=new Date(`${keys[keys.length-1]}T00:00:00`);
+      while(cursor<=end){
+        const dayKey=_formatDateKeyLocal(cursor);
+        if(!buckets[dayKey]) buckets[dayKey]={};
+        cursor.setDate(cursor.getDate()+1);
+      }
+    }
+  }
   return buckets;
 }
 
@@ -1086,6 +1100,16 @@ function _formatBarLabel(key, group){
     return months[parseInt(parts[1],10)-1]+' '+parts[0].slice(2);
   }
   return key;
+}
+function _displayTimelineStatus(status){
+  if(status==='MISSING') return 'Unavailable';
+  return status[0]+status.slice(1).toLowerCase();
+}
+function _formatDateKeyLocal(dt){
+  const y=dt.getFullYear();
+  const m=String(dt.getMonth()+1).padStart(2,'0');
+  const d=String(dt.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
 }
 
 function renderBarChart(){
@@ -1168,7 +1192,7 @@ function renderBarChart(){
       BAR_STATUSES.forEach(st=>{
         const val=bucket[st]||0;
         if(!val) return;
-        const label=st[0]+st.slice(1).toLowerCase();
+        const label=_displayTimelineStatus(st);
         rows+=`<div class="dash-chart-tooltip-row"><span class="dash-chart-tooltip-dot" style="background:${PIE_COLORS[st]}"></span>${label}<span class="dash-chart-tooltip-val">${val}</span></div>`;
       });
       const html=`<div class="dash-chart-tooltip-title">${_formatBarLabel(key,_dashBarTimeGroup)}</div>${rows}<div class="dash-chart-tooltip-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;color:var(--text3)">Total: ${total}</div>`;
