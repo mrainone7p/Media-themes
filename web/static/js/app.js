@@ -724,20 +724,16 @@ function renderDashboardActionStation(health){
   const s=health.schedule||{state:'unknown',label:'Unknown',next_run:null};
   _startCountdowns(null);
   const nextRunHtml=buildScheduleStatusModuleHtml(s,{inactiveCta:'Enable Schedule',showCountdown:false});
-  const scheduleBtnLabel='Edit Schedule';
-  const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">${scheduleBtnLabel}</button>`;
+  const setupBtn=`<button class="btn btn-ghost btn-sm btn-action-setup" onclick="navigateTo('scheduler','scheduler-config-section')">Edit Schedule</button>`;
   const runOrStopBtn=_dashRunActive
     ?`<button class="btn btn-ghost btn-sm btn-action-stop" id="dash-run-btn" onclick="stopRun('run')">Stop</button>`
-    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule Now</button>`;
-  const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage All</button>`;
-  el.innerHTML=nextRunHtml
+    :`<button class="btn btn-ghost btn-sm btn-action-run" id="dash-run-btn" onclick="startScheduledRun('dashboard')">Run Schedule</button>`;
+  const themesBtn=`<button class="btn btn-ghost btn-sm btn-action-themes" onclick="showPage('theme-manager')">Manage Themes</button>`;
+  const configureBtn=`<button class="btn btn-ghost btn-sm btn-action-configure" onclick="navigateTo('configuration')">Configure</button>`;
+  el.innerHTML=`<div class="dash-action-status">${nextRunHtml}</div>`
     +`<div class="dash-action-section">
-      <div class="dash-action-section-title">Automation Status</div>
-      <div class="dash-action-buttons">${setupBtn}${runOrStopBtn}</div>
-    </div>`
-    +`<div class="dash-action-section">
-      <div class="dash-action-section-title">Manage Themes</div>
-      <div class="dash-action-buttons dash-action-buttons-manage">${themesBtn}</div>
+      <div class="dash-action-section-title">Actions</div>
+      <div class="dash-action-buttons dash-action-buttons-actions">${setupBtn}${runOrStopBtn}${themesBtn}${configureBtn}</div>
     </div>`
     +`<div class="dash-action-jump">
       <div class="dash-action-jump-title">Jump to</div>
@@ -756,7 +752,7 @@ function _updateDashRunButton(){
     btn.style.cssText='';
     btn.onclick=function(){stopRun('run');};
   } else {
-    btn.textContent='Run Schedule Now';
+    btn.textContent='Run Schedule';
     btn.className='btn btn-ghost btn-sm btn-action-run';
     btn.style.cssText='';
     btn.onclick=function(){startScheduledRun('dashboard');};
