@@ -1,6 +1,13 @@
-Place brand image assets here:
+Place brand image assets here.
 
-- `sidebar-header.png` → full logo for the sidebar/app header.
-- `favicon.png` → square icon used for browser favicon.
+Primary assets (included in repo):
 
-The template is already wired to these filenames.
+- `sidebar-header.svg` → full logo for the sidebar/app header.
+- `favicon.svg` → browser favicon.
+
+Optional PNG fallbacks:
+
+- `sidebar-header.png`
+- `favicon.png`
+
+`web/template.html` is wired to use SVG by default and automatically falls back to PNG if a PNG file is provided.
