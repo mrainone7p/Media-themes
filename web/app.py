@@ -158,6 +158,13 @@ def index():
     return tasks.load_template()
 
 
+
+
+@app.route("/favicon.ico")
+def favicon():
+    return send_file("web/static/img/favicon.png", mimetype="image/png", conditional=True)
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config():
     return jsonify(services.get_config_payload())
